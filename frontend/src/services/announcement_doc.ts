@@ -14,7 +14,7 @@ export function usePublicAnnouncements(params?: { limit?: number; offset?: numbe
   return useQuery({
     queryKey: ['public-announcements', params],
     queryFn: async () => {
-      const res = await api.get<{ data: Announcement[]; total: number }>('/public/announcements', { params });
+      const res = await api.get<{ data: Announcement[]; total: number }>('/t/sitransparan-rt/announcements', { params });
       return res.data;
     },
   });
@@ -24,7 +24,7 @@ export function usePublicDocuments(params?: { limit?: number; offset?: number })
   return useQuery({
     queryKey: ['public-documents', params],
     queryFn: async () => {
-      const res = await api.get<{ data: Document[]; total: number }>('/public/documents', { params });
+      const res = await api.get<{ data: Document[]; total: number }>('/t/sitransparan-rt/documents', { params });
       return res.data;
     },
   });

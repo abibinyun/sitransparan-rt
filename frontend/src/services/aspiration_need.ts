@@ -13,7 +13,7 @@ export function usePublicAspirations(params?: { limit?: number; offset?: number 
   return useQuery({
     queryKey: ['public-aspirations', params],
     queryFn: async () => {
-      const res = await api.get<{ data: Aspiration[]; total: number }>('/public/aspirations', { params });
+      const res = await api.get<{ data: Aspiration[]; total: number }>('/t/sitransparan-rt/aspirations', { params });
       return res.data;
     },
   });
@@ -23,7 +23,7 @@ export function usePublicCommunityNeeds(params?: { limit?: number; offset?: numb
   return useQuery({
     queryKey: ['public-community-needs', params],
     queryFn: async () => {
-      const res = await api.get<{ data: CommunityNeed[]; total: number }>('/public/community-needs', { params });
+      const res = await api.get<{ data: CommunityNeed[]; total: number }>('/t/sitransparan-rt/needs', { params });
       return res.data;
     },
   });
@@ -53,7 +53,7 @@ export function useSubmitAspiration() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateAspirationPayload) => {
-      const res = await api.post<Aspiration>('/aspirations', payload);
+      const res = await api.post<Aspiration>('/t/sitransparan-rt/aspirations', payload);
       return res.data;
     },
     onSuccess: () => {

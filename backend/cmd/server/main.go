@@ -40,7 +40,7 @@ func main() {
 	announcementDocRepo := repository.NewAnnouncementDocRepository(db, nil)
 	dashboardRepo := repository.NewDashboardRepository(db)
 
-	jwtSecret := "default-secret"
+	jwtSecret := cfg.JWTSecret
 	jwtDuration := 24 * time.Hour
 
 	authUC := usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, jwtSecret, jwtDuration)

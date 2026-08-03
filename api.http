@@ -1,0 +1,16 @@
+@local = http://localhost:8081
+@dev = https://dev.example.com
+@prod = https://api.example.com
+
+### Register User
+POST {{local}}/api/v1/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "admin@gmail.com",
+  "password": "admin123",
+  "full_name": "Admin RT",
+  "phone": "081234567890",
+  "role": "admin_rt"
+}

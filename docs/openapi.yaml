@@ -4,8 +4,10 @@ info:
   description: OpenAPI 3.0 specification for Platform RT REST API endpoints.
   version: 1.0.0
 servers:
-  - url: http://localhost:8080
-    description: Local server
+  - url: http://localhost:8081
+    description: Local server (Port 8081)
+  - url: /
+    description: Current host relative path
 
 paths:
   /health:

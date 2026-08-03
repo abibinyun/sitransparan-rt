@@ -1,3 +1,267 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f8fafc;
+  }
+
+  body {
+    @apply min-h-screen bg-slate-50 text-slate-900 antialiased;
+    background-image:
+      radial-gradient(circle at top left, rgba(79, 70, 229, 0.12), transparent 28rem),
+      radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.10), transparent 26rem),
+      linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  }
+
+  ::selection {
+    @apply bg-indigo-200 text-indigo-950;
+  }
+
+  input,
+  select,
+  textarea {
+    @apply transition duration-200 ease-out;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    @apply -translate-y-0.5 shadow-lg shadow-indigo-100 ring-2 ring-indigo-500/25;
+  }
+
+  button,
+  a {
+    @apply transition duration-200 ease-out;
+  }
+
+  button:not(:disabled):active,
+  a:active {
+    transform: translateY(1px) scale(0.99);
+  }
+
+  button:disabled {
+    @apply cursor-not-allowed saturate-50;
+  }
+}
+
+@layer components {
+  /* Page surfaces */
+  main > div.space-y-6,
+  main > div.space-y-8,
+  main > div:not([class*="fixed"]):not([class*="min-h-screen"]) {
+    animation: ui-page-in 420ms cubic-bezier(.22, 1, .36, 1) both;
+  }
+
+  .bg-white.rounded-lg,
+  .rounded-lg.bg-white,
+  .rounded-xl.bg-white,
+  .rounded-md.bg-white {
+    @apply border-slate-200/80 shadow-sm shadow-slate-200/70 backdrop-blur;
+  }
+
+  .bg-white.rounded-lg:hover,
+  .rounded-lg.bg-white:hover,
+  .rounded-xl.bg-white:hover {
+    @apply shadow-lg shadow-slate-200/80;
+  }
+
+  /* Premium auth page feel */
+  .min-h-screen.bg-gray-100 {
+    @apply bg-slate-950;
+    background-image:
+      radial-gradient(circle at 18% 16%, rgba(99, 102, 241, .38), transparent 20rem),
+      radial-gradient(circle at 82% 18%, rgba(20, 184, 166, .30), transparent 18rem),
+      linear-gradient(135deg, #0f172a 0%, #1e1b4b 48%, #042f2e 100%);
+  }
+
+  .min-h-screen.bg-gray-100 > .bg-white {
+    @apply relative overflow-hidden rounded-3xl border border-white/60 bg-white/95 shadow-2xl shadow-indigo-950/30;
+    animation: ui-pop 520ms cubic-bezier(.22, 1, .36, 1) both;
+  }
+
+  .min-h-screen.bg-gray-100 > .bg-white::before {
+    content: "";
+    @apply pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400;
+  }
+
+  /* Form controls */
+  input[class*="border"],
+  select[class*="border"],
+  textarea[class*="border"] {
+    @apply rounded-xl border-slate-200 bg-white/90 shadow-sm placeholder:text-slate-400 hover:border-indigo-300;
+  }
+
+  label {
+    @apply text-slate-700;
+  }
+
+  /* Buttons */
+  button[class*="bg-indigo-600"],
+  button[class*="bg-blue-600"] {
+    @apply bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg shadow-indigo-200/70 hover:from-indigo-500 hover:to-blue-500 hover:shadow-indigo-300/80;
+  }
+
+  button[class*="bg-emerald-600"],
+  button[class*="bg-green-600"] {
+    @apply bg-gradient-to-r from-emerald-600 to-teal-600 shadow-lg shadow-emerald-200/70 hover:from-emerald-500 hover:to-teal-500;
+  }
+
+  button[class*="border"][class*="bg-white"] {
+    @apply hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700;
+  }
+
+  /* Tables */
+  table {
+    @apply text-slate-700;
+  }
+
+  thead[class*="bg-gray-50"],
+  thead.bg-gray-50 {
+    @apply bg-slate-50/90;
+  }
+
+  th {
+    @apply whitespace-nowrap font-bold tracking-[0.08em] text-slate-500;
+  }
+
+  tbody tr {
+    @apply transition duration-200 ease-out;
+  }
+
+  tbody tr:hover {
+    @apply bg-indigo-50/60 shadow-sm;
+  }
+
+  td {
+    @apply align-middle;
+  }
+
+  /* Badges and alerts */
+  span[class*="rounded-full"] {
+    @apply ring-1 ring-inset;
+  }
+
+  .bg-green-100,
+  .bg-emerald-100 {
+    @apply bg-emerald-50 text-emerald-700 ring-emerald-200;
+  }
+
+  .bg-red-100 {
+    @apply bg-rose-50 text-rose-700 ring-rose-200;
+  }
+
+  .bg-yellow-100 {
+    @apply bg-amber-50 text-amber-700 ring-amber-200;
+  }
+
+  .bg-gray-100 {
+    @apply bg-slate-100 text-slate-700 ring-slate-200;
+  }
+
+  .bg-green-50,
+  .bg-red-50,
+  .bg-indigo-50\/40 {
+    @apply border border-black/10 shadow-sm;
+  }
+
+  /* Modal polish */
+  .fixed.inset-0.z-50 {
+    @apply bg-slate-950/60 backdrop-blur-sm;
+    animation: ui-fade 180ms ease-out both;
+  }
+
+  .fixed.inset-0.z-50 > div {
+    @apply max-h-[92vh] overflow-y-auto rounded-3xl border border-white/70 shadow-2xl shadow-slate-950/25;
+    animation: ui-pop 260ms cubic-bezier(.22, 1, .36, 1) both;
+  }
+
+  /* Empty and loading states that are currently text-only */
+  .p-8.text-center,
+  .p-6.text-center {
+    @apply mx-auto my-2 max-w-xl rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 text-slate-500;
+  }
+
+  .p-8.text-center::before,
+  .p-6.text-center::before {
+    content: "";
+    @apply mx-auto mb-3 block h-10 w-10 rounded-2xl bg-gradient-to-br from-indigo-100 to-emerald-100 ring-1 ring-slate-200;
+  }
+
+  .p-8.text-center:has(+ *),
+  .p-6.text-center:has(+ *) {
+    @apply animate-pulse;
+  }
+
+  /* Responsive table ergonomics */
+  .overflow-x-auto {
+    @apply rounded-xl;
+    scrollbar-width: thin;
+    scrollbar-color: #c7d2fe transparent;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 10px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-indigo-200;
+  }
+
+  @media (max-width: 640px) {
+    .px-6 {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    th,
+    td {
+      @apply text-xs;
+    }
+
+    .flex.items-center.justify-between,
+    .flex.justify-between.items-center {
+      @apply gap-3;
+    }
+  }
+}
+
+@layer utilities {
+  .animate-ui-pop {
+    animation: ui-pop 260ms cubic-bezier(.22, 1, .36, 1) both;
+  }
+
+  .animate-ui-fade {
+    animation: ui-fade 180ms ease-out both;
+  }
+}
+
+@keyframes ui-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ui-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ui-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

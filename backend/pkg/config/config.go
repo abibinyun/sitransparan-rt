@@ -14,6 +14,7 @@ type Config struct {
 	DBPassword  string
 	DBName      string
 	DBSSLMode   string
+	JWTSecret   string
 }
 
 func Load() *Config {
@@ -21,6 +22,7 @@ func Load() *Config {
 	if port == "" {
 		port = "8081"
 	}
+	jwtSecret := getenvDefault("JWT_SECRET", "sitransparan-secret-key-change-in-prod")
 	dbURL := firstNonEmpty(os.Getenv("DATABASE_URL"), os.Getenv("DB_URL"))
 	dbHost := getenvDefault("DB_HOST", "localhost")
 	dbPort := getenvDefault("DB_PORT", "5432")
@@ -47,6 +49,7 @@ func Load() *Config {
 		DBPassword:  dbPassword,
 		DBName:      dbName,
 		DBSSLMode:   dbSSLMode,
+		JWTSecret:   jwtSecret,
 	}
 }
 

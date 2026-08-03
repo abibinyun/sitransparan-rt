@@ -34,5 +34,10 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       }
     })
-  ]
+  ],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:8081'
+    }
+  }
 });
