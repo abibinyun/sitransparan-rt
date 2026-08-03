@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"time"
@@ -11,23 +12,33 @@ import (
 	"backend/internal/repository"
 	"backend/internal/usecase"
 	"backend/pkg/config"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
 	cfg := config.Load()
 
-	// Initialize database connection (assuming db connection or nil for router setup if DB init unconfigured)
-	// For production server initialization:
-	tenantRepo := repository.NewTenantRepository(nil)
-	userRepo := repository.NewUserRepository(nil)
-	tuRepo := repository.NewTenantUserRepository(nil)
-	roleRepo := repository.NewRoleRepository(nil)
-	residentRepo := repository.NewResidentRepository(nil)
-	financialRepo := repository.NewFinancialRepository(nil, nil)
-	eventRepo := repository.NewEventRepository(nil)
-	aspirationNeedRepo := repository.NewAspirationNeedRepository(nil)
-	announcementDocRepo := repository.NewAnnouncementDocRepository(nil, nil)
-	dashboardRepo := repository.NewDashboardRepository(nil)
+	db, err := sql.Open("postgres", cfg.PostgresConnString())
+	if err != nil {
+		log.Fatalf("failed to open database connection: %v", err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Fatalf("failed to ping database: %v", err)
+	}
+
+	tenantRepo := repository.NewTenantRepository(db)
+	userRepo := repository.NewUserRepository(db)
+	tuRepo := repository.NewTenantUserRepository(db)
+	roleRepo := repository.NewRoleRepository(db)
+	residentRepo := repository.NewResidentRepository(db)
+	financialRepo := repository.NewFinancialRepository(db, nil)
+	eventRepo := repository.NewEventRepository(db)
+	aspirationNeedRepo := repository.NewAspirationNeedRepository(db)
+	announcementDocRepo := repository.NewAnnouncementDocRepository(db, nil)
+	dashboardRepo := repository.NewDashboardRepository(db)
 
 	jwtSecret := "default-secret"
 	jwtDuration := 24 * time.Hour
