@@ -212,7 +212,7 @@ func (r *tenantUserRepository) ListByUser(ctx context.Context, userID uuid.UUID)
 		SELECT tu.id, tu.tenant_id, tu.user_id, tu.role_id, r.name, tu.status, tu.created_at, tu.updated_at
 		FROM tenant_users tu
 		JOIN roles r ON tu.role_id = r.id
-		WHERE tu.user_id = $2
+		WHERE tu.user_id = $1
 	`
 	rows, err := r.db.QueryContext(ctx, query, userID)
 	if err != nil {
