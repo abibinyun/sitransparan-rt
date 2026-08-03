@@ -1,0 +1,218 @@
+package http
+
+import (
+	"encoding/json"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"backend/internal/delivery/http/middleware"
+	"backend/internal/domain"
+	"backend/internal/usecase"
+
+	"github.com/google/uuid"
+)
+
+type AuthHandler struct {
+	authUsecase usecase.AuthUsecase
+}
+
+func NewAuthHandler(authUsecase usecase.AuthUsecase) *AuthHandler {
+	return &AuthHandler{authUsecase: authUsecase}
+}
+
+type loginRequest struct {
+	Email    string     `json:"email"`
+	Password string     `json:"password"`
+	TenantID *uuid.UUID `json:"tenant_id,omitempty"`
+}
+
+type loginResponse struct {
+	Token string       `json:"token"`
+	User  *domain.User `json:"user"`
+}
+
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req loginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	token, user, err := h.authUsecase.Login(r.Context(), req.Email, req.Password, req.TenantID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(loginResponse{
+		Token: token,
+		User:  user,
+	})
+}
+
+type registerRequest struct {
+	Name     string  `json:"name"`
+	Email    string  `json:"email"`
+	Password string  `json:"password"`
+	Phone    *string `json:"phone,omitempty"`
+}
+
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req registerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.authUsecase.Register(r.Context(), req.Name, req.Email, req.Password, req.Phone)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(user)
+}
+
+func (h *AuthHandler) UserTenants(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserIDFromContext(r.Context())
+	if userID == uuid.Nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	tenants, err := h.authUsecase.GetUserTenants(r.Context(), userID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tenants)
+}
+
+func (h *AuthHandler) TenantMe(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenantFromContext(r.Context())
+	if tenant == nil {
+		http.Error(w, `{"error":"tenant context not found"}`, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tenant)
+}
+
+type tenantRequest struct {
+	Name    string  `json:"name"`
+	Slug    string  `json:"slug"`
+	Domain  *string `json:"domain,omitempty"`
+	LogoURL *string `json:"logo_url,omitempty"`
+}
+
+func (h *AuthHandler) SuperAdminTenants(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/superadmin/tenants")
+	path = strings.TrimPrefix(path, "/")
+
+	switch r.Method {
+	case http.MethodGet:
+		if path == "" {
+			limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+			offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+			tenants, total, err := h.authUsecase.ListTenants(r.Context(), limit, offset)
+			if err != nil {
+				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"tenants": tenants,
+				"total":   total,
+			})
+			return
+		}
+
+		id, err := uuid.Parse(path)
+		if err != nil {
+			http.Error(w, `{"error":"invalid tenant id"}`, http.StatusBadRequest)
+			return
+		}
+
+		tenant, err := h.authUsecase.GetTenantByID(r.Context(), id)
+		if err != nil {
+			http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(tenant)
+
+	case http.MethodPost:
+		var req tenantRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+			return
+		}
+
+		tenant, err := h.authUsecase.CreateTenant(r.Context(), req.Name, req.Slug, req.Domain, req.LogoURL)
+		if err != nil {
+			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(tenant)
+
+	case http.MethodPut:
+		id, err := uuid.Parse(path)
+		if err != nil {
+			http.Error(w, `{"error":"invalid tenant id"}`, http.StatusBadRequest)
+			return
+		}
+
+		var req tenantRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+			return
+		}
+
+		tenant, err := h.authUsecase.UpdateTenant(r.Context(), id, req.Name, req.Slug, req.Domain, req.LogoURL)
+		if err != nil {
+			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(tenant)
+
+	case http.MethodDelete:
+		id, err := uuid.Parse(path)
+		if err != nil {
+			http.Error(w, `{"error":"invalid tenant id"}`, http.StatusBadRequest)
+			return
+		}
+
+		if err := h.authUsecase.DeleteTenant(r.Context(), id); err != nil {
+			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+
+	default:
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+	}
+}
