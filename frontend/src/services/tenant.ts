@@ -11,7 +11,7 @@ export const useTenantsQuery = () => {
   return useQuery<Tenant[], Error>({
     queryKey: ['tenants'],
     queryFn: async () => {
-      const res = await api.get<Tenant[]>('/tenants');
+      const res = await api.get<Tenant[]>('/superadmin/tenants');
       return res.data;
     },
   });
@@ -20,7 +20,7 @@ export const useTenantsQuery = () => {
 export const useCreateTenantMutation = () => {
   return useMutation<Tenant, Error, CreateTenantPayload>({
     mutationFn: async (payload) => {
-      const res = await api.post<Tenant>('/tenants', payload);
+      const res = await api.post<Tenant>('/superadmin/tenants', payload);
       return res.data;
     },
   });
@@ -29,7 +29,7 @@ export const useCreateTenantMutation = () => {
 export const useDeleteTenantMutation = () => {
   return useMutation<void, Error, string>({
     mutationFn: async (tenantId) => {
-      await api.delete(`/tenants/${tenantId}`);
+      await api.delete(`/superadmin/tenants/${tenantId}`);
     },
   });
 };
