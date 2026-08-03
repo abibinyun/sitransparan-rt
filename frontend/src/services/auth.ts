@@ -12,10 +12,26 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
+
 export const useLoginMutation = () => {
   return useMutation<LoginResponse, Error, LoginPayload>({
     mutationFn: async (payload) => {
       const res = await api.post<LoginResponse>('/auth/login', payload);
+      return res.data;
+    },
+  });
+};
+
+export const useRegisterMutation = () => {
+  return useMutation<User, Error, RegisterPayload>({
+    mutationFn: async (payload) => {
+      const res = await api.post<User>('/auth/register', payload);
       return res.data;
     },
   });
