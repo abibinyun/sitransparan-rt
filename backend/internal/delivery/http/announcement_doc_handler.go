@@ -24,8 +24,11 @@ func NewAnnouncementDocHandler(usecase domain.AnnouncementDocUsecase, tenantRepo
 }
 
 func (h *AnnouncementDocHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler) {
-	// Public Tenant routes: /api/v1/t/:slug/announcements & /api/v1/t/:slug/documents
-	mux.HandleFunc("/api/v1/t/", h.handlePublicTenantRoutes)
+	// Public Tenant routes: /api/v1/t/:slug/announcements and /api/v1/t/:slug/documents.
+	// Use method-specific wildcard patterns so these routes can coexist with
+	// other public tenant resources without colliding on /api/v1/t/.
+	mux.HandleFunc("GET /api/v1/t/{slug}/announcements", h.handlePublicTenantRoutes)
+	mux.HandleFunc("GET /api/v1/t/{slug}/documents", h.handlePublicTenantRoutes)
 
 	// Private Announcement routes: /api/v1/announcements
 	protectedAnnouncements := http.HandlerFunc(h.handlePrivateAnnouncements)

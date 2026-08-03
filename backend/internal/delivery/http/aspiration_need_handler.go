@@ -24,8 +24,12 @@ func NewAspirationNeedHandler(usecase domain.AspirationNeedUsecase, tenantRepo d
 }
 
 func (h *AspirationNeedHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler) {
-	// Public Tenant Aspiration routes: /api/v1/t/:slug/aspirations
-	mux.HandleFunc("/api/v1/t/", h.handlePublicTenantRoutes)
+	// Public Tenant routes. Use method-specific wildcard patterns so public
+	// tenant resources owned by other handlers can be registered without
+	// colliding on the broad /api/v1/t/ prefix.
+	mux.HandleFunc("GET /api/v1/t/{slug}/aspirations", h.handlePublicTenantRoutes)
+	mux.HandleFunc("POST /api/v1/t/{slug}/aspirations", h.handlePublicTenantRoutes)
+	mux.HandleFunc("GET /api/v1/t/{slug}/needs", h.handlePublicTenantRoutes)
 
 	// Private Aspiration routes: /api/v1/aspirations
 	protectedAspirations := http.HandlerFunc(h.handlePrivateAspirations)
@@ -38,9 +42,11 @@ func (h *AspirationNeedHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func
 	mux.Handle("/api/v1/needs/", tenantMw(authMw(protectedNeeds)))
 
 	// Event Sponsors routes: /api/v1/events/:id/sponsors
-	// Also /api/v1/events/:id/sponsors/:sponsorId for delete if needed or handled inside handler
+	// These are more specific than the event handler's /api/v1/events/ subtree.
 	protectedSponsors := http.HandlerFunc(h.handleEventSponsors)
-	mux.Handle("/api/v1/events/", tenantMw(authMw(protectedSponsors)))
+	mux.Handle("GET /api/v1/events/{id}/sponsors", tenantMw(authMw(protectedSponsors)))
+	mux.Handle("POST /api/v1/events/{id}/sponsors", tenantMw(authMw(protectedSponsors)))
+	mux.Handle("DELETE /api/v1/events/{id}/sponsors/{sponsorId}", tenantMw(authMw(protectedSponsors)))
 }
 
 func (h *AspirationNeedHandler) handlePublicTenantRoutes(w http.ResponseWriter, r *http.Request) {
