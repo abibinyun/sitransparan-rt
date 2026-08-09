@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 
 	"backend/internal/domain"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 var (
@@ -22,16 +24,201 @@ func NewTenantRepository(db *sql.DB) domain.TenantRepository {
 }
 
 func (r *tenantRepository) Create(ctx context.Context, tenant *domain.Tenant) error {
+	if tenant.ID == uuid.Nil {
+		tenant.ID = uuid.New()
+	}
+
 	query := `
 		INSERT INTO tenants (id, name, slug, domain, logo_url, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
-	if tenant.ID == uuid.Nil {
-		tenant.ID = uuid.New()
+	if err := r.db.QueryRowContext(ctx, query, tenant.ID, tenant.Name, tenant.Slug, tenant.Domain, tenant.LogoURL).
+		Scan(&tenant.CreatedAt, &tenant.UpdatedAt); err != nil {
+		return err
 	}
-	return r.db.QueryRowContext(ctx, query, tenant.ID, tenant.Name, tenant.Slug, tenant.Domain, tenant.LogoURL).
-		Scan(&tenant.CreatedAt, &tenant.UpdatedAt)
+
+	return CreateTenantSchema(ctx, r.db, tenant.Slug)
+}
+
+// CreateTenantSchema dynamically creates schema tenant_<slug> and operational tables
+func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
+	schemaName := "tenant_" + strings.ReplaceAll(slug, "-", "_")
+	
+	// Create schema if not exists
+	_, err := db.ExecContext(ctx, "CREATE SCHEMA IF NOT EXISTS "+pq.QuoteIdentifier(schemaName))
+	if err != nil {
+		return err
+	}
+
+	// Create operational tables within tenant schema
+	tablesDDL := []string{
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.residents (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+			nik TEXT,
+			nik_hash VARCHAR(64),
+			kk_number VARCHAR(16),
+			full_name VARCHAR(255),
+			gender VARCHAR(50),
+			birth_place VARCHAR(255),
+			birth_date DATE,
+			address TEXT,
+			rt_rw VARCHAR(50),
+			phone VARCHAR(50),
+			is_head_of_family BOOLEAN DEFAULT FALSE,
+			status VARCHAR(50) NOT NULL DEFAULT 'pending',
+			ktp_url TEXT,
+			kk_url TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.family_members (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			resident_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.residents(id) ON DELETE CASCADE,
+			full_name VARCHAR(255),
+			nik VARCHAR(16),
+			relation VARCHAR(100),
+			birth_date DATE,
+			gender VARCHAR(50),
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.fee_categories (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+			name VARCHAR(255) NOT NULL,
+			amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+			period VARCHAR(50) NOT NULL CHECK (period IN ('monthly', 'one_time')),
+			description TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.dues_payments (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+			resident_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.residents(id) ON DELETE CASCADE,
+			fee_category_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.fee_categories(id) ON DELETE RESTRICT,
+			amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+			period_month INT NOT NULL,
+			period_year INT NOT NULL,
+			status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'rejected')),
+			proof_url TEXT,
+			verified_at TIMESTAMPTZ,
+			verified_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.financial_transactions (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+			type VARCHAR(50) NOT NULL CHECK (type IN ('income', 'expense')),
+			category VARCHAR(255) NOT NULL,
+			amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+			transaction_date DATE NOT NULL DEFAULT CURRENT_DATE,
+			description TEXT,
+			proof_url TEXT,
+			created_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.events (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+			title VARCHAR(255) NOT NULL,
+			description TEXT,
+			event_date TIMESTAMPTZ,
+			location VARCHAR(255),
+			status VARCHAR(50) NOT NULL DEFAULT 'planned' CHECK (status IN ('planned', 'ongoing', 'completed', 'cancelled')),
+			created_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.event_budgets (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			event_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.events(id) ON DELETE CASCADE,
+			description VARCHAR(255) NOT NULL,
+			estimated_cost NUMERIC(15, 2) NOT NULL DEFAULT 0,
+			actual_cost NUMERIC(15, 2) NOT NULL DEFAULT 0,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.event_participants (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			event_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.events(id) ON DELETE CASCADE,
+			resident_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.residents(id) ON DELETE CASCADE,
+			status VARCHAR(50) NOT NULL DEFAULT 'attending' CHECK (status IN ('attending', 'absent', 'maybe')),
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			UNIQUE (event_id, resident_id)
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.event_sponsors (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			event_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.events(id) ON DELETE CASCADE,
+			name VARCHAR(255) NOT NULL,
+			amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+			type VARCHAR(50) NOT NULL CHECK (type IN ('cash', 'goods', 'service')),
+			notes TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.aspirations (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+			resident_id UUID REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.residents(id) ON DELETE SET NULL,
+			title VARCHAR(255) NOT NULL,
+			content TEXT NOT NULL,
+			category VARCHAR(50) NOT NULL CHECK (category IN ('suggestion', 'complaint', 'question')),
+			status VARCHAR(50) NOT NULL DEFAULT 'submitted' CHECK (status IN ('submitted', 'under_review', 'resolved', 'rejected')),
+			is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
+			response TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.community_needs (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+			title VARCHAR(255) NOT NULL,
+			description TEXT,
+			estimated_cost NUMERIC(15, 2) NOT NULL DEFAULT 0,
+			status VARCHAR(50) NOT NULL DEFAULT 'proposed' CHECK (status IN ('proposed', 'approved', 'in_progress', 'completed')),
+			progress_notes TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.announcements (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+			title VARCHAR(255) NOT NULL,
+			content TEXT NOT NULL,
+			attachment_url TEXT,
+			target VARCHAR(50) NOT NULL CHECK (target IN ('all', 'residents_only')),
+			created_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.documents (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+			title VARCHAR(255) NOT NULL,
+			category VARCHAR(50) NOT NULL CHECK (category IN ('financial_report', 'minutes', 'letter', 'other')),
+			file_url TEXT NOT NULL,
+			uploaded_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+	}
+
+	for _, ddl := range tablesDDL {
+		if _, err := db.ExecContext(ctx, ddl); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *tenantRepository) SetSearchPath(ctx context.Context, slug string) error {
+	return SetTenantSearchPath(ctx, r.db, slug)
 }
 
 func (r *tenantRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Tenant, error) {

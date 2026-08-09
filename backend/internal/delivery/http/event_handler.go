@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -68,13 +69,55 @@ func (h *EventHandler) handleEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(parts) == 2 && parts[1] == "budget" && (r.Method == http.MethodPost || r.Method == http.MethodPut) {
-		h.addOrUpdateBudget(w, r, tenant.ID, id)
-		return
+	if len(parts) == 2 {
+		switch parts[1] {
+		case "budget":
+			if r.Method == http.MethodGet {
+				h.listBudgets(w, r, tenant.ID, id)
+				return
+			}
+			if r.Method == http.MethodPost || r.Method == http.MethodPut {
+				h.addOrUpdateBudget(w, r, tenant.ID, id)
+				return
+			}
+		case "rsvp":
+			if r.Method == http.MethodPost {
+				h.rsvp(w, r, tenant.ID, id)
+				return
+			}
+		case "roles":
+			if r.Method == http.MethodGet {
+				h.listRoles(w, r, tenant.ID, id)
+				return
+			}
+			if r.Method == http.MethodPost {
+				h.assignRole(w, r, tenant.ID, id)
+				return
+			}
+		case "receipts":
+			if r.Method == http.MethodGet {
+				h.listReceipts(w, r, tenant.ID, id)
+				return
+			}
+			if r.Method == http.MethodPost {
+				h.uploadReceipt(w, r, tenant.ID, id)
+				return
+			}
+		case "transparency":
+			if r.Method == http.MethodGet {
+				h.getTransparency(w, r, tenant.ID, id)
+				return
+			}
+		}
 	}
 
-	if len(parts) == 2 && parts[1] == "rsvp" && r.Method == http.MethodPost {
-		h.rsvp(w, r, tenant.ID, id)
+	if len(parts) == 3 && parts[1] == "roles" && r.Method == http.MethodDelete {
+		roleID, err := uuid.Parse(parts[2])
+		if err != nil {
+			http.Error(w, `{"error":"invalid role id"}`, http.StatusBadRequest)
+			return
+		}
+		h.removeRole(w, r, tenant.ID, id, roleID)
 		return
 	}
 
@@ -191,6 +234,22 @@ func (h *EventHandler) addOrUpdateBudget(w http.ResponseWriter, r *http.Request,
 	_ = json.NewEncoder(w).Encode(req)
 }
 
+func (h *EventHandler) listBudgets(w http.ResponseWriter, r *http.Request, tenantID, eventID uuid.UUID) {
+	budgets, err := h.usecase.ListBudgets(r.Context(), tenantID, eventID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	if budgets == nil {
+		budgets = []*domain.EventBudget{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(budgets)
+}
+
 func (h *EventHandler) rsvp(w http.ResponseWriter, r *http.Request, tenantID, eventID uuid.UUID) {
 	var req domain.EventParticipant
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -206,4 +265,142 @@ func (h *EventHandler) rsvp(w http.ResponseWriter, r *http.Request, tenantID, ev
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(req)
+}
+
+func (h *EventHandler) assignRole(w http.ResponseWriter, r *http.Request, tenantID, eventID uuid.UUID) {
+	var req domain.EventRole
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.usecase.AssignRole(r.Context(), tenantID, eventID, &req); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(req)
+}
+
+func (h *EventHandler) listRoles(w http.ResponseWriter, r *http.Request, tenantID, eventID uuid.UUID) {
+	roles, err := h.usecase.ListRoles(r.Context(), tenantID, eventID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	if roles == nil {
+		roles = []*domain.EventRole{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(roles)
+}
+
+func (h *EventHandler) removeRole(w http.ResponseWriter, r *http.Request, tenantID, eventID, roleID uuid.UUID) {
+	if err := h.usecase.RemoveRole(r.Context(), tenantID, eventID, roleID); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "role removed"})
+}
+
+func (h *EventHandler) uploadReceipt(w http.ResponseWriter, r *http.Request, tenantID, eventID uuid.UUID) {
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			http.Error(w, `{"error":"unable to parse multipart form"}`, http.StatusBadRequest)
+			return
+		}
+
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, `{"error":"file is required"}`, http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		var residentID *uuid.UUID
+		if resStr := r.FormValue("resident_id"); resStr != "" {
+			if id, err := uuid.Parse(resStr); err == nil {
+				residentID = &id
+			}
+		}
+		amount, _ := strconv.ParseFloat(r.FormValue("amount"), 64)
+		description := r.FormValue("description")
+
+		contentType := header.Header.Get("Content-Type")
+		receipt, err := h.usecase.UploadDonationReceipt(r.Context(), tenantID, eventID, residentID, header.Filename, file, contentType, amount, description)
+		if err != nil {
+			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(receipt)
+		return
+	}
+
+	var req struct {
+		ResidentID  *uuid.UUID `json:"resident_id,omitempty"`
+		Filename    string     `json:"filename"`
+		FileContent string     `json:"file_content"`
+		Amount      float64    `json:"amount"`
+		Description string     `json:"description"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+
+	filename := req.Filename
+	if filename == "" {
+		filename = "receipt.jpg"
+	}
+	content := bytes.NewReader([]byte(req.FileContent))
+
+	receipt, err := h.usecase.UploadDonationReceipt(r.Context(), tenantID, eventID, req.ResidentID, filename, content, "application/octet-stream", req.Amount, req.Description)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(receipt)
+}
+
+func (h *EventHandler) listReceipts(w http.ResponseWriter, r *http.Request, tenantID, eventID uuid.UUID) {
+	receipts, err := h.usecase.ListReceipts(r.Context(), tenantID, eventID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	if receipts == nil {
+		receipts = []*domain.EventReceipt{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(receipts)
+}
+
+func (h *EventHandler) getTransparency(w http.ResponseWriter, r *http.Request, tenantID, eventID uuid.UUID) {
+	transparency, err := h.usecase.GetTransparency(r.Context(), tenantID, eventID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(transparency)
 }

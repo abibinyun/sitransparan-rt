@@ -59,6 +59,12 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
+type ContextKey string
+
+const (
+	TenantContextKey ContextKey = "tenant"
+)
+
 type TenantRepository interface {
 	Create(ctx context.Context, tenant *Tenant) error
 	GetByID(ctx context.Context, id uuid.UUID) (*Tenant, error)
@@ -67,6 +73,7 @@ type TenantRepository interface {
 	Update(ctx context.Context, tenant *Tenant) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	List(ctx context.Context, limit, offset int) ([]*Tenant, int64, error)
+	SetSearchPath(ctx context.Context, slug string) error
 }
 
 type UserRepository interface {

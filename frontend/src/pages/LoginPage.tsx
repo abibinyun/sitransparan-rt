@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useLoginMutation, useRegisterMutation } from '../services/auth';
 import { useAuthStore } from '../store/useAuthStore';
 import type { Tenant } from '../types/auth';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Select } from '../components/ui/select';
+import { Building2, KeyRound, Mail, User, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -54,7 +60,7 @@ export const LoginPage: React.FC = () => {
       { name, email, password, phone: phone.trim() || undefined },
       {
         onSuccess: () => {
-          setRegisterSuccess('Registration successful. You can now login with your new account.');
+          setRegisterSuccess('Pendaftaran berhasil. Silakan login menggunakan akun baru Anda.');
           setMode('login');
           setPassword('');
           setPhone('');
@@ -72,159 +78,208 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow-md">
-        <h2 className="text-center text-2xl font-bold text-gray-900">
-          {pendingAuth ? 'Select Active RT / Tenant' : mode === 'login' ? 'Login to Platform RT' : 'Register Account'}
-        </h2>
-
-        {!pendingAuth && (
-          <div className="grid grid-cols-2 rounded-lg bg-gray-100 p-1 text-sm font-medium">
-            <button
-              type="button"
-              onClick={() => switchMode('login')}
-              className={`rounded-md px-3 py-2 ${mode === 'login' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-600'}`}
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode('register')}
-              className={`rounded-md px-3 py-2 ${mode === 'register' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-600'}`}
-            >
-              Register
-            </button>
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <Card className="w-full max-w-md shadow-xl border-slate-200/80">
+        <CardHeader className="text-center space-y-2 pb-4">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+            <Building2 className="h-6 w-6" />
           </div>
-        )}
+          <CardTitle className="text-2xl font-bold text-slate-900">
+            {pendingAuth ? 'Pilih RT / Tenant' : mode === 'login' ? 'Masuk ke Sitransparan RT' : 'Daftar Akun'}
+          </CardTitle>
+          <CardDescription>
+            {pendingAuth
+              ? 'Pilih perumahan / RT aktif untuk memulai session'
+              : mode === 'login'
+              ? 'Kelola lingkungan RT/RW secara efisien dan transparan'
+              : 'Buat akun warga atau admin perumahan baru'}
+          </CardDescription>
+        </CardHeader>
 
-        {registerSuccess && (
-          <div className="rounded bg-green-50 p-3 text-sm text-green-700">
-            {registerSuccess}
-          </div>
-        )}
-
-        {mode === 'login' && loginMutation.isError && (
-          <div className="rounded bg-red-50 p-3 text-sm text-red-600">
-            {loginMutation.error.message || 'Login failed'}
-          </div>
-        )}
-
-        {mode === 'register' && registerMutation.isError && (
-          <div className="rounded bg-red-50 p-3 text-sm text-red-600">
-            {registerMutation.error.message || 'Registration failed'}
-          </div>
-        )}
-
-        {!pendingAuth && mode === 'login' ? (
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loginMutation.isPending}
-              className="w-full rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {loginMutation.isPending ? 'Logging in...' : 'Login'}
-            </button>
-          </form>
-        ) : !pendingAuth && mode === 'register' ? (
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Phone <span className="text-gray-400">(optional)</span></label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={registerMutation.isPending}
-              className="w-full rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {registerMutation.isPending ? 'Registering...' : 'Register'}
-            </button>
-            <p className="text-center text-sm text-gray-600">
-              Already have an account?{' '}
-              <button type="button" onClick={() => switchMode('login')} className="font-medium text-indigo-600 hover:text-indigo-700">
-                Login here
-              </button>
-            </p>
-          </form>
-        ) : (
-          <form onSubmit={handleTenantSelectSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Select RT Tenant</label>
-              <select
-                value={selectedTenantId}
-                onChange={(e) => setSelectedTenantId(e.target.value)}
-                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        <CardContent className="space-y-6">
+          {!pendingAuth && (
+            <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-1 text-sm font-medium">
+              <button
+                type="button"
+                onClick={() => switchMode('login')}
+                className={`rounded-md py-2 text-center transition-all ${
+                  mode === 'login' ? 'bg-white text-indigo-600 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'
+                }`}
               >
-                {availableTenants.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} ({t.code})
-                  </option>
-                ))}
-              </select>
+                Masuk
+              </button>
+              <button
+                type="button"
+                onClick={() => switchMode('register')}
+                className={`rounded-md py-2 text-center transition-all ${
+                  mode === 'register' ? 'bg-white text-indigo-600 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Daftar
+              </button>
             </div>
-            <button
-              type="submit"
-              className="w-full rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-            >
-              Continue
-            </button>
-          </form>
-        )}
-      </div>
+          )}
+
+          {registerSuccess && (
+            <div className="flex items-center space-x-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span>{registerSuccess}</span>
+            </div>
+          )}
+
+          {(loginMutation.isError || registerMutation.isError) && (
+            <div className="flex items-center space-x-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>
+                {(loginMutation.error as any)?.response?.data?.error ||
+                  (registerMutation.error as any)?.response?.data?.error ||
+                  'Terjadi kesalahan saat otentikasi.'}
+              </span>
+            </div>
+          )}
+
+          {pendingAuth ? (
+            <form onSubmit={handleTenantSelectSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="tenantSelect">Pilih Lingkungan RT</Label>
+                <Select
+                  id="tenantSelect"
+                  value={selectedTenantId}
+                  onChange={(e) => setSelectedTenantId(e.target.value)}
+                  required
+                >
+                  {availableTenants.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.code || (t as any).slug || ''})
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <Button type="submit" className="w-full" size="lg">
+                Lanjutkan
+              </Button>
+            </form>
+          ) : mode === 'login' ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="loginEmail">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="loginEmail"
+                    type="email"
+                    placeholder="nama@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-9"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="loginPassword">Kata Sandi</Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="loginPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9"
+                    required
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loginMutation.isPending}
+                className="w-full font-semibold"
+                size="lg"
+              >
+                {loginMutation.isPending ? 'Memproses...' : 'Masuk Akun'}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="regName">Nama Lengkap</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="regName"
+                    type="text"
+                    placeholder="Budi Santoso"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="pl-9"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="regEmail">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="regEmail"
+                    type="email"
+                    placeholder="budi@gmail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-9"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="regPassword">Kata Sandi</Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="regPassword"
+                    type="password"
+                    placeholder="Minimal 6 karakter"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="regPhone">Nomor Telepon / WhatsApp</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="regPhone"
+                    type="tel"
+                    placeholder="081234567890"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={registerMutation.isPending}
+                className="w-full font-semibold"
+                size="lg"
+              >
+                {registerMutation.isPending ? 'Mendaftarkan...' : 'Daftar Akun'}
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

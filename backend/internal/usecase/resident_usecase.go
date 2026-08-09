@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"io"
 
 	"backend/internal/domain"
 	"github.com/google/uuid"
@@ -85,4 +86,52 @@ func (u *residentUsecase) RemoveFamilyMember(ctx context.Context, tenantID, resi
 		return ErrInvalidInput
 	}
 	return u.repo.RemoveFamilyMember(ctx, tenantID, residentID, memberID)
+}
+
+func (u *residentUsecase) Approve(ctx context.Context, tenantID, id, adminUserID uuid.UUID) error {
+	if tenantID == uuid.Nil || id == uuid.Nil {
+		return ErrInvalidInput
+	}
+	res, err := u.repo.GetByID(ctx, tenantID, id)
+	if err != nil {
+		return err
+	}
+
+	if err := u.repo.UpdateStatus(ctx, tenantID, id, "approved"); err != nil {
+		return err
+	}
+
+	_ = u.repo.LogAudit(ctx, tenantID, adminUserID, "approve_resident", "residents", map[string]interface{}{
+		"resident_id": id,
+		"old_status":  res.Status,
+		"new_status":  "approved",
+	})
+
+	return nil
+}
+
+func (u *residentUsecase) Reject(ctx context.Context, tenantID, id, adminUserID uuid.UUID) error {
+	if tenantID == uuid.Nil || id == uuid.Nil {
+		return ErrInvalidInput
+	}
+	res, err := u.repo.GetByID(ctx, tenantID, id)
+	if err != nil {
+		return err
+	}
+
+	if err := u.repo.UpdateStatus(ctx, tenantID, id, "rejected"); err != nil {
+		return err
+	}
+
+	_ = u.repo.LogAudit(ctx, tenantID, adminUserID, "reject_resident", "residents", map[string]interface{}{
+		"resident_id": id,
+		"old_status":  res.Status,
+		"new_status":  "rejected",
+	})
+
+	return nil
+}
+
+func (u *residentUsecase) UploadDocument(ctx context.Context, docType, filename string, content io.Reader, contentType string) (string, error) {
+	return u.repo.UploadDocument(ctx, docType, filename, content, contentType)
 }

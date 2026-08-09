@@ -2,6 +2,7 @@ package usecase_test
 
 import (
 	"context"
+	"io"
 	"testing"
 
 	"backend/internal/domain"
@@ -12,6 +13,7 @@ import (
 type mockResidentRepo struct {
 	residents map[uuid.UUID]*domain.Resident
 	members   map[uuid.UUID][]*domain.FamilyMember
+	audits    []string
 }
 
 func newMockResidentRepo() *mockResidentRepo {
@@ -24,6 +26,9 @@ func newMockResidentRepo() *mockResidentRepo {
 func (m *mockResidentRepo) Create(ctx context.Context, resident *domain.Resident) error {
 	if resident.ID == uuid.Nil {
 		resident.ID = uuid.New()
+	}
+	if resident.Status == "" {
+		resident.Status = "pending"
 	}
 	m.residents[resident.ID] = resident
 	return nil
@@ -100,6 +105,24 @@ func (m *mockResidentRepo) GetFamilyMembers(ctx context.Context, residentID uuid
 	return m.members[residentID], nil
 }
 
+func (m *mockResidentRepo) UpdateStatus(ctx context.Context, tenantID, id uuid.UUID, status string) error {
+	res, ok := m.residents[id]
+	if !ok || res.TenantID != tenantID {
+		return usecase.ErrResidentNotFound
+	}
+	res.Status = status
+	return nil
+}
+
+func (m *mockResidentRepo) LogAudit(ctx context.Context, tenantID, userID uuid.UUID, action, resource string, payload interface{}) error {
+	m.audits = append(m.audits, action)
+	return nil
+}
+
+func (m *mockResidentRepo) UploadDocument(ctx context.Context, docType, filename string, content io.Reader, contentType string) (string, error) {
+	return "/uploads/" + docType + "/" + filename, nil
+}
+
 func TestResidentUsecase(t *testing.T) {
 	repo := newMockResidentRepo()
 	uc := usecase.NewResidentUsecase(repo)
@@ -148,7 +171,25 @@ func TestResidentUsecase(t *testing.T) {
 		t.Fatalf("RemoveFamilyMember failed: %v", err)
 	}
 
-	// 6. Delete
+	// 6. Approve & Reject Resident
+	adminID := uuid.New()
+	if err := uc.Approve(ctx, tenantID, res.ID, adminID); err != nil {
+		t.Fatalf("Approve failed: %v", err)
+	}
+	resApproved, _ := uc.GetByID(ctx, tenantID, res.ID)
+	if resApproved.Status != "approved" {
+		t.Errorf("expected status approved, got %s", resApproved.Status)
+	}
+
+	if err := uc.Reject(ctx, tenantID, res.ID, adminID); err != nil {
+		t.Fatalf("Reject failed: %v", err)
+	}
+	resRejected, _ := uc.GetByID(ctx, tenantID, res.ID)
+	if resRejected.Status != "rejected" {
+		t.Errorf("expected status rejected, got %s", resRejected.Status)
+	}
+
+	// 7. Delete
 	if err := uc.Delete(ctx, tenantID, res.ID); err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}

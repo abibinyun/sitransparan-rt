@@ -374,32 +374,11 @@ func (h *FinancialHandler) getTransactionByID(w http.ResponseWriter, r *http.Req
 }
 
 func (h *FinancialHandler) updateTransaction(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
-	var tx domain.FinancialTransaction
-	if err := json.NewDecoder(r.Body).Decode(&tx); err != nil {
-		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
-		return
-	}
-
-	tx.ID = id
-	if err := h.usecase.UpdateFinancialTransaction(r.Context(), tenantID, &tx); err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(tx)
+	http.Error(w, `{"error":"financial transactions are append-only; use reverse endpoint"}`, http.StatusMethodNotAllowed)
 }
 
 func (h *FinancialHandler) deleteTransaction(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
-	if err := h.usecase.DeleteFinancialTransaction(r.Context(), tenantID, id); err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]string{"message": "deleted"})
+	http.Error(w, `{"error":"financial transactions are append-only; deletion is disabled"}`, http.StatusMethodNotAllowed)
 }
 
 // /api/v1/financial/upload

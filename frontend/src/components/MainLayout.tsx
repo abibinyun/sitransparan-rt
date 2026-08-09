@@ -113,13 +113,13 @@ export const MainLayout: React.FC = () => {
 
       <aside
         className={[
-          'fixed inset-y-0 left-0 z-40 flex w-80 max-w-[86vw] flex-col overflow-hidden bg-slate-950 transition-transform duration-300 lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 flex w-80 max-w-[86vw] flex-col bg-slate-950 transition-transform duration-300 lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
       >
-        <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-br from-indigo-500/25 via-sky-500/10 to-transparent" />
-        <div className="relative flex h-full flex-col">
-          <div className="flex items-center justify-between px-6 pt-6">
+        <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-br from-indigo-500/25 via-sky-500/10 to-transparent pointer-events-none" />
+        <div className="relative flex h-full flex-col min-h-0">
+          <div className="flex items-center justify-between px-6 pt-6 shrink-0">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-indigo-700 shadow-xl shadow-indigo-950/20">
                 <Home className="h-6 w-6" />
@@ -138,7 +138,7 @@ export const MainLayout: React.FC = () => {
             </button>
           </div>
 
-          <div className="mx-6 mt-6 rounded-3xl border border-white/10 bg-white/10 p-4 text-white shadow-2xl shadow-slate-950/20 backdrop-blur">
+          <div className="mx-6 mt-6 shrink-0 rounded-3xl border border-white/10 bg-white/10 p-4 text-white shadow-2xl shadow-slate-950/20 backdrop-blur">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 rounded-2xl bg-emerald-400/15 p-2 text-emerald-200">
                 <Building2 className="h-5 w-5" />
@@ -151,9 +151,11 @@ export const MainLayout: React.FC = () => {
             </div>
           </div>
 
-          {renderNavigation()}
+          <div className="flex-1 overflow-y-auto min-h-0 py-2">
+            {renderNavigation()}
+          </div>
 
-          <div className="mt-auto p-4">
+          <div className="mt-auto p-4 shrink-0">
             <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-4">
               <p className="text-sm font-bold text-white">{user?.name || 'Pengguna'}</p>
               <p className="mt-1 text-xs font-medium text-slate-400">{user?.role || 'ROLE'}</p>

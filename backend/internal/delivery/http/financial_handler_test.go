@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	delivery "backend/internal/delivery/http"
 	"backend/internal/delivery/http/middleware"
@@ -122,23 +123,44 @@ func (m *mockFinancialUsecase) GetFinancialTransactionByID(ctx context.Context, 
 	return tx, nil
 }
 
-func (m *mockFinancialUsecase) UpdateFinancialTransaction(ctx context.Context, tenantID uuid.UUID, tx *domain.FinancialTransaction) error {
-	t, ok := m.transactions[tx.ID]
-	if !ok || t.TenantID != tenantID {
-		return repository.ErrNotFound
+func (m *mockFinancialUsecase) ReverseFinancialTransaction(ctx context.Context, tenantID, transactionID uuid.UUID, reason string, createdBy uuid.UUID) (*domain.FinancialTransaction, error) {
+	orig, ok := m.transactions[transactionID]
+	if !ok || orig.TenantID != tenantID {
+		return nil, repository.ErrNotFound
 	}
-	tx.TenantID = tenantID
-	m.transactions[tx.ID] = tx
-	return nil
+	revType := "expense"
+	if orig.Type == "expense" {
+		revType = "income"
+	}
+	rev := &domain.FinancialTransaction{
+		ID:              uuid.New(),
+		TenantID:        tenantID,
+		Type:            revType,
+		Category:        "reversal",
+		Amount:          orig.Amount,
+		TransactionDate: time.Now(),
+		CreatedBy:       &createdBy,
+	}
+	m.transactions[rev.ID] = rev
+	return rev, nil
 }
 
-func (m *mockFinancialUsecase) DeleteFinancialTransaction(ctx context.Context, tenantID, id uuid.UUID) error {
-	t, ok := m.transactions[id]
-	if !ok || t.TenantID != tenantID {
-		return repository.ErrNotFound
+func (m *mockFinancialUsecase) GetFinancialSummary(ctx context.Context, tenantID uuid.UUID) (*domain.FinancialSummary, error) {
+	var income, expense float64
+	for _, tx := range m.transactions {
+		if tx.TenantID == tenantID {
+			if tx.Type == "income" {
+				income += tx.Amount
+			} else if tx.Type == "expense" {
+				expense += tx.Amount
+			}
+		}
 	}
-	delete(m.transactions, id)
-	return nil
+	return &domain.FinancialSummary{
+		CurrentBalance: income - expense,
+		MonthlyIncome:  income,
+		MonthlyExpense: expense,
+	}, nil
 }
 
 func (m *mockFinancialUsecase) ListFinancialTransactions(ctx context.Context, tenantID uuid.UUID, txType string, limit, offset int) ([]*domain.FinancialTransaction, int64, error) {

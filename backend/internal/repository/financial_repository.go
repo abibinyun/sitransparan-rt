@@ -344,45 +344,6 @@ func (r *financialRepository) GetFinancialTransactionByID(ctx context.Context, t
 	return &tx, nil
 }
 
-func (r *financialRepository) UpdateFinancialTransaction(ctx context.Context, tx *domain.FinancialTransaction) error {
-	query := `
-		UPDATE financial_transactions
-		SET type = $1, category = $2, amount = $3, transaction_date = $4, description = $5, proof_url = $6, updated_at = NOW()
-		WHERE tenant_id = $7 AND id = $8
-		RETURNING updated_at
-	`
-	err := r.db.QueryRowContext(ctx, query,
-		tx.Type,
-		tx.Category,
-		tx.Amount,
-		tx.TransactionDate,
-		tx.Description,
-		tx.ProofURL,
-		tx.TenantID,
-		tx.ID,
-	).Scan(&tx.UpdatedAt)
-	if errors.Is(err, sql.ErrNoRows) {
-		return ErrNotFound
-	}
-	return err
-}
-
-func (r *financialRepository) DeleteFinancialTransaction(ctx context.Context, tenantID, id uuid.UUID) error {
-	query := `DELETE FROM financial_transactions WHERE tenant_id = $1 AND id = $2`
-	res, err := r.db.ExecContext(ctx, query, tenantID, id)
-	if err != nil {
-		return err
-	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return ErrNotFound
-	}
-	return nil
-}
-
 func (r *financialRepository) ListFinancialTransactions(ctx context.Context, tenantID uuid.UUID, txType string, limit, offset int) ([]*domain.FinancialTransaction, int64, error) {
 	var count int64
 	var countQuery string

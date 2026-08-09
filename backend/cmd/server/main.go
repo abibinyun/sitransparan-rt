@@ -35,7 +35,7 @@ func main() {
 	roleRepo := repository.NewRoleRepository(db)
 	residentRepo := repository.NewResidentRepository(db)
 	financialRepo := repository.NewFinancialRepository(db, nil)
-	eventRepo := repository.NewEventRepository(db)
+	eventRepo := repository.NewEventRepository(db, nil)
 	aspirationNeedRepo := repository.NewAspirationNeedRepository(db)
 	announcementDocRepo := repository.NewAnnouncementDocRepository(db, nil)
 	dashboardRepo := repository.NewDashboardRepository(db)

@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { useCreateFinancialTransaction, useUploadProof } from '../services/financial';
 import { TransactionType } from '../types/financial';
+import { Dialog } from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select } from './ui/select';
+import { Textarea } from './ui/textarea';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -21,8 +27,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
   const [proofUrl, setProofUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-
-  if (!isOpen) return null;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,119 +67,127 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Catat Transaksi Kas RT</h3>
-        {error && <div className="mb-4 rounded bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+    <Dialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Catat Transaksi Kas RT"
+      description="Pencatatan kas pemasukan dan pengeluaran RT"
+    >
+      {error && <div className="mb-4 rounded-lg bg-rose-50 p-3 text-xs text-rose-600 border border-rose-200">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Tipe Transaksi *</label>
-            <div className="mt-1 flex space-x-4">
-              <label className="inline-flex items-center text-sm">
-                <input
-                  type="radio"
-                  name="type"
-                  value="income"
-                  checked={type === 'income'}
-                  onChange={() => setType('income')}
-                  className="text-green-600 focus:ring-green-500"
-                />
-                <span className="ml-2 font-medium text-green-700">Pemasukan (Income)</span>
-              </label>
-              <label className="inline-flex items-center text-sm">
-                <input
-                  type="radio"
-                  name="type"
-                  value="expense"
-                  checked={type === 'expense'}
-                  onChange={() => setType('expense')}
-                  className="text-red-600 focus:ring-red-500"
-                />
-                <span className="ml-2 font-medium text-red-700">Pengeluaran (Expense)</span>
-              </label>
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label>Tipe Transaksi *</Label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setType('income')}
+              className={`rounded-lg py-2 text-sm font-semibold border transition-all ${
+                type === 'income'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 ring-2 ring-emerald-500/20'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              Pemasukan (Income)
+            </button>
+            <button
+              type="button"
+              onClick={() => setType('expense')}
+              className={`rounded-lg py-2 text-sm font-semibold border transition-all ${
+                type === 'expense'
+                  ? 'bg-rose-50 text-rose-700 border-rose-300 ring-2 ring-rose-500/20'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              Pengeluaran (Expense)
+            </button>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Kategori / Keterangan Singkat *</label>
-            <input
-              type="text"
-              placeholder="misal: Sumbangan Acara, Perbaikan Jalan"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"
-              required
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="txCategory">Kategori Transaksi *</Label>
+          <Select
+            id="txCategory"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            required
+          >
+            <option value="">-- Pilih Kategori --</option>
+            {type === 'income' ? (
+              <>
+                <option value="IURAN_WARGA">Iuran Warga</option>
+                <option value="DONASI">Donasi / Sumbangan</option>
+                <option value="DANA_DESA">Dana Bantuan Desa/Pemerintah</option>
+                <option value="LAINNYA_PEMASUKAN">Pemasukan Lain-lain</option>
+              </>
+            ) : (
+              <>
+                <option value="OPERASIONAL_RT">Operasional & Keamanan</option>
+                <option value="KEBERSIHAN">Kebersihan & Sampah</option>
+                <option value="KEGIATAN_WARGA">Kegiatan & Acara RT</option>
+                <option value="PERBAIKAN_FASILITAS">Perbaikan Fasilitas</option>
+                <option value="LAINNYA_PENGELUARAN">Pengeluaran Lain-lain</option>
+              </>
+            )}
+          </Select>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Jumlah (Rp) *</label>
-            <input
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="txAmount">Nominal (Rp) *</Label>
+            <Input
+              id="txAmount"
               type="number"
+              min="1"
               value={amount}
               onChange={(e) => setAmount(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"
               required
-              min="0"
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Tanggal Transaksi *</label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="txDate">Tanggal *</Label>
+            <Input
+              id="txDate"
               type="date"
               value={transactionDate}
               onChange={(e) => setTransactionDate(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"
               required
             />
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Deskripsi / Catatan Tambahan</label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="txDesc">Keterangan (Opsional)</Label>
+          <Textarea
+            id="txDesc"
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Catatan tambahan transaksi..."
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Bukti Nota / Transfer (Upload File)</label>
-            <input
-              type="file"
-              accept="image/*,.pdf"
-              onChange={handleFileChange}
-              className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100"
-            />
-            {uploading && <p className="mt-1 text-xs text-gray-500">Mengunggah bukti...</p>}
-            {proofUrl && (
-              <p className="mt-1 text-xs text-green-600 font-medium truncate">
-                Bukti terunggah: {proofUrl}
-              </p>
-            )}
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="txProof">Bukti Kwitansi / Struk (Opsional)</Label>
+          <Input
+            id="txProof"
+            type="file"
+            accept="image/*,.pdf"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+          {proofUrl && <p className="text-xs text-emerald-600 font-medium">✓ Bukti ter-upload</p>}
+        </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={createTx.isPending || uploading}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {createTx.isPending ? 'Menyimpan...' : 'Simpan Transaksi'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Batal
+          </Button>
+          <Button type="submit" disabled={createTx.isPending || uploading}>
+            {createTx.isPending ? 'Menyimpan...' : 'Simpan Transaksi'}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 };

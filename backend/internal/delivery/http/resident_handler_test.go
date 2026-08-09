@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -98,6 +99,28 @@ func (m *mockResidentUsecase) RemoveFamilyMember(ctx context.Context, tenantID, 
 	return nil
 }
 
+func (m *mockResidentUsecase) Approve(ctx context.Context, tenantID, id, adminUserID uuid.UUID) error {
+	r, ok := m.residents[id]
+	if !ok || r.TenantID != tenantID {
+		return usecase.ErrResidentNotFound
+	}
+	r.Status = "approved"
+	return nil
+}
+
+func (m *mockResidentUsecase) Reject(ctx context.Context, tenantID, id, adminUserID uuid.UUID) error {
+	r, ok := m.residents[id]
+	if !ok || r.TenantID != tenantID {
+		return usecase.ErrResidentNotFound
+	}
+	r.Status = "rejected"
+	return nil
+}
+
+func (m *mockResidentUsecase) UploadDocument(ctx context.Context, docType, filename string, content io.Reader, contentType string) (string, error) {
+	return "/uploads/" + docType + "/" + filename, nil
+}
+
 func mockTenantAuthMiddleware(tenant *domain.Tenant) (func(http.Handler) http.Handler, func(http.Handler) http.Handler) {
 	tenantMw := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +189,25 @@ func TestResidentHandler(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	// 5. Delete Resident
+	// 5. Approve Resident
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/residents/"+created.ID.String()+"/approve", nil)
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200 on approve, got %d", w.Code)
+	}
+
+	// 6. Reject Resident
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/residents/"+created.ID.String()+"/reject", nil)
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200 on reject, got %d", w.Code)
+	}
+
+	// 7. Delete Resident
 	req = httptest.NewRequest(http.MethodDelete, "/api/v1/residents/"+created.ID.String(), nil)
 	w = httptest.NewRecorder()
 	mux.ServeHTTP(w, req)

@@ -235,8 +235,8 @@ func TestFinancialUsecase(t *testing.T) {
 		t.Fatalf("ListFinancialTransactions failed: %v", err)
 	}
 
-	if err := uc.DeleteFinancialTransaction(ctx, tenantID, tx.ID); err != nil {
-		t.Fatalf("DeleteFinancialTransaction failed: %v", err)
+	if _, err := uc.ReverseFinancialTransaction(ctx, tenantID, tx.ID, "Koreksi", userID); err != nil {
+		t.Fatalf("ReverseFinancialTransaction failed: %v", err)
 	}
 
 	// 4. Upload Proof

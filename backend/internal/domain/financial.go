@@ -49,6 +49,18 @@ type FinancialTransaction struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
+type CategoryBreakdown struct {
+	Category string  `json:"category"`
+	Amount   float64 `json:"amount"`
+}
+
+type FinancialSummary struct {
+	CurrentBalance    float64             `json:"current_balance"`
+	MonthlyIncome     float64             `json:"monthly_income"`
+	MonthlyExpense    float64             `json:"monthly_expense"`
+	SpendingBreakdown []CategoryBreakdown `json:"spending_breakdown"`
+}
+
 type FinancialRepository interface {
 	// FeeCategory
 	CreateFeeCategory(ctx context.Context, category *FeeCategory) error
@@ -66,8 +78,6 @@ type FinancialRepository interface {
 	// FinancialTransaction
 	CreateFinancialTransaction(ctx context.Context, tx *FinancialTransaction) error
 	GetFinancialTransactionByID(ctx context.Context, tenantID, id uuid.UUID) (*FinancialTransaction, error)
-	UpdateFinancialTransaction(ctx context.Context, tx *FinancialTransaction) error
-	DeleteFinancialTransaction(ctx context.Context, tenantID, id uuid.UUID) error
 	ListFinancialTransactions(ctx context.Context, tenantID uuid.UUID, txType string, limit, offset int) ([]*FinancialTransaction, int64, error)
 
 	// Storage
@@ -87,12 +97,14 @@ type FinancialUsecase interface {
 	VerifyDuesPayment(ctx context.Context, tenantID, id uuid.UUID, status string, verifierID uuid.UUID) (*DuesPayment, error)
 	ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, limit, offset int) ([]*DuesPayment, int64, error)
 
-	// Income/Expense Transaction CRUD
+	// Income/Expense Transaction Append-Only Ledger & Reversal
 	CreateFinancialTransaction(ctx context.Context, tenantID uuid.UUID, tx *FinancialTransaction, createdBy uuid.UUID) error
 	GetFinancialTransactionByID(ctx context.Context, tenantID, id uuid.UUID) (*FinancialTransaction, error)
-	UpdateFinancialTransaction(ctx context.Context, tenantID uuid.UUID, tx *FinancialTransaction) error
-	DeleteFinancialTransaction(ctx context.Context, tenantID, id uuid.UUID) error
+	ReverseFinancialTransaction(ctx context.Context, tenantID, id uuid.UUID, reason string, createdBy uuid.UUID) (*FinancialTransaction, error)
 	ListFinancialTransactions(ctx context.Context, tenantID uuid.UUID, txType string, limit, offset int) ([]*FinancialTransaction, int64, error)
+
+	// Financial Reporting
+	GetFinancialSummary(ctx context.Context, tenantID uuid.UUID) (*FinancialSummary, error)
 
 	// Upload Proof
 	UploadProof(ctx context.Context, filename string, content io.Reader, contentType string) (string, error)

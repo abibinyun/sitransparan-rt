@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
 import { CreateAspirationPayload, AspirationCategory } from '../types/aspiration_need';
+import { Dialog } from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select } from './ui/select';
 
 interface AspirationFormProps {
   onSubmit: (payload: CreateAspirationPayload) => Promise<void>;
   isLoading?: boolean;
   onClose?: () => void;
+  isOpen?: boolean;
 }
 
 export const AspirationFormModal: React.FC<AspirationFormProps> = ({
   onSubmit,
   isLoading,
   onClose,
+  isOpen = true,
 }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -29,81 +36,80 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
     if (onClose) onClose();
   };
 
+  const handleClose = () => {
+    if (onClose) onClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Kirim Aspirasi / Usulan / Keluhan</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Judul</label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              placeholder="Judul aspirasi..."
-            />
-          </div>
+    <Dialog
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Kirim Aspirasi / Usulan / Keluhan"
+      description="Sampaikan aspirasi Anda untuk kemajuan lingkungan RT"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="aspTitle">Judul</Label>
+          <Input
+            id="aspTitle"
+            type="text"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Judul aspirasi..."
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Kategori</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as AspirationCategory)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            >
-              <option value="suggestion">Usulan</option>
-              <option value="complaint">Keluhan</option>
-              <option value="question">Pertanyaan</option>
-            </select>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="aspCategory">Kategori</Label>
+          <Select
+            id="aspCategory"
+            value={category}
+            onChange={(e) => setCategory(e.target.value as AspirationCategory)}
+          >
+            <option value="suggestion">Usulan</option>
+            <option value="complaint">Keluhan</option>
+            <option value="question">Pertanyaan</option>
+          </Select>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Isi Aspirasi</label>
-            <textarea
-              required
-              rows={4}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              placeholder="Jelaskan aspirasi atau keluhan Anda..."
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="aspContent">Isi Aspirasi</Label>
+          <textarea
+            id="aspContent"
+            required
+            rows={4}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="flex w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            placeholder="Jelaskan aspirasi atau keluhan Anda..."
+          />
+        </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="is_anonymous"
-              checked={isAnonymous}
-              onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label htmlFor="is_anonymous" className="text-sm text-gray-700 select-none">
-              Kirim secara Anonim (Sembunyikan Identitas)
-            </label>
-          </div>
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            type="checkbox"
+            id="is_anonymous"
+            checked={isAnonymous}
+            onChange={(e) => setIsAnonymous(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <Label htmlFor="is_anonymous" className="cursor-pointer select-none">
+            Kirim secara Anonim (Sembunyikan Identitas)
+          </Label>
+        </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
-              >
-                Batal
-              </button>
-            )}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isLoading ? 'Mengirim...' : 'Kirim'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+          {onClose && (
+            <Button type="button" variant="outline" onClick={onClose}>
+              Batal
+            </Button>
+          )}
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? 'Mengirim...' : 'Kirim Aspirasi'}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 };

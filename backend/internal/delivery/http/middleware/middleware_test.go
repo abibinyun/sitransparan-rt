@@ -45,6 +45,7 @@ func (m *mockTenantRepo) Delete(ctx context.Context, id uuid.UUID) error        
 func (m *mockTenantRepo) List(ctx context.Context, limit, offset int) ([]*domain.Tenant, int64, error) {
 	return nil, 0, nil
 }
+func (m *mockTenantRepo) SetSearchPath(ctx context.Context, slug string) error { return nil }
 
 func TestTenantMiddleware_Header(t *testing.T) {
 	tenantID := uuid.New()
@@ -182,7 +183,8 @@ func TestSecurityHeadersMiddleware(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Header().Get("Content-Security-Policy") != "default-src 'self'" {
+	expectedCSP := "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https://unpkg.com"
+	if rec.Header().Get("Content-Security-Policy") != expectedCSP {
 		t.Errorf("unexpected CSP header: %s", rec.Header().Get("Content-Security-Policy"))
 	}
 	if rec.Header().Get("Strict-Transport-Security") != "max-age=31536000; includeSubDomains" {

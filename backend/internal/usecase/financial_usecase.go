@@ -120,19 +120,37 @@ func (u *financialUsecase) GetFinancialTransactionByID(ctx context.Context, tena
 	return u.repo.GetFinancialTransactionByID(ctx, tenantID, id)
 }
 
-func (u *financialUsecase) UpdateFinancialTransaction(ctx context.Context, tenantID uuid.UUID, tx *domain.FinancialTransaction) error {
-	if tx == nil || tx.Category == "" || tx.Amount <= 0 {
-		return ErrInvalidInput
+func (u *financialUsecase) ReverseFinancialTransaction(ctx context.Context, tenantID, id uuid.UUID, reason string, createdBy uuid.UUID) (*domain.FinancialTransaction, error) {
+	orig, err := u.repo.GetFinancialTransactionByID(ctx, tenantID, id)
+	if err != nil {
+		return nil, err
 	}
-	if tx.Type != "income" && tx.Type != "expense" {
-		return ErrInvalidInput
-	}
-	tx.TenantID = tenantID
-	return u.repo.UpdateFinancialTransaction(ctx, tx)
-}
 
-func (u *financialUsecase) DeleteFinancialTransaction(ctx context.Context, tenantID, id uuid.UUID) error {
-	return u.repo.DeleteFinancialTransaction(ctx, tenantID, id)
+	revType := "expense"
+	if orig.Type == "expense" {
+		revType = "income"
+	}
+
+	desc := "Reversal of " + orig.ID.String()
+	if reason != "" {
+		desc += ": " + reason
+	}
+
+	revTx := &domain.FinancialTransaction{
+		ID:              uuid.New(),
+		TenantID:        tenantID,
+		Type:            revType,
+		Category:        orig.Category,
+		Amount:          orig.Amount,
+		TransactionDate: time.Now(),
+		Description:     &desc,
+		CreatedBy:       &createdBy,
+	}
+
+	if err := u.repo.CreateFinancialTransaction(ctx, revTx); err != nil {
+		return nil, err
+	}
+	return revTx, nil
 }
 
 func (u *financialUsecase) ListFinancialTransactions(ctx context.Context, tenantID uuid.UUID, txType string, limit, offset int) ([]*domain.FinancialTransaction, int64, error) {
@@ -143,6 +161,65 @@ func (u *financialUsecase) ListFinancialTransactions(ctx context.Context, tenant
 		offset = 0
 	}
 	return u.repo.ListFinancialTransactions(ctx, tenantID, txType, limit, offset)
+}
+
+func (u *financialUsecase) GetFinancialSummary(ctx context.Context, tenantID uuid.UUID) (*domain.FinancialSummary, error) {
+	txs, _, err := u.repo.ListFinancialTransactions(ctx, tenantID, "", 10000, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	dues, _, err := u.repo.ListDuesPayments(ctx, tenantID, nil, 10000, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	currentMonth := now.Month()
+	currentYear := now.Year()
+
+	var totalIncome, totalExpense float64
+	var monthlyIncome, monthlyExpense float64
+	spendingMap := make(map[string]float64)
+
+	for _, tx := range txs {
+		if tx.Type == "income" {
+			totalIncome += tx.Amount
+			if tx.TransactionDate.Year() == currentYear && tx.TransactionDate.Month() == currentMonth {
+				monthlyIncome += tx.Amount
+			}
+		} else if tx.Type == "expense" {
+			totalExpense += tx.Amount
+			spendingMap[tx.Category] += tx.Amount
+			if tx.TransactionDate.Year() == currentYear && tx.TransactionDate.Month() == currentMonth {
+				monthlyExpense += tx.Amount
+			}
+		}
+	}
+
+	for _, d := range dues {
+		if d.Status == "verified" {
+			totalIncome += d.Amount
+			if d.PeriodYear == currentYear && time.Month(d.PeriodMonth) == currentMonth {
+				monthlyIncome += d.Amount
+			}
+		}
+	}
+
+	breakdown := make([]domain.CategoryBreakdown, 0, len(spendingMap))
+	for cat, amt := range spendingMap {
+		breakdown = append(breakdown, domain.CategoryBreakdown{
+			Category: cat,
+			Amount:   amt,
+		})
+	}
+
+	return &domain.FinancialSummary{
+		CurrentBalance:    totalIncome - totalExpense,
+		MonthlyIncome:     monthlyIncome,
+		MonthlyExpense:    monthlyExpense,
+		SpendingBreakdown: breakdown,
+	}, nil
 }
 
 // Upload Proof

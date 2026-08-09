@@ -48,6 +48,9 @@ func (m *mockTenantRepoForAnnDoc) Delete(ctx context.Context, id uuid.UUID) erro
 func (m *mockTenantRepoForAnnDoc) List(ctx context.Context, limit, offset int) ([]*domain.Tenant, int64, error) {
 	return nil, 0, nil
 }
+func (m *mockTenantRepoForAnnDoc) SetSearchPath(ctx context.Context, slug string) error {
+	return nil
+}
 
 type mockAnnDocUsecase struct {
 	announcements []*domain.Announcement

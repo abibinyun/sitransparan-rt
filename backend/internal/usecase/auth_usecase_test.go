@@ -68,6 +68,9 @@ func (m *mockTenantRepo) List(ctx context.Context, limit, offset int) ([]*domain
 	}
 	return list, int64(len(list)), nil
 }
+func (m *mockTenantRepo) SetSearchPath(ctx context.Context, slug string) error {
+	return nil
+}
 
 type mockTenantUserRepo struct{}
 
@@ -117,6 +120,21 @@ func TestAuthUsecase_RegisterAndLogin(t *testing.T) {
 	}
 	if loggedUser.ID != user.ID {
 		t.Errorf("expected user ID %s, got %s", user.ID, loggedUser.ID)
+	}
+
+	// Login Superadmin admin@gmail.com
+	superAdminUser, err := uc.Register(context.Background(), "Super Admin", "admin@gmail.com", "admin123", nil)
+	if err != nil {
+		t.Fatalf("Register superadmin failed: %v", err)
+	}
+
+	adminToken, loggedSuperAdmin, err := uc.Login(context.Background(), "admin@gmail.com", "admin123", nil)
+	if err != nil {
+		t.Fatalf("Login superadmin failed: %v", err)
+	}
+
+	if adminToken == "" || loggedSuperAdmin.ID != superAdminUser.ID {
+		t.Error("superadmin login assertion failed")
 	}
 }
 

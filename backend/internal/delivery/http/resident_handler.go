@@ -23,6 +23,7 @@ func (h *ResidentHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.
 	protected := http.HandlerFunc(h.handleResidents)
 	mux.Handle("/api/v1/residents", tenantMw(authMw(protected)))
 	mux.Handle("/api/v1/residents/", tenantMw(authMw(protected)))
+	mux.Handle("/api/v1/residents/upload", tenantMw(authMw(http.HandlerFunc(h.handleUpload))))
 }
 
 func (h *ResidentHandler) handleResidents(w http.ResponseWriter, r *http.Request) {
@@ -65,6 +66,16 @@ func (h *ResidentHandler) handleResidents(w http.ResponseWriter, r *http.Request
 		default:
 			http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
 		}
+		return
+	}
+
+	if len(parts) == 2 && parts[1] == "approve" && r.Method == http.MethodPost {
+		h.approve(w, r, tenant.ID, id)
+		return
+	}
+
+	if len(parts) == 2 && parts[1] == "reject" && r.Method == http.MethodPost {
+		h.reject(w, r, tenant.ID, id)
 		return
 	}
 
@@ -202,4 +213,62 @@ func (h *ResidentHandler) removeFamilyMember(w http.ResponseWriter, r *http.Requ
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{"message": "family member removed"})
+}
+
+func (h *ResidentHandler) approve(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	adminUserID := middleware.GetUserIDFromContext(r.Context())
+	if err := h.usecase.Approve(r.Context(), tenantID, id, adminUserID); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "resident approved", "status": "approved"})
+}
+
+func (h *ResidentHandler) reject(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	adminUserID := middleware.GetUserIDFromContext(r.Context())
+	if err := h.usecase.Reject(r.Context(), tenantID, id, adminUserID); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "resident rejected", "status": "rejected"})
+}
+
+func (h *ResidentHandler) handleUpload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, `{"error":"file is required"}`, http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	docType := r.FormValue("type")
+	if docType == "" {
+		docType = "document"
+	}
+
+	contentType := header.Header.Get("Content-Type")
+	fileURL, err := h.usecase.UploadDocument(r.Context(), docType, header.Filename, file, contentType)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	resp := map[string]string{
+		"file_url": fileURL,
+		"type":     docType,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(resp)
 }

@@ -3,11 +3,14 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"backend/internal/domain"
+	"backend/pkg/crypto"
 	"github.com/google/uuid"
 )
 
@@ -20,9 +23,26 @@ func NewResidentRepository(db *sql.DB) domain.ResidentRepository {
 }
 
 func (r *residentRepository) Create(ctx context.Context, resident *domain.Resident) error {
+	var encNIK *string
+	var nikHash *string
+	if resident.NIK != nil && *resident.NIK != "" {
+		enc, err := crypto.EncryptAESGCM(*resident.NIK)
+		if err != nil {
+			return fmt.Errorf("encrypt NIK: %w", err)
+		}
+		encNIK = &enc
+		h := crypto.HashHMAC(*resident.NIK)
+		nikHash = &h
+	}
+	resident.NIKHash = nikHash
+
+	if resident.Status == "" {
+		resident.Status = "pending"
+	}
+
 	query := `
-		INSERT INTO residents (id, tenant_id, nik, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+		INSERT INTO residents (id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
 	if resident.ID == uuid.Nil {
@@ -31,7 +51,8 @@ func (r *residentRepository) Create(ctx context.Context, resident *domain.Reside
 	return r.db.QueryRowContext(ctx, query,
 		resident.ID,
 		resident.TenantID,
-		resident.NIK,
+		encNIK,
+		nikHash,
 		resident.KKNumber,
 		resident.FullName,
 		resident.Gender,
@@ -41,20 +62,25 @@ func (r *residentRepository) Create(ctx context.Context, resident *domain.Reside
 		resident.RTRW,
 		resident.Phone,
 		resident.IsHeadOfFamily,
+		resident.Status,
+		resident.KTPURL,
+		resident.KKURL,
 	).Scan(&resident.CreatedAt, &resident.UpdatedAt)
 }
 
 func (r *residentRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.Resident, error) {
 	query := `
-		SELECT id, tenant_id, nik, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, created_at, updated_at
+		SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
 		FROM residents
 		WHERE tenant_id = $1 AND id = $2
 	`
 	var res domain.Resident
+	var encNIK *string
 	err := r.db.QueryRowContext(ctx, query, tenantID, id).Scan(
 		&res.ID,
 		&res.TenantID,
-		&res.NIK,
+		&encNIK,
+		&res.NIKHash,
 		&res.KKNumber,
 		&res.FullName,
 		&res.Gender,
@@ -64,6 +90,9 @@ func (r *residentRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID
 		&res.RTRW,
 		&res.Phone,
 		&res.IsHeadOfFamily,
+		&res.Status,
+		&res.KTPURL,
+		&res.KKURL,
 		&res.CreatedAt,
 		&res.UpdatedAt,
 	)
@@ -72,6 +101,15 @@ func (r *residentRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID
 	}
 	if err != nil {
 		return nil, err
+	}
+
+	if encNIK != nil && *encNIK != "" {
+		dec, err := crypto.DecryptAESGCM(*encNIK)
+		if err == nil {
+			res.NIK = &dec
+		} else {
+			res.NIK = encNIK
+		}
 	}
 
 	members, err := r.GetFamilyMembers(ctx, res.ID)
@@ -84,14 +122,28 @@ func (r *residentRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID
 }
 
 func (r *residentRepository) Update(ctx context.Context, resident *domain.Resident) error {
+	var encNIK *string
+	var nikHash *string
+	if resident.NIK != nil && *resident.NIK != "" {
+		enc, err := crypto.EncryptAESGCM(*resident.NIK)
+		if err != nil {
+			return fmt.Errorf("encrypt NIK: %w", err)
+		}
+		encNIK = &enc
+		h := crypto.HashHMAC(*resident.NIK)
+		nikHash = &h
+	}
+	resident.NIKHash = nikHash
+
 	query := `
 		UPDATE residents
-		SET nik = $1, kk_number = $2, full_name = $3, gender = $4, birth_place = $5, birth_date = $6, address = $7, rt_rw = $8, phone = $9, is_head_of_family = $10, updated_at = NOW()
-		WHERE tenant_id = $11 AND id = $12
+		SET nik = $1, nik_hash = $2, kk_number = $3, full_name = $4, gender = $5, birth_place = $6, birth_date = $7, address = $8, rt_rw = $9, phone = $10, is_head_of_family = $11, status = COALESCE(NULLIF($12, ''), status), ktp_url = $13, kk_url = $14, updated_at = NOW()
+		WHERE tenant_id = $15 AND id = $16
 		RETURNING updated_at
 	`
 	err := r.db.QueryRowContext(ctx, query,
-		resident.NIK,
+		encNIK,
+		nikHash,
 		resident.KKNumber,
 		resident.FullName,
 		resident.Gender,
@@ -101,6 +153,9 @@ func (r *residentRepository) Update(ctx context.Context, resident *domain.Reside
 		resident.RTRW,
 		resident.Phone,
 		resident.IsHeadOfFamily,
+		resident.Status,
+		resident.KTPURL,
+		resident.KKURL,
 		resident.TenantID,
 		resident.ID,
 	).Scan(&resident.UpdatedAt)
@@ -133,19 +188,22 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 	var args []interface{}
 
 	if strings.TrimSpace(q) != "" {
-		searchStr := "%" + strings.TrimSpace(q) + "%"
-		countQuery = `SELECT COUNT(*) FROM residents WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik ILIKE $2 OR kk_number ILIKE $2)`
-		if err := r.db.QueryRowContext(ctx, countQuery, tenantID, searchStr).Scan(&count); err != nil {
+		cleanQ := strings.TrimSpace(q)
+		searchStr := "%" + cleanQ + "%"
+		searchHash := crypto.HashHMAC(cleanQ)
+
+		countQuery = `SELECT COUNT(*) FROM residents WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik_hash = $3 OR kk_number ILIKE $2)`
+		if err := r.db.QueryRowContext(ctx, countQuery, tenantID, searchStr, searchHash).Scan(&count); err != nil {
 			return nil, 0, err
 		}
 
 		query = `
-			SELECT id, tenant_id, nik, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, created_at, updated_at
+			SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
 			FROM residents
-			WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik ILIKE $2 OR kk_number ILIKE $2)
-			ORDER BY created_at DESC LIMIT $3 OFFSET $4
+			WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik_hash = $3 OR kk_number ILIKE $2)
+			ORDER BY created_at DESC LIMIT $4 OFFSET $5
 		`
-		args = []interface{}{tenantID, searchStr, limit, offset}
+		args = []interface{}{tenantID, searchStr, searchHash, limit, offset}
 	} else {
 		countQuery = `SELECT COUNT(*) FROM residents WHERE tenant_id = $1`
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
@@ -153,7 +211,7 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 		}
 
 		query = `
-			SELECT id, tenant_id, nik, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, created_at, updated_at
+			SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
 			FROM residents
 			WHERE tenant_id = $1
 			ORDER BY created_at DESC LIMIT $2 OFFSET $3
@@ -170,10 +228,12 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 	var residents []*domain.Resident
 	for rows.Next() {
 		var res domain.Resident
+		var encNIK *string
 		if err := rows.Scan(
 			&res.ID,
 			&res.TenantID,
-			&res.NIK,
+			&encNIK,
+			&res.NIKHash,
 			&res.KKNumber,
 			&res.FullName,
 			&res.Gender,
@@ -183,10 +243,21 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 			&res.RTRW,
 			&res.Phone,
 			&res.IsHeadOfFamily,
+			&res.Status,
+			&res.KTPURL,
+			&res.KKURL,
 			&res.CreatedAt,
 			&res.UpdatedAt,
 		); err != nil {
 			return nil, 0, err
+		}
+		if encNIK != nil && *encNIK != "" {
+			dec, err := crypto.DecryptAESGCM(*encNIK)
+			if err == nil {
+				res.NIK = &dec
+			} else {
+				res.NIK = encNIK
+			}
 		}
 		residents = append(residents, &res)
 	}
@@ -194,6 +265,16 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 }
 
 func (r *residentRepository) AddFamilyMember(ctx context.Context, member *domain.FamilyMember) error {
+	var encNIK *string
+	if member.NIK != nil && *member.NIK != "" {
+		enc, err := crypto.EncryptAESGCM(*member.NIK)
+		if err == nil {
+			encNIK = &enc
+		} else {
+			encNIK = member.NIK
+		}
+	}
+
 	query := `
 		INSERT INTO family_members (id, resident_id, full_name, nik, relation, birth_date, gender, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
@@ -206,7 +287,7 @@ func (r *residentRepository) AddFamilyMember(ctx context.Context, member *domain
 		member.ID,
 		member.ResidentID,
 		member.FullName,
-		member.NIK,
+		encNIK,
 		member.Relation,
 		member.BirthDate,
 		member.Gender,
@@ -248,11 +329,12 @@ func (r *residentRepository) GetFamilyMembers(ctx context.Context, residentID uu
 	var list []*domain.FamilyMember
 	for rows.Next() {
 		var fm domain.FamilyMember
+		var encNIK *string
 		if err := rows.Scan(
 			&fm.ID,
 			&fm.ResidentID,
 			&fm.FullName,
-			&fm.NIK,
+			&encNIK,
 			&fm.Relation,
 			&fm.BirthDate,
 			&fm.Gender,
@@ -261,7 +343,64 @@ func (r *residentRepository) GetFamilyMembers(ctx context.Context, residentID uu
 		); err != nil {
 			return nil, fmt.Errorf("scan family member: %w", err)
 		}
+		if encNIK != nil && *encNIK != "" {
+			dec, err := crypto.DecryptAESGCM(*encNIK)
+			if err == nil {
+				fm.NIK = &dec
+			} else {
+				fm.NIK = encNIK
+			}
+		}
 		list = append(list, &fm)
 	}
 	return list, rows.Err()
+}
+
+func (r *residentRepository) UpdateStatus(ctx context.Context, tenantID, id uuid.UUID, status string) error {
+	query := `
+		UPDATE residents
+		SET status = $1, updated_at = NOW()
+		WHERE tenant_id = $2 AND id = $3
+	`
+	res, err := r.db.ExecContext(ctx, query, status, tenantID, id)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (r *residentRepository) LogAudit(ctx context.Context, tenantID, userID uuid.UUID, action, resource string, payload interface{}) error {
+	payloadBytes, _ := json.Marshal(payload)
+	query := `
+		INSERT INTO audit_logs (id, tenant_id, user_id, action, resource, payload, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW())
+	`
+	var uID *uuid.UUID
+	if userID != uuid.Nil {
+		uID = &userID
+	}
+	var tID *uuid.UUID
+	if tenantID != uuid.Nil {
+		tID = &tenantID
+	}
+	_, err := r.db.ExecContext(ctx, query, uuid.New(), tID, uID, action, resource, string(payloadBytes))
+	return err
+}
+
+func (r *residentRepository) UploadDocument(ctx context.Context, docType, filename string, content io.Reader, contentType string) (string, error) {
+	subDir := "documents"
+	if docType == "ktp" {
+		subDir = "ktp"
+	} else if docType == "kk" {
+		subDir = "kk"
+	}
+	objectKey := fmt.Sprintf("%s/%s_%s", subDir, uuid.New().String(), filename)
+	return "/uploads/" + objectKey, nil
 }

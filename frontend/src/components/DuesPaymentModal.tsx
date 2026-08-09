@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { useFeeCategories, useCreateDuesPayment, useUploadProof } from '../services/financial';
 import { useResidents } from '../services/resident';
+import { Dialog } from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select } from './ui/select';
 
 interface DuesPaymentModalProps {
   isOpen: boolean;
@@ -23,8 +28,6 @@ export const DuesPaymentModal: React.FC<DuesPaymentModalProps> = ({ isOpen, onCl
   const [proofUrl, setProofUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-
-  if (!isOpen) return null;
 
   const handleCategoryChange = (catId: string) => {
     setFeeCategoryId(catId);
@@ -73,119 +76,108 @@ export const DuesPaymentModal: React.FC<DuesPaymentModalProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Catat / Bayar Iuran Warga</h3>
-        {error && <div className="mb-4 rounded bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+    <Dialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Catat / Bayar Iuran Warga"
+      description="Pencatatan transaksi iuran warga perumahan/RT"
+    >
+      {error && <div className="mb-4 rounded-lg bg-rose-50 p-3 text-xs text-rose-600 border border-rose-200">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Warga *</label>
-            <select
-              value={residentId}
-              onChange={(e) => setResidentId(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"
-              required
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="duesResident">Warga *</Label>
+          <Select
+            id="duesResident"
+            value={residentId}
+            onChange={(e) => setResidentId(e.target.value)}
+            required
+          >
+            <option value="">-- Pilih Warga --</option>
+            {residents.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.full_name} ({r.nik})
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="duesCategory">Kategori Iuran *</Label>
+          <Select
+            id="duesCategory"
+            value={feeCategoryId}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            required
+          >
+            <option value="">-- Pilih Kategori --</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} (Rp {c.amount.toLocaleString('id-ID')})
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="duesMonth">Bulan *</Label>
+            <Select
+              id="duesMonth"
+              value={periodMonth}
+              onChange={(e) => setPeriodMonth(Number(e.target.value))}
             >
-              <option value="">-- Pilih Warga --</option>
-              {residents.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.full_name} ({r.nik})
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+                <option key={m} value={m}>
+                  Bulan {m}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Kategori Iuran *</label>
-            <select
-              value={feeCategoryId}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"
-              required
-            >
-              <option value="">-- Pilih Kategori --</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} - Rp {c.amount.toLocaleString('id-ID')} ({c.period})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Bulan *</label>
-              <select
-                value={periodMonth}
-                onChange={(e) => setPeriodMonth(Number(e.target.value))}
-                className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"
-              >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                  <option key={m} value={m}>
-                    Bulan {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Tahun *</label>
-              <input
-                type="number"
-                value={periodYear}
-                onChange={(e) => setPeriodYear(Number(e.target.value))}
-                className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Jumlah (Rp) *</label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="duesYear">Tahun *</Label>
+            <Input
+              id="duesYear"
               type="number"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"
+              value={periodYear}
+              onChange={(e) => setPeriodYear(Number(e.target.value))}
               required
-              min="0"
             />
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Bukti Transfer (Upload File)</label>
-            <input
-              type="file"
-              accept="image/*,.pdf"
-              onChange={handleFileChange}
-              className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100"
-            />
-            {uploading && <p className="mt-1 text-xs text-gray-500">Mengunggah bukti...</p>}
-            {proofUrl && (
-              <p className="mt-1 text-xs text-green-600 font-medium truncate">
-                Bukti terunggah: {proofUrl}
-              </p>
-            )}
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="duesAmount">Nominal (Rp) *</Label>
+          <Input
+            id="duesAmount"
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(Number(e.target.value))}
+            required
+          />
+        </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={createPayment.isPending || uploading}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {createPayment.isPending ? 'Menyimpan...' : 'Simpan Pembayaran'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="space-y-2">
+          <Label htmlFor="proofFile">Bukti Transfer / Pembayaran</Label>
+          <Input
+            id="proofFile"
+            type="file"
+            accept="image/*,.pdf"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+          {proofUrl && <p className="text-xs text-emerald-600 font-medium">✓ Bukti ter-upload</p>}
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Batal
+          </Button>
+          <Button type="submit" disabled={createPayment.isPending || uploading}>
+            {createPayment.isPending ? 'Menyimpan...' : 'Simpan Iuran'}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 };

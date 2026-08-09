@@ -12,11 +12,11 @@ INSERT INTO users (id, email, password_hash, name, phone)
 VALUES (
     '00000000-0000-0000-0000-000000000011',
     'admin@sitransparan.rt',
-    '$2a$10$FxdNiItroV2qBsL2dWcJI.zzwiZ/PkvF8CYhiJio/4.QU/RbGw9kO',
+    '$2a$10$fhrsaCglx7XO/a1.Momrm.gS47pOjIaR/FqQghMzB2h9THg2irLFm',
     'Default Admin RT',
     NULL
 )
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash;
 
 INSERT INTO tenant_users (id, tenant_id, user_id, role_id, status)
 SELECT

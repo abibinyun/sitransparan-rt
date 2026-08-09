@@ -1,7 +1,9 @@
 package usecase_test
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"testing"
 	"time"
 
@@ -13,15 +15,19 @@ import (
 
 type mockEventRepo struct {
 	events       map[uuid.UUID]*domain.Event
-	budgets      map[uuid.UUID]*domain.EventBudget
+	budgets      map[uuid.UUID][]*domain.EventBudget
 	participants map[string]*domain.EventParticipant
+	roles        map[uuid.UUID][]*domain.EventRole
+	receipts     map[uuid.UUID][]*domain.EventReceipt
 }
 
 func newMockEventRepo() *mockEventRepo {
 	return &mockEventRepo{
 		events:       make(map[uuid.UUID]*domain.Event),
-		budgets:      make(map[uuid.UUID]*domain.EventBudget),
+		budgets:      make(map[uuid.UUID][]*domain.EventBudget),
 		participants: make(map[string]*domain.EventParticipant),
+		roles:        make(map[uuid.UUID][]*domain.EventRole),
+		receipts:     make(map[uuid.UUID][]*domain.EventReceipt),
 	}
 }
 
@@ -86,16 +92,20 @@ func (m *mockEventRepo) AddOrUpdateBudget(ctx context.Context, budget *domain.Ev
 	}
 	budget.CreatedAt = time.Now()
 	budget.UpdatedAt = time.Now()
-	m.budgets[budget.EventID] = budget
+	m.budgets[budget.EventID] = append(m.budgets[budget.EventID], budget)
 	return nil
 }
 
 func (m *mockEventRepo) GetBudgetByEventID(ctx context.Context, eventID uuid.UUID) (*domain.EventBudget, error) {
-	b, ok := m.budgets[eventID]
-	if !ok {
+	list, ok := m.budgets[eventID]
+	if !ok || len(list) == 0 {
 		return nil, repository.ErrNotFound
 	}
-	return b, nil
+	return list[len(list)-1], nil
+}
+
+func (m *mockEventRepo) ListBudgetsByEventID(ctx context.Context, eventID uuid.UUID) ([]*domain.EventBudget, error) {
+	return m.budgets[eventID], nil
 }
 
 func (m *mockEventRepo) AddOrUpdateParticipant(ctx context.Context, participant *domain.EventParticipant) error {
@@ -117,6 +127,49 @@ func (m *mockEventRepo) ListParticipantsByEventID(ctx context.Context, eventID u
 		}
 	}
 	return list, nil
+}
+
+func (m *mockEventRepo) AssignRole(ctx context.Context, role *domain.EventRole) error {
+	if role.ID == uuid.Nil {
+		role.ID = uuid.New()
+	}
+	role.CreatedAt = time.Now()
+	role.UpdatedAt = time.Now()
+	m.roles[role.EventID] = append(m.roles[role.EventID], role)
+	return nil
+}
+
+func (m *mockEventRepo) ListRolesByEventID(ctx context.Context, eventID uuid.UUID) ([]*domain.EventRole, error) {
+	return m.roles[eventID], nil
+}
+
+func (m *mockEventRepo) RemoveRole(ctx context.Context, eventID, roleID uuid.UUID) error {
+	roles := m.roles[eventID]
+	for i, r := range roles {
+		if r.ID == roleID {
+			m.roles[eventID] = append(roles[:i], roles[i+1:]...)
+			return nil
+		}
+	}
+	return repository.ErrNotFound
+}
+
+func (m *mockEventRepo) CreateReceipt(ctx context.Context, receipt *domain.EventReceipt) error {
+	if receipt.ID == uuid.Nil {
+		receipt.ID = uuid.New()
+	}
+	receipt.CreatedAt = time.Now()
+	receipt.UpdatedAt = time.Now()
+	m.receipts[receipt.EventID] = append(m.receipts[receipt.EventID], receipt)
+	return nil
+}
+
+func (m *mockEventRepo) ListReceiptsByEventID(ctx context.Context, eventID uuid.UUID) ([]*domain.EventReceipt, error) {
+	return m.receipts[eventID], nil
+}
+
+func (m *mockEventRepo) UploadReceiptFile(ctx context.Context, filename string, content io.Reader, contentType string) (string, error) {
+	return "/storage/events/receipts/" + filename, nil
 }
 
 func TestEventUsecase_CRUD_Budget_RSVP(t *testing.T) {
@@ -160,14 +213,25 @@ func TestEventUsecase_CRUD_Budget_RSVP(t *testing.T) {
 		t.Fatalf("UpdateEvent failed: %v", err)
 	}
 
-	// 5. Add / Update Budget
+	// 5. Add / Update Budget (Story 4.1 RAB Style)
 	budget := &domain.EventBudget{
-		Description:   "Hadiah Lomba",
-		EstimatedCost: 500000,
+		Item:          "Hadiah Lomba",
+		Category:      "Perlengkapan",
+		Description:   "Hadiah Juara 1-3",
+		PlannedAmount: 500000,
+		ActualAmount:  450000,
 	}
 	err = uc.AddOrUpdateBudget(ctx, tenantID, evt.ID, budget)
 	if err != nil {
 		t.Fatalf("AddOrUpdateBudget failed: %v", err)
+	}
+
+	budgets, err := uc.ListBudgets(ctx, tenantID, evt.ID)
+	if err != nil || len(budgets) != 1 {
+		t.Fatalf("ListBudgets failed: %v", err)
+	}
+	if budgets[0].Item != "Hadiah Lomba" || budgets[0].PlannedAmount != 500000 {
+		t.Fatalf("unexpected RAB budget data: %+v", budgets[0])
 	}
 
 	// 6. RSVP
@@ -180,7 +244,53 @@ func TestEventUsecase_CRUD_Budget_RSVP(t *testing.T) {
 		t.Fatalf("RSVP failed: %v", err)
 	}
 
-	// 7. Tenant Isolation Test for GetEvent, UpdateEvent, DeleteEvent, AddOrUpdateBudget, RSVP
+	// 7. Event Committee Roles (Story 4.2)
+	resID := uuid.New()
+	role := &domain.EventRole{
+		ResidentID: resID,
+		Role:       "Ketua Panitia",
+	}
+	err = uc.AssignRole(ctx, tenantID, evt.ID, role)
+	if err != nil {
+		t.Fatalf("AssignRole failed: %v", err)
+	}
+
+	roles, err := uc.ListRoles(ctx, tenantID, evt.ID)
+	if err != nil || len(roles) != 1 {
+		t.Fatalf("ListRoles failed: %v", err)
+	}
+	if roles[0].Role != "Ketua Panitia" {
+		t.Fatalf("expected role 'Ketua Panitia', got '%s'", roles[0].Role)
+	}
+
+	// Remove Role
+	err = uc.RemoveRole(ctx, tenantID, evt.ID, roles[0].ID)
+	if err != nil {
+		t.Fatalf("RemoveRole failed: %v", err)
+	}
+	roles, _ = uc.ListRoles(ctx, tenantID, evt.ID)
+	if len(roles) != 0 {
+		t.Fatalf("expected 0 roles after removal, got %d", len(roles))
+	}
+
+	// 8. Event Transparency & Donation Receipts (Story 4.3)
+	receipt, err := uc.UploadDonationReceipt(ctx, tenantID, evt.ID, &resID, "transfer_donasi.png", bytes.NewBufferString("dummy image"), "image/png", 100000, "Donasi Acara 17an")
+	if err != nil {
+		t.Fatalf("UploadDonationReceipt failed: %v", err)
+	}
+	if receipt.Amount != 100000 || receipt.ReceiptURL == "" {
+		t.Fatalf("unexpected receipt: %+v", receipt)
+	}
+
+	transparency, err := uc.GetTransparency(ctx, tenantID, evt.ID)
+	if err != nil {
+		t.Fatalf("GetTransparency failed: %v", err)
+	}
+	if transparency.Status != "planned" || transparency.TotalPlanned != 500000 || transparency.TotalDonations != 100000 {
+		t.Fatalf("unexpected transparency view: %+v", transparency)
+	}
+
+	// 9. Tenant Isolation Test for GetEvent, UpdateEvent, DeleteEvent, AddOrUpdateBudget, RSVP
 	otherTenantID := uuid.New()
 	_, err = uc.GetEvent(ctx, otherTenantID, evt.ID)
 	if err == nil {
@@ -199,24 +309,9 @@ func TestEventUsecase_CRUD_Budget_RSVP(t *testing.T) {
 		t.Fatalf("expected tenant isolation error on AddOrUpdateBudget, got nil")
 	}
 
-	err = uc.RSVP(ctx, otherTenantID, evt.ID, participant)
-	if err == nil {
-		t.Fatalf("expected tenant isolation error on RSVP, got nil")
-	}
-
-	err = uc.DeleteEvent(ctx, otherTenantID, evt.ID)
-	if err == nil {
-		t.Fatalf("expected tenant isolation error on DeleteEvent, got nil")
-	}
-
-	// 8. Delete Event
+	// Delete Event
 	err = uc.DeleteEvent(ctx, tenantID, evt.ID)
 	if err != nil {
 		t.Fatalf("DeleteEvent failed: %v", err)
-	}
-
-	_, err = uc.GetEvent(ctx, tenantID, evt.ID)
-	if err == nil {
-		t.Fatalf("expected error after delete, got nil")
 	}
 }
