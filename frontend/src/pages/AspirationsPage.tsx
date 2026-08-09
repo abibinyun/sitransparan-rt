@@ -15,6 +15,12 @@ import {
   CommunityNeedStatus,
   CreateAspirationPayload,
 } from '../types/aspiration_need';
+import { SimpleDialog } from '../components/ui/dialog';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Select } from '../components/ui/select';
+import { Textarea } from '../components/ui/textarea';
 
 export const AspirationsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'aspirations' | 'needs'>('aspirations');
@@ -111,94 +117,80 @@ export const AspirationsPage: React.FC = () => {
     setShowNeedModal(false);
   };
 
-  const getCategoryBadge = (cat: string) => {
-    switch (cat) {
-      case 'suggestion':
-        return <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">Usulan</span>;
-      case 'complaint':
-        return <span className="rounded bg-red-100 px-2 py-0.5 text-xs text-red-800">Keluhan</span>;
-      case 'question':
-        return <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">Pertanyaan</span>;
-      default:
-        return <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-800">{cat}</span>;
-    }
-  };
+  const aspirations = aspirationsData?.data || [];
+  const communityNeeds = needsData?.data || [];
 
-  const getAspirationStatusBadge = (status: string) => {
-    switch (status) {
+  const getAspirationStatusBadge = (st: AspirationStatus) => {
+    switch (st) {
       case 'submitted':
-        return <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-800">Terkirim</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-amber-100 text-amber-800">Terkirim</span>;
       case 'under_review':
-        return <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">Proses Peninjauan</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">Peninjauan</span>;
       case 'resolved':
-        return <span className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-800">Selesai</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-emerald-100 text-emerald-800">Selesai</span>;
       case 'rejected':
-        return <span className="rounded bg-red-100 px-2 py-0.5 text-xs text-red-800">Ditolak</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-rose-100 text-rose-800">Ditolak</span>;
       default:
-        return <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-800">{status}</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-800">{st}</span>;
     }
   };
 
-  const getNeedStatusBadge = (status: string) => {
-    switch (status) {
+  const getNeedStatusBadge = (st: CommunityNeedStatus) => {
+    switch (st) {
       case 'proposed':
-        return <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-800">Diusulkan</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-purple-100 text-purple-800">Diusulkan</span>;
       case 'approved':
-        return <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">Disetujui</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">Disetujui</span>;
       case 'in_progress':
-        return <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">Sedang Dikerjakan</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-amber-100 text-amber-800">Dikerjakan</span>;
       case 'completed':
-        return <span className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-800">Selesai</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-emerald-100 text-emerald-800">Selesai</span>;
       default:
-        return <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-800">{status}</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-800">{st}</span>;
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Manajemen Aspirasi & Kebutuhan Lingkungan</h1>
-          <p className="text-sm text-gray-600">Kelola tanggapan aspirasi warga dan daftar kebutuhan lingkungan RT/RW</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Manajemen Aspirasi & Kebutuhan Lingkungan
+          </h1>
+          <p className="text-sm text-slate-500">
+            Kelola tanggapan aspirasi warga dan daftar kebutuhan lingkungan RT/RW
+          </p>
         </div>
-        <div className="flex gap-2">
-          {activeTab === 'aspirations' ? (
-            <button
-              onClick={() => setShowAspirationModal(true)}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700"
-            >
-              + Tambah Aspirasi
-            </button>
-          ) : (
-            <button
-              onClick={() => handleOpenNeedModal()}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700"
-            >
-              + Tambah Kebutuhan Lingkungan
-            </button>
-          )}
-        </div>
+        {activeTab === 'aspirations' ? (
+          <Button onClick={() => setShowAspirationModal(true)}>
+            + Tambah Aspirasi
+          </Button>
+        ) : (
+          <Button onClick={() => handleOpenNeedModal()}>
+            + Tambah Kebutuhan Lingkungan
+          </Button>
+        )}
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
+      {/* Tabs Switcher */}
+      <div className="border-b border-slate-200">
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('aspirations')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'aspirations'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-indigo-600 text-indigo-600 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
             Aspirasi Warga
           </button>
           <button
             onClick={() => setActiveTab('needs')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'needs'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-indigo-600 text-indigo-600 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
             Kebutuhan Lingkungan
@@ -206,101 +198,84 @@ export const AspirationsPage: React.FC = () => {
         </nav>
       </div>
 
-      {/* Aspirations Tab */}
-      {activeTab === 'aspirations' && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+      {activeTab === 'aspirations' ? (
+        <div className="bg-white shadow-sm rounded-xl border border-slate-200 overflow-hidden">
           {loadingAspirations ? (
-            <div className="p-6 text-gray-500 text-sm">Memuat data...</div>
-          ) : !aspirationsData?.data || aspirationsData.data.length === 0 ? (
-            <div className="p-6 text-center text-gray-500 text-sm">Belum ada aspirasi warga.</div>
+            <div className="p-6 text-sm text-slate-500">Memuat aspirasi...</div>
+          ) : aspirations.length === 0 ? (
+            <div className="p-8 text-center text-sm text-slate-500">Belum ada aspirasi warga.</div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Judul & Isi</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pengirim</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {aspirationsData.data.map((item) => (
-                  <tr key={item.id}>
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-900">{item.title}</div>
-                      <div className="text-sm text-gray-600 line-clamp-2">{item.content}</div>
-                      {item.response && (
-                        <div className="mt-1 text-xs text-blue-700 bg-blue-50 p-2 rounded">
-                          <span className="font-medium">Tanggapan:</span> {item.response}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{getCategoryBadge(item.category)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {item.is_anonymous ? 'Anonim' : 'Warga'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{getAspirationStatusBadge(item.status)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleOpenResponseModal(item)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        Tanggapi / Ubah Status
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="divide-y divide-slate-100">
+              {aspirations.map((item) => (
+                <div key={item.id} className="p-6 hover:bg-slate-50/50 transition-colors space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
+                          {item.category || 'Umum'}
+                        </span>
+                        <span>•</span>
+                        {getAspirationStatusBadge(item.status as any)}
+                      </div>
+                      <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenResponseModal(item)}
+                    >
+                      Tanggapi
+                    </Button>
+                  </div>
+                  <p className="text-sm text-slate-600">{item.content || (item as any).description || ''}</p>
+                  {item.response && (
+                    <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 space-y-1">
+                      <p className="font-semibold text-slate-900">Tanggapan Pengurus:</p>
+                      <p>{item.response}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
-      )}
-
-      {/* Community Needs Tab */}
-      {activeTab === 'needs' && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loadingNeeds ? (
-            <div className="p-6 text-gray-500 text-sm">Memuat data...</div>
-          ) : !needsData?.data || needsData.data.length === 0 ? (
-            <div className="p-6 text-center text-gray-500 text-sm">Belum ada kebutuhan lingkungan.</div>
+            <div className="p-6 text-sm text-slate-500 col-span-full">Memuat kebutuhan...</div>
+          ) : communityNeeds.length === 0 ? (
+            <div className="p-8 text-center text-sm text-slate-500 col-span-full bg-white rounded-xl border border-slate-200">
+              Belum ada usulan kebutuhan lingkungan.
+            </div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kebutuhan</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estimasi Biaya</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Progres</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {needsData.data.map((need) => (
-                  <tr key={need.id}>
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-900">{need.title}</div>
-                      {need.description && <div className="text-sm text-gray-500">{need.description}</div>}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+            communityNeeds.map((need) => (
+              <div key={need.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    {getNeedStatusBadge(need.status)}
+                    <span className="text-sm font-bold text-slate-900">
                       Rp {need.estimated_cost.toLocaleString('id-ID')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{getNeedStatusBadge(need.status)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {need.progress_notes || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleOpenNeedModal(need)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900">{need.title}</h3>
+                  <p className="text-sm text-slate-600 line-clamp-3">{need.description}</p>
+                  {need.progress_notes && (
+                    <p className="text-xs text-slate-500 bg-slate-50 p-2 rounded border border-slate-100">
+                      <strong>Progres:</strong> {need.progress_notes}
+                    </p>
+                  )}
+                </div>
+                <div className="pt-2">
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs"
+                    onClick={() => handleOpenNeedModal(need)}
+                  >
+                    Edit / Update Status
+                  </Button>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
@@ -314,146 +289,141 @@ export const AspirationsPage: React.FC = () => {
         />
       )}
 
-      {/* Modal Tanggapi Aspirasi */}
-      {selectedAspiration && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="text-xl font-bold mb-2 text-gray-800">Tanggapi Aspirasi Warga</h2>
-            <p className="text-sm font-medium text-gray-700 mb-4">{selectedAspiration.title}</p>
-            <form onSubmit={handleSaveAspirationResponse} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Status</label>
-                <select
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value as AspirationStatus)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="submitted">Terkirim</option>
-                  <option value="under_review">Proses Peninjauan</option>
-                  <option value="resolved">Selesai / Ditindaklanjuti</option>
-                  <option value="rejected">Ditolak</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Tanggapan / Catatan Admin</label>
-                <textarea
-                  rows={4}
-                  value={responseMessage}
-                  onChange={(e) => setResponseMessage(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                  placeholder="Masukkan tanggapan resmi pengurus RT..."
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedAspiration(null)}
-                  className="rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={updateAspirationStatusMutation.isPending}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {updateAspirationStatusMutation.isPending ? 'Menyimpan...' : 'Simpan Tanggapan'}
-                </button>
-              </div>
-            </form>
+      {/* Modal Tanggapi Aspirasi via Shadcn UI SimpleDialog */}
+      <SimpleDialog
+        isOpen={!!selectedAspiration}
+        onClose={() => setSelectedAspiration(null)}
+        title="Tanggapi Aspirasi Warga"
+        description={selectedAspiration?.title}
+      >
+        <form onSubmit={handleSaveAspirationResponse} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="aspirationStatus">Status</Label>
+            <Select
+              id="aspirationStatus"
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value as AspirationStatus)}
+            >
+              <option value="submitted">Terkirim</option>
+              <option value="under_review">Proses Peninjauan</option>
+              <option value="resolved">Selesai / Ditindaklanjuti</option>
+              <option value="rejected">Ditolak</option>
+            </Select>
           </div>
-        </div>
-      )}
 
-      {/* Modal Form Kebutuhan Lingkungan */}
-      {showNeedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">
-              {editingNeed ? 'Edit Kebutuhan Lingkungan' : 'Tambah Kebutuhan Lingkungan'}
-            </h2>
-            <form onSubmit={handleSaveNeed} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Judul Kebutuhan</label>
-                <input
-                  type="text"
-                  required
-                  value={needTitle}
-                  onChange={(e) => setNeedTitle(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                  placeholder="Misal: Perbaikan lampu jalan RT 02"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Deskripsi</label>
-                <textarea
-                  rows={3}
-                  value={needDescription}
-                  onChange={(e) => setNeedDescription(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                  placeholder="Penjelasan detail kebutuhan..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Estimasi Biaya (Rp)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={needEstimatedCost}
-                  onChange={(e) => setNeedEstimatedCost(Number(e.target.value))}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Status</label>
-                <select
-                  value={needStatus}
-                  onChange={(e) => setNeedStatus(e.target.value as CommunityNeedStatus)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="proposed">Diusulkan</option>
-                  <option value="approved">Disetujui</option>
-                  <option value="in_progress">Sedang Dikerjakan</option>
-                  <option value="completed">Selesai</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Catatan Progres</label>
-                <input
-                  type="text"
-                  value={needProgressNotes}
-                  onChange={(e) => setNeedProgressNotes(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                  placeholder="Misal: Sudah dibeli material..."
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowNeedModal(false)}
-                  className="rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={createNeedMutation.isPending || updateNeedMutation.isPending}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {createNeedMutation.isPending || updateNeedMutation.isPending ? 'Menyimpan...' : 'Simpan'}
-                </button>
-              </div>
-            </form>
+          <div className="space-y-2">
+            <Label htmlFor="aspirationResponse">Tanggapan / Catatan Admin</Label>
+            <Textarea
+              id="aspirationResponse"
+              rows={4}
+              value={responseMessage}
+              onChange={(e) => setResponseMessage(e.target.value)}
+              placeholder="Masukkan tanggapan resmi pengurus RT..."
+            />
           </div>
-        </div>
-      )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSelectedAspiration(null)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={updateAspirationStatusMutation.isPending}
+            >
+              {updateAspirationStatusMutation.isPending ? 'Menyimpan...' : 'Simpan Tanggapan'}
+            </Button>
+          </div>
+        </form>
+      </SimpleDialog>
+
+      {/* Modal Form Kebutuhan Lingkungan via Shadcn UI SimpleDialog */}
+      <SimpleDialog
+        isOpen={showNeedModal}
+        onClose={() => setShowNeedModal(false)}
+        title={editingNeed ? 'Edit Kebutuhan Lingkungan' : 'Tambah Kebutuhan Lingkungan'}
+        description="Kelola usulan dan progres kebutuhan fasilitas lingkungan RT/RW"
+      >
+        <form onSubmit={handleSaveNeed} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="needTitle">Judul Kebutuhan</Label>
+            <Input
+              id="needTitle"
+              type="text"
+              required
+              value={needTitle}
+              onChange={(e) => setNeedTitle(e.target.value)}
+              placeholder="Misal: Perbaikan lampu jalan RT 02"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="needDescription">Deskripsi</Label>
+            <Textarea
+              id="needDescription"
+              rows={3}
+              value={needDescription}
+              onChange={(e) => setNeedDescription(e.target.value)}
+              placeholder="Penjelasan detail kebutuhan..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="needEstimatedCost">Estimasi Biaya (Rp)</Label>
+            <Input
+              id="needEstimatedCost"
+              type="number"
+              min="0"
+              value={needEstimatedCost}
+              onChange={(e) => setNeedEstimatedCost(Number(e.target.value))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="needStatus">Status</Label>
+            <Select
+              id="needStatus"
+              value={needStatus}
+              onChange={(e) => setNeedStatus(e.target.value as CommunityNeedStatus)}
+            >
+              <option value="proposed">Diusulkan</option>
+              <option value="approved">Disetujui</option>
+              <option value="in_progress">Sedang Dikerjakan</option>
+              <option value="completed">Selesai</option>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="needProgressNotes">Catatan Progres</Label>
+            <Input
+              id="needProgressNotes"
+              type="text"
+              value={needProgressNotes}
+              onChange={(e) => setNeedProgressNotes(e.target.value)}
+              placeholder="Misal: Sudah dibeli material..."
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowNeedModal(false)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={createNeedMutation.isPending || updateNeedMutation.isPending}
+            >
+              Simpan
+            </Button>
+          </div>
+        </form>
+      </SimpleDialog>
     </div>
   );
 };

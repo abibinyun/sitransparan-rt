@@ -53,7 +53,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-1.5 text-center sm:text-left border-b border-slate-100 pb-3",
+      "flex flex-col space-y-1.5 text-center sm:text-left",
       className
     )}
     {...props}
@@ -67,7 +67,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 border-t border-slate-100 pt-4 mt-2",
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
       className
     )}
     {...props}
@@ -82,7 +82,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-lg font-bold leading-none tracking-tight text-slate-900",
+      "text-lg font-semibold leading-none tracking-tight text-slate-900",
       className
     )}
     {...props}
@@ -132,6 +132,8 @@ export const Dialog: React.FC<SimpleDialogProps> = ({
     </DialogRoot>
   )
 }
+
+export const SimpleDialog = Dialog
 
 export {
   DialogRoot,

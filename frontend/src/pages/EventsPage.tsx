@@ -8,6 +8,12 @@ import {
 import { EventItem, EventStatus, CreateEventPayload } from '../types/event';
 import { EventBudgetModal } from '../components/EventBudgetModal';
 import { EventRSVPModal } from '../components/EventRSVPModal';
+import { SimpleDialog } from '../components/ui/dialog';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Select } from '../components/ui/select';
+import { Textarea } from '../components/ui/textarea';
 
 export const EventsPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('');
@@ -99,94 +105,106 @@ export const EventsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Daftar Kegiatan RT/RW</h1>
-        <button
-          onClick={() => handleOpenForm()}
-          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm"
-        >
+        <Button onClick={() => handleOpenForm()}>
           + Tambah Kegiatan
-        </button>
+        </Button>
       </div>
 
-      {/* Filter */}
-      <div className="flex items-center space-x-4 bg-white p-4 rounded-lg shadow-sm">
-        <label className="text-sm font-medium text-gray-700">Filter Status:</label>
-        <select
+      {/* Filter Bar */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border flex items-center space-x-4">
+        <Label htmlFor="statusFilter" className="text-sm font-medium text-gray-700">Filter Status:</Label>
+        <Select
+          id="statusFilter"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
+          className="w-48"
         >
           <option value="">Semua Status</option>
           <option value="planned">Rencana (Planned)</option>
           <option value="ongoing">Berlangsung (Ongoing)</option>
           <option value="completed">Selesai (Completed)</option>
           <option value="cancelled">Dibatalkan (Cancelled)</option>
-        </select>
+        </Select>
       </div>
 
-      {/* List */}
+      {/* Event List / Grid */}
       {isLoading ? (
-        <p className="text-gray-500">Memuat data kegiatan...</p>
+        <div className="p-6 text-center text-gray-500">Memuat data kegiatan...</div>
       ) : events.length === 0 ? (
-        <div className="bg-white p-6 rounded-lg text-center text-gray-500 shadow-sm">
+        <div className="bg-white rounded-lg border p-8 text-center text-gray-500">
           Belum ada kegiatan RT/RW.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((evt) => (
-            <div key={evt.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-lg font-bold text-gray-900">{evt.title}</h3>
-                  {getStatusBadge(evt.status)}
+          {events.map((event) => (
+            <div key={event.id} className="bg-white rounded-lg border shadow-sm p-5 space-y-4 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  {getStatusBadge(event.status)}
+                  {event.event_date && (
+                    <span className="text-xs text-gray-500">
+                      {new Date(event.event_date).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  )}
                 </div>
-                <p className="text-sm text-gray-600 mb-4">{evt.description || 'Tidak ada deskripsi.'}</p>
-                <div className="text-xs text-gray-500 space-y-1 mb-4">
-                  <div>
-                    <span className="font-semibold">Tanggal:</span>{' '}
-                    {evt.event_date ? new Date(evt.event_date).toLocaleString('id-ID') : '-'}
-                  </div>
-                  <div>
-                    <span className="font-semibold">Lokasi:</span> {evt.location || '-'}
-                  </div>
-                </div>
+
+                <h3 className="text-lg font-bold text-gray-900">{event.title}</h3>
+                {event.location && (
+                  <p className="text-xs font-medium text-indigo-600">📍 {event.location}</p>
+                )}
+                {event.description && (
+                  <p className="text-sm text-gray-600 line-clamp-2">{event.description}</p>
+                )}
               </div>
 
-              <div className="pt-4 border-t border-gray-100 flex flex-wrap gap-2 justify-between items-center">
-                <div className="flex space-x-2">
-                  <button
+              <div className="pt-2 border-t space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    className="text-xs"
                     onClick={() => {
-                      setSelectedEvent(evt);
+                      setSelectedEvent(event);
                       setIsBudgetModalOpen(true);
                     }}
-                    className="px-2.5 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-200"
                   >
-                    Anggaran
-                  </button>
-                  <button
+                    RAB & Budget
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="text-xs"
                     onClick={() => {
-                      setSelectedEvent(evt);
+                      setSelectedEvent(event);
                       setIsRSVPModalOpen(true);
                     }}
-                    className="px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded border border-green-200"
                   >
-                    RSVP Warga
-                  </button>
+                    RSVP Kehadiran
+                  </Button>
                 </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleOpenForm(evt)}
-                    className="px-2 py-1 text-xs font-medium text-gray-700 hover:text-indigo-600"
+
+                <div className="flex justify-end space-x-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => handleOpenForm(event)}
                   >
                     Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(evt.id)}
-                    className="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800"
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => handleDelete(event.id)}
                   >
                     Hapus
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -194,90 +212,86 @@ export const EventsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Tambah / Edit Kegiatan */}
-      {isFormModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">
-              {editingEvent ? 'Edit Kegiatan' : 'Tambah Kegiatan Baru'}
-            </h2>
-
-            <form onSubmit={handleFormSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Nama / Judul Kegiatan</label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Deskripsi</label>
-                <textarea
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Waktu / Tanggal</label>
-                <input
-                  type="datetime-local"
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Lokasi</label>
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Status</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as EventStatus)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"
-                >
-                  <option value="planned">Rencana (Planned)</option>
-                  <option value="ongoing">Berlangsung (Ongoing)</option>
-                  <option value="completed">Selesai (Completed)</option>
-                  <option value="cancelled">Dibatalkan (Cancelled)</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsFormModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={createEvent.isPending || updateEvent.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md disabled:opacity-50"
-                >
-                  {editingEvent ? 'Simpan Perubahan' : 'Tambah'}
-                </button>
-              </div>
-            </form>
+      {/* Modal Tambah / Edit Kegiatan via Shadcn UI SimpleDialog */}
+      <SimpleDialog
+        isOpen={isFormModalOpen}
+        onClose={() => setIsFormModalOpen(false)}
+        title={editingEvent ? 'Edit Kegiatan' : 'Tambah Kegiatan Baru'}
+        description="Kelola jadwal dan agenda kegiatan warga RT/RW"
+      >
+        <form onSubmit={handleFormSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="eventTitle">Nama / Judul Kegiatan</Label>
+            <Input
+              id="eventTitle"
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
           </div>
-        </div>
-      )}
+
+          <div className="space-y-2">
+            <Label htmlFor="eventDescription">Deskripsi</Label>
+            <Textarea
+              id="eventDescription"
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="eventDate">Waktu / Tanggal</Label>
+            <Input
+              id="eventDate"
+              type="datetime-local"
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="eventLocation">Lokasi</Label>
+            <Input
+              id="eventLocation"
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="eventStatus">Status</Label>
+            <Select
+              id="eventStatus"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as EventStatus)}
+            >
+              <option value="planned">Rencana (Planned)</option>
+              <option value="ongoing">Berlangsung (Ongoing)</option>
+              <option value="completed">Selesai (Completed)</option>
+              <option value="cancelled">Dibatalkan (Cancelled)</option>
+            </Select>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsFormModalOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={createEvent.isPending || updateEvent.isPending}
+            >
+              {editingEvent ? 'Simpan Perubahan' : 'Tambah'}
+            </Button>
+          </div>
+        </form>
+      </SimpleDialog>
 
       {/* Modal Budget */}
       <EventBudgetModal
