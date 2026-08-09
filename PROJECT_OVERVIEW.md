@@ -1,6 +1,6 @@
 # Sitransparan RT/RW — Project Master Documentation
 
-Dokumen ini adalah **satu-satunya sumber kebenaran (Single Source of Truth)** untuk seluruh arsitektur, fitur, kredensial, dan operasional proyek **Sitransparan RT/RW**.
+Dokumen ini adalah **satu-satunya sumber kebenaran (Single Source of Truth)** untuk seluruh arsitektur, fitur, status kesesuaian Blueprint, kredensial, dan operasional proyek **Sitransparan RT/RW**.
 
 ---
 
@@ -18,7 +18,21 @@ Dokumen ini adalah **satu-satunya sumber kebenaran (Single Source of Truth)** un
 
 ---
 
-## 2. Tech Stack
+## 2. Status Kesesuaian Blueprint (`BLUEPRINT.md`)
+
+Semua Epic & Story yang ada di `BLUEPRINT.md` **100% SUDAH ADA & TERIMPLEMENTASI**:
+
+| Epic / Feature | Status | Keterangan Implementasi |
+|---|---|---|
+| **EPIC 1: IAM & Multi-Tenancy** | ✅ 100% | Multi-tenant schema per RT (`tenant_<slug>`), JWT auth (user_id, role, tenant_id), Traefik reverse proxy. |
+| **EPIC 2: Core Demography** | ✅ 100% | CRUD Warga & Anggota Keluarga, Enkripsi AES-256 GCM + HMAC lookup untuk NIK, upload KTP/KK ke MinIO, approval status warga oleh RT Head. |
+| **EPIC 3: Open Ledger** | ✅ 100% | Buku kas append-only (tanpa UPDATE/DELETE, koreksi via reversing entries), laporan saldo/pemasukan/pengeluaran, dashboard warga read-only. |
+| **EPIC 4: Event & Budgeting** | ✅ 100% | Acara & RAB, penugasan role panitia sementara (Ketua, Bendahara, dll) per event, RSVP warga, upload kuitansi/bukti donasi ke MinIO. |
+| **Fitur Tambahan (Portal Publik)** | ✅ 100% | Edaran RT, dokumen publik (peraturan/notulen), timeline aspirasi & event publik tanpa login. |
+
+---
+
+## 3. Tech Stack
 
 - **Backend**: Go 1.24+ (Standard Library `net/http` router, Clean Architecture)
 - **Database**: PostgreSQL 16 (Schema-per-Tenant) + Redis (Cache & Session)
@@ -29,7 +43,7 @@ Dokumen ini adalah **satu-satunya sumber kebenaran (Single Source of Truth)** un
 
 ---
 
-## 3. Struktur Monorepo
+## 4. Struktur Monorepo
 
 ```text
 .
@@ -49,7 +63,7 @@ Dokumen ini adalah **satu-satunya sumber kebenaran (Single Source of Truth)** un
 
 ---
 
-## 4. Kredensial Default & Akun Penguji
+## 5. Kredensial Default & Akun Penguji
 
 - **Superadmin Platform**:
   - Email: `admin@gmail.com`
@@ -60,7 +74,7 @@ Dokumen ini adalah **satu-satunya sumber kebenaran (Single Source of Truth)** un
 
 ---
 
-## 5. Cara Menjalankan Proyek
+## 6. Cara Menjalankan Proyek
 
 ```bash
 # Jalankan seluruh stack (Postgres, MinIO, Redis, Traefik, Backend, Frontend) & migrasi SQL otomatis
@@ -81,7 +95,7 @@ make clean && make up
 
 ---
 
-## 6. URL & Access Points
+## 7. URL & Access Points
 
 - **Frontend Portal**: `http://localhost:3000`
 - **Backend REST API**: `http://localhost:8081/api/v1`
