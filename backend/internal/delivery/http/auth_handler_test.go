@@ -42,6 +42,14 @@ func (m *mockAuthUsecase) GetTenantByID(ctx context.Context, id uuid.UUID) (*dom
 	}
 	return nil, nil
 }
+func (m *mockAuthUsecase) GetTenantBySlug(ctx context.Context, slug string) (*domain.Tenant, error) {
+	for _, t := range m.tenants {
+		if t.Slug == slug {
+			return t, nil
+		}
+	}
+	return nil, nil
+}
 func (m *mockAuthUsecase) UpdateTenant(ctx context.Context, id uuid.UUID, name, slug string, domainName, logoURL *string) (*domain.Tenant, error) {
 	return &domain.Tenant{ID: id, Name: name, Slug: slug}, nil
 }

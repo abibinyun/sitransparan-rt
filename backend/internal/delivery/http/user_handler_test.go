@@ -33,7 +33,7 @@ func (m *mockUserUsecase) CreateUser(ctx context.Context, p usecase.CreateUserPa
 			Phone: p.Phone,
 		},
 		RoleName: p.Role,
-		TenantID: p.TenantID,
+		TenantID: &p.TenantID,
 	}
 	m.users[u.ID] = u
 	return u, nil
@@ -70,9 +70,17 @@ func (m *mockUserUsecase) DeleteUser(ctx context.Context, tenantID, userID uuid.
 func (m *mockUserUsecase) ListUsers(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.UserWithRole, int64, error) {
 	var list []*domain.UserWithRole
 	for _, u := range m.users {
-		if u.TenantID == tenantID {
+		if u.TenantID != nil && *u.TenantID == tenantID {
 			list = append(list, u)
 		}
+	}
+	return list, int64(len(list)), nil
+}
+
+func (m *mockUserUsecase) ListAllUsers(ctx context.Context, limit, offset int) ([]*domain.UserWithRole, int64, error) {
+	var list []*domain.UserWithRole
+	for _, u := range m.users {
+		list = append(list, u)
 	}
 	return list, int64(len(list)), nil
 }

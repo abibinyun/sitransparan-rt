@@ -83,6 +83,7 @@ func main() {
 	// Public routes
 	delivery.RegisterSwaggerRoutes(mux)
 	mux.HandleFunc("GET /health", healthHandler.HealthCheck)
+	mux.HandleFunc("GET /api/v1/t/{slug}/info", authHandler.GetPublicTenantInfo)
 	mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
 	mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
 
@@ -117,9 +118,9 @@ func main() {
 	superAdminMux.HandleFunc("/api/v1/superadmin/tenants/", authHandler.SuperAdminTenants)
 
 	// Mount protected handlers with middleware chain
-	mux.Handle("/api/v1/auth/tenants", tenantMw(authMw(authMux)))
-	mux.Handle("/api/v1/superadmin/tenants", tenantMw(authMw(superAdminMw(superAdminMux))))
-	mux.Handle("/api/v1/superadmin/tenants/", tenantMw(authMw(superAdminMw(superAdminMux))))
+	mux.Handle("/api/v1/auth/tenants", authMw(tenantMw(authMux)))
+	mux.Handle("/api/v1/superadmin/tenants", authMw(superAdminMw(tenantMw(superAdminMux))))
+	mux.Handle("/api/v1/superadmin/tenants/", authMw(superAdminMw(tenantMw(superAdminMux))))
 
 	// Wrap root handler with security, CORS, and rate limiting middleware
 	var handler http.Handler = mux

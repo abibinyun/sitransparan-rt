@@ -61,7 +61,7 @@ test.describe('User Management E2E', () => {
     await updatedRow.locator('button').nth(1).click();
 
     await expect(page.getByRole('heading', { name: 'Hapus Pengguna' })).toBeVisible();
-    await page.click('button:has-text("Hapus")');
+    await page.getByRole('button', { name: 'Hapus', exact: true }).click();
 
     // Verify User Removed from Table
     await expect(page.locator('table')).not.toContainText(testEmail);

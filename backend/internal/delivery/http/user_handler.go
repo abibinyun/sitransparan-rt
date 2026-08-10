@@ -21,18 +21,24 @@ func NewUserHandler(usecase usecase.UserUsecase) *UserHandler {
 }
 
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler, adminMw func(http.Handler) http.Handler) {
-	protected := tenantMw(authMw(adminMw(http.HandlerFunc(h.handleUsers))))
+	protected := authMw(adminMw(tenantMw(http.HandlerFunc(h.handleUsers))))
 	mux.Handle("/api/v1/users", protected)
 	mux.Handle("/api/v1/users/", protected)
 }
 
 func (h *UserHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
+	callerRole := middleware.GetRoleFromContext(r.Context())
 	tenant := middleware.GetTenantFromContext(r.Context())
-	if tenant == nil {
+	if tenant == nil && callerRole != domain.RoleSuperAdmin && callerRole != "SUPER_ADMIN" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "tenant context missing"})
 		return
+	}
+
+	tenantID := uuid.Nil
+	if tenant != nil {
+		tenantID = tenant.ID
 	}
 
 	path := strings.TrimPrefix(r.URL.Path, "/api/v1/users")
@@ -41,9 +47,9 @@ func (h *UserHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	if path == "" {
 		switch r.Method {
 		case http.MethodGet:
-			h.list(w, r, tenant.ID)
+			h.list(w, r, tenantID)
 		case http.MethodPost:
-			h.create(w, r, tenant.ID)
+			h.create(w, r, tenantID)
 		default:
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -64,11 +70,11 @@ func (h *UserHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	if len(parts) == 1 {
 		switch r.Method {
 		case http.MethodGet:
-			h.getByID(w, r, tenant.ID, id)
+			h.getByID(w, r, tenantID, id)
 		case http.MethodPut:
-			h.update(w, r, tenant.ID, id)
+			h.update(w, r, tenantID, id)
 		case http.MethodDelete:
-			h.delete(w, r, tenant.ID, id)
+			h.delete(w, r, tenantID, id)
 		default:
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -83,6 +89,7 @@ func (h *UserHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 type createUserReq struct {
+	TenantID *uuid.UUID       `json:"tenant_id,omitempty"`
 	Name     string          `json:"name"`
 	Email    string          `json:"email"`
 	Password string          `json:"password"`
@@ -91,6 +98,7 @@ type createUserReq struct {
 }
 
 type updateUserReq struct {
+	TenantID *uuid.UUID       `json:"tenant_id,omitempty"`
 	Name     string          `json:"name"`
 	Email    string          `json:"email"`
 	Phone    *string         `json:"phone,omitempty"`
@@ -109,7 +117,17 @@ func (h *UserHandler) list(w http.ResponseWriter, r *http.Request, tenantID uuid
 		offset = 0
 	}
 
-	users, total, err := h.usecase.ListUsers(r.Context(), tenantID, limit, offset)
+	role := middleware.GetRoleFromContext(r.Context())
+	var users []*domain.UserWithRole
+	var total int64
+	var err error
+
+	if role == domain.RoleSuperAdmin {
+		users, total, err = h.usecase.ListAllUsers(r.Context(), limit, offset)
+	} else {
+		users, total, err = h.usecase.ListUsers(r.Context(), tenantID, limit, offset)
+	}
+
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -142,8 +160,14 @@ func (h *UserHandler) create(w http.ResponseWriter, r *http.Request, tenantID uu
 		return
 	}
 
+	callerRole := middleware.GetRoleFromContext(r.Context())
+	targetTenantID := tenantID
+	if (callerRole == domain.RoleSuperAdmin || callerRole == "SUPER_ADMIN") && req.TenantID != nil && *req.TenantID != uuid.Nil {
+		targetTenantID = *req.TenantID
+	}
+
 	user, err := h.usecase.CreateUser(r.Context(), usecase.CreateUserParam{
-		TenantID: tenantID,
+		TenantID: targetTenantID,
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: req.Password,
@@ -184,8 +208,14 @@ func (h *UserHandler) update(w http.ResponseWriter, r *http.Request, tenantID, i
 		return
 	}
 
+	callerRole := middleware.GetRoleFromContext(r.Context())
+	targetTenantID := tenantID
+	if (callerRole == domain.RoleSuperAdmin || callerRole == "SUPER_ADMIN") && req.TenantID != nil && *req.TenantID != uuid.Nil {
+		targetTenantID = *req.TenantID
+	}
+
 	user, err := h.usecase.UpdateUser(r.Context(), usecase.UpdateUserParam{
-		TenantID: tenantID,
+		TenantID: targetTenantID,
 		UserID:   id,
 		Name:     req.Name,
 		Email:    req.Email,

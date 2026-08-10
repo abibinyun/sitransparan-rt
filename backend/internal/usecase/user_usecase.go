@@ -39,6 +39,7 @@ type UserUsecase interface {
 	UpdateUser(ctx context.Context, p UpdateUserParam) (*domain.UserWithRole, error)
 	DeleteUser(ctx context.Context, tenantID, userID uuid.UUID) error
 	ListUsers(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.UserWithRole, int64, error)
+	ListAllUsers(ctx context.Context, limit, offset int) ([]*domain.UserWithRole, int64, error)
 }
 
 type userUsecase struct {
@@ -106,7 +107,7 @@ func (u *userUsecase) CreateUser(ctx context.Context, p CreateUserParam) (*domai
 	return &domain.UserWithRole{
 		User:     *user,
 		RoleName: p.Role,
-		TenantID: p.TenantID,
+		TenantID: &p.TenantID,
 	}, nil
 }
 
@@ -124,7 +125,7 @@ func (u *userUsecase) GetUserByID(ctx context.Context, tenantID, userID uuid.UUI
 	return &domain.UserWithRole{
 		User:     *user,
 		RoleName: tu.RoleName,
-		TenantID: tenantID,
+		TenantID: &tenantID,
 	}, nil
 }
 
@@ -169,15 +170,15 @@ func (u *userUsecase) UpdateUser(ctx context.Context, p UpdateUserParam) (*domai
 	return &domain.UserWithRole{
 		User:     *user,
 		RoleName: tu.RoleName,
-		TenantID: p.TenantID,
+		TenantID: &p.TenantID,
 	}, nil
 }
 
 func (u *userUsecase) DeleteUser(ctx context.Context, tenantID, userID uuid.UUID) error {
-	if err := u.tenantUserRepo.Delete(ctx, tenantID, userID); err != nil {
-		return err
+	if tenantID != uuid.Nil {
+		_ = u.tenantUserRepo.Delete(ctx, tenantID, userID)
 	}
-	// Also delete base user account
+	// Delete base user account
 	return u.userRepo.Delete(ctx, userID)
 }
 
@@ -186,4 +187,11 @@ func (u *userUsecase) ListUsers(ctx context.Context, tenantID uuid.UUID, limit, 
 		limit = 10
 	}
 	return u.userRepo.ListByTenant(ctx, tenantID, limit, offset)
+}
+
+func (u *userUsecase) ListAllUsers(ctx context.Context, limit, offset int) ([]*domain.UserWithRole, int64, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	return u.userRepo.ListAll(ctx, limit, offset)
 }
