@@ -33,6 +33,10 @@ func (m *mockUserRepo) GetByEmail(ctx context.Context, email string) (*domain.Us
 	return nil, nil
 }
 func (m *mockUserRepo) Update(ctx context.Context, u *domain.User) error { return nil }
+func (m *mockUserRepo) Delete(ctx context.Context, id uuid.UUID) error       { return nil }
+func (m *mockUserRepo) ListByTenant(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.UserWithRole, int64, error) {
+	return nil, 0, nil
+}
 
 type mockTenantRepo struct {
 	tenants map[string]*domain.Tenant
@@ -77,6 +81,12 @@ type mockTenantUserRepo struct{}
 func (m *mockTenantUserRepo) Create(ctx context.Context, tu *domain.TenantUser) error { return nil }
 func (m *mockTenantUserRepo) GetByTenantAndUser(ctx context.Context, tenantID, userID uuid.UUID) (*domain.TenantUser, error) {
 	return &domain.TenantUser{TenantID: tenantID, UserID: userID, RoleName: domain.RoleAdminRT}, nil
+}
+func (m *mockTenantUserRepo) UpdateRole(ctx context.Context, tenantID, userID, roleID uuid.UUID) error {
+	return nil
+}
+func (m *mockTenantUserRepo) Delete(ctx context.Context, tenantID, userID uuid.UUID) error {
+	return nil
 }
 func (m *mockTenantUserRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]*domain.TenantUser, error) {
 	return nil, nil
