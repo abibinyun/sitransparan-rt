@@ -67,8 +67,12 @@ func main() {
 	dashboardUC := usecase.NewDashboardUsecase(dashboardRepo)
 	dashboardHandler := delivery.NewDashboardHandler(dashboardUC)
 
+	userUC := usecase.NewUserUsecase(userRepo, tuRepo, roleRepo)
+	userHandler := delivery.NewUserHandler(userUC)
+
 	tenantMw := middleware.TenantMiddleware(tenantRepo)
 	authMw := middleware.AuthMiddleware(jwtSecret)
+	adminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin, domain.RoleAdminRT)
 	superAdminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin)
 	secHeadersMw := middleware.SecurityHeadersMiddleware()
 	rateLimitMw := middleware.RateLimitMiddleware(100, 10) // capacity 100, 10 req/s
@@ -85,6 +89,9 @@ func main() {
 	// Authenticated routes
 	authMux := http.NewServeMux()
 	authMux.HandleFunc("GET /api/v1/auth/tenants", authHandler.UserTenants)
+
+	// User Management routes
+	userHandler.RegisterRoutes(mux, tenantMw, authMw, adminMw)
 
 	// Resident routes
 	residentHandler.RegisterRoutes(mux, tenantMw, authMw)

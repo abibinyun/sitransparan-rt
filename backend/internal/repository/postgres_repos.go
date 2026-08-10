@@ -354,6 +354,60 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
 	return r.db.QueryRowContext(ctx, query, user.Name, user.Phone, user.PasswordHash, user.ID).Scan(&user.UpdatedAt)
 }
 
+func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM users WHERE id = $1`
+	res, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (r *userRepository) ListByTenant(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.UserWithRole, int64, error) {
+	countQuery := `
+		SELECT COUNT(*)
+		FROM users u
+		JOIN tenant_users tu ON u.id = tu.user_id
+		WHERE tu.tenant_id = $1
+	`
+	var count int64
+	if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT u.id, u.email, u.name, u.phone, u.created_at, u.updated_at, r.name as role_name, tu.tenant_id
+		FROM users u
+		JOIN tenant_users tu ON u.id = tu.user_id
+		JOIN roles r ON tu.role_id = r.id
+		WHERE tu.tenant_id = $1
+		ORDER BY u.created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var list []*domain.UserWithRole
+	for rows.Next() {
+		var u domain.UserWithRole
+		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Phone, &u.CreatedAt, &u.UpdatedAt, &u.RoleName, &u.TenantID); err != nil {
+			return nil, 0, err
+		}
+		list = append(list, &u)
+	}
+	return list, count, rows.Err()
+}
+
 type tenantUserRepository struct {
 	db *sql.DB
 }
@@ -392,6 +446,42 @@ func (r *tenantUserRepository) GetByTenantAndUser(ctx context.Context, tenantID,
 		return nil, ErrNotFound
 	}
 	return &tu, err
+}
+
+func (r *tenantUserRepository) UpdateRole(ctx context.Context, tenantID, userID, roleID uuid.UUID) error {
+	query := `
+		UPDATE tenant_users
+		SET role_id = $1, updated_at = NOW()
+		WHERE tenant_id = $2 AND user_id = $3
+	`
+	res, err := r.db.ExecContext(ctx, query, roleID, tenantID, userID)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (r *tenantUserRepository) Delete(ctx context.Context, tenantID, userID uuid.UUID) error {
+	query := `DELETE FROM tenant_users WHERE tenant_id = $1 AND user_id = $2`
+	res, err := r.db.ExecContext(ctx, query, tenantID, userID)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 func (r *tenantUserRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]*domain.TenantUser, error) {

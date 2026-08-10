@@ -36,6 +36,7 @@ const baseNavItems: NavItem[] = [
   { to: '/events', label: 'Kegiatan & Budget', icon: CalendarDays },
   { to: '/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
   { to: '/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
+  { to: '/users', label: 'Manajemen Pengguna', icon: Users },
 ];
 
 const publicNavItems: NavItem[] = [

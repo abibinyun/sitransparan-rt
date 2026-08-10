@@ -18,6 +18,7 @@ const PublicAnnouncementsPage = lazy(() => import('./pages/PublicAnnouncementsPa
 const PublicEventsPage = lazy(() => import('./pages/PublicEventsPage').then(m => ({ default: m.PublicEventsPage })));
 const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage').then(m => ({ default: m.AnnouncementsPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const UsersPage = lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +65,9 @@ export function App() {
                 <Route path="/events" element={<EventsPage />} />
                 <Route path="/aspirations" element={<AspirationsPage />} />
                 <Route path="/announcements" element={<AnnouncementsPage />} />
+                <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RT_ADMIN']} />}>
+                  <Route path="/users" element={<UsersPage />} />
+                </Route>
                 <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']} />}>
                   <Route path="/superadmin/tenants" element={<SuperAdminTenantsPage />} />
                 </Route>

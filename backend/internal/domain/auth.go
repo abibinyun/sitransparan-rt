@@ -76,16 +76,26 @@ type TenantRepository interface {
 	SetSearchPath(ctx context.Context, slug string) error
 }
 
+type UserWithRole struct {
+	User
+	RoleName RoleName  `json:"role_name"`
+	TenantID uuid.UUID `json:"tenant_id,omitempty"`
+}
+
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	GetByID(ctx context.Context, id uuid.UUID) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	Update(ctx context.Context, user *User) error
+	Delete(ctx context.Context, id uuid.UUID) error
+	ListByTenant(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*UserWithRole, int64, error)
 }
 
 type TenantUserRepository interface {
 	Create(ctx context.Context, tu *TenantUser) error
 	GetByTenantAndUser(ctx context.Context, tenantID, userID uuid.UUID) (*TenantUser, error)
+	UpdateRole(ctx context.Context, tenantID, userID, roleID uuid.UUID) error
+	Delete(ctx context.Context, tenantID, userID uuid.UUID) error
 	ListByUser(ctx context.Context, userID uuid.UUID) ([]*TenantUser, error)
 	ListTenantsByUserID(ctx context.Context, userID uuid.UUID) ([]*Tenant, error)
 }
