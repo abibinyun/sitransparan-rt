@@ -20,7 +20,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) 
     user.email === 'superadmin@platform.local' ||
     user.email === 'admin@gmail.com';
 
-  if (allowedRoles && !allowedRoles.includes(user.role) && !(allowedRoles.includes('SUPER_ADMIN') && isSuperAdmin)) {
+  const isAdminRT =
+    user.role === 'RT_ADMIN' ||
+    (user.role as string) === 'admin_rt';
+
+  if (
+    allowedRoles &&
+    !allowedRoles.includes(user.role) &&
+    !(allowedRoles.includes('SUPER_ADMIN') && isSuperAdmin) &&
+    !(allowedRoles.includes('RT_ADMIN') && isAdminRT)
+  ) {
     return <Navigate to="/" replace />;
   }
 

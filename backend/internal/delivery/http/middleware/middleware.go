@@ -77,6 +77,13 @@ func TenantMiddleware(tenantRepo domain.TenantRepository) func(http.Handler) htt
 				}
 			}
 
+			if tenant == nil {
+				tenants, _, err := tenantRepo.List(r.Context(), 1, 0)
+				if err == nil && len(tenants) > 0 {
+					tenant = tenants[0]
+				}
+			}
+
 				if tenant != nil {
 					_ = tenantRepo.SetSearchPath(r.Context(), tenant.Slug)
 					ctx := context.WithValue(r.Context(), TenantContextKey, tenant)

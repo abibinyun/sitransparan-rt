@@ -9,6 +9,10 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: 'http://localhost:3000',
+    headless: false,
+    launchOptions: {
+      slowMo: 300,
+    },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
