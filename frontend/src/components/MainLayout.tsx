@@ -50,7 +50,8 @@ export const MainLayout: React.FC = () => {
 
   const navItems = useMemo(() => {
     const items = [...baseNavItems, ...publicNavItems];
-    if (user?.role === 'SUPER_ADMIN') {
+    const isSuperAdmin = user?.role === 'SUPER_ADMIN' || (user?.role as string) === 'superadmin';
+    if (isSuperAdmin) {
       items.push({ to: '/superadmin/tenants', label: 'SuperAdmin RT', icon: Shield });
     }
     return items;

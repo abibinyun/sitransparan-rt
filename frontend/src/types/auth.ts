@@ -3,7 +3,10 @@ export type Role = 'SUPER_ADMIN' | 'RT_ADMIN' | 'RESIDENT';
 export interface Tenant {
   id: string;
   name: string;
-  code: string;
+  slug: string;
+  domain?: string;
+  logo_url?: string;
+  code?: string;
 }
 
 export interface User {

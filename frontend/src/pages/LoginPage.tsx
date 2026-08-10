@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLoginMutation, useRegisterMutation } from '../services/auth';
 import { useAuthStore } from '../store/useAuthStore';
-import type { Tenant } from '../types/auth';
+import type { Role, Tenant } from '../types/auth';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -44,9 +44,14 @@ export const LoginPage: React.FC = () => {
             setAvailableTenants(data.user.tenants);
             setSelectedTenantId(data.user.tenants[0].id);
           } else {
-            const initialTenant = data.user.tenants?.[0] || null;
-            setAuth(data.token, data.user, initialTenant);
-            navigate(data.user.role === 'SUPER_ADMIN' ? '/superadmin/tenants' : '/');
+            const userWithRole = {
+              ...data.user,
+              role: (data.user.role || (data.user.email === 'admin@gmail.com' || data.user.email === 'superadmin@platform.local' ? 'SUPER_ADMIN' : 'RT_ADMIN')) as Role,
+            };
+            const initialTenant = userWithRole.tenants?.[0] || null;
+            setAuth(data.token, userWithRole, initialTenant);
+            const isSuperAdmin = userWithRole.role === 'SUPER_ADMIN' || (userWithRole.role as string) === 'superadmin';
+            navigate(isSuperAdmin ? '/superadmin/tenants' : '/');
           }
         },
       }

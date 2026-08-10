@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"backend/internal/delivery/http/middleware"
 	"backend/internal/domain"
@@ -29,7 +30,17 @@ type loginRequest struct {
 
 type loginResponse struct {
 	Token string       `json:"token"`
-	User  *domain.User `json:"user"`
+	User  *userDTO     `json:"user"`
+}
+
+type userDTO struct {
+	ID        uuid.UUID `json:"id"`
+	Email     string    `json:"email"`
+	Name      string    `json:"name"`
+	Phone     *string   `json:"phone,omitempty"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -50,10 +61,28 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	role := string(domain.RoleResident)
+	if user.Email == "superadmin@platform.local" || user.Email == "admin@gmail.com" {
+		role = string(domain.RoleSuperAdmin)
+	} else {
+		tenants, err := h.authUsecase.GetUserTenants(r.Context(), user.ID)
+		if err == nil && len(tenants) > 0 {
+			role = string(domain.RoleAdminRT)
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(loginResponse{
 		Token: token,
-		User:  user,
+		User: &userDTO{
+			ID:        user.ID,
+			Email:     user.Email,
+			Name:      user.Name,
+			Phone:     user.Phone,
+			Role:      role,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		},
 	})
 }
 
