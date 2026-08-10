@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCreateFinancialTransaction, useUploadProof } from '../services/financial';
 import { TransactionType } from '../types/financial';
+import { dateOnlyToISO } from '../utils/date';
 import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -35,7 +36,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
       setUploading(true);
       setError('');
       const res = await uploadProof.mutateAsync(file);
-      setProofUrl(res.url);
+      setProofUrl(res.proof_url);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Gagal mengunggah bukti transaksi');
     } finally {
@@ -56,7 +57,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
         type,
         category,
         amount: Number(amount),
-        transaction_date: transactionDate,
+        transaction_date: dateOnlyToISO(transactionDate)!,
         description: description || undefined,
         proof_url: proofUrl || undefined,
       });

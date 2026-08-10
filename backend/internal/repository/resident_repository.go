@@ -12,6 +12,7 @@ import (
 	"backend/internal/domain"
 	"backend/pkg/crypto"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type residentRepository struct {
@@ -181,19 +182,25 @@ func (r *residentRepository) Delete(ctx context.Context, tenantID, id uuid.UUID)
 	return nil
 }
 
-func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q string, limit, offset int) ([]*domain.Resident, int64, error) {
+func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q string, isHead *bool, limit, offset int) ([]*domain.Resident, int64, error) {
 	residentsTable := TenantTable(ctx, "residents")
 	var count int64
 	var countQuery string
 	var query string
 	var args []interface{}
 
+	// isHead is a Go bool, so it is safe to inline as a boolean literal.
+	headClause := ""
+	if isHead != nil {
+		headClause = fmt.Sprintf(" AND is_head_of_family = %t", *isHead)
+	}
+
 	if strings.TrimSpace(q) != "" {
 		cleanQ := strings.TrimSpace(q)
 		searchStr := "%" + cleanQ + "%"
 		searchHash := crypto.HashHMAC(cleanQ)
 
-		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik_hash = $3 OR kk_number ILIKE $2)`, residentsTable)
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik_hash = $3 OR kk_number ILIKE $2)%s`, residentsTable, headClause)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID, searchStr, searchHash).Scan(&count); err != nil {
 			return nil, 0, err
 		}
@@ -201,12 +208,12 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 		query = fmt.Sprintf(`
 			SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
 			FROM %s
-			WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik_hash = $3 OR kk_number ILIKE $2)
+			WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik_hash = $3 OR kk_number ILIKE $2)%s
 			ORDER BY created_at DESC LIMIT $4 OFFSET $5
-		`, residentsTable)
+		`, residentsTable, headClause)
 		args = []interface{}{tenantID, searchStr, searchHash, limit, offset}
 	} else {
-		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, residentsTable)
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1%s`, residentsTable, headClause)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 			return nil, 0, err
 		}
@@ -214,9 +221,9 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 		query = fmt.Sprintf(`
 			SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
 			FROM %s
-			WHERE tenant_id = $1
+			WHERE tenant_id = $1%s
 			ORDER BY created_at DESC LIMIT $2 OFFSET $3
-		`, residentsTable)
+		`, residentsTable, headClause)
 		args = []interface{}{tenantID, limit, offset}
 	}
 
@@ -262,7 +269,73 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 		}
 		residents = append(residents, &res)
 	}
-	return residents, count, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	// Populate family members for the listed residents (only heads of family
+	// can have members) so the UI can render the expanded KK detail.
+	var headIDs []uuid.UUID
+	for _, res := range residents {
+		if res.IsHeadOfFamily != nil && *res.IsHeadOfFamily {
+			headIDs = append(headIDs, res.ID)
+		}
+	}
+	if len(headIDs) > 0 {
+		membersByResident, err := r.familyMembersByResidents(ctx, tenantID, headIDs)
+		if err != nil {
+			return nil, 0, err
+		}
+		for _, res := range residents {
+			res.FamilyMembers = membersByResident[res.ID]
+		}
+	}
+	return residents, count, nil
+}
+
+// familyMembersByResidents returns family members for a set of residents,
+// decrypting encrypted NIK values, keyed by resident ID.
+func (r *residentRepository) familyMembersByResidents(ctx context.Context, tenantID uuid.UUID, residentIDs []uuid.UUID) (map[uuid.UUID][]*domain.FamilyMember, error) {
+	query := fmt.Sprintf(`
+		SELECT fm.id, fm.resident_id, fm.full_name, fm.nik, fm.relation, fm.birth_date, fm.gender, fm.created_at, fm.updated_at
+		FROM %s fm
+		JOIN %s r ON r.id = fm.resident_id
+		WHERE r.tenant_id = $1 AND fm.resident_id = ANY($2)
+		ORDER BY fm.created_at ASC
+	`, TenantTable(ctx, "family_members"), TenantTable(ctx, "residents"))
+	rows, err := r.db.QueryContext(ctx, query, tenantID, pq.Array(residentIDs))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	byResident := make(map[uuid.UUID][]*domain.FamilyMember)
+	for rows.Next() {
+		var fm domain.FamilyMember
+		var encNIK *string
+		if err := rows.Scan(
+			&fm.ID,
+			&fm.ResidentID,
+			&fm.FullName,
+			&encNIK,
+			&fm.Relation,
+			&fm.BirthDate,
+			&fm.Gender,
+			&fm.CreatedAt,
+			&fm.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan family member: %w", err)
+		}
+		if encNIK != nil && *encNIK != "" {
+			if dec, err := crypto.DecryptAESGCM(*encNIK); err == nil {
+				fm.NIK = &dec
+			} else {
+				fm.NIK = encNIK
+			}
+		}
+		byResident[fm.ResidentID] = append(byResident[fm.ResidentID], &fm)
+	}
+	return byResident, rows.Err()
 }
 
 func (r *residentRepository) AddFamilyMember(ctx context.Context, member *domain.FamilyMember) error {

@@ -1,4 +1,4 @@
-import base from './playwright.config';
+import base, { TENANT_HOST_RESOLVER_ARGS } from './playwright.config';
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
@@ -6,6 +6,8 @@ export default defineConfig({
   use: {
     ...base.use,
     headless: true,
-    launchOptions: {},
+    launchOptions: {
+      args: TENANT_HOST_RESOLVER_ARGS,
+    },
   },
 });

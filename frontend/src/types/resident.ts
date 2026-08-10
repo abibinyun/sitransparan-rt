@@ -42,7 +42,15 @@ export interface ResidentListResponse {
   limit: number;
 }
 
-export type CreateResidentPayload = Omit<Resident, 'id' | 'tenant_id' | 'created_at' | 'updated_at' | 'family_members'>;
+// birth_date is optional on submit: the form sends undefined when empty and
+// converts the date-only input value to RFC3339 otherwise.
+export type CreateResidentPayload = Omit<
+  Resident,
+  'id' | 'tenant_id' | 'created_at' | 'updated_at' | 'family_members' | 'birth_date'
+> & { birth_date?: string };
 export type UpdateResidentPayload = Partial<CreateResidentPayload>;
 
-export type CreateFamilyMemberPayload = Omit<FamilyMember, 'id' | 'resident_id' | 'created_at' | 'updated_at'>;
+export type CreateFamilyMemberPayload = Omit<
+  FamilyMember,
+  'id' | 'resident_id' | 'created_at' | 'updated_at' | 'birth_date'
+> & { birth_date?: string };

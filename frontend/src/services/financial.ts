@@ -62,7 +62,7 @@ export function useVerifyDuesPayment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'verified' | 'rejected' }) => {
-      const res = await api.patch<DuesPayment>(`/financial/dues/${id}/verify`, { status });
+      const res = await api.post<DuesPayment>(`/financial/dues/${id}/verify`, { status });
       return res.data;
     },
     onSuccess: () => {
@@ -101,7 +101,7 @@ export function useUploadProof() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await api.post<{ url: string }>('/financial/upload-proof', formData, {
+      const res = await api.post<{ proof_url: string }>('/financial/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

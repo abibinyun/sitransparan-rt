@@ -47,7 +47,7 @@ type ResidentRepository interface {
 	GetByID(ctx context.Context, tenantID, id uuid.UUID) (*Resident, error)
 	Update(ctx context.Context, resident *Resident) error
 	Delete(ctx context.Context, tenantID, id uuid.UUID) error
-	List(ctx context.Context, tenantID uuid.UUID, query string, limit, offset int) ([]*Resident, int64, error)
+	List(ctx context.Context, tenantID uuid.UUID, query string, isHead *bool, limit, offset int) ([]*Resident, int64, error)
 	AddFamilyMember(ctx context.Context, member *FamilyMember) error
 	RemoveFamilyMember(ctx context.Context, tenantID, residentID, memberID uuid.UUID) error
 	GetFamilyMembers(ctx context.Context, residentID uuid.UUID) ([]*FamilyMember, error)
@@ -61,7 +61,7 @@ type ResidentUsecase interface {
 	GetByID(ctx context.Context, tenantID, id uuid.UUID) (*Resident, error)
 	Update(ctx context.Context, tenantID uuid.UUID, resident *Resident) error
 	Delete(ctx context.Context, tenantID, id uuid.UUID) error
-	List(ctx context.Context, tenantID uuid.UUID, query string, limit, offset int) ([]*Resident, int64, error)
+	List(ctx context.Context, tenantID uuid.UUID, query string, isHead *bool, limit, offset int) ([]*Resident, int64, error)
 	AddFamilyMember(ctx context.Context, tenantID uuid.UUID, member *FamilyMember) error
 	RemoveFamilyMember(ctx context.Context, tenantID, residentID, memberID uuid.UUID) error
 	Approve(ctx context.Context, tenantID, id, adminUserID uuid.UUID) error

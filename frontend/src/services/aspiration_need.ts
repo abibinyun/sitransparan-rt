@@ -47,7 +47,7 @@ export function useCommunityNeeds(params?: { limit?: number; offset?: number }) 
   return useQuery({
     queryKey: ['community-needs', params],
     queryFn: async () => {
-      const res = await api.get<{ data: CommunityNeed[]; total: number }>('/community-needs', { params });
+      const res = await api.get<{ data: CommunityNeed[]; total: number }>('/needs', { params });
       return res.data;
     },
   });
@@ -72,7 +72,7 @@ export function useUpdateAspirationStatus() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: UpdateAspirationStatusPayload }) => {
-      const res = await api.patch<Aspiration>(`/aspirations/${id}/status`, payload);
+      const res = await api.put<Aspiration>(`/aspirations/${id}`, payload);
       return res.data;
     },
     onSuccess: () => {
@@ -86,7 +86,7 @@ export function useCreateCommunityNeed() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateCommunityNeedPayload) => {
-      const res = await api.post<CommunityNeed>('/community-needs', payload);
+      const res = await api.post<CommunityNeed>('/needs', payload);
       return res.data;
     },
     onSuccess: () => {
@@ -100,7 +100,7 @@ export function useUpdateCommunityNeed() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: UpdateCommunityNeedPayload }) => {
-      const res = await api.put<CommunityNeed>(`/community-needs/${id}`, payload);
+      const res = await api.put<CommunityNeed>(`/needs/${id}`, payload);
       return res.data;
     },
     onSuccess: () => {

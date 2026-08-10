@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Resident, CreateResidentPayload } from '../types/resident';
 import { useCreateResident, useUpdateResident } from '../services/resident';
+import { dateOnlyToISO } from '../utils/date';
 import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -62,10 +63,11 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = { ...formData, birth_date: dateOnlyToISO(formData.birth_date) };
     if (resident) {
-      await updateMutation.mutateAsync({ id: resident.id, payload: formData });
+      await updateMutation.mutateAsync({ id: resident.id, payload });
     } else {
-      await createMutation.mutateAsync(formData);
+      await createMutation.mutateAsync(payload);
     }
     onClose();
   };

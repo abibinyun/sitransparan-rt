@@ -105,7 +105,7 @@ func TestTenantIsolation_SchemaIsolation(t *testing.T) {
 	}
 
 	// Tenant B must not see tenant A's resident in its list.
-	listB, countB, err := resRepo.List(ctxB, tenantB.ID, "", 10, 0)
+	listB, countB, err := resRepo.List(ctxB, tenantB.ID, "", nil, 10, 0)
 	if err != nil {
 		t.Fatalf("failed to list residents in tenant B: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestTenantIsolation_SchemaIsolation(t *testing.T) {
 	}
 
 	// Tenant A still sees its own resident.
-	listA, countA, err := resRepo.List(ctxA, tenantA.ID, "", 10, 0)
+	listA, countA, err := resRepo.List(ctxA, tenantA.ID, "", nil, 10, 0)
 	if err != nil {
 		t.Fatalf("failed to list residents in tenant A: %v", err)
 	}

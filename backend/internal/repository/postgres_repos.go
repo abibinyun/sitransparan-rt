@@ -47,7 +47,7 @@ func (r *tenantRepository) Create(ctx context.Context, tenant *domain.Tenant) er
 // CreateTenantSchema dynamically creates schema tenant_<slug> and operational tables
 func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 	schemaName := "tenant_" + strings.ReplaceAll(slug, "-", "_")
-	
+
 	// Create schema if not exists
 	_, err := db.ExecContext(ctx, "CREATE SCHEMA IF NOT EXISTS "+pq.QuoteIdentifier(schemaName))
 	if err != nil {
@@ -80,7 +80,7 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			resident_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.residents(id) ON DELETE CASCADE,
 			full_name VARCHAR(255),
-			nik VARCHAR(16),
+			nik TEXT,
 			relation VARCHAR(100),
 			birth_date DATE,
 			gender VARCHAR(50),
@@ -239,6 +239,20 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 		if _, err := db.ExecContext(ctx, ddl); err != nil {
 			return err
 		}
+	}
+
+	// Seed a default monthly fee category so the dues-payment workflow is
+	// usable out of the box (there is no UI to create fee categories).
+	var tenantID uuid.UUID
+	if err := db.QueryRowContext(ctx, `SELECT id FROM tenants WHERE slug = $1`, slug).Scan(&tenantID); err != nil {
+		return err
+	}
+	// Idempotent: never duplicate the default category on re-provisioning.
+	if _, err := db.ExecContext(ctx,
+		`INSERT INTO `+pq.QuoteIdentifier(schemaName)+`.fee_categories (tenant_id, name, amount, period)
+		 SELECT $1, $2, $3, $4
+		 WHERE NOT EXISTS (SELECT 1 FROM `+pq.QuoteIdentifier(schemaName)+`.fee_categories WHERE name = $5)`, tenantID, "Iuran Warga", 50000, "monthly", "Iuran Warga"); err != nil {
+		return err
 	}
 	return nil
 }

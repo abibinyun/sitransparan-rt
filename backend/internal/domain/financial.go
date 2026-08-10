@@ -20,19 +20,21 @@ type FeeCategory struct {
 }
 
 type DuesPayment struct {
-	ID            uuid.UUID  `json:"id"`
-	TenantID      uuid.UUID  `json:"tenant_id"`
-	ResidentID    uuid.UUID  `json:"resident_id"`
-	FeeCategoryID uuid.UUID  `json:"fee_category_id"`
-	Amount        float64    `json:"amount"`
-	PeriodMonth   int        `json:"period_month"`
-	PeriodYear    int        `json:"period_year"`
-	Status        string     `json:"status"` // 'pending', 'verified', 'rejected'
-	ProofURL      *string    `json:"proof_url,omitempty"`
-	VerifiedAt    *time.Time `json:"verified_at,omitempty"`
-	VerifiedBy    *uuid.UUID `json:"verified_by,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID              uuid.UUID  `json:"id"`
+	TenantID        uuid.UUID  `json:"tenant_id"`
+	ResidentID      uuid.UUID  `json:"resident_id"`
+	FeeCategoryID   uuid.UUID  `json:"fee_category_id"`
+	Amount          float64    `json:"amount"`
+	PeriodMonth     int        `json:"period_month"`
+	PeriodYear      int        `json:"period_year"`
+	Status          string     `json:"status"` // 'pending', 'verified', 'rejected'
+	ProofURL        *string    `json:"proof_url,omitempty"`
+	VerifiedAt      *time.Time `json:"verified_at,omitempty"`
+	VerifiedBy      *uuid.UUID `json:"verified_by,omitempty"`
+	ResidentName    *string    `json:"resident_name,omitempty"`
+	FeeCategoryName *string    `json:"fee_category_name,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
 type FinancialTransaction struct {

@@ -112,7 +112,13 @@ func (h *ResidentHandler) list(w http.ResponseWriter, r *http.Request, tenantID 
 		limit = 10
 	}
 
-	residents, total, err := h.usecase.List(r.Context(), tenantID, query, limit, offset)
+	var isHead *bool
+	if v := r.URL.Query().Get("is_head_of_family"); v != "" {
+		b := v == "true"
+		isHead = &b
+	}
+
+	residents, total, err := h.usecase.List(r.Context(), tenantID, query, isHead, limit, offset)
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return

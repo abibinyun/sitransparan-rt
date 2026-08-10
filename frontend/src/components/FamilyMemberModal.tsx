@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CreateFamilyMemberPayload } from '../types/resident';
 import { useAddFamilyMember } from '../services/resident';
+import { dateOnlyToISO } from '../utils/date';
 import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -32,7 +33,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
     e.preventDefault();
     await addFamilyMemberMutation.mutateAsync({
       residentId,
-      payload: formData,
+      payload: { ...formData, birth_date: dateOnlyToISO(formData.birth_date) },
     });
     setFormData({
       full_name: '',

@@ -44,7 +44,7 @@ export const DuesPaymentModal: React.FC<DuesPaymentModalProps> = ({ isOpen, onCl
       setUploading(true);
       setError('');
       const res = await uploadProof.mutateAsync(file);
-      setProofUrl(res.url);
+      setProofUrl(res.proof_url);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Gagal mengunggah bukti transfer');
     } finally {

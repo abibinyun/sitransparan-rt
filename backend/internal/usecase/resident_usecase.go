@@ -56,7 +56,7 @@ func (u *residentUsecase) Delete(ctx context.Context, tenantID, id uuid.UUID) er
 	return u.repo.Delete(ctx, tenantID, id)
 }
 
-func (u *residentUsecase) List(ctx context.Context, tenantID uuid.UUID, query string, limit, offset int) ([]*domain.Resident, int64, error) {
+func (u *residentUsecase) List(ctx context.Context, tenantID uuid.UUID, query string, isHead *bool, limit, offset int) ([]*domain.Resident, int64, error) {
 	if tenantID == uuid.Nil {
 		return nil, 0, ErrInvalidInput
 	}
@@ -66,7 +66,7 @@ func (u *residentUsecase) List(ctx context.Context, tenantID uuid.UUID, query st
 	if offset < 0 {
 		offset = 0
 	}
-	return u.repo.List(ctx, tenantID, query, limit, offset)
+	return u.repo.List(ctx, tenantID, query, isHead, limit, offset)
 }
 
 func (u *residentUsecase) AddFamilyMember(ctx context.Context, tenantID uuid.UUID, member *domain.FamilyMember) error {

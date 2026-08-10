@@ -24,14 +24,14 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
   const [title, setTitle] = useState(initialData?.title || '');
   const [content, setContent] = useState(initialData?.content || '');
   const [attachmentUrl, setAttachmentUrl] = useState(initialData?.attachment_url || '');
-  const [target, setTarget] = useState<AnnouncementTarget>(initialData?.target || 'ALL');
+  const [target, setTarget] = useState<AnnouncementTarget>(initialData?.target || 'all');
 
   React.useEffect(() => {
     if (isOpen) {
       setTitle(initialData?.title || '');
       setContent(initialData?.content || '');
       setAttachmentUrl(initialData?.attachment_url || '');
-      setTarget(initialData?.target || 'ALL');
+      setTarget(initialData?.target || 'all');
     }
   }, [isOpen, initialData]);
 
@@ -97,8 +97,8 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
             value={target}
             onChange={(e) => setTarget(e.target.value as AnnouncementTarget)}
           >
-            <option value="ALL">Semua (Publik & Warga)</option>
-            <option value="RESIDENTS_ONLY">Khusus Warga RT</option>
+            <option value="all">Semua (Publik & Warga)</option>
+            <option value="residents_only">Khusus Warga RT</option>
           </Select>
         </div>
 

@@ -229,6 +229,13 @@ func (r *financialRepository) UpdateDuesPayment(ctx context.Context, payment *do
 
 func (r *financialRepository) ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, limit, offset int) ([]*domain.DuesPayment, int64, error) {
 	duesTable := TenantTable(ctx, "dues_payments")
+	residentsTable := TenantTable(ctx, "residents")
+	feeCatsTable := TenantTable(ctx, "fee_categories")
+	selectCols := "d.id, d.tenant_id, d.resident_id, d.fee_category_id, d.amount, d.period_month, d.period_year, d.status, d.proof_url, d.verified_at, d.verified_by, d.created_at, d.updated_at, r.full_name, fc.name"
+	fromClause := fmt.Sprintf(`FROM %s d
+			LEFT JOIN %s r ON r.id = d.resident_id
+			LEFT JOIN %s fc ON fc.id = d.fee_category_id`, duesTable, residentsTable, feeCatsTable)
+
 	var count int64
 	var countQuery string
 	var query string
@@ -240,11 +247,11 @@ func (r *financialRepository) ListDuesPayments(ctx context.Context, tenantID uui
 			return nil, 0, err
 		}
 		query = fmt.Sprintf(`
-			SELECT id, tenant_id, resident_id, fee_category_id, amount, period_month, period_year, status, proof_url, verified_at, verified_by, created_at, updated_at
-			FROM %s
-			WHERE tenant_id = $1 AND resident_id = $2
-			ORDER BY created_at DESC LIMIT $3 OFFSET $4
-		`, duesTable)
+			SELECT %s
+			%s
+			WHERE d.tenant_id = $1 AND d.resident_id = $2
+			ORDER BY d.created_at DESC LIMIT $3 OFFSET $4
+		`, selectCols, fromClause)
 		args = []interface{}{tenantID, *residentID, limit, offset}
 	} else {
 		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, duesTable)
@@ -252,11 +259,11 @@ func (r *financialRepository) ListDuesPayments(ctx context.Context, tenantID uui
 			return nil, 0, err
 		}
 		query = fmt.Sprintf(`
-			SELECT id, tenant_id, resident_id, fee_category_id, amount, period_month, period_year, status, proof_url, verified_at, verified_by, created_at, updated_at
-			FROM %s
-			WHERE tenant_id = $1
-			ORDER BY created_at DESC LIMIT $2 OFFSET $3
-		`, duesTable)
+			SELECT %s
+			%s
+			WHERE d.tenant_id = $1
+			ORDER BY d.created_at DESC LIMIT $2 OFFSET $3
+		`, selectCols, fromClause)
 		args = []interface{}{tenantID, limit, offset}
 	}
 
@@ -283,6 +290,8 @@ func (r *financialRepository) ListDuesPayments(ctx context.Context, tenantID uui
 			&p.VerifiedBy,
 			&p.CreatedAt,
 			&p.UpdatedAt,
+			&p.ResidentName,
+			&p.FeeCategoryName,
 		); err != nil {
 			return nil, 0, err
 		}

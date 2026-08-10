@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS family_members (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     resident_id UUID NOT NULL REFERENCES residents(id) ON DELETE CASCADE,
     full_name VARCHAR(255),
-    nik VARCHAR(16),
+    nik TEXT,
     relation VARCHAR(100),
     birth_date DATE,
     gender VARCHAR(50),

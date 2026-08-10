@@ -63,10 +63,12 @@ export interface CreateTransactionPayload {
   proof_url?: string;
 }
 
+// Field names match the backend /financial/summary response.
 export interface FinancialSummary {
-  total_income: number;
-  total_expense: number;
-  balance: number;
+  current_balance: number;
+  monthly_income: number;
+  monthly_expense: number;
+  spending_breakdown?: { category: string; amount: number }[];
 }
 
 export interface DuesPaymentFilter {

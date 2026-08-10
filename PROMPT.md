@@ -1,1406 +1,1058 @@
-# MASTER TASK — ADVERSARIAL MULTI-TENANT SECURITY & ISOLATION VERIFICATION
+# MASTER TASK — COMPLETE ROLE-BASED E2E & BUSINESS USE-CASE COVERAGE
 
 Project: **Sitransparan RT/RW**
 
-Context:
+## OBJECTIVE
 
-Project ini adalah SaaS multi-tenant untuk banyak RT.
+Lakukan audit dan implementasi **comprehensive end-to-end test coverage** untuk seluruh fitur yang saat ini benar-benar tersedia di project.
 
-Current intended architecture:
+Tujuan utama:
+
+> **Semua fitur existing harus dapat dibuktikan berjalan melalui real user workflow berdasarkan role, permission, tenant, dan business use case.**
+
+Jangan hanya membuat E2E berdasarkan halaman.
+
+Jangan hanya melakukan smoke test seperti:
 
 ```text
-*.openrt.com
-      ↓
-   Traefik
-      ↓
-Frontend / Nginx
-      ↓
-Backend
-      ↓
-Authentication
-      ↓
-Tenant Resolution
-      ↓
-Tenant Authorization
-      ↓
-PostgreSQL tenant schema
+login → page loads → PASS
 ```
 
-Development menggunakan domain equivalent seperti:
+Yang dibutuhkan adalah:
+
+```text
+Role
+ ↓
+Login
+ ↓
+Tenant context
+ ↓
+Business use case
+ ↓
+UI interaction
+ ↓
+API
+ ↓
+Database
+ ↓
+Expected state
+ ↓
+Authorization verification
+```
+
+---
+
+# 1. IMPORTANT PRINCIPLE
+
+Gunakan **source code sebagai source of truth**.
+
+Jangan membuat test berdasarkan asumsi atau dokumentasi lama.
+
+Audit terlebih dahulu:
+
+```text
+Backend
+Frontend
+Routes
+API
+Handlers
+Usecases
+Repositories
+Database models
+Migrations
+RBAC
+Permissions
+Tenant middleware
+Forms
+Actions
+```
+
+Dari sana buat **feature/use-case inventory aktual**.
+
+Jika fitur memang sudah ada di code tetapi belum memiliki E2E:
+
+> buat E2E.
+
+Jika UI mengklaim fitur tersedia tetapi backend belum mendukung:
+
+> report sebagai implementation gap.
+
+Jika test harus melewati bug production-like:
+
+> fix bug tersebut lalu tambahkan regression test.
+
+---
+
+# 2. BUILD FEATURE INVENTORY
+
+Sebelum menulis E2E, inventaris semua fitur.
+
+Minimal kelompokkan:
+
+```text
+Authentication
+Tenant Management
+User Management
+Role & Permission
+Resident Management
+Family/Household Management
+Announcements
+Aspiration
+Events
+Finance
+Payments
+Reports
+Dashboard
+Profile
+Notifications
+Documents/Files
+Settings
+Tenant Switching
+Superadmin
+Admin
+Resident/User
+```
+
+Gunakan nama sebenarnya dari project.
+
+Jangan mengarang fitur yang tidak ada.
+
+Untuk setiap feature:
+
+```text
+Feature
+Route
+API
+Role
+Permission
+CRUD/action
+Expected business result
+Current E2E coverage
+```
+
+---
+
+# 3. ROLE INVENTORY
+
+Identifikasi seluruh role yang benar-benar ada.
+
+Contoh jika memang tersedia:
+
+```text
+SUPERADMIN
+ADMIN
+BENDAHARA
+PENGURUS
+WARGA
+USER
+```
+
+Gunakan role aktual dari source code.
+
+Untuk setiap role tentukan:
+
+```text
+Can Read
+Can Create
+Can Update
+Can Delete
+Can Approve
+Can Manage
+Can Export
+Can Switch Tenant
+```
+
+Jangan berasumsi semua role memiliki CRUD yang sama.
+
+---
+
+# 4. PERMISSION MATRIX
+
+Buat matrix:
+
+| Feature   | Role   | List | Detail | Create | Update | Delete | Approve | Other Actions |
+| --------- | ------ | ---: | -----: | -----: | -----: | -----: | ------: | ------------- |
+| Feature A | Role 1 |    ✓ |      ✓ |      ✓ |      ✓ |      ✗ |       ✗ | ...           |
+| Feature A | Role 2 |    ✓ |      ✓ |      ✗ |      ✗ |      ✗ |       ✓ | ...           |
+
+Gunakan authorization implementation aktual.
+
+Matrix ini menjadi sumber test E2E.
+
+---
+
+# 5. TEST STRATEGY
+
+Gunakan **business use case**, bukan hanya endpoint.
+
+Contoh buruk:
+
+```text
+POST /api/residents → 200
+```
+
+Contoh yang diinginkan:
+
+```text
+Admin login
+→ open Residents
+→ click Add Resident
+→ fill form
+→ submit
+→ resident appears in list
+→ open detail
+→ verify data
+→ edit
+→ verify updated data
+→ delete
+→ verify removed
+```
+
+Tetap boleh memiliki API/integration tests.
+
+Tetapi E2E harus membuktikan:
+
+> user dapat menyelesaikan pekerjaan sebenarnya melalui aplikasi.
+
+---
+
+# 6. AUTHENTICATION E2E
+
+Cover minimal:
+
+### Login
+
+```text
+valid credentials → success
+invalid credentials → error
+wrong password → error
+unknown user → error
+```
+
+### Session
+
+```text
+login
+→ refresh
+→ session remains valid
+```
+
+### Logout
+
+```text
+login
+→ logout
+→ protected page denied
+```
+
+### Expired/invalid session
+
+Jika feasible:
+
+```text
+expired token
+→ protected action denied
+→ user redirected appropriately
+```
+
+---
+
+# 7. TENANT CONTEXT E2E
+
+Minimal gunakan dua real tenants:
+
+```text
+Tenant A = rt-003
+Tenant B = rt-004
+```
+
+Create distinct data in each.
+
+Verify:
+
+```text
+login as Tenant A
+→ only Tenant A data visible
+```
+
+Then:
+
+```text
+login as Tenant B
+→ only Tenant B data visible
+```
+
+Test:
+
+```text
+Tenant A user
+→ cannot access Tenant B data
+```
+
+Test both:
+
+* UI
+* direct URL
+* API through browser where practical
+
+---
+
+# 8. CRUD COVERAGE
+
+For every entity/resource that supports CRUD:
+
+## CREATE
+
+Test:
+
+```text
+open create page
+→ fill all required fields
+→ submit
+→ success notification
+→ record appears
+→ detail page contains correct data
+```
+
+Also test validation:
+
+```text
+missing required field
+invalid format
+duplicate data
+invalid relationship
+boundary values
+```
+
+---
+
+## READ
+
+Test:
+
+```text
+list
+→ search
+→ filter
+→ pagination
+→ detail
+```
+
+Verify actual data.
+
+Do not merely check:
+
+```text
+page is visible
+```
+
+Check:
+
+```text
+expected record exists
+expected fields contain expected values
+```
+
+---
+
+## UPDATE
+
+Test:
+
+```text
+open existing record
+→ edit
+→ save
+→ reload
+→ verify persisted data
+```
+
+The test must verify persistence, not just toast notification.
+
+---
+
+## DELETE
+
+Test:
+
+```text
+open record
+→ delete
+→ confirm
+→ record disappears
+→ reload
+→ record remains absent
+```
+
+If deletion is soft-delete:
+
+> verify actual expected status.
+
+---
+
+# 9. CRUD MUST FOLLOW ROLE PERMISSIONS
+
+Do not test only happy-path admin CRUD.
+
+For every protected operation:
+
+```text
+authorized role → ALLOW
+unauthorized role → DENY
+```
+
+Example:
+
+```text
+ADMIN
+→ create resident
+→ PASS
+
+WARGA
+→ create resident
+→ DENY
+
+ADMIN
+→ delete resident
+→ PASS
+
+WARGA
+→ delete resident
+→ DENY
+```
+
+Use actual permission rules.
+
+---
+
+# 10. NEGATIVE AUTHORIZATION TESTS
+
+This is mandatory.
+
+For every important CRUD/action:
+
+```text
+allowed role
+blocked role
+```
+
+must be tested.
+
+Do not rely on frontend hiding buttons.
+
+Test direct navigation:
+
+```text
+navigate directly to protected URL
+```
+
+and where practical:
+
+```text
+attempt protected API operation through browser context
+```
+
+Expected:
+
+```text
+403 / redirect / appropriate denial
+```
+
+according to actual application behavior.
+
+---
+
+# 11. BUSINESS USE CASES
+
+Identify real workflows.
+
+Examples:
+
+## Resident Management
+
+```text
+Admin login
+→ residents
+→ create resident
+→ verify
+→ edit resident
+→ verify
+→ search resident
+→ filter resident
+→ detail
+→ delete/deactivate
+→ verify
+```
+
+## Announcement
+
+```text
+Pengurus/Admin
+→ create announcement
+→ publish
+→ verify visible to resident
+```
+
+Then:
+
+```text
+Resident
+→ can read announcement
+→ cannot create/edit/delete announcement
+```
+
+## Aspiration
+
+If applicable:
+
+```text
+Resident
+→ create aspiration
+→ see own aspiration
+→ verify status
+
+Admin/Pengurus
+→ view aspiration
+→ update/process status
+→ verify resident sees updated status
+```
+
+## Finance
+
+If applicable:
+
+```text
+Bendahara/Admin
+→ create transaction
+→ verify balance/report
+→ edit transaction
+→ verify recalculation
+→ delete/void if supported
+```
+
+Resident:
+
+```text
+Resident
+→ read allowed financial information
+→ cannot modify financial records
+```
+
+Use actual workflows from the project.
+
+---
+
+# 12. STATE TRANSITIONS
+
+For entities with status/state, test transitions.
+
+Example:
+
+```text
+DRAFT
+ ↓
+PUBLISHED
+ ↓
+ARCHIVED
+```
+
+or:
+
+```text
+PENDING
+ ↓
+APPROVED
+ ↓
+REJECTED
+```
+
+or whatever exists in the actual system.
+
+Test:
+
+```text
+valid transition → PASS
+invalid transition → DENY
+wrong role → DENY
+```
+
+Do not assume status is just a CRUD field if the backend treats it as a workflow.
+
+---
+
+# 13. CROSS-FEATURE WORKFLOWS
+
+This is important.
+
+Features should not only work independently.
+
+Test workflows such as:
+
+```text
+Create resident
+→ resident appears in dashboard
+→ resident can login
+→ resident sees announcements
+```
+
+If finance affects dashboard:
+
+```text
+Create transaction
+→ dashboard total changes
+→ report changes
+```
+
+If aspiration changes status:
+
+```text
+Admin updates aspiration
+→ resident sees new status
+```
+
+Use actual application relationships.
+
+---
+
+# 14. SUPERADMIN E2E
+
+If SUPERADMIN exists:
+
+Test:
+
+```text
+login
+→ tenant management
+→ create tenant
+→ edit tenant
+→ deactivate tenant
+→ reactivate tenant
+→ inspect tenant
+```
+
+If tenant provisioning is supported:
+
+```text
+create Tenant B
+→ tenant becomes available
+→ Tenant B admin can login
+→ Tenant B data isolated
+```
+
+Test:
+
+```text
+SUPERADMIN
+→ cannot accidentally bypass tenant isolation
+```
+
+according to actual intended design.
+
+---
+
+# 15. TENANT CRUD
+
+If tenant CRUD exists, test full lifecycle:
+
+```text
+Create tenant
+ ↓
+Set slug
+ ↓
+Create/admin assign
+ ↓
+Activate
+ ↓
+Access tenant hostname
+ ↓
+Disable
+ ↓
+Access denied
+ ↓
+Re-enable
+ ↓
+Access restored
+```
+
+Verify persistence in database through observable application behavior.
+
+---
+
+# 16. FILE / UPLOAD FEATURES
+
+If available:
+
+```text
+upload
+→ verify uploaded
+→ view/download
+→ replace/update
+→ delete
+```
+
+Then test:
+
+```text
+Tenant A
+→ cannot access Tenant B file
+```
+
+Test file validation if applicable:
+
+```text
+wrong type
+oversized
+empty
+invalid filename
+```
+
+---
+
+# 17. SEARCH / FILTER / PAGINATION
+
+For each major list:
+
+Test:
+
+```text
+search exact
+search partial
+filter
+clear filter
+pagination
+sort
+```
+
+Verify actual records.
+
+Also test:
+
+> filtering cannot expose another tenant's data.
+
+---
+
+# 18. FORMS & VALIDATION
+
+Every important form should have E2E validation coverage.
+
+At minimum:
+
+```text
+required fields
+invalid input
+duplicate
+boundary
+successful submission
+server-side validation error
+```
+
+Do not test only browser validation.
+
+Backend validation must also be exercised through real UI submission.
+
+---
+
+# 19. ERROR HANDLING
+
+Test realistic failures where feasible:
+
+```text
+API 400
+API 401
+API 403
+API 404
+API 409
+API 500
+network failure
+```
+
+Verify UI does not silently report success.
+
+Expected behavior:
+
+```text
+failed request
+→ user sees failure
+→ data is not falsely shown as saved
+```
+
+---
+
+# 20. DATA INTEGRITY VERIFICATION
+
+Do not trust UI state.
+
+After important mutations:
+
+```text
+create
+→ reload
+→ verify
+
+update
+→ reload
+→ verify
+
+delete
+→ reload
+→ verify
+```
+
+If appropriate, also verify via API/read-only backend state.
+
+The purpose:
+
+> ensure mutation actually persisted.
+
+---
+
+# 21. E2E TEST DATA STRATEGY
+
+Do not depend on manually existing production-like data.
+
+Create deterministic test fixtures.
+
+Example:
+
+```text
+E2E Tenant A
+E2E Tenant B
+E2E Admin A
+E2E Admin B
+E2E Resident A
+E2E Resident B
+```
+
+Use unique identifiers to avoid collisions.
+
+Example:
+
+```text
+e2e-${timestamp}
+```
+
+or project-appropriate deterministic IDs.
+
+Tests must be repeatable.
+
+---
+
+# 22. TEST ISOLATION
+
+Each E2E test should not depend unnecessarily on another test's execution order.
+
+Prefer:
+
+```text
+setup
+→ create required data
+→ execute workflow
+→ cleanup
+```
+
+or controlled fixtures.
+
+Avoid:
+
+```text
+test #27 only works if test #3 ran first
+```
+
+---
+
+# 23. E2E COVERAGE MATRIX
+
+Produce a matrix:
+
+| Feature   | Role     |         Use Case | Create | Read | Update | Delete | Workflow | Negative Auth | E2E |
+| --------- | -------- | ---------------: | -----: | ---: | -----: | -----: | -------: | ------------: | --: |
+| Residents | Admin    | Manage residents |      ✓ |    ✓ |      ✓ |      ✓ |        ✓ |             ✓ |   ✓ |
+| Residents | Resident |   View residents |      — |    ✓ |      — |      — |        ✓ |             ✓ |   ✓ |
+| ...       | ...      |              ... |    ... |  ... |    ... |    ... |      ... |           ... | ... |
+
+Use actual project features and roles.
+
+At the end there must be **no unexplained gaps**.
+
+---
+
+# 24. COVERAGE TARGET
+
+Target:
+
+> **100% of user-facing business features currently implemented must have at least one meaningful E2E workflow.**
+
+For CRUD-capable entities:
+
+> Create + Read + Update + Delete must be covered where those operations actually exist.
+
+For operations that are intentionally unavailable:
+
+> explicitly test authorization denial where valuable.
+
+For workflows:
+
+> test the complete user journey, not isolated pages.
+
+---
+
+# 25. DO NOT CREATE FAKE FEATURES
+
+If something does not exist:
+
+Do not create fake E2E tests for it.
+
+Instead report:
+
+```text
+Feature:
+Expected based on UI/code:
+Actual:
+Status:
+```
+
+Only test what the current product actually supports.
+
+---
+
+# 26. WHEN E2E REVEALS A BUG
+
+Do not simply mark the E2E as skipped.
+
+Process:
+
+```text
+E2E FAIL
+ ↓
+reproduce
+ ↓
+identify root cause
+ ↓
+fix implementation
+ ↓
+add regression test
+ ↓
+rerun affected E2E
+ ↓
+rerun broader suite
+```
+
+Examples of bugs that must be fixed:
+
+* UI says success but API fails
+* CRUD works for wrong role
+* tenant data leaks
+* update doesn't persist
+* delete only removes UI state
+* pagination returns wrong tenant
+* status transition bypasses permission
+* form accepts invalid data that backend rejects unexpectedly
+* stale cache displays old tenant data
+
+---
+
+# 27. DO NOT CHEAT THE E2E
+
+Do not:
+
+* directly insert the final result into DB immediately before assertion
+* mock the API for the main business workflow
+* mock authorization
+* bypass login for tests that are supposed to verify login
+* disable middleware
+* intercept API and return fake success
+* modify production behavior just for E2E
+* use internal implementation details as a substitute for UI behavior
+
+Mocks are acceptable only where genuinely necessary and clearly separated from full E2E.
+
+The main E2E must exercise:
+
+```text
+Browser
+→ real frontend
+→ real backend
+→ real database
+```
+
+as much as the project's architecture permits.
+
+---
+
+# 28. E2E SHOULD RUN THROUGH REAL TENANT HOSTNAMES
+
+For tenant-aware flows, do not test only:
+
+```text
+localhost
+```
+
+Use:
 
 ```text
 rt-003.openrt.local
 rt-004.openrt.local
 ```
 
-Production direncanakan menggunakan:
+through the actual development routing stack where possible.
 
-```text
-rt-003.openrt.com
-rt-004.openrt.com
-```
-
-Current implementation sebelumnya telah mengklaim:
-
-* tenant hostname resolution
-* tenant existence validation
-* active/inactive tenant handling
-* JWT tenant ↔ hostname consistency
-* cross-tenant host protection
-* X-Tenant-ID spoof protection
-* X-Forwarded-Host spoof protection
-* Traefik wildcard routing
-* PostgreSQL schema isolation
-* Docker development support
-
-Namun task ini **tidak boleh mempercayai klaim tersebut**.
+This is important because tenant resolution depends on hostname.
 
 ---
 
-# PRIMARY OBJECTIVE
+# 29. MOBILE / RESPONSIVE CRITICAL FLOWS
 
-Lakukan **adversarial security verification** terhadap implementasi multi-tenant saat ini.
-
-Bertindak sebagai security engineer/attacker yang mencoba membuktikan bahwa:
-
-> **Tenant A tidak pernah dapat membaca, membuat, mengubah, menghapus, menyetujui, atau memperoleh private state milik Tenant B melalui hostname, JWT, headers, API, browser cache, PWA, proxy, database, atau kombinasi attack vector lainnya.**
-
-Jangan menganggap implementation aman hanya karena unit/integration test sudah PASS.
-
-Tujuan task:
+If the application is PWA/mobile-first, at least verify critical workflows on a mobile viewport:
 
 ```text
-ATTACK
-  ↓
-OBSERVE
-  ↓
-IDENTIFY BYPASS
-  ↓
-REPRODUCE
-  ↓
-FIX SOURCE CODE ONLY IF NEEDED
-  ↓
-ADD REGRESSION TEST
-  ↓
-RUN ACTUAL TEST
-  ↓
-RE-ATTACK
-  ↓
-VERIFY
+login
+resident lookup
+announcement
+aspiration
+finance if applicable
+logout
 ```
 
-Jika tidak menemukan vulnerability:
+Do not attempt every permutation if unnecessary.
 
-> buktikan dengan attack matrix dan evidence.
+The purpose is to catch:
 
-Jika menemukan vulnerability:
-
-> jangan hanya melaporkan — perbaiki source code dan tambahkan regression test.
+* inaccessible buttons
+* broken forms
+* modal overflow
+* navigation failures
+* mobile-specific rendering bugs
 
 ---
 
-# 1. RULES
+# 30. PWA E2E
 
-## Rule 1 — Source code is truth
-
-Jangan mempercayai:
-
-* README
-* security report
-* previous audit
-* previous test report
-* agent claims
-* documentation
-
-Gunakan implementation aktual.
-
----
-
-## Rule 2 — Do not weaken security
-
-DILARANG:
-
-* disable middleware
-* bypass authorization
-* hardcode tenant
-* hardcode user
-* hardcode role untuk membuat test pass
-* skip failing tests
-* mengubah expected result agar test PASS
-* menghapus security test
-* membuat test-only bypass yang dapat masuk production
-
----
-
-## Rule 3 — Backend is security boundary
-
-Frontend tidak boleh dianggap sebagai security control.
-
-Jika frontend mencegah sesuatu tetapi backend mengizinkannya:
-
-> SECURITY BUG.
-
----
-
-# 2. BUILD CURRENT SECURITY MODEL
-
-Sebelum menyerang, reconstruct actual security model.
-
-Identifikasi:
-
-```text
-Tenant identity
-Tenant slug
-Tenant domain
-Tenant status
-Tenant membership
-User identity
-JWT claims
-Roles
-Permissions
-Hostname resolver
-Tenant middleware
-Authorization middleware
-Database schema resolution
-```
-
-Tampilkan actual flow:
-
-```text
-Request
- ↓
-Host
- ↓
-Proxy
- ↓
-Auth
- ↓
-Tenant resolution
- ↓
-Authorization
- ↓
-Database
-```
-
-Jangan membuat assumptions.
-
----
-
-# 3. ATTACK MATRIX
-
-Buat attack matrix untuk minimal:
-
-```text
-Tenant A
-Tenant B
-Unknown tenant
-Inactive tenant
-Deleted/nonexistent tenant
-SUPERADMIN
-ADMIN
-normal resident/user
-unauthorized user
-unauthenticated user
-```
-
-Gunakan setidaknya dua real test tenants.
-
-Contoh:
-
-```text
-rt-003
-rt-004
-```
-
-Pastikan data kedua tenant berbeda sehingga leakage mudah dikenali.
-
----
-
-# 4. HOST ↔ JWT ATTACKS
-
-Test:
-
-### Case A
-
-```text
-Host: rt-003
-JWT tenant: rt-003
-```
-
-Expected:
-
-```text
-ALLOW
-```
-
-### Case B
-
-```text
-Host: rt-004
-JWT tenant: rt-003
-```
-
-Expected:
-
-```text
-DENY
-```
-
-### Case C
-
-```text
-Host: rt-003
-JWT tenant: rt-004
-```
-
-Expected:
-
-```text
-DENY
-```
-
-### Case D
-
-```text
-Host: unknown
-JWT tenant: rt-003
-```
-
-Expected:
-
-```text
-DENY
-```
-
-### Case E
-
-```text
-Host: rt-003
-JWT has no tenant
-```
-
-Expected according to actual security model:
-
-```text
-DENY
-```
-
-unless explicit public endpoint policy applies.
-
----
-
-# 5. JWT MANIPULATION
-
-Attempt:
-
-* modified tenant claim
-* modified user ID
-* modified role
-* modified subject
-* modified expiration
-* invalid signature
-* empty signature
-* malformed JWT
-* expired JWT
-* missing JWT
-* wrong algorithm
-* algorithm confusion if applicable
-
-Expected:
-
-> DENY.
-
-Do not only test parser behavior.
-
-Test through actual protected endpoints.
-
----
-
-# 6. HOST HEADER ATTACKS
-
-Attempt:
-
-```text
-Host: rt-003.openrt.com
-```
-
-then variations:
-
-```text
-RT-003.openrt.com
-rt-003.openrt.com.
-rt-003.openrt.com:80
-rt-003.openrt.com:443
-rt-003..openrt.com
-rt--003.openrt.com
-rt_003.openrt.com
-rt 003.openrt.com
-```
-
-Test according to actual hostname policy.
-
-The critical invariant:
-
-> hostname normalization must never transform an attacker-controlled invalid hostname into another valid tenant accidentally.
-
----
-
-# 7. DOMAIN CONFUSION ATTACKS
-
-Test:
-
-```text
-rt-003.openrt.com.attacker.com
-```
-
-```text
-attacker.com
-```
-
-```text
-openrt.com.attacker.com
-```
-
-```text
-attacker.openrt.com
-```
-
-```text
-rt-003.attacker.com
-```
-
-```text
-rt-003.openrt.com.evil
-```
-
-Expected:
-
-> DENY.
-
-Never resolve tenant based on naïve `strings.Split()` or suffix matching.
-
----
-
-# 8. FORWARDED HEADER ATTACKS
-
-Attempt:
-
-```text
-X-Forwarded-Host: rt-004.openrt.com
-```
-
-while actual host is:
-
-```text
-rt-003.openrt.com
-```
-
-Also test:
-
-```text
-X-Original-Host
-X-Forwarded-Proto
-Forwarded
-X-Tenant-ID
-X-Tenant-Slug
-X-Original-URL
-```
-
-if application/proxy stack supports them.
-
-Expected:
-
-> attacker cannot choose tenant through an untrusted header.
-
-Document exactly which headers are trusted and why.
-
----
-
-# 9. TRAEFIK ATTACKS
-
-Verify actual Traefik behavior.
-
-Test:
-
-```text
-valid tenant hostname
-unknown tenant hostname
-malformed hostname
-attacker hostname
-wrong base domain
-```
-
-Verify:
-
-* router matches only intended domain
-* unknown tenant reaches application only if expected
-* application still denies unknown tenant
-* no router accidentally routes arbitrary hostname to tenant
-* no router bypasses authentication
-* no special router exposes admin/private endpoints
-
-Do not confuse:
-
-```text
-Traefik routing
-```
-
-with:
-
-```text
-tenant authorization
-```
-
-Both must be verified independently.
-
----
-
-# 10. NGINX / FRONTEND PROXY ATTACKS
-
-Audit:
-
-```text
-Frontend/Nginx
-    ↓
-/api proxy
-```
-
-Verify:
-
-* Host preserved correctly
-* forwarded headers controlled
-* arbitrary client headers cannot change tenant context
-* API requests cannot bypass frontend security assumptions
-* direct backend access does not bypass tenant authorization if backend is exposed
-
-If backend is supposed to be internal-only:
-
-> verify Docker networking/ports enforce this.
-
----
-
-# 11. TENANT EXISTENCE ATTACKS
-
-Test:
-
-```text
-rt-003 → exists
-rt-004 → exists
-rt-999 → does not exist
-foo → does not exist
-```
-
-Unknown tenant must never result in:
-
-```text
-schema created automatically
-tenant context created automatically
-fallback tenant
-default tenant
-first tenant
-public tenant
-SUPERADMIN tenant
-```
-
-Especially investigate fallback behavior.
-
-Dangerous examples:
-
-```text
-tenant not found → default tenant
-tenant not found → public tenant
-tenant not found → nil tenant
-tenant not found → SUPERADMIN context
-```
-
-All must be evaluated.
-
----
-
-# 12. TENANT STATUS ATTACKS
-
-Test:
-
-```text
-active
-inactive
-disabled
-deleted
-```
-
-Expected for private tenant:
-
-```text
-inactive → DENY
-deleted → DENY
-```
-
-Test all relevant boundaries:
-
-* login
-* `/me`
-* tenant listing
-* tenant switching
-* CRUD
-* public endpoints
-* file/document endpoints
-* financial endpoints
-* event endpoints
-* aspiration endpoints
-
-Do not assume middleware coverage means all flows are protected.
-
----
-
-# 13. TENANT SWITCHING ATTACKS
-
-Audit tenant switch endpoint.
-
-Attempt:
-
-```text
-user A
-→ switch to tenant B
-```
-
-where user A has no membership in B.
-
-Expected:
-
-> DENY.
-
-Attempt:
-
-```text
-user A
-→ manually modify tenant ID in request
-```
-
-Expected:
-
-> DENY.
-
-Attempt:
-
-```text
-SUPERADMIN
-→ switch to nonexistent tenant
-```
-
-Expected:
-
-> DENY.
-
-Attempt:
-
-```text
-user with tenant A
-→ Host tenant B
-→ switch endpoint
-```
-
-Expected:
-
-> authorization must remain consistent.
-
----
-
-# 14. RESOURCE-LEVEL CROSS-TENANT ATTACKS
-
-This is mandatory.
-
-Create known resources:
-
-```text
-Tenant A:
-resident A1
-finance A1
-event A1
-announcement A1
-aspiration A1
-etc.
-```
-
-Tenant B:
-
-```text
-resident B1
-finance B1
-event B1
-announcement B1
-aspiration B1
-etc.
-```
-
-Then attempt:
-
-```text
-Tenant A user
-→ GET resource B
-```
-
-```text
-Tenant A user
-→ UPDATE resource B
-```
-
-```text
-Tenant A user
-→ DELETE resource B
-```
-
-```text
-Tenant A user
-→ APPROVE resource B
-```
-
-according to actual available operations.
-
-Test:
-
-* by ID
-* list endpoints
-* search
-* filters
-* pagination
-* aggregation
-* reports
-* exports
-* downloads
-
-A user must not obtain Tenant B data by guessing IDs.
-
----
-
-# 15. IDOR / RESOURCE ID ATTACKS
-
-Test:
-
-```text
-/resource/A-ID
-```
-
-then:
-
-```text
-/resource/B-ID
-```
-
-with Tenant A credentials.
-
-Expected:
-
-```text
-DENY
-```
-
-Do not rely on random UUIDs as authorization.
-
-The database/query must enforce tenant ownership.
-
----
-
-# 16. LIST / SEARCH / FILTER LEAKAGE
-
-Cross-tenant leakage can occur even when by-ID access is secure.
-
-Test:
-
-```text
-GET /residents
-GET /finance
-GET /events
-GET /announcements
-GET /aspirations
-```
-
-and:
-
-```text
-?tenant_id=B
-?tenant=B
-?schema=B
-?search=...
-?filter=...
-```
-
-Expected:
-
-> server-side tenant scope remains authoritative.
-
-Test pagination carefully:
-
-```text
-page 1
-page 2
-page N
-```
-
-A hidden cross-tenant record must never appear on another page.
-
----
-
-# 17. AGGREGATION / REPORT ATTACKS
-
-Audit endpoints such as:
-
-* dashboard
-* balance
-* financial summary
-* statistics
-* reports
-* charts
-* counts
-* exports
-
-These are frequently missed.
-
-Test:
-
-```text
-Tenant A
-→ dashboard
-```
-
-must contain only:
-
-```text
-Tenant A data
-```
-
-No aggregate may accidentally query all tenants.
-
----
-
-# 18. FILE / DOCUMENT ISOLATION
-
-If project supports:
-
-* uploads
-* receipts
-* documents
-* images
-* attachments
-* public/private files
-
-test cross-tenant access.
-
-Attempt:
-
-```text
-Tenant A
-→ request Tenant B file ID/path/key
-```
-
-Expected:
-
-> DENY.
-
-Audit object storage keys.
-
-Never trust:
-
-```text
-bucket/path/file ID
-```
-
-as authorization.
-
----
-
-# 19. DATABASE SCHEMA ESCAPE
-
-Audit schema resolution.
-
-Try to determine whether user-controlled input can influence:
-
-```text
-schema name
-table name
-search_path
-database connection
-```
-
-Dangerous:
-
-```text
-tenantSlug → raw SQL identifier
-```
-
-without trusted tenant lookup.
+If PWA is implemented:
 
 Verify:
 
 ```text
-Host
- ↓
-tenant lookup
- ↓
-trusted tenant metadata
- ↓
-trusted schema
+load app
+→ service worker registration
+→ reload
+→ app remains usable
 ```
 
-Never:
+If offline behavior is intentionally supported:
 
-```text
-Host
- ↓
-"tenant_" + arbitrary user input
-```
+> test actual supported offline workflows.
+
+Do not invent offline capabilities.
+
+Also verify cache does not cause cross-tenant data leakage.
 
 ---
 
-# 20. PostgreSQL CONNECTION POOL ATTACK
+# 31. FULL TEST COMMANDS
 
-Audit whether tenant context leaks between pooled connections.
+Use the project's actual scripts.
 
-If application uses:
-
-```text
-database/sql
-```
-
-or equivalent pooling:
-
-Test:
-
-```text
-Tenant A request
-→ connection
-→ Tenant B request
-→ potentially same connection
-```
-
-Verify no tenant-specific state remains in connection/session.
-
-Especially inspect:
-
-```text
-SET search_path
-SET ROLE
-session variables
-temporary tables
-prepared statements
-connection-local state
-```
-
-If schema-qualified queries are used, verify all tenant-scoped queries actually use them.
-
----
-
-# 21. CACHE / TANSTACK QUERY
-
-Test browser transition:
-
-```text
-Tenant A
-→ login
-→ load private data
-→ logout
-```
-
-then:
-
-```text
-Tenant B
-→ login
-→ load same screen
-```
-
-Verify no Tenant A data appears.
-
-Inspect:
-
-* query keys
-* query invalidation
-* queryClient.clear()
-* persisted query cache
-* localStorage
-* sessionStorage
-* Zustand or other state stores
-
-Tenant context must be included where necessary.
-
----
-
-# 22. PWA / SERVICE WORKER ATTACK
-
-Inspect:
-
-* service worker
-* Cache API
-* Workbox
-* precache
-* runtime cache
-* API response caching
-
-Test:
-
-```text
-rt-003
-→ private response cached
-```
-
-then:
-
-```text
-rt-004
-→ same URL/path
-```
-
-Ensure cached Tenant A private data cannot be returned to Tenant B.
-
-Pay special attention to:
-
-```text
-/api/*
-```
-
-cache rules.
-
-Private API responses should not be blindly cached across tenant origins.
-
----
-
-# 23. BROWSER STORAGE
-
-Search for:
-
-```text
-localStorage
-sessionStorage
-IndexedDB
-cookies
-persisted state
-```
-
-Determine whether:
-
-* tenant ID
-* user data
-* permissions
-* cached API response
-* JWT
-
-can survive tenant transition incorrectly.
-
-Attempt:
-
-```text
-Tenant A
-→ logout
-→ Tenant B
-```
-
-Expected:
-
-> no private Tenant A state is reused.
-
----
-
-# 24. CORS / ORIGIN
-
-Test:
-
-```text
-Origin: https://rt-003.openrt.com
-```
-
-versus:
-
-```text
-Origin: https://attacker.com
-```
-
-and other tenant origins.
-
-Verify:
-
-* CORS does not grant attacker origin
-* credentials are handled correctly
-* cookies are scoped correctly
-* SameSite behavior is appropriate
-* wildcard `*` is not combined incorrectly with credentials
-
----
-
-# 25. COOKIE / SESSION ISOLATION
-
-If cookies are used:
-
-Audit:
-
-```text
-Domain
-Path
-Secure
-HttpOnly
-SameSite
-```
-
-Determine whether:
-
-```text
-Domain=.openrt.com
-```
-
-is intentional.
-
-If wildcard domain cookies are used, verify one tenant cannot exploit them to impersonate another tenant.
-
-If JWT Authorization headers are used instead, verify token handling remains secure.
-
----
-
-# 26. SUPERADMIN ADVERSARIAL TEST
-
-SUPERADMIN is the highest-risk role.
-
-Verify:
-
-### Allowed
-
-```text
-SUPERADMIN
-→ explicit authorized tenant
-```
-
-### Denied
-
-```text
-SUPERADMIN
-→ nonexistent tenant
-```
-
-### Denied unless explicitly supported
-
-```text
-SUPERADMIN JWT tenant=A
-Host=B
-```
-
-Do not allow hostname alone to switch SUPERADMIN context.
-
----
-
-# 27. PUBLIC ROUTES
-
-Identify every public endpoint.
-
-For each:
-
-```text
-public endpoint
-→ tenant context required?
-→ tenant resolved how?
-→ inactive tenant behavior?
-→ unknown tenant behavior?
-```
-
-Public does not automatically mean:
-
-> all tenant data.
-
-For example:
-
-```text
-rt-003.openrt.com/public/announcements
-```
-
-must return only data belonging to the correct tenant if the endpoint is tenant-scoped.
-
----
-
-# 28. ERROR RESPONSE ANALYSIS
-
-Check whether errors leak:
-
-* tenant existence
-* database schema
-* internal IDs
-* SQL errors
-* user existence
-* authorization details
-* filesystem/object storage paths
-
-Compare:
-
-```text
-unknown tenant
-inactive tenant
-unauthorized tenant
-```
-
-Ensure response differences do not unnecessarily expose sensitive information.
-
-Do not blindly require identical status codes if application semantics legitimately distinguish them.
-
----
-
-# 29. RATE LIMITING / ABUSE
-
-If rate limiting exists, verify whether it is tenant/user aware.
-
-If not implemented:
-
-> report as finding, do not invent implementation unless clearly within scope.
-
-At minimum consider:
-
-* tenant enumeration
-* login brute force
-* tenant slug enumeration
-
-Do not claim protection that does not exist.
-
----
-
-# 30. CONFIGURATION / HARDCODE AUDIT
-
-Search entire repository for:
-
-```text
-openrt.com
-openrt.local
-rt-003
-rt-004
-tenant-003
-tenant-004
-```
-
-Classify:
-
-```text
-SAFE TEST FIXTURE
-DOCUMENTATION EXAMPLE
-CONFIGURATION DEFAULT
-PRODUCTION HARDCODE
-```
-
-Production logic must not depend on a specific RT.
-
----
-
-# 31. TEST REALISTIC ATTACK FLOW
-
-Do not rely only on isolated middleware tests.
-
-At least one complete attack must traverse:
-
-```text
-curl/browser
- ↓
-Traefik
- ↓
-Nginx
- ↓
-Backend
- ↓
-Auth
- ↓
-Tenant middleware
- ↓
-Repository
- ↓
-PostgreSQL
-```
-
-Example:
-
-```text
-JWT Tenant A
-+
-Host Tenant B
-+
-real resource ID from Tenant B
-```
-
-Expected:
-
-```text
-DENY
-```
-
-This must be verified against the actual running stack.
-
----
-
-# 32. REGRESSION TESTS
-
-For every vulnerability discovered:
-
-1. reproduce it
-2. capture failing behavior
-3. fix source code
-4. add automated regression test
-5. run test
-6. run broader test suite
-7. reproduce original attack
-8. verify it is now blocked
-
-Never delete the test after fixing.
-
----
-
-# 33. TEST RESULT FORMAT
-
-For every important attack:
-
-```text
-ATTACK:
-AUTH:
-HOST:
-REQUEST:
-TARGET:
-EXPECTED:
-ACTUAL:
-HTTP STATUS:
-TENANT CONTEXT:
-DB SCHEMA:
-RESULT:
-```
-
-Example:
-
-```text
-ATTACK:
-Cross-tenant resource access
-
-AUTH:
-Tenant A user
-
-HOST:
-rt-003.openrt.local
-
-REQUEST:
-GET /api/residents/<tenant-B-id>
-
-EXPECTED:
-DENY
-
-ACTUAL:
-403
-
-TENANT CONTEXT:
-tenant A
-
-DB SCHEMA:
-tenant_a
-
-RESULT:
-PASS
-```
-
-If DB schema cannot safely be exposed in logs:
-
-> report the verification method without leaking secrets.
-
----
-
-# 34. SECURITY INVARIANTS
-
-At the end, explicitly prove these invariants:
-
-### Invariant 1
-
-```text
-Unknown hostname
-→ no tenant context
-→ no tenant data
-```
-
-### Invariant 2
-
-```text
-Tenant A user
-→ cannot access Tenant B resources
-```
-
-### Invariant 3
-
-```text
-Tenant A JWT
-+ Host B
-→ DENY
-```
-
-### Invariant 4
-
-```text
-Client-controlled tenant ID
-→ never authoritative
-```
-
-### Invariant 5
-
-```text
-Client-controlled forwarded headers
-→ never tenant authority
-```
-
-### Invariant 6
-
-```text
-Hostname
-→ tenant lookup
-→ never direct schema selection
-```
-
-### Invariant 7
-
-```text
-Tenant A cache
-→ never reused for Tenant B
-```
-
-### Invariant 8
-
-```text
-Inactive tenant
-→ no private access
-```
-
-### Invariant 9
-
-```text
-Tenant creation
-→ does not require source-code change
-```
-
-### Invariant 10
-
-```text
-No production tenant/domain hardcode
-```
-
----
-
-# 35. DO NOT STOP AT FINDINGS
-
-If a vulnerability is discovered, do not finish with:
-
-> "Found vulnerability."
-
-Continue:
-
-```text
-FIND
-→ ROOT CAUSE
-→ FIX
-→ REGRESSION TEST
-→ RUN
-→ RE-ATTACK
-→ VERIFY
-```
-
-The task is not complete until the fixed behavior has been re-tested.
-
----
-
-# 36. FINAL VALIDATION
-
-Run relevant:
+At minimum run appropriate:
 
 ```text
 go test ./...
@@ -1408,235 +1060,159 @@ go build ./...
 go vet ./...
 ```
 
-Frontend:
+and frontend:
 
 ```text
-npm test
 npm run build
 npm run typecheck
 npm run lint
 ```
 
-Use actual project commands.
-
-Also run:
+plus:
 
 ```text
-Docker compose validation
-Traefik validation
-Integration tests
-Security tests
-E2E tests
+npm run test:e2e
 ```
 
-if available.
+or the actual E2E command found in the project.
 
-Do not invent commands.
+Do not invent commands if they do not exist.
 
 ---
 
-# 37. FINAL REPORT
+# 32. FINAL REPORT
 
-Provide:
+Return:
 
-## Executive Summary
+## A. Feature Inventory
+
+All current user-facing features.
+
+## B. Role Inventory
+
+All actual roles.
+
+## C. Permission Matrix
+
+Actual authorization matrix.
+
+## D. Use Case Inventory
+
+Real business workflows.
+
+## E. E2E Coverage Matrix
+
+Show exactly what is covered.
+
+## F. Test Results
+
+Include:
 
 ```text
-Overall:
-VERIFIED / PARTIAL / BROKEN / BLOCKED
+passed
+failed
+skipped
+blocked
 ```
 
-## Attack Matrix
+## G. Bugs Found
 
-Show every major attack and result.
-
-## Vulnerabilities Found
-
-For each:
+For every bug:
 
 ```text
-Severity
-Attack
-Root Cause
-Impact
+Feature
+Role
+Use case
+Steps
+Expected
+Actual
+Root cause
 Fix
-Regression Test
-Final Result
+Regression test
 ```
 
-## Tenant Isolation
+## H. Coverage Gaps
 
-Explicitly state:
+Explicitly list anything not covered and why.
 
-```text
-Unknown tenant:
-Cross-tenant:
-Host manipulation:
-JWT manipulation:
-Resource ID:
-List/search:
-Reports:
-Files:
-Cache:
-PWA:
-Database:
-```
-
-## Infrastructure
-
-```text
-Traefik:
-Nginx:
-Docker:
-Development:
-Production:
-```
-
-## Configuration
-
-List relevant configuration variables and confirm no unsafe hardcodes.
-
-## Tests
-
-Show actual commands and results.
-
-## Remaining Issues
-
-Separate:
-
-```text
-CRITICAL
-HIGH
-MEDIUM
-LOW
-UNTESTED
-BLOCKED
-```
-
-Do not hide limitations.
-
----
-
-# 38. FINAL STATUS RULE
+## I. Final Assessment
 
 Use:
 
-### VERIFIED
-
-Only if attack was actually executed and expected deny/allow behavior was observed.
-
-### PARTIAL
-
-If implementation appears correct but an important attack path could not be executed.
-
-### BROKEN
-
-If tenant isolation can be bypassed.
-
-### BLOCKED
-
-If environment prevents meaningful verification.
-
-Never use:
-
-> VERIFIED
-
-merely because code inspection suggests it should work.
+```text
+COMPLETE
+PARTIAL
+BLOCKED
+```
 
 ---
 
 # DEFINITION OF DONE
 
-* [ ] Current tenant security model reconstructed
-* [ ] Host ↔ JWT consistency attacked
-* [ ] JWT manipulation attacked
-* [ ] Host header manipulation attacked
-* [ ] Forwarded header spoof attacked
-* [ ] Unknown tenant attacked
-* [ ] Inactive tenant attacked
-* [ ] Deleted/nonexistent tenant attacked
-* [ ] Tenant switching attacked
-* [ ] Cross-tenant CRUD attacked
-* [ ] IDOR attacked
-* [ ] List/search/filter leakage tested
-* [ ] Aggregation/report leakage tested
-* [ ] File/document isolation tested if applicable
-* [ ] Database schema isolation tested
-* [ ] Connection-pool leakage considered/tested
-* [ ] Traefik routing tested
-* [ ] Nginx proxy tested
-* [ ] CORS tested
-* [ ] Cookie/session isolation tested if applicable
-* [ ] Browser cache tested
-* [ ] TanStack Query/cache tested
-* [ ] PWA/service-worker tested
-* [ ] localStorage/sessionStorage/persisted state audited
-* [ ] SUPERADMIN attack scenarios tested
-* [ ] Public routes audited
-* [ ] Error leakage reviewed
-* [ ] Production hardcodes searched
-* [ ] At least one full attack traversed the real Docker/Traefik/application/database chain
-* [ ] Every discovered vulnerability fixed
-* [ ] Regression tests added
-* [ ] Original attacks re-run after fixes
-* [ ] Full relevant test suite passed
-* [ ] Remaining limitations explicitly reported
+This task is complete only when:
+
+* [ ] All actual roles identified
+* [ ] All actual user-facing features identified
+* [ ] All important business use cases identified
+* [ ] Permission matrix created
+* [ ] Authentication E2E covered
+* [ ] Tenant context E2E covered
+* [ ] CRUD E2E covered for every CRUD-capable feature
+* [ ] Role-based authorization tested
+* [ ] Negative authorization tested
+* [ ] State transitions tested where applicable
+* [ ] Search/filter/pagination tested where applicable
+* [ ] Validation tested
+* [ ] Persistence verified after reload
+* [ ] Cross-feature workflows tested
+* [ ] Tenant isolation exercised through real tenant hostnames
+* [ ] Superadmin workflows tested
+* [ ] Resident/user workflows tested
+* [ ] Admin/pengurus workflows tested according to actual roles
+* [ ] File/upload workflows tested where applicable
+* [ ] PWA critical flows tested where applicable
+* [ ] Mobile critical flows tested
+* [ ] No fake/mock success for primary E2E
+* [ ] All discovered bugs fixed or explicitly documented
+* [ ] Regression tests added for discovered bugs
+* [ ] Full relevant test suite passes
+* [ ] E2E coverage matrix has no unexplained gaps
+* [ ] Final report produced
 
 ---
 
-# FINAL INSTRUCTION
+# FINAL PRINCIPLE
 
-**Assume the tenant isolation is vulnerable until you prove otherwise.**
+Jangan bertanya:
 
-Do not perform a documentation review.
+> "Apakah semua halaman sudah punya E2E?"
 
-Do not perform a superficial code review.
+Pertanyaan yang harus dijawab:
 
-Do not simply repeat the previous audit result.
+> **"Apakah setiap role dapat menyelesaikan pekerjaan yang memang menjadi tanggung jawabnya, dan apakah setiap pekerjaan yang tidak menjadi haknya benar-benar ditolak?"**
 
-This is an **adversarial verification task**.
-
-Your job is to actively attempt:
+Target akhirnya:
 
 ```text
-Tenant A
-    ↓
-access Tenant B
-```
-
-through every realistic path:
-
-```text
-hostname
-JWT
-headers
-tenant switching
+ROLE
+ ↓
+LOGIN
+ ↓
+TENANT
+ ↓
+USE CASE
+ ↓
+UI
+ ↓
 API
-resource IDs
-search
-filters
-reports
-files
-database
-connection pooling
-browser cache
-PWA
-cookies
-proxy
-Traefik
-configuration
+ ↓
+DATABASE
+ ↓
+PERSISTED RESULT
+ ↓
+VERIFY
 ```
 
-If the attack succeeds:
+Untuk setiap fitur yang relevan.
 
-> fix it.
-
-If the attack fails:
-
-> provide evidence.
-
-The final goal is:
-
-> **Prove that a malicious or compromised user from Tenant A cannot cross the Tenant B security boundary, even when manipulating hostname, JWT, headers, API parameters, resource IDs, browser state, or proxy-related inputs.**
-
-**ATTACK → REPRODUCE → FIX → TEST → RE-ATTACK → PROVE**
+**Semua fitur existing harus dibuktikan bekerja end-to-end, bukan hanya terlihat bekerja.**

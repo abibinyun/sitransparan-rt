@@ -1,4 +1,5 @@
-export type AnnouncementTarget = 'ALL' | 'RESIDENTS_ONLY';
+// Lowercase values match the backend/DB enum (target IN ('all','residents_only')).
+export type AnnouncementTarget = 'all' | 'residents_only';
 
 export interface Announcement {
   id: string;
@@ -26,7 +27,8 @@ export interface UpdateAnnouncementPayload {
   target?: AnnouncementTarget;
 }
 
-export type DocumentCategory = 'LAPORAN_KEUANGAN' | 'NOTULEN' | 'SURAT' | 'LAINNYA';
+// Lowercase values match the backend/DB enum (financial_report|minutes|letter|other).
+export type DocumentCategory = 'financial_report' | 'minutes' | 'letter' | 'other';
 
 export interface Document {
   id: string;

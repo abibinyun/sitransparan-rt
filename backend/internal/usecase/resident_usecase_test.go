@@ -61,7 +61,7 @@ func (m *mockResidentRepo) Delete(ctx context.Context, tenantID, id uuid.UUID) e
 	return nil
 }
 
-func (m *mockResidentRepo) List(ctx context.Context, tenantID uuid.UUID, query string, limit, offset int) ([]*domain.Resident, int64, error) {
+func (m *mockResidentRepo) List(ctx context.Context, tenantID uuid.UUID, query string, isHead *bool, limit, offset int) ([]*domain.Resident, int64, error) {
 	var res []*domain.Resident
 	for _, r := range m.residents {
 		if r.TenantID == tenantID {

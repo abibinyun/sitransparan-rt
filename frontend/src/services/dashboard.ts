@@ -19,7 +19,7 @@ export function useDashboardMetrics() {
   return useQuery({
     queryKey: ['dashboard', 'metrics'],
     queryFn: async () => {
-      let summary: FinancialSummary = { total_income: 0, total_expense: 0, balance: 0 };
+      let summary: FinancialSummary = { current_balance: 0, monthly_income: 0, monthly_expense: 0 };
       let totalResidents = 0;
       let pendingDues = 0;
       let transactions: FinancialTransaction[] = [];
@@ -90,16 +90,16 @@ export function useDashboardMetrics() {
         monthlyTrend.length > 0
           ? monthlyTrend
           : [
-              { month: 'Jan', income: summary.total_income * 0.2, expense: summary.total_expense * 0.15 },
-              { month: 'Feb', income: summary.total_income * 0.3, expense: summary.total_expense * 0.25 },
-              { month: 'Mar', income: summary.total_income * 0.5, expense: summary.total_expense * 0.6 },
+              { month: 'Jan', income: summary.monthly_income * 0.2, expense: summary.monthly_expense * 0.15 },
+              { month: 'Feb', income: summary.monthly_income * 0.3, expense: summary.monthly_expense * 0.25 },
+              { month: 'Mar', income: summary.monthly_income * 0.5, expense: summary.monthly_expense * 0.6 },
             ];
 
       return {
         totalResidents,
-        totalIncome: summary.total_income,
-        totalExpense: summary.total_expense,
-        balance: summary.balance,
+        totalIncome: summary.monthly_income,
+        totalExpense: summary.monthly_expense,
+        balance: summary.current_balance,
         pendingDues,
         monthlyTrend: finalTrend,
       } as DashboardMetrics;

@@ -58,19 +58,19 @@ export const FinancialPage: React.FC = () => {
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-gray-500">Total Masuk (Income)</p>
           <p className="mt-2 text-2xl font-bold text-green-600">
-            {isSummaryLoading ? '...' : `Rp ${(summary?.total_income || 0).toLocaleString('id-ID')}`}
+            {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_income || 0).toLocaleString('id-ID')}`}
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-gray-500">Total Keluar (Expense)</p>
           <p className="mt-2 text-2xl font-bold text-red-600">
-            {isSummaryLoading ? '...' : `Rp ${(summary?.total_expense || 0).toLocaleString('id-ID')}`}
+            {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_expense || 0).toLocaleString('id-ID')}`}
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-gray-500">Saldo Kas RT</p>
           <p className="mt-2 text-2xl font-bold text-indigo-600">
-            {isSummaryLoading ? '...' : `Rp ${(summary?.balance || 0).toLocaleString('id-ID')}`}
+            {isSummaryLoading ? '...' : `Rp ${(summary?.current_balance || 0).toLocaleString('id-ID')}`}
           </p>
         </div>
       </div>

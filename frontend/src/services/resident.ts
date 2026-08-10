@@ -17,7 +17,11 @@ export function useResidents(params?: ResidentFilter) {
     queryFn: async () => {
       const cacheKey = `residents_${JSON.stringify(params || {})}`;
       try {
-        const res = await api.get<ResidentListResponse | Resident[]>('/residents', { params });
+        // The backend searches by the `q` query parameter.
+        const { search, ...rest } = params || {};
+        const res = await api.get<ResidentListResponse | Resident[]>('/residents', {
+          params: { ...rest, q: search || undefined },
+        });
         let resultData: ResidentListResponse;
         if (Array.isArray(res.data)) {
           resultData = {
@@ -96,7 +100,7 @@ export function useAddFamilyMember() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ residentId, payload }: { residentId: string; payload: CreateFamilyMemberPayload }) => {
-      const res = await api.post<FamilyMember>(`/residents/${residentId}/family-members`, payload);
+      const res = await api.post<FamilyMember>(`/residents/${residentId}/family`, payload);
       return res.data;
     },
     onSuccess: (_, variables) => {

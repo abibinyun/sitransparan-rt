@@ -75,7 +75,9 @@ func main() {
 	adminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin, domain.RoleAdminRT)
 	superAdminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin)
 	secHeadersMw := middleware.SecurityHeadersMiddleware()
-	rateLimitMw := middleware.RateLimitMiddleware(100, 10) // capacity 100, 10 req/s
+	// Global token bucket. The UI fires several parallel API requests per page
+	// load, so a too-small bucket makes normal admin usage look like abuse.
+	rateLimitMw := middleware.RateLimitMiddleware(1000, 100) // capacity 1000, 100 req/s
 	corsMw := middleware.CORSMiddleware(cfg.TenantBaseDomain)
 
 	mux := http.NewServeMux()

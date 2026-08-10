@@ -353,7 +353,10 @@ func (u *authUsecase) DeleteTenant(ctx context.Context, id uuid.UUID) error {
 
 func (u *authUsecase) ListTenants(ctx context.Context, limit, offset int) ([]*domain.Tenant, int64, error) {
 	if limit <= 0 {
-		limit = 10
+		// Platform tenant directory: the superadmin tenant picker needs the
+		// full list so users can be assigned to older tenants too. A small
+		// default (e.g. 10) silently hides older tenants from the UI.
+		limit = 500
 	}
 	return u.tenantRepo.List(ctx, limit, offset)
 }

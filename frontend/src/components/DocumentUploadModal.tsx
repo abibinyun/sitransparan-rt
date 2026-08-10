@@ -23,14 +23,14 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 }) => {
   const [title, setTitle] = useState(initialData?.title || '');
   const [category, setCategory] = useState<DocumentCategory | string>(
-    initialData?.category || 'LAPORAN_KEUANGAN'
+    initialData?.category || 'financial_report'
   );
   const [fileUrl, setFileUrl] = useState(initialData?.file_url || '');
 
   React.useEffect(() => {
     if (isOpen) {
       setTitle(initialData?.title || '');
-      setCategory(initialData?.category || 'LAPORAN_KEUANGAN');
+      setCategory(initialData?.category || 'financial_report');
       setFileUrl(initialData?.file_url || '');
     }
   }, [isOpen, initialData]);
@@ -72,10 +72,10 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
-            <option value="LAPORAN_KEUANGAN">Laporan Keuangan</option>
-            <option value="NOTULEN">Notulen Rapat</option>
-            <option value="SURAT">Surat Edaran / Resmi</option>
-            <option value="LAINNYA">Lainnya</option>
+            <option value="financial_report">Laporan Keuangan</option>
+            <option value="minutes">Notulen Rapat</option>
+            <option value="letter">Surat Edaran / Resmi</option>
+            <option value="other">Lainnya</option>
           </Select>
         </div>
 

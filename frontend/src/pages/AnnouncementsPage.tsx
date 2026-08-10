@@ -151,7 +151,7 @@ export const AnnouncementsPage: React.FC = () => {
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">
                         <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                          {item.target === 'ALL' ? 'Publik' : 'Khusus Warga'}
+                          {item.target === 'residents_only' ? 'Khusus Warga' : 'Publik'}
                         </span>
                         <span className="text-xs text-gray-400">
                           {new Date(item.created_at).toLocaleDateString('id-ID')}
