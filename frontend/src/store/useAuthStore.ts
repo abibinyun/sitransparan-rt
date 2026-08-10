@@ -6,6 +6,26 @@ const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
 const TENANT_KEY = 'active_tenant';
 
+// Ask the service worker to delete runtime caches (api-cache, pages-cache) so
+// private API responses of a previous session are never served to a different
+// session on the same origin (e.g. after logout or tenant/user switch).
+const clearServiceWorkerCaches = () => {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+  const notify = (sw: ServiceWorker | null | undefined) => sw?.postMessage({ type: 'CLEAR_CACHES' });
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) => {
+      registrations.forEach((reg) => {
+        // Message every live worker (active, waiting, installing) so the cache
+        // is cleared even right after an auto-update swapped in a new worker.
+        notify(reg.active);
+        notify(reg.waiting);
+        notify(reg.installing);
+      });
+    })
+    .catch(() => {});
+};
+
 const getInitialToken = (): string | null => localStorage.getItem(TOKEN_KEY);
 const getInitialUser = (): User | null => {
   const data = localStorage.getItem(USER_KEY);
@@ -24,6 +44,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAuth: (token: string, user: User, activeTenant: Tenant | null = null) => {
     // Never keep cached tenant data when the session identity changes.
     queryClient.clear();
+    clearServiceWorkerCaches();
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     const selectedTenant = activeTenant || (user.tenants && user.tenants.length > 0 ? user.tenants[0] : null);
@@ -39,6 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Clearing the cache prevents data of the previously active tenant from
     // appearing under the newly selected tenant.
     queryClient.clear();
+    clearServiceWorkerCaches();
     if (activeTenant) {
       localStorage.setItem(TENANT_KEY, JSON.stringify(activeTenant));
     } else {
@@ -49,6 +71,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     queryClient.clear();
+    clearServiceWorkerCaches();
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(TENANT_KEY);

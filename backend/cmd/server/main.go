@@ -76,7 +76,7 @@ func main() {
 	superAdminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin)
 	secHeadersMw := middleware.SecurityHeadersMiddleware()
 	rateLimitMw := middleware.RateLimitMiddleware(100, 10) // capacity 100, 10 req/s
-	corsMw := middleware.CORSMiddleware("*")
+	corsMw := middleware.CORSMiddleware(cfg.TenantBaseDomain)
 
 	mux := http.NewServeMux()
 

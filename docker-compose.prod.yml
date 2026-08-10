@@ -52,6 +52,10 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       PORT: 8080
+      # JWT signing secret. MUST be a long random value set in the environment.
+      # There is no fallback default: a publicly-known secret would let anyone
+      # forge JWTs for any tenant/role (CRITICAL).
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - set a long random value (e.g. openssl rand -base64 48)}
       # Parent domain under which each tenant gets <slug>.<TENANT_BASE_DOMAIN>
       # (e.g. openrt.com in production). No production domain is hardcoded.
       TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-openrt.com}

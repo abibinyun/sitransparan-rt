@@ -34,7 +34,7 @@ Variabel backend (dibaca langsung dari environment, lihat `backend/pkg/config/co
 | `PORT` | `8081` | Port HTTP backend |
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | `localhost` / `5432` / `postgres` / `postgres` / `transparansi_rt` | Koneksi PostgreSQL (bisa diganti `DATABASE_URL`/`DB_URL` sekaligus) |
 | `DB_SSLMODE` | `disable` | SSL mode |
-| `JWT_SECRET` | `sitransparan-secret-key-change-in-prod` | Secret penandatangan JWT — **ganti di produksi** |
+| `JWT_SECRET` | **(wajib — tidak ada default)** | Secret penandatangan JWT. **WAJIB diset** minimal 32 karakter; backend menolak start jika kosong/terlalu pendek atau memakai nilai default lama yang sudah publik. Generate: `openssl rand -base64 48`. Isi di `infrastructure/.env` untuk stack Docker (lihat §3). Jangan pernah memakai secret yang sama di lingkungan berbeda |
 | `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` / `MINIO_USE_SSL` | — | Dikonfigurasi di docker-compose |
 | `TENANT_BASE_DOMAIN` | `openrt.local` | Domain dasar untuk subdomain tenant (`<slug>.<TENANT_BASE_DOMAIN>`). Dev `openrt.local`, produksi `openrt.com`. Tidak boleh hardcode; backend membaca env ini (`config.go`) |
 
@@ -45,6 +45,9 @@ Variabel frontend (build-time, Vite `VITE_*`):
 | `VITE_TENANT_BASE_DOMAIN` | `openrt.local` | Dipakai `frontend/src/utils/tenant.ts` untuk menurunkan slug tenant dari hostname. **Harus sama** dengan `TENANT_BASE_DOMAIN` backend. Disuntikkan via build arg Docker (`Dockerfile.frontend`) |
 
 ## 3. Menjalankan dengan Docker (disarankan)
+
+```bash
+> **PENTING**: `JWT_SECRET` wajib diset. Untuk stack Docker, simpan di `infrastructure/.env` (sudah di-gitignore) atau ekspor di environment: `openssl rand -base64 48` → tempel ke `JWT_SECRET=...` di `infrastructure/.env`. Compose akan gagal dengan pesan jelas jika tidak ada — ini disengaja (fail-closed) agar deployment tidak pernah berjalan dengan secret yang diketahui publik.
 
 ```bash
 make up        # Build + jalankan semua service, tunggu DB siap, lalu jalankan migrasi

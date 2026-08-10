@@ -63,6 +63,19 @@ registerRoute(
   })
 );
 
+// Clear runtime caches on demand. The app posts { type: 'CLEAR_CACHES' } on
+// logout and on tenant/user switch so that private API responses of a previous
+// session can never be served (offline/slow-network fallback) to a different
+// session on the same origin. The precache is left intact: it only holds
+// immutable static assets, never tenant-scoped data.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'CLEAR_CACHES') {
+    event.waitUntil(
+      Promise.all(['api-cache', 'pages-cache'].map((name) => caches.delete(name)))
+    );
+  }
+});
+
 self.addEventListener('skipWaiting', () => {
   self.skipWaiting();
 });

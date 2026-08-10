@@ -17,12 +17,15 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	delivery "backend/internal/delivery/http"
+
 	"backend/internal/delivery/http/middleware"
 	"backend/internal/domain"
 	"backend/internal/repository"
 	"backend/internal/usecase"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
@@ -125,19 +128,19 @@ func buildSecurityMux(db *sql.DB) http.Handler {
 }
 
 type securityFixture struct {
-	t          *testing.T
-	db         *sql.DB
-	handler    http.Handler
-	slugA      string
-	slugB      string
-	tenantA    *domain.Tenant
-	tenantB    *domain.Tenant
-	saToken    string
-	aToken     string
-	bToken     string
-	resToken   string
-	adminAID   string
-	adminBID   string
+	t           *testing.T
+	db          *sql.DB
+	handler     http.Handler
+	slugA       string
+	slugB       string
+	tenantA     *domain.Tenant
+	tenantB     *domain.Tenant
+	saToken     string
+	aToken      string
+	bToken      string
+	resToken    string
+	adminAID    string
+	adminBID    string
 	residentAID string
 }
 
@@ -519,5 +522,79 @@ func TestSecurity_PublicSanitization(t *testing.T) {
 	raw := rec.Body.String()
 	if strings.Contains(raw, spoofID) {
 		t.Errorf("public aspiration list leaked resident_id!")
+	}
+}
+
+// forgeToken signs a JWT with the given secret using arbitrary claims. It is
+// used to prove the server rejects tokens signed with a secret other than the
+// one it is configured with (including the publicly-known legacy default).
+func forgeToken(secret string, userID, tenantID uuid.UUID, role domain.RoleName) string {
+	claims := domain.JWTClaims{
+		UserID:   userID,
+		TenantID: tenantID,
+		Role:     role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Subject:   userID.String(),
+		},
+	}
+	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	s, err := tok.SignedString([]byte(secret))
+	if err != nil {
+		panic(err)
+	}
+	return s
+}
+
+// TestSecurity_JWTForgeryWithPublicDefaultSecret is a regression test for a
+// CRITICAL finding: the backend used to fall back to a publicly-known default
+// JWT secret ("sitransparan-secret-key-change-in-prod") when JWT_SECRET was not
+// set. Anyone who read the repository could then forge a token claiming any
+// tenant_id and role (including superadmin) and read/modify any tenant's data.
+//
+// The server under test is built with testJWTSecret. A token signed with the
+// OLD known default secret MUST be rejected (401), while a control token signed
+// with the real server secret is accepted — proving the test is meaningful.
+func TestSecurity_JWTForgeryWithPublicDefaultSecret(t *testing.T) {
+	fx := setupSecurityFixture(t)
+
+	adminA := uuid.MustParse(fx.adminAID)
+
+	// 1. Token signed with the publicly-known legacy default secret.
+	//    Claims claim superadmin + tenant A to maximize what a forgery would
+	//    grant; it must still be rejected with 401.
+	forged := forgeToken("sitransparan-secret-key-change-in-prod", adminA, fx.tenantA.ID, domain.RoleSuperAdmin)
+	rec, _ := doJSON(fx.handler, "GET", "/api/v1/superadmin/tenants", forged, nil, nil)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("token forged with the known default secret must be rejected (401), got %d (%s)", rec.Code, rec.Body.String())
+	}
+
+	// Also verify the same forged token cannot reach tenant data.
+	rec, _ = doJSON(fx.handler, "GET", "/api/v1/residents", forged, nil, nil)
+	if rec.Code == http.StatusOK {
+		t.Fatalf("token forged with the known default secret must not reach tenant data, got 200")
+	}
+
+	// 2. Control: a token signed with the ACTUAL server secret (testJWTSecret)
+	//    is accepted — this proves the previous rejection was caused by the
+	//    secret, not by broken request plumbing.
+	valid := forgeToken(testJWTSecret, adminA, fx.tenantA.ID, domain.RoleSuperAdmin)
+	rec, _ = doJSON(fx.handler, "GET", "/api/v1/superadmin/tenants", valid, nil, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("control token signed with the real secret should be accepted, got %d (%s)", rec.Code, rec.Body.String())
+	}
+
+	// 3. A token whose signature is valid but whose tenant claim points to
+	//    another tenant must still be denied at the resource layer (host/JWT
+	//    consistency is enforced in addition to the signature).
+	crossHost := forgeToken(testJWTSecret, adminA, fx.tenantB.ID, domain.RoleSuperAdmin)
+	req := httptest.NewRequest("GET", "/api/v1/residents", nil)
+	req.Host = fx.slugA + ".openrt.local" // hostname resolves to tenant A
+	req.Header.Set("Authorization", "Bearer "+crossHost)
+	recCross := httptest.NewRecorder()
+	fx.handler.ServeHTTP(recCross, req)
+	if recCross.Code != http.StatusForbidden {
+		t.Errorf("JWT tenant B on host tenant A must be denied (403), got %d", recCross.Code)
 	}
 }

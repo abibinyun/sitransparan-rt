@@ -1,1528 +1,1508 @@
-# MASTER TASK — FULLY VALIDATE & IMPLEMENT TENANT SUBDOMAIN ROUTING, WILDCARD HOST ISOLATION, DOCKER & DEV/PRODUCTION SUPPORT
+# MASTER TASK — ADVERSARIAL MULTI-TENANT SECURITY & ISOLATION VERIFICATION
 
 Project: **Sitransparan RT/RW**
 
+Context:
+
 Project ini adalah SaaS multi-tenant untuk banyak RT.
 
-Target deployment architecture:
-
-```text
-rt-003.openrt.com  → Tenant RT 003
-rt-004.openrt.com  → Tenant RT 004
-rt-005.openrt.com  → Tenant RT 005
-...
-```
-
-Domain utama:
-
-```text
-openrt.com
-```
-
-Wildcard DNS kemungkinan akan digunakan:
+Current intended architecture:
 
 ```text
 *.openrt.com
+      ↓
+   Traefik
+      ↓
+Frontend / Nginx
+      ↓
+Backend
+      ↓
+Authentication
+      ↓
+Tenant Resolution
+      ↓
+Tenant Authorization
+      ↓
+PostgreSQL tenant schema
 ```
 
-Deployment akan menggunakan Docker dan reverse proxy seperti Traefik atau architecture equivalent yang memang sesuai dengan project.
+Development menggunakan domain equivalent seperti:
 
-## PRIMARY OBJECTIVE
+```text
+rt-003.openrt.local
+rt-004.openrt.local
+```
 
-Audit dan pastikan project benar-benar mendukung **tenant-aware subdomain routing** untuk development dan production.
-
-Jangan hanya mengecek apakah Traefik dapat menerima wildcard hostname.
-
-Yang harus dibuktikan adalah:
-
-> **Hostname → tenant resolution → tenant existence → authenticated identity → tenant authorization → database schema → application response**
-
-seluruh chain harus aman.
-
-Target akhirnya:
+Production direncanakan menggunakan:
 
 ```text
 rt-003.openrt.com
-       ↓
-resolve tenant slug = rt-003
-       ↓
-tenant rt-003 harus EXIST dan ACTIVE
-       ↓
-request mendapatkan tenant context
-       ↓
-authenticated user harus berwenang terhadap tenant tersebut
-       ↓
-database scope = tenant rt-003
-       ↓
-response hanya boleh berasal dari tenant rt-003
+rt-004.openrt.com
 ```
 
-Jika:
+Current implementation sebelumnya telah mengklaim:
 
-```text
-rt-does-not-exist.openrt.com
-```
+* tenant hostname resolution
+* tenant existence validation
+* active/inactive tenant handling
+* JWT tenant ↔ hostname consistency
+* cross-tenant host protection
+* X-Tenant-ID spoof protection
+* X-Forwarded-Host spoof protection
+* Traefik wildcard routing
+* PostgreSQL schema isolation
+* Docker development support
 
-tenant tidak ada:
-
-> REQUEST MUST BE DENIED.
-
-Jangan sampai wildcard DNS + reverse proxy menyebabkan tenant fiktif otomatis dapat diakses.
+Namun task ini **tidak boleh mempercayai klaim tersebut**.
 
 ---
 
-# 1. AUDIT DULU — JANGAN LANGSUNG REWRITE
+# PRIMARY OBJECTIVE
 
-Sebelum melakukan perubahan, inspect seluruh implementation terkait:
+Lakukan **adversarial security verification** terhadap implementasi multi-tenant saat ini.
 
-* tenant model
-* tenant ID
-* tenant slug
-* tenant status
-* tenant creation
-* tenant lookup
-* tenant resolution
-* hostname parsing
-* subdomain parsing
-* HTTP Host header
-* forwarded host
-* X-Forwarded-Host
-* X-Forwarded-Proto
-* X-Forwarded-For
-* trusted proxy configuration
-* middleware
-* authentication
-* JWT
-* tenant claims
-* tenant switching
-* route registration
-* API client
-* frontend routing
-* Docker
-* Docker Compose
-* Traefik
-* Nginx/Caddy jika ada
-* DNS configuration/documentation
-* environment variables
-* `.env.example`
-* deployment configuration
-* development configuration
-* production configuration
-* tests
-* E2E tests
+Bertindak sebagai security engineer/attacker yang mencoba membuktikan bahwa:
 
-Cari semua penggunaan:
+> **Tenant A tidak pernah dapat membaca, membuat, mengubah, menghapus, menyetujui, atau memperoleh private state milik Tenant B melalui hostname, JWT, headers, API, browser cache, PWA, proxy, database, atau kombinasi attack vector lainnya.**
+
+Jangan menganggap implementation aman hanya karena unit/integration test sudah PASS.
+
+Tujuan task:
 
 ```text
-tenant_id
-tenantID
-tenantId
-tenant_slug
-tenantSlug
-slug
-hostname
-host
-subdomain
-domain
-origin
-X-Tenant-ID
-X-Forwarded-Host
-X-Forwarded-Proto
-X-Forwarded-For
+ATTACK
+  ↓
+OBSERVE
+  ↓
+IDENTIFY BYPASS
+  ↓
+REPRODUCE
+  ↓
+FIX SOURCE CODE ONLY IF NEEDED
+  ↓
+ADD REGRESSION TEST
+  ↓
+RUN ACTUAL TEST
+  ↓
+RE-ATTACK
+  ↓
+VERIFY
 ```
 
-Jangan percaya dokumentasi lama.
+Jika tidak menemukan vulnerability:
 
-Source code dan actual runtime behavior adalah source of truth.
+> buktikan dengan attack matrix dan evidence.
+
+Jika menemukan vulnerability:
+
+> jangan hanya melaporkan — perbaiki source code dan tambahkan regression test.
 
 ---
 
-# 2. DETERMINE CURRENT TENANT MODEL
+# 1. RULES
 
-Tentukan bagaimana tenant saat ini direpresentasikan.
+## Rule 1 — Source code is truth
 
-Minimal jawab:
+Jangan mempercayai:
 
-```text
-Tenant identity:
-Tenant primary key:
-Tenant slug:
-Tenant status:
-Tenant domain:
-Tenant schema:
-Tenant-user relationship:
-```
+* README
+* security report
+* previous audit
+* previous test report
+* agent claims
+* documentation
 
-Jika tenant saat ini hanya memiliki:
-
-```text
-id
-name
-slug
-```
-
-jangan otomatis menambahkan domain field jika belum diperlukan.
-
-Tetapi jika architecture membutuhkan configurable hostname mapping, tentukan desain yang paling tepat berdasarkan implementation.
+Gunakan implementation aktual.
 
 ---
 
-# 3. TENANT SLUG MUST BE AUTHORITATIVE
+## Rule 2 — Do not weaken security
 
-Hostname harus digunakan hanya untuk **tenant discovery**, bukan sebagai authorization bypass.
+DILARANG:
+
+* disable middleware
+* bypass authorization
+* hardcode tenant
+* hardcode user
+* hardcode role untuk membuat test pass
+* skip failing tests
+* mengubah expected result agar test PASS
+* menghapus security test
+* membuat test-only bypass yang dapat masuk production
+
+---
+
+## Rule 3 — Backend is security boundary
+
+Frontend tidak boleh dianggap sebagai security control.
+
+Jika frontend mencegah sesuatu tetapi backend mengizinkannya:
+
+> SECURITY BUG.
+
+---
+
+# 2. BUILD CURRENT SECURITY MODEL
+
+Sebelum menyerang, reconstruct actual security model.
+
+Identifikasi:
+
+```text
+Tenant identity
+Tenant slug
+Tenant domain
+Tenant status
+Tenant membership
+User identity
+JWT claims
+Roles
+Permissions
+Hostname resolver
+Tenant middleware
+Authorization middleware
+Database schema resolution
+```
+
+Tampilkan actual flow:
+
+```text
+Request
+ ↓
+Host
+ ↓
+Proxy
+ ↓
+Auth
+ ↓
+Tenant resolution
+ ↓
+Authorization
+ ↓
+Database
+```
+
+Jangan membuat assumptions.
+
+---
+
+# 3. ATTACK MATRIX
+
+Buat attack matrix untuk minimal:
+
+```text
+Tenant A
+Tenant B
+Unknown tenant
+Inactive tenant
+Deleted/nonexistent tenant
+SUPERADMIN
+ADMIN
+normal resident/user
+unauthorized user
+unauthenticated user
+```
+
+Gunakan setidaknya dua real test tenants.
 
 Contoh:
 
 ```text
-Host: rt-003.openrt.com
+rt-003
+rt-004
 ```
 
-dapat menghasilkan:
-
-```text
-requestedTenantSlug = rt-003
-```
-
-Tetapi server HARUS melakukan:
-
-```text
-lookup tenant by slug
-```
-
-Kemudian:
-
-```text
-tenant exists?
-tenant active?
-tenant allowed for this environment?
-```
-
-baru request mendapatkan tenant context.
-
-Jangan melakukan:
-
-```text
-tenant := Tenant{
-    Slug: subdomain,
-}
-```
-
-tanpa lookup database.
+Pastikan data kedua tenant berbeda sehingga leakage mudah dikenali.
 
 ---
 
-# 4. UNKNOWN TENANT MUST BE DENIED
+# 4. HOST ↔ JWT ATTACKS
 
-Ini adalah security invariant utama.
+Test:
 
-Jika:
+### Case A
 
 ```text
-rt-003.openrt.com
+Host: rt-003
+JWT tenant: rt-003
 ```
 
-dan tenant `rt-003` ada:
+Expected:
 
 ```text
 ALLOW
 ```
 
-Jika:
+### Case B
 
 ```text
-rt-999.openrt.com
+Host: rt-004
+JWT tenant: rt-003
 ```
 
-dan tenant `rt-999` tidak ada:
-
-```text
-DENY
-```
-
-Jika:
-
-```text
-random.openrt.com
-```
-
-dan tenant `random` tidak ada:
+Expected:
 
 ```text
 DENY
 ```
 
-Jika:
+### Case C
 
 ```text
-foo.openrt.com
+Host: rt-003
+JWT tenant: rt-004
 ```
 
-tenant tidak ada:
+Expected:
 
 ```text
 DENY
 ```
 
-Jangan membuat tenant otomatis hanya karena hostname valid.
+### Case D
+
+```text
+Host: unknown
+JWT tenant: rt-003
+```
+
+Expected:
+
+```text
+DENY
+```
+
+### Case E
+
+```text
+Host: rt-003
+JWT has no tenant
+```
+
+Expected according to actual security model:
+
+```text
+DENY
+```
+
+unless explicit public endpoint policy applies.
 
 ---
 
-# 5. WILDCARD DNS IS NOT TENANT AUTHORIZATION
+# 5. JWT MANIPULATION
 
-Pastikan architecture tidak melakukan kesalahan konsep:
+Attempt:
 
-```text
-*.openrt.com
-```
+* modified tenant claim
+* modified user ID
+* modified role
+* modified subject
+* modified expiration
+* invalid signature
+* empty signature
+* malformed JWT
+* expired JWT
+* missing JWT
+* wrong algorithm
+* algorithm confusion if applicable
 
-berarti:
+Expected:
 
-> DNS menerima hostname.
+> DENY.
 
-Bukan:
+Do not only test parser behavior.
 
-> Semua hostname adalah tenant valid.
-
-Reverse proxy hanya melakukan routing.
-
-Tenant existence dan authorization tetap dilakukan application/backend.
-
-Architecture yang diharapkan:
-
-```text
-DNS wildcard
-    ↓
-Traefik
-    ↓
-Application
-    ↓
-Tenant Resolver
-    ↓
-Database tenant lookup
-    ↓
-Tenant Authorization
-    ↓
-Tenant Database Schema
-```
+Test through actual protected endpoints.
 
 ---
 
-# 6. TRAEFIK / REVERSE PROXY AUDIT
+# 6. HOST HEADER ATTACKS
 
-Jika project menggunakan Traefik:
-
-Audit:
-
-* Docker labels
-* routers
-* services
-* entrypoints
-* Host rules
-* TLS
-* wildcard certificate
-* Docker network
-* exposed ports
-* forwarded headers
-* trusted proxy
-* middleware
-* production config
-* development config
-
-Pastikan architecture tidak bergantung pada hardcoded:
+Attempt:
 
 ```text
-Host(`rt-003.openrt.com`)
+Host: rt-003.openrt.com
 ```
 
-atau:
+then variations:
 
 ```text
-Host(`rt-004.openrt.com`)
+RT-003.openrt.com
+rt-003.openrt.com.
+rt-003.openrt.com:80
+rt-003.openrt.com:443
+rt-003..openrt.com
+rt--003.openrt.com
+rt_003.openrt.com
+rt 003.openrt.com
 ```
 
-karena tenant harus dynamic.
+Test according to actual hostname policy.
 
-Gunakan pattern yang configurable dan sesuai dengan reverse proxy.
+The critical invariant:
+
+> hostname normalization must never transform an attacker-controlled invalid hostname into another valid tenant accidentally.
 
 ---
 
-# 7. BASE DOMAIN MUST BE CONFIGURABLE
+# 7. DOMAIN CONFUSION ATTACKS
 
-DILARANG hardcode:
-
-```text
-openrt.com
-```
-
-di source code.
-
-Gunakan configuration/environment variable, misalnya konsep:
-
-```text
-TENANT_BASE_DOMAIN
-```
-
-atau nama configuration yang mengikuti convention project.
-
-Contoh:
-
-Development:
-
-```text
-TENANT_BASE_DOMAIN=localhost
-```
-
-atau architecture yang sesuai seperti:
-
-```text
-TENANT_BASE_DOMAIN=localhost.test
-```
-
-Production:
-
-```text
-TENANT_BASE_DOMAIN=openrt.com
-```
-
-Nama variable tidak harus persis seperti contoh di atas.
-
-Gunakan configuration architecture yang sudah digunakan project.
-
----
-
-# 8. DEVELOPMENT MUST SUPPORT SUBDOMAIN TENANTS
-
-Development tidak boleh hanya support:
-
-```text
-http://localhost
-```
-
-jika production akan menggunakan:
-
-```text
-https://rt-003.openrt.com
-```
-
-Development harus memungkinkan testing tenant hostname.
-
-Contoh:
-
-```text
-http://rt-003.localhost
-http://rt-004.localhost
-```
-
-atau domain development yang equivalent.
-
-Jika `.localhost` subdomain behavior tidak reliable untuk architecture tertentu, gunakan configurable local development domain seperti:
-
-```text
-rt-003.localhost.test
-rt-004.localhost.test
-```
-
-atau solusi yang paling sesuai dengan Docker/Traefik.
-
-Yang penting:
-
-> developer dapat benar-benar menjalankan dan menguji tenant subdomain isolation secara lokal.
-
-Dokumentasikan setup tersebut.
-
----
-
-# 9. DEVELOPMENT TRAEFIK
-
-Jika Traefik diperlukan untuk production-like local development, pastikan tersedia configuration seperti:
-
-```text
-docker-compose.dev.yml
-```
-
-atau architecture existing yang equivalent.
-
-Target:
-
-```text
-Browser
- ↓
-rt-003.<dev-domain>
- ↓
-Traefik
- ↓
-frontend/backend
- ↓
-tenant resolver
-```
-
-Jangan membuat developer harus mengedit source code setiap kali ingin menambahkan tenant.
-
-Tenant baru harus dapat dibuat melalui normal tenant management / seed / database fixture.
-
----
-
-# 10. PRODUCTION ARCHITECTURE
-
-Pastikan production mendukung:
-
-```text
-*.openrt.com
-```
-
-dengan:
-
-```text
-DNS wildcard
-+
-TLS wildcard certificate
-+
-Traefik
-+
-application tenant resolver
-```
-
-atau equivalent architecture.
-
-Jangan mengasumsikan wildcard TLS otomatis tersedia.
-
-Dokumentasikan:
-
-* DNS requirement
-* wildcard DNS
-* TLS
-* reverse proxy
-* Docker network
-* application configuration
-* tenant registration
-* tenant activation
-
-Jika deployment menggunakan Let's Encrypt, pastikan wildcard certificate mechanism benar-benar compatible dengan chosen configuration.
-
----
-
-# 11. HOSTNAME PARSING SECURITY
-
-Audit parsing hostname secara serius.
-
-Jangan melakukan parsing naïf seperti:
-
-```text
-strings.Split(host, ".")[0]
-```
-
-tanpa validasi environment/domain.
-
-Pertimbangkan:
-
-* port
-* uppercase/lowercase
-* trailing dot
-* malformed hostname
-* localhost
-* IP address
-* arbitrary domain
-* nested subdomains
-* base domain mismatch
-* spoofed forwarded host
-
-Contoh attack:
+Test:
 
 ```text
 rt-003.openrt.com.attacker.com
 ```
-
-tidak boleh dianggap:
-
-```text
-rt-003
-```
-
-Contoh:
-
-```text
-rt-003.attacker.com
-```
-
-tidak boleh dianggap tenant `rt-003`.
-
-Contoh:
 
 ```text
 attacker.com
 ```
 
-tidak boleh resolve ke tenant.
-
----
-
-# 12. TRUSTED PROXY HEADERS
-
-Audit penggunaan:
-
 ```text
-Host
-X-Forwarded-Host
-X-Forwarded-Proto
-X-Forwarded-For
-```
-
-Jangan mempercayai client-supplied forwarding headers secara sembarangan.
-
-Jika application berjalan di belakang Traefik:
-
-```text
-browser
- ↓
-Traefik
- ↓
-application
-```
-
-tentukan secara eksplisit:
-
-* header mana yang dipercaya
-* siapa trusted proxy
-* bagaimana Host diteruskan
-* bagaimana application mendapatkan original hostname
-
-User tidak boleh dapat melakukan:
-
-```text
-X-Forwarded-Host: rt-003.openrt.com
-```
-
-dari luar dan menggunakannya untuk memanipulasi tenant resolution jika request sebenarnya berasal dari domain lain.
-
----
-
-# 13. HOSTNAME TENANT VS JWT TENANT
-
-Ini sangat penting.
-
-Audit bagaimana hubungan:
-
-```text
-requested tenant from hostname
-```
-
-dengan:
-
-```text
-authenticated tenant from JWT
-```
-
-Jangan membuat:
-
-```text
-JWT says tenant A
-Host says tenant B
-→ silently switch to B
-```
-
-tanpa authorization.
-
-Expected security model:
-
-```text
-Host tenant = A
-JWT tenant = A
-→ ALLOW
-```
-
-Jika:
-
-```text
-Host tenant = B
-JWT tenant = A
-```
-
-maka request harus:
-
-```text
-DENY
-```
-
-kecuali user memang memiliki explicit authorized tenant switching flow.
-
-Tetapi tenant switching harus dilakukan melalui server-authorized mechanism, bukan hanya mengganti hostname.
-
----
-
-# 14. SUPERADMIN
-
-Audit behavior SUPERADMIN secara khusus.
-
-Jika SUPERADMIN memang boleh mengakses banyak tenant:
-
-```text
-SUPERADMIN
-    ↓
-explicit tenant selection
-    ↓
-authorized tenant
-```
-
-tetap harus melalui valid tenant lookup.
-
-Jangan membuat:
-
-```text
-superadmin → arbitrary hostname → arbitrary schema
-```
-
-Tanpa tenant existence validation.
-
-SUPERADMIN tidak boleh menjadi alasan untuk:
-
-```text
-tenant-not-found → create implicit tenant context
-```
-
----
-
-# 15. AUTHENTICATION FLOW
-
-Audit:
-
-```text
-GET /login
-POST /login
-GET /auth/me
-GET /auth/tenants
-POST /auth/switch-tenant
-```
-
-atau endpoint aktual project.
-
-Tentukan bagaimana login bekerja ketika hostname tenant diketahui.
-
-Contoh:
-
-```text
-rt-003.openrt.com
-login
- ↓
-tenant = rt-003
- ↓
-user credentials
- ↓
-verify user belongs to rt-003
- ↓
-JWT tenant = rt-003
-```
-
-Jika user tidak memiliki membership tenant tersebut:
-
-```text
-DENY
-```
-
-Jangan biarkan user login ke tenant hanya karena mengetahui hostname.
-
----
-
-# 16. TENANT SWITCHING
-
-Audit existing tenant switch implementation.
-
-Pastikan:
-
-```text
-user has membership in tenant B
-```
-
-baru:
-
-```text
-switch to tenant B
-```
-
-JWT/context harus berubah secara server-side.
-
-Jangan menerima:
-
-```json
-{
-  "tenant_id": "tenant-B"
-}
-```
-
-sebagai authority.
-
-Tenant ID/slug dari client hanya merupakan request intent.
-
-Server harus memverifikasi membership/authorization.
-
----
-
-# 17. DATABASE ISOLATION
-
-Hostname resolution tidak boleh langsung menghasilkan schema string dari user input.
-
-JANGAN:
-
-```text
-schema = "tenant_" + hostname
-```
-
-tanpa database lookup/validation.
-
-Expected:
-
-```text
-hostname
- ↓
-validated tenant slug
- ↓
-tenant record
- ↓
-trusted tenant ID/slug
- ↓
-trusted schema name
- ↓
-database
-```
-
-Pastikan schema name tidak berasal langsung dari arbitrary Host header.
-
-Audit juga:
-
-* SQL injection
-* schema injection
-* invalid slug
-* special characters
-* uppercase
-* whitespace
-* quotes
-* dots
-* hyphens
-* underscore
-
----
-
-# 18. TENANT SLUG VALIDATION
-
-Tentukan aturan slug berdasarkan project.
-
-Contoh valid:
-
-```text
-rt-003
-rt-004
-rt-125
-```
-
-Contoh invalid:
-
-```text
-../../
-tenant.foo
-rt 003
-RT 003
-rt@003
-```
-
-Jika business rule membutuhkan slug tertentu, ikuti implementation/business model.
-
-Jangan membuat arbitrary slug policy tanpa dasar.
-
----
-
-# 19. TENANT REGISTRATION
-
-Audit bagaimana tenant baru dibuat.
-
-Expected:
-
-```text
-SUPERADMIN creates tenant
- ↓
-tenant record created
- ↓
-tenant schema created
- ↓
-tenant status active
- ↓
-tenant becomes routable
-```
-
-Tenant baru seharusnya **tidak perlu source-code change**.
-
-Jangan:
-
-```text
-if slug == "rt-003" ...
-if slug == "rt-004" ...
-```
-
-DILARANG hardcode tenant.
-
----
-
-# 20. TENANT DELETION / DISABLE
-
-Audit behavior:
-
-```text
-active
-inactive
-deleted
-```
-
-Jika tenant dinonaktifkan:
-
-```text
-rt-003.openrt.com
-```
-
-harus:
-
-```text
-DENY
-```
-
-Tenant tidak boleh tetap dapat diakses hanya karena wildcard DNS masih aktif.
-
----
-
-# 21. UNKNOWN SUBDOMAIN TESTS
-
-WAJIB membuat automated tests:
-
-```text
-rt-003.openrt.com
-→ existing active tenant
-→ ALLOW
-```
-
-```text
-rt-004.openrt.com
-→ existing active tenant
-→ ALLOW
-```
-
-```text
-rt-999.openrt.com
-→ tenant does not exist
-→ DENY
-```
-
-```text
-foo.openrt.com
-→ tenant does not exist
-→ DENY
+openrt.com.attacker.com
 ```
 
 ```text
 attacker.openrt.com
-→ tenant does not exist
-→ DENY
 ```
 
 ```text
 rt-003.attacker.com
-→ DENY
 ```
 
 ```text
-rt-003.openrt.com.attacker.com
-→ DENY
-```
-
----
-
-# 22. CROSS-TENANT HOST ATTACK
-
-WAJIB test:
-
-User A:
-
-```text
-JWT tenant = A
-```
-
-request:
-
-```text
-Host: rt-b.openrt.com
+rt-003.openrt.com.evil
 ```
 
 Expected:
 
-```text
-DENY
-```
+> DENY.
 
-User B:
-
-```text
-JWT tenant = B
-```
-
-request:
-
-```text
-Host: rt-a.openrt.com
-```
-
-Expected:
-
-```text
-DENY
-```
-
-Test harus membuktikan:
-
-* read
-* create
-* update
-* delete
-* approve
-* resource-by-ID
-
-sesuai operation yang tersedia.
+Never resolve tenant based on naïve `strings.Split()` or suffix matching.
 
 ---
 
-# 23. HOST HEADER MANIPULATION
+# 8. FORWARDED HEADER ATTACKS
+
+Attempt:
+
+```text
+X-Forwarded-Host: rt-004.openrt.com
+```
+
+while actual host is:
+
+```text
+rt-003.openrt.com
+```
+
+Also test:
+
+```text
+X-Original-Host
+X-Forwarded-Proto
+Forwarded
+X-Tenant-ID
+X-Tenant-Slug
+X-Original-URL
+```
+
+if application/proxy stack supports them.
+
+Expected:
+
+> attacker cannot choose tenant through an untrusted header.
+
+Document exactly which headers are trusted and why.
+
+---
+
+# 9. TRAEFIK ATTACKS
+
+Verify actual Traefik behavior.
 
 Test:
 
 ```text
-Host: rt-b.openrt.com
-X-Tenant-ID: tenant-A
+valid tenant hostname
+unknown tenant hostname
+malformed hostname
+attacker hostname
+wrong base domain
 ```
 
-dan:
+Verify:
+
+* router matches only intended domain
+* unknown tenant reaches application only if expected
+* application still denies unknown tenant
+* no router accidentally routes arbitrary hostname to tenant
+* no router bypasses authentication
+* no special router exposes admin/private endpoints
+
+Do not confuse:
 
 ```text
-Host: rt-a.openrt.com
-X-Tenant-ID: tenant-B
+Traefik routing
 ```
 
-dan kombinasi lainnya.
+with:
 
-Backend harus memiliki satu authoritative tenant context.
+```text
+tenant authorization
+```
 
-Jangan sampai header berbeda menyebabkan ambiguity.
+Both must be verified independently.
 
 ---
 
-# 24. CACHE ISOLATION
-
-Frontend harus diuji:
-
-```text
-rt-003.openrt.com
-login tenant A
-load data A
-logout
-```
-
-kemudian:
-
-```text
-rt-004.openrt.com
-login tenant B
-```
-
-Pastikan tidak ada:
-
-```text
-tenant A cached data
-```
-
-yang muncul di tenant B.
+# 10. NGINX / FRONTEND PROXY ATTACKS
 
 Audit:
 
-* TanStack Query
+```text
+Frontend/Nginx
+    ↓
+/api proxy
+```
+
+Verify:
+
+* Host preserved correctly
+* forwarded headers controlled
+* arbitrary client headers cannot change tenant context
+* API requests cannot bypass frontend security assumptions
+* direct backend access does not bypass tenant authorization if backend is exposed
+
+If backend is supposed to be internal-only:
+
+> verify Docker networking/ports enforce this.
+
+---
+
+# 11. TENANT EXISTENCE ATTACKS
+
+Test:
+
+```text
+rt-003 → exists
+rt-004 → exists
+rt-999 → does not exist
+foo → does not exist
+```
+
+Unknown tenant must never result in:
+
+```text
+schema created automatically
+tenant context created automatically
+fallback tenant
+default tenant
+first tenant
+public tenant
+SUPERADMIN tenant
+```
+
+Especially investigate fallback behavior.
+
+Dangerous examples:
+
+```text
+tenant not found → default tenant
+tenant not found → public tenant
+tenant not found → nil tenant
+tenant not found → SUPERADMIN context
+```
+
+All must be evaluated.
+
+---
+
+# 12. TENANT STATUS ATTACKS
+
+Test:
+
+```text
+active
+inactive
+disabled
+deleted
+```
+
+Expected for private tenant:
+
+```text
+inactive → DENY
+deleted → DENY
+```
+
+Test all relevant boundaries:
+
+* login
+* `/me`
+* tenant listing
+* tenant switching
+* CRUD
+* public endpoints
+* file/document endpoints
+* financial endpoints
+* event endpoints
+* aspiration endpoints
+
+Do not assume middleware coverage means all flows are protected.
+
+---
+
+# 13. TENANT SWITCHING ATTACKS
+
+Audit tenant switch endpoint.
+
+Attempt:
+
+```text
+user A
+→ switch to tenant B
+```
+
+where user A has no membership in B.
+
+Expected:
+
+> DENY.
+
+Attempt:
+
+```text
+user A
+→ manually modify tenant ID in request
+```
+
+Expected:
+
+> DENY.
+
+Attempt:
+
+```text
+SUPERADMIN
+→ switch to nonexistent tenant
+```
+
+Expected:
+
+> DENY.
+
+Attempt:
+
+```text
+user with tenant A
+→ Host tenant B
+→ switch endpoint
+```
+
+Expected:
+
+> authorization must remain consistent.
+
+---
+
+# 14. RESOURCE-LEVEL CROSS-TENANT ATTACKS
+
+This is mandatory.
+
+Create known resources:
+
+```text
+Tenant A:
+resident A1
+finance A1
+event A1
+announcement A1
+aspiration A1
+etc.
+```
+
+Tenant B:
+
+```text
+resident B1
+finance B1
+event B1
+announcement B1
+aspiration B1
+etc.
+```
+
+Then attempt:
+
+```text
+Tenant A user
+→ GET resource B
+```
+
+```text
+Tenant A user
+→ UPDATE resource B
+```
+
+```text
+Tenant A user
+→ DELETE resource B
+```
+
+```text
+Tenant A user
+→ APPROVE resource B
+```
+
+according to actual available operations.
+
+Test:
+
+* by ID
+* list endpoints
+* search
+* filters
+* pagination
+* aggregation
+* reports
+* exports
+* downloads
+
+A user must not obtain Tenant B data by guessing IDs.
+
+---
+
+# 15. IDOR / RESOURCE ID ATTACKS
+
+Test:
+
+```text
+/resource/A-ID
+```
+
+then:
+
+```text
+/resource/B-ID
+```
+
+with Tenant A credentials.
+
+Expected:
+
+```text
+DENY
+```
+
+Do not rely on random UUIDs as authorization.
+
+The database/query must enforce tenant ownership.
+
+---
+
+# 16. LIST / SEARCH / FILTER LEAKAGE
+
+Cross-tenant leakage can occur even when by-ID access is secure.
+
+Test:
+
+```text
+GET /residents
+GET /finance
+GET /events
+GET /announcements
+GET /aspirations
+```
+
+and:
+
+```text
+?tenant_id=B
+?tenant=B
+?schema=B
+?search=...
+?filter=...
+```
+
+Expected:
+
+> server-side tenant scope remains authoritative.
+
+Test pagination carefully:
+
+```text
+page 1
+page 2
+page N
+```
+
+A hidden cross-tenant record must never appear on another page.
+
+---
+
+# 17. AGGREGATION / REPORT ATTACKS
+
+Audit endpoints such as:
+
+* dashboard
+* balance
+* financial summary
+* statistics
+* reports
+* charts
+* counts
+* exports
+
+These are frequently missed.
+
+Test:
+
+```text
+Tenant A
+→ dashboard
+```
+
+must contain only:
+
+```text
+Tenant A data
+```
+
+No aggregate may accidentally query all tenants.
+
+---
+
+# 18. FILE / DOCUMENT ISOLATION
+
+If project supports:
+
+* uploads
+* receipts
+* documents
+* images
+* attachments
+* public/private files
+
+test cross-tenant access.
+
+Attempt:
+
+```text
+Tenant A
+→ request Tenant B file ID/path/key
+```
+
+Expected:
+
+> DENY.
+
+Audit object storage keys.
+
+Never trust:
+
+```text
+bucket/path/file ID
+```
+
+as authorization.
+
+---
+
+# 19. DATABASE SCHEMA ESCAPE
+
+Audit schema resolution.
+
+Try to determine whether user-controlled input can influence:
+
+```text
+schema name
+table name
+search_path
+database connection
+```
+
+Dangerous:
+
+```text
+tenantSlug → raw SQL identifier
+```
+
+without trusted tenant lookup.
+
+Verify:
+
+```text
+Host
+ ↓
+tenant lookup
+ ↓
+trusted tenant metadata
+ ↓
+trusted schema
+```
+
+Never:
+
+```text
+Host
+ ↓
+"tenant_" + arbitrary user input
+```
+
+---
+
+# 20. PostgreSQL CONNECTION POOL ATTACK
+
+Audit whether tenant context leaks between pooled connections.
+
+If application uses:
+
+```text
+database/sql
+```
+
+or equivalent pooling:
+
+Test:
+
+```text
+Tenant A request
+→ connection
+→ Tenant B request
+→ potentially same connection
+```
+
+Verify no tenant-specific state remains in connection/session.
+
+Especially inspect:
+
+```text
+SET search_path
+SET ROLE
+session variables
+temporary tables
+prepared statements
+connection-local state
+```
+
+If schema-qualified queries are used, verify all tenant-scoped queries actually use them.
+
+---
+
+# 21. CACHE / TANSTACK QUERY
+
+Test browser transition:
+
+```text
+Tenant A
+→ login
+→ load private data
+→ logout
+```
+
+then:
+
+```text
+Tenant B
+→ login
+→ load same screen
+```
+
+Verify no Tenant A data appears.
+
+Inspect:
+
 * query keys
-* auth store
+* query invalidation
+* queryClient.clear()
+* persisted query cache
 * localStorage
 * sessionStorage
-* service worker
-* PWA cache
-* browser cache
-* persisted state
+* Zustand or other state stores
 
-Tenant harus menjadi bagian dari cache isolation strategy jika diperlukan.
+Tenant context must be included where necessary.
 
 ---
 
-# 25. PWA / SERVICE WORKER
+# 22. PWA / SERVICE WORKER ATTACK
 
-Karena aplikasi adalah PWA:
-
-Audit:
+Inspect:
 
 * service worker
 * Cache API
-* Workbox jika ada
+* Workbox
 * precache
 * runtime cache
-* API caching
-* hostname isolation
+* API response caching
 
-Pastikan:
-
-```text
-rt-003.openrt.com
-```
-
-tidak mendapatkan cached private API response dari:
-
-```text
-rt-004.openrt.com
-```
-
-Ini sangat penting.
-
----
-
-# 26. CORS / ORIGIN
-
-Audit:
-
-* CORS
-* allowed origins
-* frontend API URL
-* websocket origin jika ada
-* CSRF jika applicable
-* cookies
-* SameSite
-* secure cookie
-
-Jangan hardcode hanya:
-
-```text
-https://rt-003.openrt.com
-```
-
-jika tenant dynamic.
-
-Gunakan configurable base domain/origin strategy.
-
----
-
-# 27. DOCKER
-
-Audit seluruh Docker setup:
-
-* Dockerfile
-* docker-compose
-* networks
-* ports
-* volumes
-* environment
-* healthchecks
-* Traefik
-* labels
-* secrets
-* production config
-* development config
-
-Pastikan architecture mendukung dynamic tenant hostname.
-
-Jangan membuat container baru per tenant kecuali memang architecture project mengharuskannya.
-
-Idealnya:
-
-```text
-Wildcard domains
-        ↓
-Traefik
-        ↓
-same application
-        ↓
-dynamic tenant resolution
-```
-
----
-
-# 28. DEV / STAGING / PRODUCTION CONFIGURATION
-
-Pastikan tenant domain configuration tidak hardcoded.
-
-Minimal support:
-
-```text
-development
-staging (jika ada)
-production
-```
-
-Contoh concept:
-
-```text
-TENANT_BASE_DOMAIN
-TENANT_DOMAIN_SCHEME
-TRUSTED_PROXY
-```
-
-Gunakan configuration naming sesuai architecture project.
-
-Jangan menulis:
-
-```go
-const baseDomain = "openrt.com"
-```
-
-atau:
-
-```ts
-const tenantDomain = ".openrt.com"
-```
-
-atau equivalent.
-
----
-
-# 29. FRONTEND URL GENERATION
-
-Audit semua tempat yang membangun URL tenant.
-
-Cari:
-
-```text
-window.location
-hostname
-origin
-baseURL
-tenant URL
-subdomain
-```
-
-Jika frontend perlu menghasilkan:
-
-```text
-https://rt-003.openrt.com
-```
-
-gunakan configurable domain configuration.
-
-Jangan hardcode production domain.
-
----
-
-# 30. LOCAL TEST TENANTS
-
-Buat fixture/seed test yang memungkinkan:
+Test:
 
 ```text
 rt-003
+→ private response cached
+```
+
+then:
+
+```text
 rt-004
+→ same URL/path
 ```
 
-atau equivalent tenant fixtures.
+Ensure cached Tenant A private data cannot be returned to Tenant B.
 
-Automated tests harus benar-benar menggunakan hostname berbeda.
-
-Jangan hanya mengubah tenant ID di body.
-
----
-
-# 31. SECURITY TEST MATRIX
-
-Minimal test matrix:
-
-| Scenario                         | Expected                       |
-| -------------------------------- | ------------------------------ |
-| Existing tenant A + correct user | ALLOW                          |
-| Existing tenant B + correct user | ALLOW                          |
-| Unknown tenant                   | DENY                           |
-| Inactive tenant                  | DENY                           |
-| User A → Host A                  | ALLOW                          |
-| User A → Host B                  | DENY                           |
-| User B → Host B                  | ALLOW                          |
-| User B → Host A                  | DENY                           |
-| Missing Host                     | DENY/appropriate handling      |
-| Wrong base domain                | DENY                           |
-| Spoofed X-Forwarded-Host         | DENY                           |
-| Spoofed X-Tenant-ID              | DENY                           |
-| Arbitrary tenant slug            | DENY                           |
-| Invalid tenant slug              | DENY                           |
-| Deleted tenant                   | DENY                           |
-| Disabled tenant                  | DENY                           |
-| JWT tenant A + Host B            | DENY                           |
-| JWT tenant B + Host A            | DENY                           |
-| SUPERADMIN → valid tenant        | ALLOW only according to policy |
-| SUPERADMIN → nonexistent tenant  | DENY                           |
-
----
-
-# 32. DNS / TRAEFIK TEST
-
-Jika environment memungkinkan, benar-benar test:
+Pay special attention to:
 
 ```text
-rt-003.<dev-domain>
-rt-004.<dev-domain>
-unknown.<dev-domain>
+/api/*
 ```
 
-melalui actual HTTP request.
+cache rules.
 
-Jangan hanya unit-test string parsing.
-
-Test actual chain:
-
-```text
-DNS/hosts
-→ Traefik
-→ application
-→ tenant resolver
-→ database
-```
-
-Jika production infrastructure tidak tersedia:
-
-> mark production infrastructure test as `UNTESTED` or `BLOCKED`.
-
-Jangan mengklaim production verified.
+Private API responses should not be blindly cached across tenant origins.
 
 ---
 
-# 33. NO HARD-CODE
+# 23. BROWSER STORAGE
 
-Cari seluruh repository untuk kemungkinan hardcode:
+Search for:
+
+```text
+localStorage
+sessionStorage
+IndexedDB
+cookies
+persisted state
+```
+
+Determine whether:
+
+* tenant ID
+* user data
+* permissions
+* cached API response
+* JWT
+
+can survive tenant transition incorrectly.
+
+Attempt:
+
+```text
+Tenant A
+→ logout
+→ Tenant B
+```
+
+Expected:
+
+> no private Tenant A state is reused.
+
+---
+
+# 24. CORS / ORIGIN
+
+Test:
+
+```text
+Origin: https://rt-003.openrt.com
+```
+
+versus:
+
+```text
+Origin: https://attacker.com
+```
+
+and other tenant origins.
+
+Verify:
+
+* CORS does not grant attacker origin
+* credentials are handled correctly
+* cookies are scoped correctly
+* SameSite behavior is appropriate
+* wildcard `*` is not combined incorrectly with credentials
+
+---
+
+# 25. COOKIE / SESSION ISOLATION
+
+If cookies are used:
+
+Audit:
+
+```text
+Domain
+Path
+Secure
+HttpOnly
+SameSite
+```
+
+Determine whether:
+
+```text
+Domain=.openrt.com
+```
+
+is intentional.
+
+If wildcard domain cookies are used, verify one tenant cannot exploit them to impersonate another tenant.
+
+If JWT Authorization headers are used instead, verify token handling remains secure.
+
+---
+
+# 26. SUPERADMIN ADVERSARIAL TEST
+
+SUPERADMIN is the highest-risk role.
+
+Verify:
+
+### Allowed
+
+```text
+SUPERADMIN
+→ explicit authorized tenant
+```
+
+### Denied
+
+```text
+SUPERADMIN
+→ nonexistent tenant
+```
+
+### Denied unless explicitly supported
+
+```text
+SUPERADMIN JWT tenant=A
+Host=B
+```
+
+Do not allow hostname alone to switch SUPERADMIN context.
+
+---
+
+# 27. PUBLIC ROUTES
+
+Identify every public endpoint.
+
+For each:
+
+```text
+public endpoint
+→ tenant context required?
+→ tenant resolved how?
+→ inactive tenant behavior?
+→ unknown tenant behavior?
+```
+
+Public does not automatically mean:
+
+> all tenant data.
+
+For example:
+
+```text
+rt-003.openrt.com/public/announcements
+```
+
+must return only data belonging to the correct tenant if the endpoint is tenant-scoped.
+
+---
+
+# 28. ERROR RESPONSE ANALYSIS
+
+Check whether errors leak:
+
+* tenant existence
+* database schema
+* internal IDs
+* SQL errors
+* user existence
+* authorization details
+* filesystem/object storage paths
+
+Compare:
+
+```text
+unknown tenant
+inactive tenant
+unauthorized tenant
+```
+
+Ensure response differences do not unnecessarily expose sensitive information.
+
+Do not blindly require identical status codes if application semantics legitimately distinguish them.
+
+---
+
+# 29. RATE LIMITING / ABUSE
+
+If rate limiting exists, verify whether it is tenant/user aware.
+
+If not implemented:
+
+> report as finding, do not invent implementation unless clearly within scope.
+
+At minimum consider:
+
+* tenant enumeration
+* login brute force
+* tenant slug enumeration
+
+Do not claim protection that does not exist.
+
+---
+
+# 30. CONFIGURATION / HARDCODE AUDIT
+
+Search entire repository for:
 
 ```text
 openrt.com
+openrt.local
 rt-003
 rt-004
 tenant-003
 tenant-004
-localhost
 ```
 
-Bedakan antara:
-
-### Acceptable
-
-Test fixture:
+Classify:
 
 ```text
-rt-003
+SAFE TEST FIXTURE
+DOCUMENTATION EXAMPLE
+CONFIGURATION DEFAULT
+PRODUCTION HARDCODE
 ```
 
-Seed/test data yang memang sengaja digunakan untuk testing.
-
-### Not acceptable
-
-Production logic:
-
-```text
-if hostname == "rt-003.openrt.com"
-```
-
-atau:
-
-```text
-const baseDomain = "openrt.com"
-```
-
-atau:
-
-```text
-if tenantSlug == "rt-003"
-```
-
-Jika production behavior membutuhkan domain:
-
-> configurable.
+Production logic must not depend on a specific RT.
 
 ---
 
-# 34. DOCUMENTATION
+# 31. TEST REALISTIC ATTACK FLOW
 
-Setelah implementation verified, update documentation yang relevan.
+Do not rely only on isolated middleware tests.
 
-Dokumentasikan:
-
-## Development
-
-Cara menjalankan:
+At least one complete attack must traverse:
 
 ```text
-rt-003.<dev-domain>
-rt-004.<dev-domain>
-```
-
-## Production
-
-Architecture:
-
-```text
-*.openrt.com
-        ↓
+curl/browser
+ ↓
 Traefik
-        ↓
-Application
-        ↓
-Tenant Resolver
+ ↓
+Nginx
+ ↓
+Backend
+ ↓
+Auth
+ ↓
+Tenant middleware
+ ↓
+Repository
+ ↓
+PostgreSQL
 ```
 
-## Tenant Lifecycle
+Example:
 
 ```text
-create tenant
-→ activate
-→ routable
-→ disable/delete
-→ no longer routable
+JWT Tenant A
++
+Host Tenant B
++
+real resource ID from Tenant B
 ```
 
-## Security
+Expected:
 
-Jelaskan:
+```text
+DENY
+```
 
-* wildcard DNS bukan authorization
-* unknown tenant denied
-* hostname tenant harus match authorized tenant context
-* database schema isolation
-* proxy header handling
-
-Dokumentasi harus sesuai dengan implementation aktual.
+This must be verified against the actual running stack.
 
 ---
 
-# 35. FINAL VALIDATION
+# 32. REGRESSION TESTS
 
-Setelah perubahan:
+For every vulnerability discovered:
 
-Run:
+1. reproduce it
+2. capture failing behavior
+3. fix source code
+4. add automated regression test
+5. run test
+6. run broader test suite
+7. reproduce original attack
+8. verify it is now blocked
 
-* backend tests
-* security tests
-* tenant resolver tests
-* hostname tests
-* integration tests
-* E2E tests
-* frontend tests
-* build
-* typecheck
-* lint
-* Docker build
-* Docker Compose validation
-* Traefik configuration validation jika tersedia
-
-Jangan hanya membuat test.
-
-**RUN THEM.**
+Never delete the test after fixing.
 
 ---
 
-# 36. DEFINITION OF DONE
+# 33. TEST RESULT FORMAT
 
-Task hanya dianggap selesai jika:
+For every important attack:
 
-* [ ] Current tenant architecture audited
-* [ ] Current hostname behavior verified
-* [ ] Subdomain tenant routing verified
-* [ ] Development supports tenant subdomains
-* [ ] Production architecture supports wildcard tenant subdomains
-* [ ] Traefik/reverse proxy audited
-* [ ] Unknown tenant denied
-* [ ] Inactive tenant denied
-* [ ] Deleted tenant denied
-* [ ] Cross-tenant hostname attack denied
-* [ ] Host header manipulation denied
-* [ ] Forwarded-host manipulation denied
-* [ ] X-Tenant-ID manipulation denied
-* [ ] JWT tenant vs hostname mismatch denied
-* [ ] SUPERADMIN behavior verified
-* [ ] Tenant membership verified
-* [ ] Tenant schema cannot be selected from arbitrary hostname
-* [ ] PostgreSQL isolation verified
-* [ ] Frontend cache isolation verified
-* [ ] PWA/service-worker isolation verified if applicable
-* [ ] CORS/origin behavior verified
-* [ ] Docker configuration verified
-* [ ] Traefik configuration verified
-* [ ] Development configuration verified
-* [ ] Production configuration verified statically or operationally
-* [ ] Base domain configurable
-* [ ] No production tenant/domain hardcode
-* [ ] Tenant creation does not require source-code modification
-* [ ] Tenant deletion/disable behavior verified
-* [ ] Automated security tests added/fixed
-* [ ] Tests actually executed
-* [ ] Documentation updated
-* [ ] Remaining limitations reported
+```text
+ATTACK:
+AUTH:
+HOST:
+REQUEST:
+TARGET:
+EXPECTED:
+ACTUAL:
+HTTP STATUS:
+TENANT CONTEXT:
+DB SCHEMA:
+RESULT:
+```
+
+Example:
+
+```text
+ATTACK:
+Cross-tenant resource access
+
+AUTH:
+Tenant A user
+
+HOST:
+rt-003.openrt.local
+
+REQUEST:
+GET /api/residents/<tenant-B-id>
+
+EXPECTED:
+DENY
+
+ACTUAL:
+403
+
+TENANT CONTEXT:
+tenant A
+
+DB SCHEMA:
+tenant_a
+
+RESULT:
+PASS
+```
+
+If DB schema cannot safely be exposed in logs:
+
+> report the verification method without leaking secrets.
+
+---
+
+# 34. SECURITY INVARIANTS
+
+At the end, explicitly prove these invariants:
+
+### Invariant 1
+
+```text
+Unknown hostname
+→ no tenant context
+→ no tenant data
+```
+
+### Invariant 2
+
+```text
+Tenant A user
+→ cannot access Tenant B resources
+```
+
+### Invariant 3
+
+```text
+Tenant A JWT
++ Host B
+→ DENY
+```
+
+### Invariant 4
+
+```text
+Client-controlled tenant ID
+→ never authoritative
+```
+
+### Invariant 5
+
+```text
+Client-controlled forwarded headers
+→ never tenant authority
+```
+
+### Invariant 6
+
+```text
+Hostname
+→ tenant lookup
+→ never direct schema selection
+```
+
+### Invariant 7
+
+```text
+Tenant A cache
+→ never reused for Tenant B
+```
+
+### Invariant 8
+
+```text
+Inactive tenant
+→ no private access
+```
+
+### Invariant 9
+
+```text
+Tenant creation
+→ does not require source-code change
+```
+
+### Invariant 10
+
+```text
+No production tenant/domain hardcode
+```
+
+---
+
+# 35. DO NOT STOP AT FINDINGS
+
+If a vulnerability is discovered, do not finish with:
+
+> "Found vulnerability."
+
+Continue:
+
+```text
+FIND
+→ ROOT CAUSE
+→ FIX
+→ REGRESSION TEST
+→ RUN
+→ RE-ATTACK
+→ VERIFY
+```
+
+The task is not complete until the fixed behavior has been re-tested.
+
+---
+
+# 36. FINAL VALIDATION
+
+Run relevant:
+
+```text
+go test ./...
+go build ./...
+go vet ./...
+```
+
+Frontend:
+
+```text
+npm test
+npm run build
+npm run typecheck
+npm run lint
+```
+
+Use actual project commands.
+
+Also run:
+
+```text
+Docker compose validation
+Traefik validation
+Integration tests
+Security tests
+E2E tests
+```
+
+if available.
+
+Do not invent commands.
 
 ---
 
 # 37. FINAL REPORT
 
-Berikan:
+Provide:
 
-## Architecture
-
-Jelaskan architecture aktual:
+## Executive Summary
 
 ```text
-DNS
-→ Traefik
-→ Application
-→ Tenant Resolver
-→ Authentication
-→ Tenant Authorization
-→ Database
+Overall:
+VERIFIED / PARTIAL / BROKEN / BLOCKED
 ```
 
-## Current Support
+## Attack Matrix
+
+Show every major attack and result.
+
+## Vulnerabilities Found
+
+For each:
 
 ```text
-Development: VERIFIED / PARTIAL / BLOCKED
-Production: VERIFIED / PARTIAL / BLOCKED
-Traefik: VERIFIED / PARTIAL / BLOCKED
-Wildcard DNS: VERIFIED / PARTIAL / BLOCKED
-Tenant isolation: VERIFIED / PARTIAL / BROKEN
+Severity
+Attack
+Root Cause
+Impact
+Fix
+Regression Test
+Final Result
+```
+
+## Tenant Isolation
+
+Explicitly state:
+
+```text
+Unknown tenant:
+Cross-tenant:
+Host manipulation:
+JWT manipulation:
+Resource ID:
+List/search:
+Reports:
+Files:
+Cache:
+PWA:
+Database:
+```
+
+## Infrastructure
+
+```text
+Traefik:
+Nginx:
+Docker:
+Development:
+Production:
 ```
 
 ## Configuration
 
-Tampilkan environment/configuration yang diperlukan tanpa membocorkan secret.
-
-## Security Findings
-
-Untuk setiap issue:
-
-```text
-Issue
-Root Cause
-Fix
-Test
-Result
-```
-
-## Hardcoded Values
-
-Tampilkan hardcoded tenant/domain values yang ditemukan.
-
-Kelompokkan:
-
-```text
-SAFE TEST FIXTURE
-CONFIGURABLE
-UNSAFE PRODUCTION HARDCODE
-```
-
-Semua `UNSAFE PRODUCTION HARDCODE` harus diperbaiki.
+List relevant configuration variables and confirm no unsafe hardcodes.
 
 ## Tests
 
-Tampilkan test penting beserta hasil aktual.
-
-## Docker / Traefik
-
-Tampilkan configuration files yang digunakan dan hasil validation.
+Show actual commands and results.
 
 ## Remaining Issues
 
-Gunakan:
+Separate:
 
 ```text
 CRITICAL
@@ -1533,60 +1513,130 @@ UNTESTED
 BLOCKED
 ```
 
-Jangan menyembunyikan limitation.
+Do not hide limitations.
+
+---
+
+# 38. FINAL STATUS RULE
+
+Use:
+
+### VERIFIED
+
+Only if attack was actually executed and expected deny/allow behavior was observed.
+
+### PARTIAL
+
+If implementation appears correct but an important attack path could not be executed.
+
+### BROKEN
+
+If tenant isolation can be bypassed.
+
+### BLOCKED
+
+If environment prevents meaningful verification.
+
+Never use:
+
+> VERIFIED
+
+merely because code inspection suggests it should work.
+
+---
+
+# DEFINITION OF DONE
+
+* [ ] Current tenant security model reconstructed
+* [ ] Host ↔ JWT consistency attacked
+* [ ] JWT manipulation attacked
+* [ ] Host header manipulation attacked
+* [ ] Forwarded header spoof attacked
+* [ ] Unknown tenant attacked
+* [ ] Inactive tenant attacked
+* [ ] Deleted/nonexistent tenant attacked
+* [ ] Tenant switching attacked
+* [ ] Cross-tenant CRUD attacked
+* [ ] IDOR attacked
+* [ ] List/search/filter leakage tested
+* [ ] Aggregation/report leakage tested
+* [ ] File/document isolation tested if applicable
+* [ ] Database schema isolation tested
+* [ ] Connection-pool leakage considered/tested
+* [ ] Traefik routing tested
+* [ ] Nginx proxy tested
+* [ ] CORS tested
+* [ ] Cookie/session isolation tested if applicable
+* [ ] Browser cache tested
+* [ ] TanStack Query/cache tested
+* [ ] PWA/service-worker tested
+* [ ] localStorage/sessionStorage/persisted state audited
+* [ ] SUPERADMIN attack scenarios tested
+* [ ] Public routes audited
+* [ ] Error leakage reviewed
+* [ ] Production hardcodes searched
+* [ ] At least one full attack traversed the real Docker/Traefik/application/database chain
+* [ ] Every discovered vulnerability fixed
+* [ ] Regression tests added
+* [ ] Original attacks re-run after fixes
+* [ ] Full relevant test suite passed
+* [ ] Remaining limitations explicitly reported
 
 ---
 
 # FINAL INSTRUCTION
 
-Jangan menganggap:
+**Assume the tenant isolation is vulnerable until you prove otherwise.**
+
+Do not perform a documentation review.
+
+Do not perform a superficial code review.
+
+Do not simply repeat the previous audit result.
+
+This is an **adversarial verification task**.
+
+Your job is to actively attempt:
 
 ```text
-*.openrt.com
+Tenant A
+    ↓
+access Tenant B
 ```
 
-berarti tenant otomatis valid.
-
-**Wildcard DNS hanya routing capability.**
-
-Tenant harus selalu melalui:
+through every realistic path:
 
 ```text
-HOSTNAME
-→ VALIDATE DOMAIN
-→ EXTRACT SLUG
-→ LOOKUP TENANT
-→ VERIFY TENANT EXISTS
-→ VERIFY TENANT ACTIVE
-→ VERIFY USER AUTHORIZATION
-→ ESTABLISH TRUSTED TENANT CONTEXT
-→ DATABASE ISOLATION
+hostname
+JWT
+headers
+tenant switching
+API
+resource IDs
+search
+filters
+reports
+files
+database
+connection pooling
+browser cache
+PWA
+cookies
+proxy
+Traefik
+configuration
 ```
 
-Dan:
+If the attack succeeds:
 
-```text
-JWT tenant ≠ Host tenant
-```
+> fix it.
 
-harus **DENY**, kecuali explicit authorized tenant-switching flow.
+If the attack fails:
 
-Jangan hardcode tenant.
+> provide evidence.
 
-Jangan hardcode production domain.
+The final goal is:
 
-Jangan membuat special case untuk RT tertentu.
+> **Prove that a malicious or compromised user from Tenant A cannot cross the Tenant B security boundary, even when manipulating hostname, JWT, headers, API parameters, resource IDs, browser state, or proxy-related inputs.**
 
-Jangan membuat wildcard hostname menjadi authorization bypass.
-
-Jangan membuat tenant context langsung dari arbitrary Host header.
-
-Jangan menganggap Traefik telah menyelesaikan tenant security.
-
-Backend tetap menjadi security boundary.
-
-Target akhir:
-
-> **Setiap RT mendapatkan subdomain unik secara dynamic, development dan production mendukung model tersebut, tenant yang tidak terdaftar tidak dapat diakses walaupun wildcard DNS aktif, authenticated user tidak dapat menggunakan hostname untuk menembus tenant lain, database isolation tetap terjaga, dan seluruh domain/tenant configuration dapat diubah melalui configuration tanpa source-code hardcode.**
-
-**AUDIT → DESIGN VALIDATION → FIX → SECURITY TEST → DOCKER/TRAefik TEST → E2E → DOCUMENT → FINAL REPORT**
+**ATTACK → REPRODUCE → FIX → TEST → RE-ATTACK → PROVE**

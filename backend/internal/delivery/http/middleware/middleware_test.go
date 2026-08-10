@@ -43,7 +43,7 @@ func (m *mockTenantRepo) GetByDomain(ctx context.Context, domainName string) (*d
 	return nil, nil
 }
 func (m *mockTenantRepo) Update(ctx context.Context, tenant *domain.Tenant) error { return nil }
-func (m *mockTenantRepo) Delete(ctx context.Context, id uuid.UUID) error        { return nil }
+func (m *mockTenantRepo) Delete(ctx context.Context, id uuid.UUID) error          { return nil }
 func (m *mockTenantRepo) List(ctx context.Context, limit, offset int) ([]*domain.Tenant, int64, error) {
 	return nil, 0, nil
 }
@@ -247,7 +247,7 @@ func TestAuthMiddleware_JWTSecurity(t *testing.T) {
 	rec = httptest.NewRecorder()
 	noneHeader := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
 	nonePayload := base64.RawURLEncoding.EncodeToString([]byte(`{"user_id":"` + userID.String() + `","tenant_id":"` + tenantID.String() + `","role":"superadmin","exp":4102444800}`))
-	okHandler.ServeHTTP(rec, makeReq(noneHeader + "." + nonePayload + "."))
+	okHandler.ServeHTTP(rec, makeReq(noneHeader+"."+nonePayload+"."))
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("none-algorithm token: expected 401, got %d", rec.Code)
 	}
@@ -335,30 +335,71 @@ func TestSecurityHeadersMiddleware(t *testing.T) {
 }
 
 func TestCORSMiddleware(t *testing.T) {
-	mw := middleware.CORSMiddleware("*")
+	mw := middleware.CORSMiddleware("openrt.local")
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	// OPTIONS preflight request
+	// OPTIONS preflight request from an allowed tenant origin.
 	reqOptions := httptest.NewRequest("OPTIONS", "/", nil)
+	reqOptions.Header.Set("Origin", "https://rt-003.openrt.local")
 	recOptions := httptest.NewRecorder()
 	handler.ServeHTTP(recOptions, reqOptions)
 	if recOptions.Code != http.StatusOK {
 		t.Errorf("expected OPTIONS request 200, got %d", recOptions.Code)
 	}
-	if recOptions.Header().Get("Access-Control-Allow-Origin") != "*" {
-		t.Errorf("unexpected origin header: %s", recOptions.Header().Get("Access-Control-Allow-Origin"))
+	if got := recOptions.Header().Get("Access-Control-Allow-Origin"); got != "https://rt-003.openrt.local" {
+		t.Errorf("unexpected origin header: %s", got)
 	}
 
-	// Normal GET request
+	// Normal GET request without an Origin header.
 	reqGet := httptest.NewRequest("GET", "/", nil)
 	recGet := httptest.NewRecorder()
 	handler.ServeHTTP(recGet, reqGet)
 	if recGet.Code != http.StatusOK {
 		t.Errorf("expected GET request 200, got %d", recGet.Code)
 	}
-	if recGet.Header().Get("Access-Control-Allow-Origin") != "*" {
-		t.Errorf("unexpected origin header: %s", recGet.Header().Get("Access-Control-Allow-Origin"))
+	if got := recGet.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("expected no CORS origin header without Origin, got %q", got)
+	}
+}
+
+func TestCORSMiddleware_RejectsForeignOrigins(t *testing.T) {
+	mw := middleware.CORSMiddleware("openrt.local")
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// Attacker origins must receive NO CORS headers (browser blocks the read).
+	for _, origin := range []string{
+		"https://attacker.com",
+		"https://rt-003.openrt.local.attacker.com",
+		"https://openrt.com.attacker.com",
+		"https://evil.example.com",
+	} {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.Header.Set("Origin", origin)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "" {
+			t.Errorf("origin %s must not be reflected, got %q", origin, got)
+		}
+	}
+
+	// Allowed origins: tenant subdomains, the base domain, and localhost dev.
+	for _, origin := range []string{
+		"https://rt-003.openrt.local",
+		"https://rt-004.openrt.local",
+		"https://openrt.local",
+		"http://localhost:3000",
+		"http://127.0.0.1:5173",
+	} {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.Header.Set("Origin", origin)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if got := rec.Header().Get("Access-Control-Allow-Origin"); got == "" {
+			t.Errorf("origin %s should be allowed, got no CORS header", origin)
+		}
 	}
 }
