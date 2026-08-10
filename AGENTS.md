@@ -1,7 +1,13 @@
 # AGENTS.md — Autonomous Application Discovery & E2E Testing
 
-**Version:** 2.0.0
+**Version:** 3.0.0
 **Purpose:** General-purpose autonomous application discovery, browser exploration, E2E test generation, execution, debugging, and regression coverage.
+
+> **How to use this document.** Sections 1–45 are the technology- and domain-agnostic
+> methodology (reusable across projects). Section 46 is the **project-specific context for
+> this repository** (Sitransparan RT/RW) — current, verified facts that let an agent skip
+> unnecessary rediscovery and audit honestly. When working in this repo, read section 46
+> first, then apply the methodology.
 
 ---
 
@@ -123,6 +129,22 @@ Application logs
 Running application
 Browser
 Network requests
+```
+
+In this repository, the following canonical sources are available and should be used as
+entry points before deep code inspection:
+
+```text
+README.md                          - project summary, quick start, credential table
+docs/architecture.md               - current architecture & multi-tenancy model
+docs/api.md                        - verified endpoint inventory (methods, roles)
+docs/authentication-authorization.md - auth, JWT, RBAC matrix, tenant isolation
+docs/database.md                   - schema & migrations (000001-000013)
+docs/setup.md                      - environment, commands, credentials
+docs/testing.md                    - test suites & commands
+docs/deployment.md                 - Docker/Traefik deployment
+backend/internal/delivery/http/openapi.yaml - OpenAPI spec served at /swagger/openapi.yaml
+AGENTS.md §46                      - project-specific context for this repository
 ```
 
 Do not rely on only one source.
@@ -1334,3 +1356,185 @@ The success criterion is:
 > **"I systematically discovered the application's meaningful functionality, created appropriate E2E coverage for it, executed that coverage against the real application, investigated failures with evidence, and clearly reported what is covered, uncovered, broken, or blocked."**
 
 This instruction must remain technology- and domain-agnostic so it can be reused across different projects.
+
+---
+
+# 46. Project-Specific Context — Sitransparan RT/RW
+
+> The facts below were verified against the current source code, migrations, route
+> registration, and tests at the time this section was written. Source code remains the
+> authority: if a fact below conflicts with what you find in the code, trust the code and
+> report the discrepancy.
+
+## 46.1 Application Overview
+
+**Sitransparan RT/RW** is a multi-tenant SaaS PWA for transparency of RT/RW neighborhood
+governance: resident registration, transparent cash ledger, events & budgeting, community
+aspirations, announcements & documents, and a public transparency portal. Each RT is a
+tenant isolated in its own PostgreSQL schema.
+
+## 46.2 Tech Stack & Repository Structure
+
+| Layer | Stack |
+|---|---|
+| Backend | Go 1.25 (`backend/go.mod`), standard library `net/http` with method-pattern `ServeMux`, Clean Architecture (`delivery → usecase → repository → domain`) |
+| Database | PostgreSQL 16, schema-per-tenant (`tenant_<slug>`, `-` → `_`) |
+| Storage | MinIO (S3-compatible) — file uploads (proofs, receipts, documents, KTP/KK) |
+| Frontend | React 18, TypeScript, Vite, TailwindCSS, Shadcn-style UI primitives, TanStack Query v5, Zustand, React Router v6 |
+| PWA | `vite-plugin-pwa` (injectManifest) + Workbox service worker + IndexedDB offline cache |
+| Reverse proxy | Traefik v3 (dev, wildcard subdomain) + Nginx (frontend container proxies `/api`) |
+| Container | Docker Compose |
+
+```text
+backend/                        Go API server
+  cmd/server/main.go            entrypoint & route registration
+  internal/domain/              entities, role constants, repository/usecase interfaces
+  internal/delivery/http/       handlers + middleware/ + openapi.yaml (embedded)
+  internal/usecase/             business logic
+  internal/repository/          PostgreSQL, schema-qualified queries (TenantTable)
+  migrations/                   000001–000013 raw SQL
+  pkg/                          config, crypto (AES-256-GCM + HMAC), storage/minio
+frontend/
+  src/pages/                    React.lazy code-split pages
+  src/services/                 axios client + TanStack Query hooks
+  src/store/useAuthStore.ts     Zustand auth state (localStorage)
+  src/sw.ts                     Workbox service worker
+infrastructure/                 dev docker-compose, Traefik, Dockerfiles
+docs/                           canonical documentation (see §46.10)
+tests/e2e/                      Playwright regression suite
+```
+
+## 46.3 Authentication, Roles & Authorization
+
+- **Auth**: `POST /api/v1/auth/login` (email + bcrypt password) → JWT **HS256**, valid **24 h**.
+  Claims: `user_id`, `tenant_id`, `role`, `exp`, `iat`, `sub`.
+- **Role & tenant scope come exclusively from the database** (`tenant_users JOIN roles`,
+  mapping `status='active'`). Never derived from email or client input.
+- **Roles (only three)**: `superadmin` (platform/global), `admin_rt` (tenant admin),
+  `resident` (read-only + participation).
+- **Register** (`POST /api/v1/auth/register`) creates a user **without** tenant mapping;
+  an admin must assign the user to a tenant via `/users`.
+- **Tenant switching**: `POST /api/v1/auth/switch-tenant` — server-verified, re-issues JWT.
+- **Tenant context is derived ONLY from verified JWT claims.** Header `X-Tenant-ID`,
+  query params, and subdomains are never trusted. All tenant queries are schema-qualified
+  (`tenant_<slug>.<table>`); there is no `SET search_path` on the request path.
+- **RBAC enforcement**: write/approve/verify/assign operations are guarded with
+  `middleware.RequireAnyRole(superadmin, admin_rt)`; `/api/v1/users` requires
+  `adminMw`; `/api/v1/superadmin/tenants` requires `superAdminMw`. Only superadmin may
+  create/set the `superadmin` role (role escalation → 403).
+- **Known limitation**: no server-side token revocation on logout (JWT valid until expiry).
+- Details: `docs/authentication-authorization.md`.
+
+## 46.4 Multi-Tenancy
+
+- Global tables (`tenants`, `users`, `roles`, `tenant_users`, `audit_logs`) live in the
+  `public` schema. Tenant operational data lives in `tenant_<slug>` schemas (15 tables:
+  residents, family_members, fee_categories, dues_payments, financial_transactions,
+  events, event_budgets, event_participants, event_sponsors, event_roles, event_receipts,
+  aspirations, community_needs, announcements, documents).
+- Creating a tenant auto-provisions its schema; deleting a tenant drops it
+  (`DROP SCHEMA ... CASCADE`).
+- Public portal endpoints resolve the tenant from the **slug in the path**
+  (`/api/v1/t/{slug}/info|announcements|documents|aspirations|needs`). The frontend
+  derives the slug from the hostname (`getTenantSlugFromHost`, fallback `sitransparan-rt`).
+- Details: `docs/architecture.md` §5, `docs/database.md`.
+
+## 46.5 Feature Areas (discovered capabilities)
+
+| Area | Capabilities |
+|---|---|
+| Auth & IAM | login, register, list user tenants, switch tenant, user CRUD (admin), tenant CRUD (superadmin) |
+| Demography | resident CRUD, family members, approve/reject, NIK encrypted (AES-256-GCM + HMAC lookup) |
+| Finance | fee categories, dues (record & verify), cash transactions (**append-only** — PUT/DELETE → 405, corrections via reversing entries), summary, CSV/PDF export |
+| Events | event CRUD, RAB/budget, RSVP, committee roles, sponsors, donation receipts, transparency view |
+| Aspirations | submit (public anonymous & internal), status + response (admin), community needs CRUD |
+| Announcements & Documents | announcement CRUD, document create/delete (multipart or JSON) |
+| Dashboard | summary metrics, financial report export |
+| Public Portal | `/public/announcements`, `/public/aspirations`, `/public/events` — no login |
+| PWA | offline caching via Workbox + IndexedDB |
+
+## 46.6 Routes & API
+
+- **Frontend routes** (`frontend/src/App.tsx`): `/login`; public `/public/announcements`,
+  `/public/aspirations`, `/public/events`; protected `/`, `/residents`, `/financial`,
+  `/events`, `/aspirations`, `/announcements`; role-gated `/users` (`SUPER_ADMIN`|`RT_ADMIN`)
+  and `/superadmin/tenants` (`SUPER_ADMIN`).
+- **Backend API**: base `/api/v1`; public endpoints (health, auth login/register, public
+  tenant resources, swagger) vs authenticated (Bearer JWT) vs ADMIN vs SUPERADMIN.
+  Full verified inventory: `docs/api.md` and `backend/internal/delivery/http/openapi.yaml`
+  (served at `GET /swagger/openapi.yaml`).
+
+## 46.7 Environment & Credentials
+
+- Stack: `make up` (build, wait for DB, run migrations). Targets: `up`, `migrate`, `down`,
+  `restart`, `logs`, `clean`.
+- Ports: frontend `3000`, backend `8081` (host) / `8080` (container), PostgreSQL `5432`,
+  MinIO `9000`/`9001` (console), Traefik `80`/`8080` (dashboard), Redis `6379`
+  (container only — Redis is NOT used by the backend).
+- Local wildcard subdomains (`*.openrt.local`) require `/etc/hosts` entries
+  (e.g. `app.openrt.local`, `api.openrt.local`, `rt-003.openrt.local`).
+- **Seeded credentials** (verified against bcrypt hashes in migrations):
+
+| Role | Email | Password |
+|---|---|---|
+| Super Admin | `superadmin@platform.local` | `admin123` |
+| Super Admin (legacy) | `admin@gmail.com` | `admin123` |
+| Admin RT (tenant `sitransparan-rt`) | `admin@sitransparan.rt` | `password123` |
+| Resident | self-register at `/login`, then admin assigns tenant via `/users` | — |
+
+## 46.8 Test Commands & Existing Suites
+
+```bash
+# Backend (unit + integration + security)
+cd backend && go build ./... && go vet ./... && go test ./...
+
+# Frontend (typecheck + build)
+cd frontend && npm run build
+
+# E2E Playwright — requires the docker stack running at http://localhost:3000
+npx playwright test                                        # headed (default config, slowMo 300)
+npx playwright test --config=playwright.headless.config.ts # headless (CI)
+```
+
+- Backend security suite: `TestSecurity_*` in
+  `backend/internal/delivery/http/security_integration_test.go` (cross-tenant matrix,
+  role escalation, RBAC enforcement, superadmin account protection, public sanitization).
+- E2E suite (`tests/e2e/`): `auth/`, `public/`, `admin/`, `announcements/`, `aspirations/`,
+  `events/`, `roles/{admin_rt,resident,superadmin,public}.spec.ts`, `superadmin/`,
+  `users/`. Many existing specs primarily verify page rendering/navigation — deeper CRUD
+  flows are often **uncovered**; treat them as coverage gaps to fill.
+- E2E creates its own users/tenants via the UI with timestamped emails (e.g.
+  `warga_e2e_<ts>@test.local`) and does not seed into the database directly. Note that
+  the existing specs do **not** delete the records they create, so test data accumulates
+  across runs — treat leftover tenants/users as expected test residue, not application bugs.
+
+## 46.9 Known Issues & Limitations (report honestly if encountered)
+
+- **Frontend/backend API mismatches** (documented SOURCE CODE findings — the backend
+  route is authoritative; frontend calls below may fail when exercised. This list is
+  expected to shrink if/when the frontend calls are fixed):
+  - `PATCH /financial/dues/{id}/verify` (frontend) vs backend **POST** `/financial/dues/{id}/verify`
+  - `POST /financial/upload-proof` (frontend) vs backend `/financial/upload`
+  - `PATCH /aspirations/{id}/status` (frontend) vs backend **PUT** `/aspirations/{id}`
+  - `/community-needs` (frontend) vs backend `/needs`
+  - `/residents/{id}/family-members` (frontend) vs backend `/residents/{id}/family`
+  - `GET /auth/me` (frontend `useProfileQuery`) — no such route registered
+- Financial transactions are **append-only**; PUT/DELETE return 405 by design.
+- MinIO storage has **no unit tests** (no MinIO configured in the local test environment).
+- No server-side token revocation (JWT valid until expiry).
+
+## 46.10 Documentation Map (canonical)
+
+| Topic | Document |
+|---|---|
+| Entry point / quick start | `README.md` |
+| Architecture & multi-tenancy | `docs/architecture.md` |
+| Setup & development | `docs/setup.md` |
+| Auth, RBAC, isolation | `docs/authentication-authorization.md` |
+| API reference | `docs/api.md` + `/swagger/openapi.yaml` |
+| Database & migrations | `docs/database.md` |
+| Testing | `docs/testing.md` |
+| Deployment | `docs/deployment.md` |
+
+When creating or updating documentation during an audit, keep these canonical files as the
+single source per topic; do not create parallel documents that duplicate them.

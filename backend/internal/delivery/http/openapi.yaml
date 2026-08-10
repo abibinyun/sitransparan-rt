@@ -1,8 +1,21 @@
 openapi: 3.0.3
 info:
   title: Platform RT API
-  description: OpenAPI 3.0 specification for Platform RT REST API endpoints.
-  version: 1.0.0
+  description: |
+    OpenAPI 3.0 specification for the Sitransparan RT/RW backend.
+
+    Autentikasi: `Authorization: Bearer <jwt>` (HS256, valid 24 jam).
+    Role: `superadmin`, `admin_rt`, `resident`.
+    Konvensi akses pada deskripsi endpoint:
+    - PUBLIC: tanpa autentikasi
+    - AUTH: semua role terautentikasi
+    - ADMIN: superadmin + admin_rt
+    - SUPERADMIN: superadmin saja
+
+    Tenant context hanya diambil dari JWT claims yang terverifikasi (header
+    X-Tenant-ID, query param, dan subdomain TIDAK dipercaya). Endpoint publik
+    `/api/v1/t/{slug}/...` me-resolve tenant dari slug di path.
+  version: 2.0.0
 servers:
   - url: http://localhost:8081
     description: Local server (Port 8081)
@@ -12,14 +25,22 @@ servers:
 paths:
   /health:
     get:
-      summary: Health check endpoint
+      summary: Health check (PUBLIC)
       responses:
         '200':
           description: Server status OK
 
+  /swagger/openapi.yaml:
+    get:
+      summary: OpenAPI specification YAML (PUBLIC)
+      responses:
+        '200':
+          description: OpenAPI YAML
+
+  # ------------------------------------------------------------------ Auth
   /api/v1/auth/login:
     post:
-      summary: User login
+      summary: User login (PUBLIC)
       requestBody:
         required: true
         content:
@@ -28,60 +49,148 @@ paths:
               type: object
               required: [email, password]
               properties:
-                email:
-                  type: string
-                password:
-                  type: string
+                email: { type: string }
+                password: { type: string }
+                tenant_id: { type: string, format: uuid, description: Opsional - tenant yang dipilih saat login }
       responses:
         '200':
-          description: Login successful
+          description: Login sukses - mengembalikan { token, user }
         '401':
-          description: Unauthorized
+          description: Kredensial salah
 
   /api/v1/auth/register:
     post:
-      summary: User registration
+      summary: Register user baru (PUBLIC). Hanya membuat user, TANPA mapping tenant.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [email, password, name]
+              required: [name, email, password]
               properties:
-                email:
-                  type: string
-                password:
-                  type: string
-                name:
-                  type: string
+                name: { type: string }
+                email: { type: string }
+                password: { type: string }
+                phone: { type: string }
       responses:
         '201':
-          description: Registration successful
+          description: User dibuat
         '400':
-          description: Bad request
+          description: Bad request (mis. email sudah terdaftar)
 
   /api/v1/auth/tenants:
     get:
-      summary: List user tenants
+      summary: Daftar tenant aktif milik user (AUTH)
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: User tenants list
+          description: Array tenant
 
+  /api/v1/auth/switch-tenant:
+    post:
+      summary: Ganti tenant aktif, menerbitkan JWT baru ter-scope tenant tujuan (AUTH)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id]
+              properties:
+                tenant_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: JWT baru + user
+        '403':
+          description: User tidak ter-mapping ke tenant tersebut
+
+  # ------------------------------------------------- Public tenant resources
+  /api/v1/t/{slug}/info:
+    get:
+      summary: Info tenant publik (PUBLIC)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: '{ "data": { id, name, slug, domain, logo_url } }'
+        '404':
+          description: Tenant tidak ditemukan
+
+  /api/v1/t/{slug}/announcements:
+    get:
+      summary: List pengumuman publik (PUBLIC)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: '{ data: Announcement[], total }'
+
+  /api/v1/t/{slug}/documents:
+    get:
+      summary: List dokumen publik (PUBLIC)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: '{ data: Document[], total }'
+
+  /api/v1/t/{slug}/aspirations:
+    get:
+      summary: List aspirasi publik - tanpa identitas resident (PUBLIC)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: '{ data: Aspiration[], total }'
+    post:
+      summary: Submit aspirasi publik anonim - resident_id diabaikan (PUBLIC)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AspirationInput'
+      responses:
+        '201':
+          description: Aspirasi dibuat
+
+  /api/v1/t/{slug}/needs:
+    get:
+      summary: List kebutuhan lingkungan publik (PUBLIC)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: '{ data: CommunityNeed[], total }'
+
+  # ---------------------------------------------------- SuperAdmin tenants
   /api/v1/superadmin/tenants:
     get:
-      summary: List all tenants (SuperAdmin)
-      security:
-        - BearerAuth: []
+      summary: List seluruh tenant (SUPERADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
       responses:
         '200':
-          description: Tenant list
+          description: '{ tenants: Tenant[], total }'
     post:
-      summary: Create tenant (SuperAdmin)
-      security:
-        - BearerAuth: []
+      summary: Buat tenant - schema tenant_<slug> diprovisikan otomatis; domain default <slug>.openrt.local (SUPERADMIN)
+      security: [{ BearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -90,594 +199,941 @@ paths:
               type: object
               required: [name, slug]
               properties:
-                name:
-                  type: string
-                slug:
-                  type: string
-                domain:
-                  type: string
+                name: { type: string }
+                slug: { type: string }
+                domain: { type: string }
+                logo_url: { type: string }
       responses:
         '201':
-          description: Tenant created
+          description: Tenant dibuat
 
   /api/v1/superadmin/tenants/{id}:
-    put:
-      summary: Update tenant (SuperAdmin)
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Tenant updated
-    delete:
-      summary: Delete tenant (SuperAdmin)
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Tenant deleted
-
-  /api/v1/residents:
     get:
-      summary: List residents
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Detail tenant (SUPERADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200':
-          description: Resident list
-    post:
-      summary: Create resident
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+          description: Tenant
+        '404':
+          description: Tenant tidak ditemukan
+    put:
+      summary: Update tenant (SUPERADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Resident'
+              type: object
+              required: [name, slug]
+              properties:
+                name: { type: string }
+                slug: { type: string }
+                domain: { type: string }
+                logo_url: { type: string }
+      responses:
+        '200':
+          description: Tenant diupdate
+    delete:
+      summary: Hapus tenant beserta schema tenant_<slug> (DROP SCHEMA CASCADE) (SUPERADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204':
+          description: Tenant dihapus
+
+  # --------------------------------------------------------------- Users
+  /api/v1/users:
+    get:
+      summary: List user - superadmin scope global, admin_rt scope tenant-nya (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: '{ data: UserWithRole[], total, limit, offset }'
+    post:
+      summary: Buat user - hanya superadmin yang boleh membuat role superadmin (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, role]
+              properties:
+                name: { type: string }
+                email: { type: string }
+                password: { type: string }
+                phone: { type: string }
+                role: { type: string, enum: [superadmin, admin_rt, resident] }
+                tenant_id: { type: string, format: uuid, description: Hanya dipakai superadmin untuk scope global }
       responses:
         '201':
-          description: Resident created
+          description: User dibuat
+        '403':
+          description: Role escalation ditolak
+
+  /api/v1/users/{id}:
+    get:
+      summary: Detail user (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: UserWithRole
+    put:
+      summary: Update user - role superadmin hanya oleh superadmin (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, role]
+              properties:
+                name: { type: string }
+                email: { type: string }
+                phone: { type: string }
+                role: { type: string, enum: [superadmin, admin_rt, resident] }
+                password: { type: string }
+                tenant_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: User diupdate
+        '403':
+          description: Role escalation ditolak
+    delete:
+      summary: Hapus user (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: User dihapus
+
+  # ------------------------------------------------------------- Residents
+  /api/v1/residents:
+    get:
+      summary: List warga - NIK tidak dikembalikan plaintext (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: '{ data: Resident[], total, limit, offset }'
+    post:
+      summary: Buat warga - NIK dienkripsi AES-256-GCM (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResidentInput'
+      responses:
+        '201':
+          description: Warga dibuat
 
   /api/v1/residents/{id}:
     get:
-      summary: Get resident details
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Detail warga (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200':
-          description: Resident details
+          description: Resident
+        '404':
+          description: Tidak ditemukan (termasuk resource tenant lain)
     put:
-      summary: Update resident
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Update warga (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResidentInput'
       responses:
         '200':
-          description: Resident updated
+          description: Warga diupdate
     delete:
-      summary: Delete resident
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Hapus warga (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200':
-          description: Resident deleted
+          description: Warga dihapus
+
+  /api/v1/residents/{id}/approve:
+    post:
+      summary: Approve warga (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: 'Warga di-approve: { message, status: "approved" }'
+
+  /api/v1/residents/{id}/reject:
+    post:
+      summary: Reject warga (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: 'Warga di-reject: { message, status: "rejected" }'
 
   /api/v1/residents/{id}/family:
     post:
-      summary: Add family member
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Tambah anggota keluarga (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name: { type: string }
+                nik: { type: string }
+                relation: { type: string }
+                birth_date: { type: string, format: date }
+                gender: { type: string }
       responses:
         '201':
-          description: Family member added
+          description: Anggota keluarga ditambahkan
 
-  /api/v1/residents/{id}/family/{familyId}:
+  /api/v1/residents/{id}/family/{memberId}:
     delete:
-      summary: Delete family member
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Hapus anggota keluarga (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: familyId
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: memberId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200':
-          description: Family member deleted
+          description: Anggota keluarga dihapus
 
+  /api/v1/residents/upload:
+    post:
+      summary: Upload file KTP/KK/dokumen (AUTH)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+                type: { type: string, default: document }
+      responses:
+        '200':
+          description: '{ file_url, type }'
+
+  # ------------------------------------------------------------- Financial
   /api/v1/financial/categories:
     get:
-      summary: List fee categories
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: List kategori iuran (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
       responses:
         '200':
-          description: Category list
+          description: '{ data: FeeCategory[], total }'
     post:
-      summary: Create fee category
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Buat kategori iuran (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                amount: { type: number }
+                period: { type: string, enum: [monthly, one_time] }
+                description: { type: string }
       responses:
         '201':
-          description: Category created
+          description: Kategori dibuat
+
+  /api/v1/financial/categories/{id}:
+    get:
+      summary: Detail kategori iuran (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: FeeCategory
+    put:
+      summary: Update kategori iuran (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                amount: { type: number }
+                period: { type: string, enum: [monthly, one_time] }
+                description: { type: string }
+      responses:
+        '200':
+          description: Kategori diupdate
+    delete:
+      summary: Hapus kategori iuran (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Kategori dihapus
+
+  /api/v1/financial/summary:
+    get:
+      summary: Ringkasan kas RT - total income, expense, balance (AUTH)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: FinancialSummary
 
   /api/v1/financial/dues:
     get:
-      summary: List dues payments
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: List pembayaran iuran (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: resident_id, in: query, schema: { type: string, format: uuid } }
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
       responses:
         '200':
-          description: Dues payment list
+          description: '{ data: DuesPayment[], total }'
     post:
-      summary: Create dues payment
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Catat pembayaran iuran (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resident_id, fee_category_id, amount, period_month, period_year]
+              properties:
+                resident_id: { type: string, format: uuid }
+                fee_category_id: { type: string, format: uuid }
+                amount: { type: number }
+                period_month: { type: integer }
+                period_year: { type: integer }
+                proof_url: { type: string }
       responses:
         '201':
-          description: Dues payment created
+          description: Pembayaran dicatat
+
+  /api/v1/financial/dues/{id}/verify:
+    post:
+      summary: Verifikasi iuran (verified/rejected) (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [verified, rejected] }
+      responses:
+        '200':
+          description: DuesPayment diupdate
 
   /api/v1/financial/transactions:
     get:
-      summary: List financial transactions
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: List transaksi kas - query type=income|expense (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: type, in: query, schema: { type: string, enum: [income, expense] } }
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
       responses:
         '200':
-          description: Financial transactions list
+          description: '{ data: FinancialTransaction[], total }'
     post:
-      summary: Create financial transaction
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Catat transaksi kas (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, category, amount]
+              properties:
+                type: { type: string, enum: [income, expense] }
+                category: { type: string }
+                amount: { type: number }
+                transaction_date: { type: string, format: date }
+                description: { type: string }
+                proof_url: { type: string }
       responses:
         '201':
-          description: Financial transaction created
+          description: Transaksi dicatat
+
+  /api/v1/financial/transactions/{id}:
+    get:
+      summary: Detail transaksi (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: FinancialTransaction
+    put:
+      summary: DITOLAK - ledger append-only, koreksi via reversing entry (405)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '405':
+          description: Append-only ledger
+    delete:
+      summary: DITOLAK - deletion disabled (405)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '405':
+          description: Append-only ledger
 
   /api/v1/financial/upload:
     post:
-      summary: Upload transaction proof file
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Upload bukti transfer (AUTH)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
       responses:
         '200':
-          description: Proof file uploaded
+          description: '{ proof_url }'
 
+  # ---------------------------------------------------------------- Events
   /api/v1/events:
     get:
-      summary: List events
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: List kegiatan (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
       responses:
         '200':
-          description: Events list
+          description: '{ data: Event[], total }'
     post:
-      summary: Create event
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Buat kegiatan (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                event_date: { type: string, format: date-time }
+                location: { type: string }
+                status: { type: string, enum: [planned, ongoing, completed, cancelled] }
       responses:
         '201':
-          description: Event created
+          description: Kegiatan dibuat
 
   /api/v1/events/{id}:
     get:
-      summary: Get event detail
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Detail kegiatan (AUTH)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200':
-          description: Event detail
+          description: Event
+        '404':
+          description: Tidak ditemukan
     put:
-      summary: Update event
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Update kegiatan (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                event_date: { type: string, format: date-time }
+                location: { type: string }
+                status: { type: string, enum: [planned, ongoing, completed, cancelled] }
       responses:
         '200':
-          description: Event updated
+          description: Kegiatan diupdate
     delete:
-      summary: Delete event
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Hapus kegiatan (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200':
-          description: Event deleted
+          description: Kegiatan dihapus
 
-  /api/v1/events/{id}/budgets:
+  /api/v1/events/{id}/budget:
     get:
-      summary: List event budgets
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: List RAB/budget kegiatan (AUTH)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200':
-          description: Event budgets
+          description: EventBudget[]
     post:
-      summary: Add event budget item
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Tambah/update item budget (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [description]
+              properties:
+                description: { type: string }
+                estimated_cost: { type: number }
+                actual_cost: { type: number }
       responses:
-        '201':
-          description: Event budget item added
+        '200':
+          description: Item budget disimpan
+    put:
+      summary: Alias update item budget (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [description]
+              properties:
+                description: { type: string }
+                estimated_cost: { type: number }
+                actual_cost: { type: number }
+      responses:
+        '200':
+          description: Item budget disimpan
 
   /api/v1/events/{id}/rsvp:
     post:
-      summary: Submit event RSVP
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: RSVP warga pada kegiatan (AUTH - termasuk resident)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resident_id, status]
+              properties:
+                resident_id: { type: string, format: uuid }
+                status: { type: string, enum: [attending, absent, maybe] }
       responses:
         '200':
-          description: Event RSVP recorded
+          description: RSVP dicatat
+
+  /api/v1/events/{id}/roles:
+    get:
+      summary: List panitia acara (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: EventRole[]
+    post:
+      summary: Assign panitia (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resident_id, role]
+              properties:
+                resident_id: { type: string, format: uuid }
+                role: { type: string }
+      responses:
+        '201':
+          description: Panitia di-assign
+
+  /api/v1/events/{id}/roles/{roleId}:
+    delete:
+      summary: Hapus penugasan panitia (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: roleId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Penugasan dihapus
+
+  /api/v1/events/{id}/receipts:
+    get:
+      summary: List kuitansi/donasi kegiatan (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: EventReceipt[]
+    post:
+      summary: "Upload kuitansi (multipart: file, resident_id?, amount, description) atau JSON (AUTH)"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '201':
+          description: EventReceipt
+
+  /api/v1/events/{id}/transparency:
+    get:
+      summary: Data transparansi kegiatan (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Transparency data
+        '404':
+          description: Tidak ditemukan
 
   /api/v1/events/{id}/sponsors:
     get:
-      summary: List event sponsors
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: List sponsor kegiatan (AUTH)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200':
-          description: Event sponsors list
+          description: '{ data: EventSponsor[] }'
     post:
-      summary: Create event sponsor
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Tambah sponsor (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, amount, type]
+              properties:
+                name: { type: string }
+                amount: { type: number }
+                type: { type: string, enum: [cash, goods, service] }
+                notes: { type: string }
       responses:
         '201':
-          description: Event sponsor created
+          description: Sponsor dibuat
 
-  /api/v1/t/{slug}/aspirations:
-    post:
-      summary: Submit public tenant aspiration
+  /api/v1/events/{id}/sponsors/{sponsorId}:
+    delete:
+      summary: Hapus sponsor (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: slug
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '201':
-          description: Aspiration submitted
-
-  /api/v1/t/{slug}/needs:
-    get:
-      summary: List public tenant community needs
-      parameters:
-        - name: slug
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: sponsorId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200':
-          description: Community needs list
+          description: Sponsor dihapus
 
+  # ------------------------------------------------- Aspirations & Needs
   /api/v1/aspirations:
     get:
-      summary: List aspirations
-      security:
-        - BearerAuth: []
-          TenantHeader: []
-      responses:
-        '200':
-          description: Aspirations list
-
-  /api/v1/aspirations/{id}/respond:
-    post:
-      summary: Respond to aspiration
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: List aspirasi internal (AUTH)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
       responses:
         '200':
-          description: Aspiration response updated
+          description: '{ data: Aspiration[], total }'
+
+  /api/v1/aspirations/{id}:
+    get:
+      summary: Detail aspirasi (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Aspiration
+        '404':
+          description: Tidak ditemukan
+    put:
+      summary: Update status & respons aspirasi (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [submitted, under_review, resolved, rejected] }
+                response: { type: string }
+      responses:
+        '200':
+          description: Aspirasi diupdate
 
   /api/v1/needs:
     get:
-      summary: List community needs
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: List kebutuhan lingkungan (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
       responses:
         '200':
-          description: Community needs list
+          description: '{ data: CommunityNeed[], total }'
     post:
-      summary: Create community need
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Buat kebutuhan lingkungan (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                estimated_cost: { type: number }
+                status: { type: string, enum: [proposed, approved, in_progress, completed] }
+                progress_notes: { type: string }
       responses:
         '201':
-          description: Community need created
+          description: Kebutuhan dibuat
 
   /api/v1/needs/{id}:
+    get:
+      summary: Detail kebutuhan (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: CommunityNeed
     put:
-      summary: Update community need
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Update kebutuhan (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                estimated_cost: { type: number }
+                status: { type: string, enum: [proposed, approved, in_progress, completed] }
+                progress_notes: { type: string }
       responses:
         '200':
-          description: Community need updated
-    delete:
-      summary: Delete community need
-      security:
-        - BearerAuth: []
-          TenantHeader: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Community need deleted
+          description: Kebutuhan diupdate
 
-  /api/v1/t/{slug}/announcements:
-    get:
-      summary: List public tenant announcements
-      parameters:
-        - name: slug
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Public announcements list
-
-  /api/v1/t/{slug}/documents:
-    get:
-      summary: List public tenant documents
-      parameters:
-        - name: slug
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Public documents list
-
+  # --------------------------------------------- Announcements & Documents
   /api/v1/announcements:
     get:
-      summary: List announcements
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: List pengumuman (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
       responses:
         '200':
-          description: Announcement list
+          description: '{ data: Announcement[], total }'
     post:
-      summary: Create announcement
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Terbitkan pengumuman (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content]
+              properties:
+                title: { type: string }
+                content: { type: string }
+                attachment_url: { type: string }
+                target: { type: string, enum: [all, residents_only] }
       responses:
         '201':
-          description: Announcement created
+          description: Pengumuman dibuat
 
   /api/v1/announcements/{id}:
+    get:
+      summary: Detail pengumuman (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Announcement
     put:
-      summary: Update announcement
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Update pengumuman (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                content: { type: string }
+                attachment_url: { type: string }
+                target: { type: string, enum: [all, residents_only] }
       responses:
         '200':
-          description: Announcement updated
+          description: Pengumuman diupdate
     delete:
-      summary: Delete announcement
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Hapus pengumuman (ADMIN)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200':
-          description: Announcement deleted
+          description: Pengumuman dihapus
 
   /api/v1/documents:
     get:
-      summary: List documents
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: List dokumen (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: offset, in: query, schema: { type: integer } }
       responses:
         '200':
-          description: Documents list
+          description: '{ data: Document[], total }'
     post:
-      summary: Upload/create document
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Upload/buat dokumen (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, file_url]
+              properties:
+                title: { type: string }
+                category: { type: string, enum: [financial_report, minutes, letter, other] }
+                file_url: { type: string }
       responses:
         '201':
-          description: Document created
+          description: Dokumen dibuat
 
   /api/v1/documents/{id}:
-    delete:
-      summary: Delete document
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+    get:
+      summary: Detail dokumen (AUTH)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200':
-          description: Document deleted
+          description: Document
+    delete:
+      summary: Hapus dokumen (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Dokumen dihapus
 
+  # ---------------------------------------------- Dashboard & Reports
   /api/v1/dashboard/summary:
     get:
-      summary: Get dashboard summary
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Ringkasan dashboard (AUTH)
+      security: [{ BearerAuth: [] }]
       responses:
         '200':
-          description: Dashboard summary
+          description: '{ total_residents, total_income, total_expense, balance, total_events, new_aspirations_count }'
 
   /api/v1/dashboard/reports/financial/export:
     get:
-      summary: Export financial report (CSV/Excel)
-      security:
-        - BearerAuth: []
-          TenantHeader: []
+      summary: Export laporan keuangan CSV/PDF (AUTH)
+      security: [{ BearerAuth: [] }]
       parameters:
-        - name: start_date
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: end_date
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: format
-          in: query
-          required: false
-          schema:
-            type: string
+        - { name: format, in: query, schema: { type: string, enum: [csv, pdf], default: csv } }
+        - { name: start_date, in: query, schema: { type: string, format: date } }
+        - { name: end_date, in: query, schema: { type: string, format: date } }
       responses:
         '200':
-          description: Report export file
+          description: File attachment (Content-Disposition)
 
 components:
   securitySchemes:
@@ -685,27 +1141,29 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-    TenantHeader:
-      type: apiKey
-      in: header
-      name: X-Tenant-ID
   schemas:
-    Resident:
+    AspirationInput:
+      type: object
+      required: [title, content, category]
+      properties:
+        title: { type: string }
+        content: { type: string }
+        category: { type: string, enum: [suggestion, complaint, question] }
+        is_anonymous: { type: boolean }
+    ResidentInput:
       type: object
       properties:
-        id:
-          type: string
-        tenant_id:
-          type: string
-        full_name:
-          type: string
-        nik:
-          type: string
-        phone:
-          type: string
-        house_number:
-          type: string
-        rt_rw:
-          type: string
-        status:
-          type: string
+        full_name: { type: string }
+        nik: { type: string, description: Dienkripsi AES-256-GCM di server }
+        nik_hash: { type: string }
+        kk_number: { type: string }
+        gender: { type: string }
+        birth_place: { type: string }
+        birth_date: { type: string, format: date }
+        address: { type: string }
+        rt_rw: { type: string }
+        phone: { type: string }
+        is_head_of_family: { type: boolean }
+        status: { type: string, enum: [pending, approved, rejected] }
+        ktp_url: { type: string }
+        kk_url: { type: string }
