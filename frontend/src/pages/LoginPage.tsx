@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLoginMutation, useRegisterMutation } from '../services/auth';
+import { useLoginMutation, useRegisterMutation, useSwitchTenantMutation, fetchUserTenantsWithToken } from '../services/auth';
 import { useAuthStore } from '../store/useAuthStore';
 import type { Role, Tenant } from '../types/auth';
 import { Button } from '../components/ui/button';
@@ -25,6 +25,7 @@ export const LoginPage: React.FC = () => {
   const setAuth = useAuthStore((state) => state.setAuth);
   const loginMutation = useLoginMutation();
   const registerMutation = useRegisterMutation();
+  const switchTenantMutation = useSwitchTenantMutation();
 
   const switchMode = (nextMode: 'login' | 'register') => {
     setMode(nextMode);
@@ -33,29 +34,40 @@ export const LoginPage: React.FC = () => {
     registerMutation.reset();
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    loginMutation.mutate(
-      { email, password },
-      {
-        onSuccess: (data) => {
-          if (data.user.tenants && data.user.tenants.length > 1) {
-            setPendingAuth({ token: data.token, user: data.user });
-            setAvailableTenants(data.user.tenants);
-            setSelectedTenantId(data.user.tenants[0].id);
-          } else {
-            const userWithRole = {
-              ...data.user,
-              role: (data.user.role || (data.user.email === 'admin@gmail.com' || data.user.email === 'superadmin@platform.local' ? 'SUPER_ADMIN' : 'RT_ADMIN')) as Role,
-            };
-            const initialTenant = userWithRole.tenants?.[0] || null;
-            setAuth(data.token, userWithRole, initialTenant);
-            const isSuperAdmin = userWithRole.role === 'SUPER_ADMIN' || (userWithRole.role as string) === 'superadmin';
-            navigate(isSuperAdmin ? '/superadmin/tenants' : '/');
-          }
-        },
+    try {
+      const data = await loginMutation.mutateAsync({ email, password });
+
+      // The role comes from the backend JWT (derived from the DB mapping); it
+      // is never guessed from the email address.
+      const userWithRole = {
+        ...data.user,
+        role: (data.user.role || 'RESIDENT') as Role,
+      };
+
+      // Attach the user's real tenant list from the verified identity so the
+      // tenant switcher and tenant selection work with server truth.
+      const tenants = await fetchUserTenantsWithToken(data.token);
+      userWithRole.tenants = tenants;
+
+      if (tenants.length > 1) {
+        setPendingAuth({ token: data.token, user: userWithRole });
+        setAvailableTenants(tenants);
+        setSelectedTenantId(tenants[0].id);
+        return;
       }
-    );
+
+      const initialTenant = tenants[0] || null;
+      setAuth(data.token, userWithRole, initialTenant);
+      const isSuperAdmin =
+        userWithRole.role === 'SUPER_ADMIN' ||
+        (userWithRole.role as string) === 'superadmin' ||
+        (userWithRole.role as string) === 'super_admin';
+      navigate(isSuperAdmin ? '/superadmin/tenants' : '/');
+    } catch {
+      // error surfaced via loginMutation.isError below
+    }
   };
 
   const handleRegister = (e: React.FormEvent) => {
@@ -74,12 +86,28 @@ export const LoginPage: React.FC = () => {
     );
   };
 
-  const handleTenantSelectSubmit = (e: React.FormEvent) => {
+  const handleTenantSelectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pendingAuth) return;
     const selected = availableTenants.find((t) => t.id === selectedTenantId) || null;
-    setAuth(pendingAuth.token, pendingAuth.user, selected);
-    navigate(pendingAuth.user.role === 'SUPER_ADMIN' ? '/superadmin/tenants' : '/');
+    if (!selected) return;
+    try {
+      // Re-issue the token scoped to the chosen tenant (server-verified).
+      const switched = await switchTenantMutation.mutateAsync(selected.id);
+      const userWithRole = {
+        ...switched.user,
+        role: (switched.user.role || pendingAuth.user.role) as Role,
+        tenants: availableTenants,
+      };
+      setAuth(switched.token, userWithRole, selected);
+      const isSuperAdmin =
+        userWithRole.role === 'SUPER_ADMIN' ||
+        (userWithRole.role as string) === 'superadmin' ||
+        (userWithRole.role as string) === 'super_admin';
+      navigate(isSuperAdmin ? '/superadmin/tenants' : '/');
+    } catch {
+      // error surfaced via switchTenantMutation.isError below
+    }
   };
 
   return (

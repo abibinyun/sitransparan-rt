@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"backend/internal/delivery/http/middleware"
-	"backend/internal/domain"
 	"backend/internal/usecase"
 
 	"github.com/google/uuid"
@@ -81,20 +80,57 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, user, err := h.authUsecase.Login(r.Context(), req.Email, req.Password, req.TenantID)
+	token, user, role, err := h.authUsecase.Login(r.Context(), req.Email, req.Password, req.TenantID)
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusUnauthorized)
 		return
 	}
 
-	role := string(domain.RoleResident)
-	if user.Email == "superadmin@platform.local" || user.Email == "admin@gmail.com" {
-		role = string(domain.RoleSuperAdmin)
-	} else {
-		tenants, err := h.authUsecase.GetUserTenants(r.Context(), user.ID)
-		if err == nil && len(tenants) > 0 {
-			role = string(domain.RoleAdminRT)
-		}
+	// The role returned in the response is the role that was actually placed
+	// inside the signed JWT (derived from the database mapping). It is never
+	// recomputed from the email address.
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(loginResponse{
+		Token: token,
+		User: &userDTO{
+			ID:        user.ID,
+			Email:     user.Email,
+			Name:      user.Name,
+			Phone:     user.Phone,
+			Role:      string(role),
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		},
+	})
+}
+
+// SwitchTenant re-issues a JWT scoped to a tenant the authenticated user is
+// explicitly mapped to. This is the only sanctioned tenant-switching mechanism
+// and the backend verifies the mapping server-side.
+func (h *AuthHandler) SwitchTenant(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := middleware.GetUserIDFromContext(r.Context())
+	if userID == uuid.Nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		TenantID uuid.UUID `json:"tenant_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	token, user, role, err := h.authUsecase.SwitchTenant(r.Context(), userID, req.TenantID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusForbidden)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -105,7 +141,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			Email:     user.Email,
 			Name:      user.Name,
 			Phone:     user.Phone,
-			Role:      role,
+			Role:      string(role),
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,
 		},

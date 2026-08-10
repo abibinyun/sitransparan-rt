@@ -11,13 +11,15 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const { token, activeTenant } = useAuthStore.getState();
+  const { token } = useAuthStore.getState();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  if (activeTenant?.id) {
-    config.headers['X-Tenant-ID'] = activeTenant.id;
-  }
+  // NOTE: the active tenant is deliberately NOT sent as an X-Tenant-ID header.
+  // The backend derives the tenant exclusively from the signed JWT, so client
+  // tenant hints cannot be used to escalate to another tenant. Tenant switching
+  // is done server-side via POST /auth/switch-tenant, which re-issues a token
+  // scoped to a tenant the user is actually mapped to.
   return config;
 });
 

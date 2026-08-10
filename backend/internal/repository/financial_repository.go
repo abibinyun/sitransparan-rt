@@ -28,11 +28,11 @@ func NewFinancialRepository(db *sql.DB, minioClient *minio.Client) domain.Financ
 
 // FeeCategory methods
 func (r *financialRepository) CreateFeeCategory(ctx context.Context, category *domain.FeeCategory) error {
-	query := `
-		INSERT INTO fee_categories (id, tenant_id, name, amount, period, description, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, tenant_id, name, amount, period, description, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING created_at, updated_at
-	`
+	`, TenantTable(ctx, "fee_categories"))
 	if category.ID == uuid.Nil {
 		category.ID = uuid.New()
 	}
@@ -47,11 +47,11 @@ func (r *financialRepository) CreateFeeCategory(ctx context.Context, category *d
 }
 
 func (r *financialRepository) GetFeeCategoryByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.FeeCategory, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, name, amount, period, description, created_at, updated_at
-		FROM fee_categories
+		FROM %s
 		WHERE tenant_id = $1 AND id = $2
-	`
+	`, TenantTable(ctx, "fee_categories"))
 	var cat domain.FeeCategory
 	err := r.db.QueryRowContext(ctx, query, tenantID, id).Scan(
 		&cat.ID,
@@ -73,12 +73,12 @@ func (r *financialRepository) GetFeeCategoryByID(ctx context.Context, tenantID, 
 }
 
 func (r *financialRepository) UpdateFeeCategory(ctx context.Context, category *domain.FeeCategory) error {
-	query := `
-		UPDATE fee_categories
+	query := fmt.Sprintf(`
+		UPDATE %s
 		SET name = $1, amount = $2, period = $3, description = $4, updated_at = NOW()
 		WHERE tenant_id = $5 AND id = $6
 		RETURNING updated_at
-	`
+	`, TenantTable(ctx, "fee_categories"))
 	err := r.db.QueryRowContext(ctx, query,
 		category.Name,
 		category.Amount,
@@ -94,7 +94,7 @@ func (r *financialRepository) UpdateFeeCategory(ctx context.Context, category *d
 }
 
 func (r *financialRepository) DeleteFeeCategory(ctx context.Context, tenantID, id uuid.UUID) error {
-	query := `DELETE FROM fee_categories WHERE tenant_id = $1 AND id = $2`
+	query := fmt.Sprintf(`DELETE FROM %s WHERE tenant_id = $1 AND id = $2`, TenantTable(ctx, "fee_categories"))
 	res, err := r.db.ExecContext(ctx, query, tenantID, id)
 	if err != nil {
 		return err
@@ -110,18 +110,19 @@ func (r *financialRepository) DeleteFeeCategory(ctx context.Context, tenantID, i
 }
 
 func (r *financialRepository) ListFeeCategories(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.FeeCategory, int64, error) {
+	catsTable := TenantTable(ctx, "fee_categories")
 	var count int64
-	countQuery := `SELECT COUNT(*) FROM fee_categories WHERE tenant_id = $1`
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, catsTable)
 	if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 		return nil, 0, err
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, name, amount, period, description, created_at, updated_at
-		FROM fee_categories
+		FROM %s
 		WHERE tenant_id = $1
 		ORDER BY created_at DESC LIMIT $2 OFFSET $3
-	`
+	`, catsTable)
 	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -150,11 +151,11 @@ func (r *financialRepository) ListFeeCategories(ctx context.Context, tenantID uu
 
 // DuesPayment methods
 func (r *financialRepository) CreateDuesPayment(ctx context.Context, payment *domain.DuesPayment) error {
-	query := `
-		INSERT INTO dues_payments (id, tenant_id, resident_id, fee_category_id, amount, period_month, period_year, status, proof_url, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, tenant_id, resident_id, fee_category_id, amount, period_month, period_year, status, proof_url, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
 		RETURNING created_at, updated_at
-	`
+	`, TenantTable(ctx, "dues_payments"))
 	if payment.ID == uuid.Nil {
 		payment.ID = uuid.New()
 	}
@@ -175,11 +176,11 @@ func (r *financialRepository) CreateDuesPayment(ctx context.Context, payment *do
 }
 
 func (r *financialRepository) GetDuesPaymentByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.DuesPayment, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, resident_id, fee_category_id, amount, period_month, period_year, status, proof_url, verified_at, verified_by, created_at, updated_at
-		FROM dues_payments
+		FROM %s
 		WHERE tenant_id = $1 AND id = $2
-	`
+	`, TenantTable(ctx, "dues_payments"))
 	var p domain.DuesPayment
 	err := r.db.QueryRowContext(ctx, query, tenantID, id).Scan(
 		&p.ID,
@@ -206,12 +207,12 @@ func (r *financialRepository) GetDuesPaymentByID(ctx context.Context, tenantID, 
 }
 
 func (r *financialRepository) UpdateDuesPayment(ctx context.Context, payment *domain.DuesPayment) error {
-	query := `
-		UPDATE dues_payments
+	query := fmt.Sprintf(`
+		UPDATE %s
 		SET status = $1, proof_url = $2, verified_at = $3, verified_by = $4, updated_at = NOW()
 		WHERE tenant_id = $5 AND id = $6
 		RETURNING updated_at
-	`
+	`, TenantTable(ctx, "dues_payments"))
 	err := r.db.QueryRowContext(ctx, query,
 		payment.Status,
 		payment.ProofURL,
@@ -227,34 +228,35 @@ func (r *financialRepository) UpdateDuesPayment(ctx context.Context, payment *do
 }
 
 func (r *financialRepository) ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, limit, offset int) ([]*domain.DuesPayment, int64, error) {
+	duesTable := TenantTable(ctx, "dues_payments")
 	var count int64
 	var countQuery string
 	var query string
 	var args []interface{}
 
 	if residentID != nil {
-		countQuery = `SELECT COUNT(*) FROM dues_payments WHERE tenant_id = $1 AND resident_id = $2`
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND resident_id = $2`, duesTable)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID, *residentID).Scan(&count); err != nil {
 			return nil, 0, err
 		}
-		query = `
+		query = fmt.Sprintf(`
 			SELECT id, tenant_id, resident_id, fee_category_id, amount, period_month, period_year, status, proof_url, verified_at, verified_by, created_at, updated_at
-			FROM dues_payments
+			FROM %s
 			WHERE tenant_id = $1 AND resident_id = $2
 			ORDER BY created_at DESC LIMIT $3 OFFSET $4
-		`
+		`, duesTable)
 		args = []interface{}{tenantID, *residentID, limit, offset}
 	} else {
-		countQuery = `SELECT COUNT(*) FROM dues_payments WHERE tenant_id = $1`
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, duesTable)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 			return nil, 0, err
 		}
-		query = `
+		query = fmt.Sprintf(`
 			SELECT id, tenant_id, resident_id, fee_category_id, amount, period_month, period_year, status, proof_url, verified_at, verified_by, created_at, updated_at
-			FROM dues_payments
+			FROM %s
 			WHERE tenant_id = $1
 			ORDER BY created_at DESC LIMIT $2 OFFSET $3
-		`
+		`, duesTable)
 		args = []interface{}{tenantID, limit, offset}
 	}
 
@@ -291,11 +293,11 @@ func (r *financialRepository) ListDuesPayments(ctx context.Context, tenantID uui
 
 // FinancialTransaction methods
 func (r *financialRepository) CreateFinancialTransaction(ctx context.Context, tx *domain.FinancialTransaction) error {
-	query := `
-		INSERT INTO financial_transactions (id, tenant_id, type, category, amount, transaction_date, description, proof_url, created_by, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, tenant_id, type, category, amount, transaction_date, description, proof_url, created_by, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
 		RETURNING created_at, updated_at
-	`
+	`, TenantTable(ctx, "financial_transactions"))
 	if tx.ID == uuid.Nil {
 		tx.ID = uuid.New()
 	}
@@ -316,11 +318,11 @@ func (r *financialRepository) CreateFinancialTransaction(ctx context.Context, tx
 }
 
 func (r *financialRepository) GetFinancialTransactionByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.FinancialTransaction, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, type, category, amount, transaction_date, description, proof_url, created_by, created_at, updated_at
-		FROM financial_transactions
+		FROM %s
 		WHERE tenant_id = $1 AND id = $2
-	`
+	`, TenantTable(ctx, "financial_transactions"))
 	var tx domain.FinancialTransaction
 	err := r.db.QueryRowContext(ctx, query, tenantID, id).Scan(
 		&tx.ID,
@@ -345,34 +347,35 @@ func (r *financialRepository) GetFinancialTransactionByID(ctx context.Context, t
 }
 
 func (r *financialRepository) ListFinancialTransactions(ctx context.Context, tenantID uuid.UUID, txType string, limit, offset int) ([]*domain.FinancialTransaction, int64, error) {
+	txTable := TenantTable(ctx, "financial_transactions")
 	var count int64
 	var countQuery string
 	var query string
 	var args []interface{}
 
 	if txType != "" {
-		countQuery = `SELECT COUNT(*) FROM financial_transactions WHERE tenant_id = $1 AND type = $2`
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND type = $2`, txTable)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID, txType).Scan(&count); err != nil {
 			return nil, 0, err
 		}
-		query = `
+		query = fmt.Sprintf(`
 			SELECT id, tenant_id, type, category, amount, transaction_date, description, proof_url, created_by, created_at, updated_at
-			FROM financial_transactions
+			FROM %s
 			WHERE tenant_id = $1 AND type = $2
 			ORDER BY transaction_date DESC, created_at DESC LIMIT $3 OFFSET $4
-		`
+		`, txTable)
 		args = []interface{}{tenantID, txType, limit, offset}
 	} else {
-		countQuery = `SELECT COUNT(*) FROM financial_transactions WHERE tenant_id = $1`
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, txTable)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 			return nil, 0, err
 		}
-		query = `
+		query = fmt.Sprintf(`
 			SELECT id, tenant_id, type, category, amount, transaction_date, description, proof_url, created_by, created_at, updated_at
-			FROM financial_transactions
+			FROM %s
 			WHERE tenant_id = $1
 			ORDER BY transaction_date DESC, created_at DESC LIMIT $2 OFFSET $3
-		`
+		`, txTable)
 		args = []interface{}{tenantID, limit, offset}
 	}
 

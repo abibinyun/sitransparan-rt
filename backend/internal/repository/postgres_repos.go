@@ -137,7 +137,11 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.event_budgets (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			event_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.events(id) ON DELETE CASCADE,
+			item VARCHAR(255),
+			category VARCHAR(100),
 			description VARCHAR(255) NOT NULL,
+			planned_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+			actual_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
 			estimated_cost NUMERIC(15, 2) NOT NULL DEFAULT 0,
 			actual_cost NUMERIC(15, 2) NOT NULL DEFAULT 0,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -159,6 +163,25 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 			amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
 			type VARCHAR(50) NOT NULL CHECK (type IN ('cash', 'goods', 'service')),
 			notes TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.event_roles (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			event_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.events(id) ON DELETE CASCADE,
+			resident_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.residents(id) ON DELETE CASCADE,
+			role VARCHAR(100) NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			UNIQUE (event_id, resident_id, role)
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.event_receipts (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			event_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.events(id) ON DELETE CASCADE,
+			resident_id UUID REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.residents(id) ON DELETE SET NULL,
+			receipt_url TEXT NOT NULL,
+			amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+			description TEXT,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);`,
@@ -263,6 +286,13 @@ func (r *tenantRepository) Update(ctx context.Context, tenant *domain.Tenant) er
 }
 
 func (r *tenantRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	// Fetch the slug first so the tenant schema can be dropped alongside the
+	// tenant row (schema-per-tenant isolation must not leak orphan schemas).
+	tenant, err := r.GetByID(ctx, id)
+	if err != nil {
+		return ErrNotFound
+	}
+
 	query := `DELETE FROM tenants WHERE id = $1`
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -274,6 +304,13 @@ func (r *tenantRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 	if rows == 0 {
 		return ErrNotFound
+	}
+
+	if tenant.Slug != "" {
+		schemaName := "tenant_" + strings.ReplaceAll(tenant.Slug, "-", "_")
+		if _, err := r.db.ExecContext(ctx, "DROP SCHEMA IF EXISTS "+pq.QuoteIdentifier(schemaName)+" CASCADE"); err != nil {
+			return err
+		}
 	}
 	return nil
 }

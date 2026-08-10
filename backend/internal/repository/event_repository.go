@@ -32,11 +32,11 @@ func (r *eventRepository) CreateEvent(ctx context.Context, event *domain.Event) 
 	if event.Status == "" {
 		event.Status = "planned"
 	}
-	query := `
-		INSERT INTO events (id, tenant_id, title, description, event_date, location, status, created_by, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, tenant_id, title, description, event_date, location, status, created_by, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
 		RETURNING created_at, updated_at
-	`
+	`, TenantTable(ctx, "events"))
 	return r.db.QueryRowContext(ctx, query,
 		event.ID,
 		event.TenantID,
@@ -50,11 +50,11 @@ func (r *eventRepository) CreateEvent(ctx context.Context, event *domain.Event) 
 }
 
 func (r *eventRepository) GetEventByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.Event, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, title, description, event_date, location, status, created_by, created_at, updated_at
-		FROM events
+		FROM %s
 		WHERE tenant_id = $1 AND id = $2
-	`
+	`, TenantTable(ctx, "events"))
 	var e domain.Event
 	err := r.db.QueryRowContext(ctx, query, tenantID, id).Scan(
 		&e.ID,
@@ -78,12 +78,12 @@ func (r *eventRepository) GetEventByID(ctx context.Context, tenantID, id uuid.UU
 }
 
 func (r *eventRepository) UpdateEvent(ctx context.Context, event *domain.Event) error {
-	query := `
-		UPDATE events
+	query := fmt.Sprintf(`
+		UPDATE %s
 		SET title = $1, description = $2, event_date = $3, location = $4, status = $5, updated_at = NOW()
 		WHERE tenant_id = $6 AND id = $7
 		RETURNING updated_at
-	`
+	`, TenantTable(ctx, "events"))
 	err := r.db.QueryRowContext(ctx, query,
 		event.Title,
 		event.Description,
@@ -100,7 +100,7 @@ func (r *eventRepository) UpdateEvent(ctx context.Context, event *domain.Event) 
 }
 
 func (r *eventRepository) DeleteEvent(ctx context.Context, tenantID, id uuid.UUID) error {
-	query := `DELETE FROM events WHERE tenant_id = $1 AND id = $2`
+	query := fmt.Sprintf(`DELETE FROM %s WHERE tenant_id = $1 AND id = $2`, TenantTable(ctx, "events"))
 	res, err := r.db.ExecContext(ctx, query, tenantID, id)
 	if err != nil {
 		return err
@@ -116,18 +116,19 @@ func (r *eventRepository) DeleteEvent(ctx context.Context, tenantID, id uuid.UUI
 }
 
 func (r *eventRepository) ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.Event, int64, error) {
+	eventsTable := TenantTable(ctx, "events")
 	var count int64
-	countQuery := `SELECT COUNT(*) FROM events WHERE tenant_id = $1`
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, eventsTable)
 	if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 		return nil, 0, err
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, title, description, event_date, location, status, created_by, created_at, updated_at
-		FROM events
+		FROM %s
 		WHERE tenant_id = $1
 		ORDER BY created_at DESC LIMIT $2 OFFSET $3
-	`
+	`, eventsTable)
 	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -169,15 +170,15 @@ func (r *eventRepository) AddOrUpdateBudget(ctx context.Context, budget *domain.
 	budget.EstimatedCost = budget.PlannedAmount
 	budget.ActualCost = budget.ActualAmount
 
-	query := `
-		INSERT INTO event_budgets (id, event_id, item, category, description, planned_amount, actual_amount, estimated_cost, actual_cost, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, event_id, item, category, description, planned_amount, actual_amount, estimated_cost, actual_cost, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
 		ON CONFLICT (id) DO UPDATE
 		SET item = EXCLUDED.item, category = EXCLUDED.category, description = EXCLUDED.description,
 		    planned_amount = EXCLUDED.planned_amount, actual_amount = EXCLUDED.actual_amount,
 		    estimated_cost = EXCLUDED.estimated_cost, actual_cost = EXCLUDED.actual_cost, updated_at = NOW()
 		RETURNING created_at, updated_at
-	`
+	`, TenantTable(ctx, "event_budgets"))
 	return r.db.QueryRowContext(ctx, query,
 		budget.ID,
 		budget.EventID,
@@ -192,12 +193,12 @@ func (r *eventRepository) AddOrUpdateBudget(ctx context.Context, budget *domain.
 }
 
 func (r *eventRepository) GetBudgetByEventID(ctx context.Context, eventID uuid.UUID) (*domain.EventBudget, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, event_id, item, category, description, planned_amount, actual_amount, estimated_cost, actual_cost, created_at, updated_at
-		FROM event_budgets
+		FROM %s
 		WHERE event_id = $1
 		ORDER BY created_at DESC LIMIT 1
-	`
+	`, TenantTable(ctx, "event_budgets"))
 	var b domain.EventBudget
 	err := r.db.QueryRowContext(ctx, query, eventID).Scan(
 		&b.ID,
@@ -222,12 +223,12 @@ func (r *eventRepository) GetBudgetByEventID(ctx context.Context, eventID uuid.U
 }
 
 func (r *eventRepository) ListBudgetsByEventID(ctx context.Context, eventID uuid.UUID) ([]*domain.EventBudget, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, event_id, item, category, description, planned_amount, actual_amount, estimated_cost, actual_cost, created_at, updated_at
-		FROM event_budgets
+		FROM %s
 		WHERE event_id = $1
 		ORDER BY created_at ASC
-	`
+	`, TenantTable(ctx, "event_budgets"))
 	rows, err := r.db.QueryContext(ctx, query, eventID)
 	if err != nil {
 		return nil, err
@@ -264,13 +265,13 @@ func (r *eventRepository) AddOrUpdateParticipant(ctx context.Context, participan
 	if participant.Status == "" {
 		participant.Status = "attending"
 	}
-	query := `
-		INSERT INTO event_participants (id, event_id, resident_id, status, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, event_id, resident_id, status, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, NOW(), NOW())
 		ON CONFLICT (event_id, resident_id) DO UPDATE
 		SET status = EXCLUDED.status, updated_at = NOW()
 		RETURNING id, created_at, updated_at
-	`
+	`, TenantTable(ctx, "event_participants"))
 	return r.db.QueryRowContext(ctx, query,
 		participant.ID,
 		participant.EventID,
@@ -280,12 +281,12 @@ func (r *eventRepository) AddOrUpdateParticipant(ctx context.Context, participan
 }
 
 func (r *eventRepository) ListParticipantsByEventID(ctx context.Context, eventID uuid.UUID) ([]*domain.EventParticipant, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, event_id, resident_id, status, created_at, updated_at
-		FROM event_participants
+		FROM %s
 		WHERE event_id = $1
 		ORDER BY created_at ASC
-	`
+	`, TenantTable(ctx, "event_participants"))
 	rows, err := r.db.QueryContext(ctx, query, eventID)
 	if err != nil {
 		return nil, err
@@ -314,13 +315,13 @@ func (r *eventRepository) AssignRole(ctx context.Context, role *domain.EventRole
 	if role.ID == uuid.Nil {
 		role.ID = uuid.New()
 	}
-	query := `
-		INSERT INTO event_roles (id, event_id, resident_id, role, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, event_id, resident_id, role, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, NOW(), NOW())
 		ON CONFLICT (event_id, resident_id, role) DO UPDATE
 		SET updated_at = NOW()
 		RETURNING created_at, updated_at
-	`
+	`, TenantTable(ctx, "event_roles"))
 	return r.db.QueryRowContext(ctx, query,
 		role.ID,
 		role.EventID,
@@ -330,12 +331,12 @@ func (r *eventRepository) AssignRole(ctx context.Context, role *domain.EventRole
 }
 
 func (r *eventRepository) ListRolesByEventID(ctx context.Context, eventID uuid.UUID) ([]*domain.EventRole, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, event_id, resident_id, role, created_at, updated_at
-		FROM event_roles
+		FROM %s
 		WHERE event_id = $1
 		ORDER BY created_at ASC
-	`
+	`, TenantTable(ctx, "event_roles"))
 	rows, err := r.db.QueryContext(ctx, query, eventID)
 	if err != nil {
 		return nil, err
@@ -361,7 +362,7 @@ func (r *eventRepository) ListRolesByEventID(ctx context.Context, eventID uuid.U
 }
 
 func (r *eventRepository) RemoveRole(ctx context.Context, eventID, roleID uuid.UUID) error {
-	query := `DELETE FROM event_roles WHERE event_id = $1 AND id = $2`
+	query := fmt.Sprintf(`DELETE FROM %s WHERE event_id = $1 AND id = $2`, TenantTable(ctx, "event_roles"))
 	res, err := r.db.ExecContext(ctx, query, eventID, roleID)
 	if err != nil {
 		return err
@@ -380,11 +381,11 @@ func (r *eventRepository) CreateReceipt(ctx context.Context, receipt *domain.Eve
 	if receipt.ID == uuid.Nil {
 		receipt.ID = uuid.New()
 	}
-	query := `
-		INSERT INTO event_receipts (id, event_id, resident_id, receipt_url, amount, description, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, event_id, resident_id, receipt_url, amount, description, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING created_at, updated_at
-	`
+	`, TenantTable(ctx, "event_receipts"))
 	return r.db.QueryRowContext(ctx, query,
 		receipt.ID,
 		receipt.EventID,
@@ -396,12 +397,12 @@ func (r *eventRepository) CreateReceipt(ctx context.Context, receipt *domain.Eve
 }
 
 func (r *eventRepository) ListReceiptsByEventID(ctx context.Context, eventID uuid.UUID) ([]*domain.EventReceipt, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, event_id, resident_id, receipt_url, amount, description, created_at, updated_at
-		FROM event_receipts
+		FROM %s
 		WHERE event_id = $1
 		ORDER BY created_at DESC
-	`
+	`, TenantTable(ctx, "event_receipts"))
 	rows, err := r.db.QueryContext(ctx, query, eventID)
 	if err != nil {
 		return nil, err

@@ -40,11 +40,11 @@ func (r *residentRepository) Create(ctx context.Context, resident *domain.Reside
 		resident.Status = "pending"
 	}
 
-	query := `
-		INSERT INTO residents (id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
 		RETURNING created_at, updated_at
-	`
+	`, TenantTable(ctx, "residents"))
 	if resident.ID == uuid.Nil {
 		resident.ID = uuid.New()
 	}
@@ -69,11 +69,11 @@ func (r *residentRepository) Create(ctx context.Context, resident *domain.Reside
 }
 
 func (r *residentRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.Resident, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
-		FROM residents
+		FROM %s
 		WHERE tenant_id = $1 AND id = $2
-	`
+	`, TenantTable(ctx, "residents"))
 	var res domain.Resident
 	var encNIK *string
 	err := r.db.QueryRowContext(ctx, query, tenantID, id).Scan(
@@ -135,12 +135,12 @@ func (r *residentRepository) Update(ctx context.Context, resident *domain.Reside
 	}
 	resident.NIKHash = nikHash
 
-	query := `
-		UPDATE residents
+	query := fmt.Sprintf(`
+		UPDATE %s
 		SET nik = $1, nik_hash = $2, kk_number = $3, full_name = $4, gender = $5, birth_place = $6, birth_date = $7, address = $8, rt_rw = $9, phone = $10, is_head_of_family = $11, status = COALESCE(NULLIF($12, ''), status), ktp_url = $13, kk_url = $14, updated_at = NOW()
 		WHERE tenant_id = $15 AND id = $16
 		RETURNING updated_at
-	`
+	`, TenantTable(ctx, "residents"))
 	err := r.db.QueryRowContext(ctx, query,
 		encNIK,
 		nikHash,
@@ -166,7 +166,7 @@ func (r *residentRepository) Update(ctx context.Context, resident *domain.Reside
 }
 
 func (r *residentRepository) Delete(ctx context.Context, tenantID, id uuid.UUID) error {
-	query := `DELETE FROM residents WHERE tenant_id = $1 AND id = $2`
+	query := fmt.Sprintf(`DELETE FROM %s WHERE tenant_id = $1 AND id = $2`, TenantTable(ctx, "residents"))
 	res, err := r.db.ExecContext(ctx, query, tenantID, id)
 	if err != nil {
 		return err
@@ -182,6 +182,7 @@ func (r *residentRepository) Delete(ctx context.Context, tenantID, id uuid.UUID)
 }
 
 func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q string, limit, offset int) ([]*domain.Resident, int64, error) {
+	residentsTable := TenantTable(ctx, "residents")
 	var count int64
 	var countQuery string
 	var query string
@@ -192,30 +193,30 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 		searchStr := "%" + cleanQ + "%"
 		searchHash := crypto.HashHMAC(cleanQ)
 
-		countQuery = `SELECT COUNT(*) FROM residents WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik_hash = $3 OR kk_number ILIKE $2)`
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik_hash = $3 OR kk_number ILIKE $2)`, residentsTable)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID, searchStr, searchHash).Scan(&count); err != nil {
 			return nil, 0, err
 		}
 
-		query = `
+		query = fmt.Sprintf(`
 			SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
-			FROM residents
+			FROM %s
 			WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik_hash = $3 OR kk_number ILIKE $2)
 			ORDER BY created_at DESC LIMIT $4 OFFSET $5
-		`
+		`, residentsTable)
 		args = []interface{}{tenantID, searchStr, searchHash, limit, offset}
 	} else {
-		countQuery = `SELECT COUNT(*) FROM residents WHERE tenant_id = $1`
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, residentsTable)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 			return nil, 0, err
 		}
 
-		query = `
+		query = fmt.Sprintf(`
 			SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
-			FROM residents
+			FROM %s
 			WHERE tenant_id = $1
 			ORDER BY created_at DESC LIMIT $2 OFFSET $3
-		`
+		`, residentsTable)
 		args = []interface{}{tenantID, limit, offset}
 	}
 
@@ -275,11 +276,11 @@ func (r *residentRepository) AddFamilyMember(ctx context.Context, member *domain
 		}
 	}
 
-	query := `
-		INSERT INTO family_members (id, resident_id, full_name, nik, relation, birth_date, gender, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, resident_id, full_name, nik, relation, birth_date, gender, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
 		RETURNING created_at, updated_at
-	`
+	`, TenantTable(ctx, "family_members"))
 	if member.ID == uuid.Nil {
 		member.ID = uuid.New()
 	}
@@ -295,10 +296,10 @@ func (r *residentRepository) AddFamilyMember(ctx context.Context, member *domain
 }
 
 func (r *residentRepository) RemoveFamilyMember(ctx context.Context, tenantID, residentID, memberID uuid.UUID) error {
-	query := `
-		DELETE FROM family_members
-		WHERE id = $1 AND resident_id IN (SELECT id FROM residents WHERE id = $2 AND tenant_id = $3)
-	`
+	query := fmt.Sprintf(`
+		DELETE FROM %s
+		WHERE id = $1 AND resident_id IN (SELECT id FROM %s WHERE id = $2 AND tenant_id = $3)
+	`, TenantTable(ctx, "family_members"), TenantTable(ctx, "residents"))
 	res, err := r.db.ExecContext(ctx, query, memberID, residentID, tenantID)
 	if err != nil {
 		return err
@@ -314,12 +315,12 @@ func (r *residentRepository) RemoveFamilyMember(ctx context.Context, tenantID, r
 }
 
 func (r *residentRepository) GetFamilyMembers(ctx context.Context, residentID uuid.UUID) ([]*domain.FamilyMember, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, resident_id, full_name, nik, relation, birth_date, gender, created_at, updated_at
-		FROM family_members
+		FROM %s
 		WHERE resident_id = $1
 		ORDER BY created_at ASC
-	`
+	`, TenantTable(ctx, "family_members"))
 	rows, err := r.db.QueryContext(ctx, query, residentID)
 	if err != nil {
 		return nil, err
@@ -357,11 +358,11 @@ func (r *residentRepository) GetFamilyMembers(ctx context.Context, residentID uu
 }
 
 func (r *residentRepository) UpdateStatus(ctx context.Context, tenantID, id uuid.UUID, status string) error {
-	query := `
-		UPDATE residents
+	query := fmt.Sprintf(`
+		UPDATE %s
 		SET status = $1, updated_at = NOW()
 		WHERE tenant_id = $2 AND id = $3
-	`
+	`, TenantTable(ctx, "residents"))
 	res, err := r.db.ExecContext(ctx, query, status, tenantID, id)
 	if err != nil {
 		return err
@@ -376,6 +377,7 @@ func (r *residentRepository) UpdateStatus(ctx context.Context, tenantID, id uuid
 	return nil
 }
 
+// LogAudit writes to the global audit_logs table (public schema), NOT a tenant table.
 func (r *residentRepository) LogAudit(ctx context.Context, tenantID, userID uuid.UUID, action, resource string, payload interface{}) error {
 	payloadBytes, _ := json.Marshal(payload)
 	query := `

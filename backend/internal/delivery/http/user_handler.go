@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,6 +12,12 @@ import (
 	"backend/internal/usecase"
 	"github.com/google/uuid"
 )
+
+// isSuperAdminRole reports whether a role name is the platform superadmin role.
+func isSuperAdminRole(role domain.RoleName) bool {
+	r := strings.ToLower(strings.ReplaceAll(string(role), "-", "_"))
+	return r == "superadmin" || r == "super_admin"
+}
 
 type UserHandler struct {
 	usecase usecase.UserUsecase
@@ -28,16 +35,20 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Hand
 
 func (h *UserHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	callerRole := middleware.GetRoleFromContext(r.Context())
+	isSuper := isSuperAdminRole(callerRole)
 	tenant := middleware.GetTenantFromContext(r.Context())
-	if tenant == nil && callerRole != domain.RoleSuperAdmin && callerRole != "SUPER_ADMIN" {
+	if tenant == nil && !isSuper {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "tenant context missing"})
 		return
 	}
 
+	// Superadmin operates on the global user scope (tenant_id stays nil);
+	// tenant-scoped admins are locked to their own tenant from the trusted
+	// identity context, regardless of any tenant hints in the request.
 	tenantID := uuid.Nil
-	if tenant != nil {
+	if tenant != nil && !isSuper {
 		tenantID = tenant.ID
 	}
 
@@ -122,7 +133,7 @@ func (h *UserHandler) list(w http.ResponseWriter, r *http.Request, tenantID uuid
 	var total int64
 	var err error
 
-	if role == domain.RoleSuperAdmin {
+	if isSuperAdminRole(role) {
 		users, total, err = h.usecase.ListAllUsers(r.Context(), limit, offset)
 	} else {
 		users, total, err = h.usecase.ListUsers(r.Context(), tenantID, limit, offset)
@@ -162,21 +173,26 @@ func (h *UserHandler) create(w http.ResponseWriter, r *http.Request, tenantID uu
 
 	callerRole := middleware.GetRoleFromContext(r.Context())
 	targetTenantID := tenantID
-	if (callerRole == domain.RoleSuperAdmin || callerRole == "SUPER_ADMIN") && req.TenantID != nil && *req.TenantID != uuid.Nil {
+	if isSuperAdminRole(callerRole) && req.TenantID != nil && *req.TenantID != uuid.Nil {
 		targetTenantID = *req.TenantID
 	}
 
 	user, err := h.usecase.CreateUser(r.Context(), usecase.CreateUserParam{
-		TenantID: targetTenantID,
-		Name:     req.Name,
-		Email:    req.Email,
-		Password: req.Password,
-		Phone:    req.Phone,
-		Role:     req.Role,
+		TenantID:   targetTenantID,
+		Name:       req.Name,
+		Email:      req.Email,
+		Password:   req.Password,
+		Phone:      req.Phone,
+		Role:       req.Role,
+		CallerRole: callerRole,
 	})
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
+		if errors.Is(err, usecase.ErrForbidden) {
+			w.WriteHeader(http.StatusForbidden)
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
@@ -210,22 +226,27 @@ func (h *UserHandler) update(w http.ResponseWriter, r *http.Request, tenantID, i
 
 	callerRole := middleware.GetRoleFromContext(r.Context())
 	targetTenantID := tenantID
-	if (callerRole == domain.RoleSuperAdmin || callerRole == "SUPER_ADMIN") && req.TenantID != nil && *req.TenantID != uuid.Nil {
+	if isSuperAdminRole(callerRole) && req.TenantID != nil && *req.TenantID != uuid.Nil {
 		targetTenantID = *req.TenantID
 	}
 
 	user, err := h.usecase.UpdateUser(r.Context(), usecase.UpdateUserParam{
-		TenantID: targetTenantID,
-		UserID:   id,
-		Name:     req.Name,
-		Email:    req.Email,
-		Phone:    req.Phone,
-		Role:     req.Role,
-		Password: req.Password,
+		TenantID:   targetTenantID,
+		UserID:     id,
+		Name:       req.Name,
+		Email:      req.Email,
+		Phone:      req.Phone,
+		Role:       req.Role,
+		Password:   req.Password,
+		CallerRole: callerRole,
 	})
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
+		if errors.Is(err, usecase.ErrForbidden) {
+			w.WriteHeader(http.StatusForbidden)
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
@@ -235,9 +256,14 @@ func (h *UserHandler) update(w http.ResponseWriter, r *http.Request, tenantID, i
 }
 
 func (h *UserHandler) delete(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
-	if err := h.usecase.DeleteUser(r.Context(), tenantID, id); err != nil {
+	callerRole := middleware.GetRoleFromContext(r.Context())
+	if err := h.usecase.DeleteUser(r.Context(), tenantID, id, callerRole); err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
+		if errors.Is(err, usecase.ErrForbidden) {
+			w.WriteHeader(http.StatusForbidden)
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}

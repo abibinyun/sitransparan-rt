@@ -180,7 +180,14 @@ func setupAspirationNeedServer() (*http.ServeMux, *domain.Tenant) {
 	tenantMw := middleware.TenantMiddleware(tenantRepo)
 	dummyAuthMw := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			next.ServeHTTP(w, r)
+			// Authenticate as an admin of the fixture tenant so the real
+			// TenantMiddleware resolves the tenant from the identity.
+			claims := &domain.JWTClaims{
+				UserID:   uuid.New(),
+				TenantID: tID,
+				Role:     domain.RoleAdminRT,
+			}
+			next.ServeHTTP(w, r.WithContext(middleware.WithClaims(r.Context(), claims)))
 		})
 	}
 

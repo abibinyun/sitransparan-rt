@@ -109,6 +109,10 @@ func (h *FinancialHandler) listCategories(w http.ResponseWriter, r *http.Request
 }
 
 func (h *FinancialHandler) createCategory(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	var cat domain.FeeCategory
 	if err := json.NewDecoder(r.Body).Decode(&cat); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -137,6 +141,10 @@ func (h *FinancialHandler) getCategoryByID(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *FinancialHandler) updateCategory(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	var cat domain.FeeCategory
 	if err := json.NewDecoder(r.Body).Decode(&cat); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -155,6 +163,10 @@ func (h *FinancialHandler) updateCategory(w http.ResponseWriter, r *http.Request
 }
 
 func (h *FinancialHandler) deleteCategory(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	if err := h.usecase.DeleteFeeCategory(r.Context(), tenantID, id); err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return
@@ -239,6 +251,10 @@ func (h *FinancialHandler) listDues(w http.ResponseWriter, r *http.Request, tena
 }
 
 func (h *FinancialHandler) recordDues(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	var payment domain.DuesPayment
 	if err := json.NewDecoder(r.Body).Decode(&payment); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -256,6 +272,10 @@ func (h *FinancialHandler) recordDues(w http.ResponseWriter, r *http.Request, te
 }
 
 func (h *FinancialHandler) verifyDues(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	verifierID := middleware.GetUserIDFromContext(r.Context())
 	var req struct {
 		Status string `json:"status"`
@@ -347,6 +367,10 @@ func (h *FinancialHandler) listTransactions(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *FinancialHandler) createTransaction(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	userID := middleware.GetUserIDFromContext(r.Context())
 	var tx domain.FinancialTransaction
 	if err := json.NewDecoder(r.Body).Decode(&tx); err != nil {

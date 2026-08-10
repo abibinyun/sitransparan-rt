@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"backend/internal/domain"
@@ -33,10 +34,10 @@ func (r *aspirationNeedRepository) CreateAspiration(ctx context.Context, asp *do
 		return nil
 	}
 
-	query := `
-		INSERT INTO aspirations (id, tenant_id, resident_id, title, content, category, status, is_anonymous, response, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, tenant_id, resident_id, title, content, category, status, is_anonymous, response, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	`
+	`, TenantTable(ctx, "aspirations"))
 	_, err := r.db.ExecContext(ctx, query,
 		asp.ID, asp.TenantID, asp.ResidentID, asp.Title, asp.Content, asp.Category, asp.Status, asp.IsAnonymous, asp.Response, asp.CreatedAt, asp.UpdatedAt,
 	)
@@ -48,11 +49,11 @@ func (r *aspirationNeedRepository) GetAspirationByID(ctx context.Context, tenant
 		return nil, errors.New("sql: no rows in result set")
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, resident_id, title, content, category, status, is_anonymous, response, created_at, updated_at
-		FROM aspirations
+		FROM %s
 		WHERE id = $1 AND tenant_id = $2
-	`
+	`, TenantTable(ctx, "aspirations"))
 	asp := &domain.Aspiration{}
 	err := r.db.QueryRowContext(ctx, query, id, tenantID).Scan(
 		&asp.ID, &asp.TenantID, &asp.ResidentID, &asp.Title, &asp.Content, &asp.Category, &asp.Status, &asp.IsAnonymous, &asp.Response, &asp.CreatedAt, &asp.UpdatedAt,
@@ -68,19 +69,20 @@ func (r *aspirationNeedRepository) ListAspirations(ctx context.Context, tenantID
 		return []*domain.Aspiration{}, 0, nil
 	}
 
+	aspTable := TenantTable(ctx, "aspirations")
 	var total int64
-	countQuery := `SELECT COUNT(*) FROM aspirations WHERE tenant_id = $1`
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, aspTable)
 	if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, resident_id, title, content, category, status, is_anonymous, response, created_at, updated_at
-		FROM aspirations
+		FROM %s
 		WHERE tenant_id = $1
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
-	`
+	`, aspTable)
 	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -105,11 +107,11 @@ func (r *aspirationNeedRepository) UpdateAspiration(ctx context.Context, asp *do
 		return nil
 	}
 
-	query := `
-		UPDATE aspirations
+	query := fmt.Sprintf(`
+		UPDATE %s
 		SET resident_id = $1, title = $2, content = $3, category = $4, status = $5, is_anonymous = $6, response = $7, updated_at = $8
 		WHERE id = $9 AND tenant_id = $10
-	`
+	`, TenantTable(ctx, "aspirations"))
 	res, err := r.db.ExecContext(ctx, query,
 		asp.ResidentID, asp.Title, asp.Content, asp.Category, asp.Status, asp.IsAnonymous, asp.Response, asp.UpdatedAt, asp.ID, asp.TenantID,
 	)
@@ -138,10 +140,10 @@ func (r *aspirationNeedRepository) CreateCommunityNeed(ctx context.Context, need
 		return nil
 	}
 
-	query := `
-		INSERT INTO community_needs (id, tenant_id, title, description, estimated_cost, status, progress_notes, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, tenant_id, title, description, estimated_cost, status, progress_notes, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`
+	`, TenantTable(ctx, "community_needs"))
 	_, err := r.db.ExecContext(ctx, query,
 		need.ID, need.TenantID, need.Title, need.Description, need.EstimatedCost, need.Status, need.ProgressNotes, need.CreatedAt, need.UpdatedAt,
 	)
@@ -153,11 +155,11 @@ func (r *aspirationNeedRepository) GetCommunityNeedByID(ctx context.Context, ten
 		return nil, errors.New("sql: no rows in result set")
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, title, description, estimated_cost, status, progress_notes, created_at, updated_at
-		FROM community_needs
+		FROM %s
 		WHERE id = $1 AND tenant_id = $2
-	`
+	`, TenantTable(ctx, "community_needs"))
 	need := &domain.CommunityNeed{}
 	err := r.db.QueryRowContext(ctx, query, id, tenantID).Scan(
 		&need.ID, &need.TenantID, &need.Title, &need.Description, &need.EstimatedCost, &need.Status, &need.ProgressNotes, &need.CreatedAt, &need.UpdatedAt,
@@ -173,19 +175,20 @@ func (r *aspirationNeedRepository) ListCommunityNeeds(ctx context.Context, tenan
 		return []*domain.CommunityNeed{}, 0, nil
 	}
 
+	needsTable := TenantTable(ctx, "community_needs")
 	var total int64
-	countQuery := `SELECT COUNT(*) FROM community_needs WHERE tenant_id = $1`
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, needsTable)
 	if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, title, description, estimated_cost, status, progress_notes, created_at, updated_at
-		FROM community_needs
+		FROM %s
 		WHERE tenant_id = $1
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
-	`
+	`, needsTable)
 	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -210,11 +213,11 @@ func (r *aspirationNeedRepository) UpdateCommunityNeed(ctx context.Context, need
 		return nil
 	}
 
-	query := `
-		UPDATE community_needs
+	query := fmt.Sprintf(`
+		UPDATE %s
 		SET title = $1, description = $2, estimated_cost = $3, status = $4, progress_notes = $5, updated_at = $6
 		WHERE id = $7 AND tenant_id = $8
-	`
+	`, TenantTable(ctx, "community_needs"))
 	res, err := r.db.ExecContext(ctx, query,
 		need.Title, need.Description, need.EstimatedCost, need.Status, need.ProgressNotes, need.UpdatedAt, need.ID, need.TenantID,
 	)
@@ -240,10 +243,10 @@ func (r *aspirationNeedRepository) CreateEventSponsor(ctx context.Context, spons
 		return nil
 	}
 
-	query := `
-		INSERT INTO event_sponsors (id, event_id, name, amount, type, notes, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, event_id, name, amount, type, notes, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	`
+	`, TenantTable(ctx, "event_sponsors"))
 	_, err := r.db.ExecContext(ctx, query,
 		sponsor.ID, sponsor.EventID, sponsor.Name, sponsor.Amount, sponsor.Type, sponsor.Notes, sponsor.CreatedAt, sponsor.UpdatedAt,
 	)
@@ -255,13 +258,13 @@ func (r *aspirationNeedRepository) ListEventSponsorsByEventID(ctx context.Contex
 		return []*domain.EventSponsor{}, nil
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT es.id, es.event_id, es.name, es.amount, es.type, es.notes, es.created_at, es.updated_at
-		FROM event_sponsors es
-		JOIN events e ON es.event_id = e.id
+		FROM %s es
+		JOIN %s e ON es.event_id = e.id
 		WHERE es.event_id = $1 AND e.tenant_id = $2
 		ORDER BY es.created_at DESC
-	`
+	`, TenantTable(ctx, "event_sponsors"), TenantTable(ctx, "events"))
 	rows, err := r.db.QueryContext(ctx, query, eventID, tenantID)
 	if err != nil {
 		return nil, err
@@ -285,10 +288,10 @@ func (r *aspirationNeedRepository) DeleteEventSponsor(ctx context.Context, tenan
 		return nil
 	}
 
-	query := `
-		DELETE FROM event_sponsors
-		WHERE id = $1 AND event_id IN (SELECT id FROM events WHERE tenant_id = $2)
-	`
+	query := fmt.Sprintf(`
+		DELETE FROM %s
+		WHERE id = $1 AND event_id IN (SELECT id FROM %s WHERE tenant_id = $2)
+	`, TenantTable(ctx, "event_sponsors"), TenantTable(ctx, "events"))
 	res, err := r.db.ExecContext(ctx, query, sponsorID, tenantID)
 	if err != nil {
 		return err

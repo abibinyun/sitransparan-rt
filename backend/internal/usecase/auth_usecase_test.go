@@ -2,12 +2,14 @@ package usecase_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"backend/internal/domain"
 	"backend/internal/usecase"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type mockUserRepo struct {
@@ -79,11 +81,25 @@ func (m *mockTenantRepo) SetSearchPath(ctx context.Context, slug string) error {
 	return nil
 }
 
-type mockTenantUserRepo struct{}
+type mockTenantUserRepo struct {
+	mappings map[uuid.UUID][]*domain.TenantUser // userID -> mappings
+}
 
-func (m *mockTenantUserRepo) Create(ctx context.Context, tu *domain.TenantUser) error { return nil }
+func newMockTenantUserRepo() *mockTenantUserRepo {
+	return &mockTenantUserRepo{mappings: make(map[uuid.UUID][]*domain.TenantUser)}
+}
+
+func (m *mockTenantUserRepo) Create(ctx context.Context, tu *domain.TenantUser) error {
+	m.mappings[tu.UserID] = append(m.mappings[tu.UserID], tu)
+	return nil
+}
 func (m *mockTenantUserRepo) GetByTenantAndUser(ctx context.Context, tenantID, userID uuid.UUID) (*domain.TenantUser, error) {
-	return &domain.TenantUser{TenantID: tenantID, UserID: userID, RoleName: domain.RoleAdminRT}, nil
+	for _, tu := range m.mappings[userID] {
+		if tu.TenantID == tenantID {
+			return tu, nil
+		}
+	}
+	return nil, errors.New("not found")
 }
 func (m *mockTenantUserRepo) UpdateRole(ctx context.Context, tenantID, userID, roleID uuid.UUID) error {
 	return nil
@@ -92,7 +108,7 @@ func (m *mockTenantUserRepo) Delete(ctx context.Context, tenantID, userID uuid.U
 	return nil
 }
 func (m *mockTenantUserRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]*domain.TenantUser, error) {
-	return nil, nil
+	return m.mappings[userID], nil
 }
 func (m *mockTenantUserRepo) ListTenantsByUserID(ctx context.Context, userID uuid.UUID) ([]*domain.Tenant, error) {
 	return nil, nil
@@ -104,13 +120,16 @@ func (m *mockRoleRepo) GetByName(ctx context.Context, name domain.RoleName) (*do
 	return &domain.Role{ID: uuid.New(), Name: name}, nil
 }
 
-func TestAuthUsecase_RegisterAndLogin(t *testing.T) {
+func newAuthUsecase(tuRepo *mockTenantUserRepo) (usecase.AuthUsecase, *mockUserRepo, *mockTenantRepo) {
 	userRepo := &mockUserRepo{users: make(map[string]*domain.User)}
 	tenantRepo := &mockTenantRepo{tenants: make(map[string]*domain.Tenant)}
-	tuRepo := &mockTenantUserRepo{}
 	roleRepo := &mockRoleRepo{}
+	return usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, "secret-key", 0), userRepo, tenantRepo
+}
 
-	uc := usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, "secret-key", 0)
+func TestAuthUsecase_RegisterAndLogin(t *testing.T) {
+	tuRepo := newMockTenantUserRepo()
+	uc, _, _ := newAuthUsecase(tuRepo)
 
 	// Register User
 	user, err := uc.Register(context.Background(), "Jane Doe", "jane@example.com", "password123", nil)
@@ -122,8 +141,8 @@ func TestAuthUsecase_RegisterAndLogin(t *testing.T) {
 		t.Errorf("expected name Jane Doe, got %s", user.Name)
 	}
 
-	// Login User
-	token, loggedUser, err := uc.Login(context.Background(), "jane@example.com", "password123", nil)
+	// Login user without a tenant mapping -> lowest privilege resident role.
+	token, loggedUser, role, err := uc.Login(context.Background(), "jane@example.com", "password123", nil)
 	if err != nil {
 		t.Fatalf("Login failed: %v", err)
 	}
@@ -134,30 +153,96 @@ func TestAuthUsecase_RegisterAndLogin(t *testing.T) {
 	if loggedUser.ID != user.ID {
 		t.Errorf("expected user ID %s, got %s", user.ID, loggedUser.ID)
 	}
-
-	// Login Superadmin admin@gmail.com
-	superAdminUser, err := uc.Register(context.Background(), "Super Admin", "admin@gmail.com", "admin123", nil)
-	if err != nil {
-		t.Fatalf("Register superadmin failed: %v", err)
+	if role != domain.RoleResident {
+		t.Errorf("expected role resident for unmapped user, got %s", role)
 	}
 
-	adminToken, loggedSuperAdmin, err := uc.Login(context.Background(), "admin@gmail.com", "admin123", nil)
-	if err != nil {
-		t.Fatalf("Login superadmin failed: %v", err)
+	// Login with invalid password must fail.
+	if _, _, _, err := uc.Login(context.Background(), "jane@example.com", "wrong-password", nil); err == nil {
+		t.Error("expected error for invalid password")
+	}
+}
+
+func TestAuthUsecase_RoleComesFromDatabaseMapping(t *testing.T) {
+	tuRepo := newMockTenantUserRepo()
+	uc, userRepo, _ := newAuthUsecase(tuRepo)
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.MinCost)
+
+	tenantA := &domain.Tenant{ID: uuid.New(), Slug: "tenant-a"}
+	user := &domain.User{ID: uuid.New(), Email: "admin_a@example.com", Name: "Admin A", PasswordHash: string(hash)}
+	userRepo.users[user.Email] = user
+	tuRepo.mappings[user.ID] = []*domain.TenantUser{
+		{TenantID: tenantA.ID, UserID: user.ID, RoleName: domain.RoleAdminRT},
 	}
 
-	if adminToken == "" || loggedSuperAdmin.ID != superAdminUser.ID {
-		t.Error("superadmin login assertion failed")
+	token, _, role, err := uc.Login(context.Background(), user.Email, "password123", nil)
+	if err != nil {
+		t.Fatalf("Login failed: %v", err)
+	}
+	if token == "" || role != domain.RoleAdminRT {
+		t.Errorf("expected role admin_rt from mapping, got %s", role)
+	}
+
+	// A user with a superadmin mapping gets the superadmin role from the DB —
+	// never from the email address.
+	su := &domain.User{ID: uuid.New(), Email: "someone@example.com", Name: "SA", PasswordHash: string(hash)}
+	userRepo.users[su.Email] = su
+	tuRepo.mappings[su.ID] = []*domain.TenantUser{
+		{TenantID: tenantA.ID, UserID: su.ID, RoleName: domain.RoleSuperAdmin},
+	}
+	token, _, role, err = uc.Login(context.Background(), su.Email, "password123", nil)
+	if err != nil {
+		t.Fatalf("Login failed: %v", err)
+	}
+	if token == "" || role != domain.RoleSuperAdmin {
+		t.Errorf("expected superadmin role from mapping, got %s", role)
+	}
+}
+
+func TestAuthUsecase_SwitchTenantAuthorization(t *testing.T) {
+	tuRepo := newMockTenantUserRepo()
+	uc, userRepo, tenantRepo := newAuthUsecase(tuRepo)
+
+	tenantA := &domain.Tenant{ID: uuid.New(), Slug: "tenant-a"}
+	tenantB := &domain.Tenant{ID: uuid.New(), Slug: "tenant-b"}
+	tenantRepo.tenants[tenantA.Slug] = tenantA
+	tenantRepo.tenants[tenantB.Slug] = tenantB
+
+	// User mapped to A and B.
+	user := &domain.User{ID: uuid.New(), Email: "multi@example.com", Name: "Multi"}
+	userRepo.users[user.Email] = user
+	tuRepo.mappings[user.ID] = []*domain.TenantUser{
+		{TenantID: tenantA.ID, UserID: user.ID, RoleName: domain.RoleAdminRT},
+		{TenantID: tenantB.ID, UserID: user.ID, RoleName: domain.RoleResident},
+	}
+
+	// Switching to a mapped tenant is allowed.
+	token, _, role, err := uc.SwitchTenant(context.Background(), user.ID, tenantB.ID)
+	if err != nil {
+		t.Fatalf("SwitchTenant to mapped tenant failed: %v", err)
+	}
+	if token == "" || role != domain.RoleResident {
+		t.Errorf("expected resident role for tenant B, got %s", role)
+	}
+
+	// Switching to an unmapped tenant is denied.
+	tenantC := &domain.Tenant{ID: uuid.New(), Slug: "tenant-c"}
+	if _, _, _, err := uc.SwitchTenant(context.Background(), user.ID, tenantC.ID); err == nil {
+		t.Error("expected error when switching to unmapped tenant")
+	}
+
+	// A user with no mappings cannot switch anywhere.
+	loner := &domain.User{ID: uuid.New(), Email: "loner@example.com", Name: "Loner"}
+	userRepo.users[loner.Email] = loner
+	if _, _, _, err := uc.SwitchTenant(context.Background(), loner.ID, tenantA.ID); err == nil {
+		t.Error("expected error when user has no mappings")
 	}
 }
 
 func TestAuthUsecase_TenantCRUD(t *testing.T) {
-	userRepo := &mockUserRepo{users: make(map[string]*domain.User)}
-	tenantRepo := &mockTenantRepo{tenants: make(map[string]*domain.Tenant)}
-	tuRepo := &mockTenantUserRepo{}
-	roleRepo := &mockRoleRepo{}
-
-	uc := usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, "secret-key", 0)
+	tuRepo := newMockTenantUserRepo()
+	uc, _, _ := newAuthUsecase(tuRepo)
 
 	// Create Tenant
 	tenant, err := uc.CreateTenant(context.Background(), "RT 05", "rt-05", nil, nil)

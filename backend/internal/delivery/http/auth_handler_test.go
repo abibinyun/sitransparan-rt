@@ -20,8 +20,11 @@ type mockAuthUsecase struct {
 	token   string
 }
 
-func (m *mockAuthUsecase) Login(ctx context.Context, email, password string, tenantID *uuid.UUID) (string, *domain.User, error) {
-	return m.token, m.user, nil
+func (m *mockAuthUsecase) Login(ctx context.Context, email, password string, tenantID *uuid.UUID) (string, *domain.User, domain.RoleName, error) {
+	return m.token, m.user, domain.RoleResident, nil
+}
+func (m *mockAuthUsecase) SwitchTenant(ctx context.Context, userID, tenantID uuid.UUID) (string, *domain.User, domain.RoleName, error) {
+	return m.token, m.user, domain.RoleAdminRT, nil
 }
 func (m *mockAuthUsecase) Register(ctx context.Context, name, email, password string, phone *string) (*domain.User, error) {
 	return m.user, nil

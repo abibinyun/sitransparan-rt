@@ -27,16 +27,17 @@ type NavItem = {
   label: string;
   icon: LucideIcon;
   end?: boolean;
+  adminOnly?: boolean;
 };
 
 const baseNavItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/residents', label: 'Data Warga', icon: Users },
+  { to: '/residents', label: 'Data Warga', icon: Users, adminOnly: true },
   { to: '/financial', label: 'Keuangan', icon: WalletCards },
   { to: '/events', label: 'Kegiatan & Budget', icon: CalendarDays },
   { to: '/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
   { to: '/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
-  { to: '/users', label: 'Manajemen Pengguna', icon: Users },
+  { to: '/users', label: 'Manajemen Pengguna', icon: Users, adminOnly: true },
 ];
 
 const publicNavItems: NavItem[] = [
@@ -50,17 +51,24 @@ export const MainLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = useMemo(() => {
-    const items = [...baseNavItems, ...publicNavItems];
     const isSuperAdmin =
       user?.role === 'SUPER_ADMIN' ||
       (user?.role as string) === 'superadmin' ||
-      user?.email === 'superadmin@platform.local' ||
-      user?.email === 'admin@gmail.com';
+      (user?.role as string) === 'super_admin';
+    const isAdminRT =
+      user?.role === 'RT_ADMIN' || (user?.role as string) === 'admin_rt';
+
+    // Admin-only pages (blocked on the backend for residents) are hidden from
+    // the navigation so the UI stays consistent with backend authorization.
+    const items = [
+      ...baseNavItems.filter((item) => !item.adminOnly || isAdminRT || isSuperAdmin),
+      ...publicNavItems,
+    ];
     if (isSuperAdmin) {
       items.push({ to: '/superadmin/tenants', label: 'SuperAdmin RT', icon: Shield });
     }
     return items;
-  }, [user?.role, user?.email]);
+  }, [user?.role]);
 
   const handleLogout = () => {
     logout();

@@ -15,6 +15,13 @@ test.describe('Role E2E: Resident (Warga RT)', () => {
     await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]:has-text("Daftar Akun")');
 
+    // Wait until the registration succeeds and the login form is shown before
+    // filling it. Filling while the register form is still mounted would write
+    // into the register inputs, and the login password state is reset to '' on
+    // mode switch, leaving the login form with an empty password.
+    await page.getByRole('button', { name: 'Masuk Akun' }).waitFor({ timeout: 10000 });
+    await expect(page.getByText(/Pendaftaran berhasil/i)).toBeVisible();
+
     // Login Resident
     await page.fill('input[type="email"]', email);
     await page.fill('input[type="password"]', password);

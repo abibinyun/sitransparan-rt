@@ -40,73 +40,73 @@ func GetRoleFromContext(ctx context.Context) domain.RoleName {
 	return ""
 }
 
-// TenantMiddleware resolves Tenant from X-Tenant-ID header, subdomain, or JWT claims.
-func TenantMiddleware(tenantRepo domain.TenantRepository) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var tenant *domain.Tenant
-
-			// 1. Try X-Tenant-ID header
-			tenantIDStr := r.Header.Get("X-Tenant-ID")
-			if tenantIDStr != "" {
-				if tid, parseErr := uuid.Parse(tenantIDStr); parseErr == nil {
-					tenant, _ = tenantRepo.GetByID(r.Context(), tid)
-				}
-			}
-
-			// 2. Try Subdomain / Host
-			if tenant == nil {
-				host := r.Header.Get("X-Forwarded-Host")
-				if host == "" {
-					host = r.Host
-				}
-				if idx := strings.Index(host, ":"); idx != -1 {
-					host = host[:idx]
-				}
-				if host != "" && host != "localhost" && host != "127.0.0.1" && host != "api.openrt.local" && host != "app.openrt.local" {
-					parts := strings.Split(host, ".")
-					if len(parts) >= 3 {
-						subdomain := parts[0]
-						if subdomain != "api" && subdomain != "app" {
-							tenant, _ = tenantRepo.GetBySlug(r.Context(), subdomain)
-						}
-					}
-					if tenant == nil {
-						tenant, _ = tenantRepo.GetByDomain(r.Context(), host)
-					}
-				}
-			}
-
-			// 3. Fallback to JWT claims tenant_id if present in context
-			if tenant == nil {
-				if tid := GetTenantIDFromClaims(r.Context()); tid != uuid.Nil {
-					tenant, _ = tenantRepo.GetByID(r.Context(), tid)
-				}
-			}
-
-			if tenant != nil {
-				_ = tenantRepo.SetSearchPath(r.Context(), tenant.Slug)
-				ctx := context.WithValue(r.Context(), TenantContextKey, tenant)
-				r = r.WithContext(ctx)
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 type claimsKey string
 
 const jwtClaimsContextKey claimsKey = "jwt_claims"
 
-func GetTenantIDFromClaims(ctx context.Context) uuid.UUID {
+// GetJWTClaims returns the verified JWT claims stored in the context by
+// AuthMiddleware, or nil when the request is not authenticated.
+func GetJWTClaims(ctx context.Context) *domain.JWTClaims {
 	if claims, ok := ctx.Value(jwtClaimsContextKey).(*domain.JWTClaims); ok {
+		return claims
+	}
+	return nil
+}
+
+func GetTenantIDFromClaims(ctx context.Context) uuid.UUID {
+	if claims := GetJWTClaims(ctx); claims != nil {
 		return claims.TenantID
 	}
 	return uuid.Nil
 }
 
-// AuthMiddleware validates JWT token from Authorization header and injects claims/user into Context.
+// WithClaims returns a context carrying verified JWT claims, user id, and role.
+// AuthMiddleware uses it to publish the verified identity; tests and internal
+// flows can use it to build requests with an authenticated identity.
+func WithClaims(ctx context.Context, claims *domain.JWTClaims) context.Context {
+	if claims == nil {
+		return ctx
+	}
+	ctx = context.WithValue(ctx, UserContextKey, claims.UserID)
+	ctx = context.WithValue(ctx, RoleContextKey, claims.Role)
+	ctx = context.WithValue(ctx, jwtClaimsContextKey, claims)
+	return ctx
+}
+
+// TenantMiddleware derives the tenant context from the authenticated identity
+// (JWT claims) ONLY. Client-supplied tenant hints (X-Tenant-ID header, query
+// parameters, subdomains) are never trusted, because they can be manipulated to
+// escalate a user from tenant A to tenant B. The trusted tenant must always be
+// the tenant the signed-in user is authorized for.
+//
+// The middleware must be mounted INSIDE AuthMiddleware so verified JWT claims
+// are already present in the request context.
+func TenantMiddleware(tenantRepo domain.TenantRepository) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			claims := GetJWTClaims(r.Context())
+			// An authenticated identity that carries a tenant scope but whose
+			// tenant no longer exists (deleted) must be denied explicitly instead
+			// of silently proceeding without a tenant context.
+			if claims != nil && claims.UserID != uuid.Nil && claims.TenantID != uuid.Nil {
+				tenant, err := tenantRepo.GetByID(r.Context(), claims.TenantID)
+				if err != nil || tenant == nil {
+					http.Error(w, `{"error":"forbidden: tenant access denied"}`, http.StatusForbidden)
+					return
+				}
+				ctx := context.WithValue(r.Context(), TenantContextKey, tenant)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// AuthMiddleware validates the JWT from the Authorization header and injects
+// the verified claims into the request context. The signing algorithm is pinned
+// to HS256 to prevent algorithm-confusion attacks, and a token without a valid
+// user id is rejected.
 func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 	secret := []byte(jwtSecret)
 	return func(next http.Handler) http.Handler {
@@ -122,19 +122,14 @@ func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 
 			token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
 				return secret, nil
-			})
+			}, jwt.WithValidMethods([]string{"HS256"}))
 
-			if err != nil || !token.Valid {
+			if err != nil || !token.Valid || claims.UserID == uuid.Nil {
 				http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
 				return
 			}
 
-			ctx := r.Context()
-			ctx = context.WithValue(ctx, UserContextKey, claims.UserID)
-			ctx = context.WithValue(ctx, RoleContextKey, claims.Role)
-			ctx = context.WithValue(ctx, jwtClaimsContextKey, claims)
-
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(WithClaims(r.Context(), claims)))
 		})
 	}
 }
@@ -167,4 +162,24 @@ func RBACMiddleware(allowedRoles ...domain.RoleName) func(http.Handler) http.Han
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// RequireAnyRole reports whether the authenticated caller's role is among the
+// allowed roles. Matching is case-insensitive and accepts the superadmin /
+// super_admin aliases used across the codebase. It is used by handlers to guard
+// write/approve operations that must be restricted to admin roles.
+func RequireAnyRole(r *http.Request, roles ...domain.RoleName) bool {
+	caller := strings.ToLower(string(GetRoleFromContext(r.Context())))
+	if caller == "" {
+		return false
+	}
+	for _, role := range roles {
+		allowed := strings.ToLower(string(role))
+		if caller == allowed ||
+			(allowed == "superadmin" && (caller == "super_admin" || caller == "superadmin")) ||
+			(allowed == "super_admin" && caller == "superadmin") {
+			return true
+		}
+	}
+	return false
 }

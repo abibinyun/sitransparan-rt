@@ -41,10 +41,10 @@ func (r *announcementDocRepository) CreateAnnouncement(ctx context.Context, a *d
 		return nil
 	}
 
-	query := `
-		INSERT INTO announcements (id, tenant_id, title, content, attachment_url, target, created_by, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, tenant_id, title, content, attachment_url, target, created_by, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`
+	`, TenantTable(ctx, "announcements"))
 	_, err := r.db.ExecContext(ctx, query,
 		a.ID, a.TenantID, a.Title, a.Content, a.AttachmentURL, a.Target, a.CreatedBy, a.CreatedAt, a.UpdatedAt,
 	)
@@ -56,11 +56,11 @@ func (r *announcementDocRepository) GetAnnouncementByID(ctx context.Context, ten
 		return nil, ErrNotFound
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, title, content, attachment_url, target, created_by, created_at, updated_at
-		FROM announcements
+		FROM %s
 		WHERE id = $1 AND tenant_id = $2
-	`
+	`, TenantTable(ctx, "announcements"))
 	a := &domain.Announcement{}
 	err := r.db.QueryRowContext(ctx, query, id, tenantID).Scan(
 		&a.ID, &a.TenantID, &a.Title, &a.Content, &a.AttachmentURL, &a.Target, &a.CreatedBy, &a.CreatedAt, &a.UpdatedAt,
@@ -79,36 +79,37 @@ func (r *announcementDocRepository) ListAnnouncements(ctx context.Context, tenan
 		return []*domain.Announcement{}, 0, nil
 	}
 
+	annTable := TenantTable(ctx, "announcements")
 	var count int64
 	var countQuery string
 	var query string
 	var args []interface{}
 
 	if targetFilter != nil && *targetFilter != "" {
-		countQuery = `SELECT COUNT(*) FROM announcements WHERE tenant_id = $1 AND target = $2`
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND target = $2`, annTable)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID, *targetFilter).Scan(&count); err != nil {
 			return nil, 0, err
 		}
-		query = `
+		query = fmt.Sprintf(`
 			SELECT id, tenant_id, title, content, attachment_url, target, created_by, created_at, updated_at
-			FROM announcements
+			FROM %s
 			WHERE tenant_id = $1 AND target = $2
 			ORDER BY created_at DESC
 			LIMIT $3 OFFSET $4
-		`
+		`, annTable)
 		args = []interface{}{tenantID, *targetFilter, limit, offset}
 	} else {
-		countQuery = `SELECT COUNT(*) FROM announcements WHERE tenant_id = $1`
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, annTable)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 			return nil, 0, err
 		}
-		query = `
+		query = fmt.Sprintf(`
 			SELECT id, tenant_id, title, content, attachment_url, target, created_by, created_at, updated_at
-			FROM announcements
+			FROM %s
 			WHERE tenant_id = $1
 			ORDER BY created_at DESC
 			LIMIT $2 OFFSET $3
-		`
+		`, annTable)
 		args = []interface{}{tenantID, limit, offset}
 	}
 
@@ -136,11 +137,11 @@ func (r *announcementDocRepository) UpdateAnnouncement(ctx context.Context, a *d
 		return nil
 	}
 
-	query := `
-		UPDATE announcements
+	query := fmt.Sprintf(`
+		UPDATE %s
 		SET title = $1, content = $2, attachment_url = $3, target = $4, updated_at = $5
 		WHERE id = $6 AND tenant_id = $7
-	`
+	`, TenantTable(ctx, "announcements"))
 	res, err := r.db.ExecContext(ctx, query,
 		a.Title, a.Content, a.AttachmentURL, a.Target, a.UpdatedAt, a.ID, a.TenantID,
 	)
@@ -159,7 +160,7 @@ func (r *announcementDocRepository) DeleteAnnouncement(ctx context.Context, tena
 		return nil
 	}
 
-	query := `DELETE FROM announcements WHERE id = $1 AND tenant_id = $2`
+	query := fmt.Sprintf(`DELETE FROM %s WHERE id = $1 AND tenant_id = $2`, TenantTable(ctx, "announcements"))
 	res, err := r.db.ExecContext(ctx, query, id, tenantID)
 	if err != nil {
 		return err
@@ -183,10 +184,10 @@ func (r *announcementDocRepository) CreateDocument(ctx context.Context, doc *dom
 		return nil
 	}
 
-	query := `
-		INSERT INTO documents (id, tenant_id, title, category, file_url, uploaded_by, created_at, updated_at)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, tenant_id, title, category, file_url, uploaded_by, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	`
+	`, TenantTable(ctx, "documents"))
 	_, err := r.db.ExecContext(ctx, query,
 		doc.ID, doc.TenantID, doc.Title, doc.Category, doc.FileURL, doc.UploadedBy, doc.CreatedAt, doc.UpdatedAt,
 	)
@@ -198,11 +199,11 @@ func (r *announcementDocRepository) GetDocumentByID(ctx context.Context, tenantI
 		return nil, ErrNotFound
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, title, category, file_url, uploaded_by, created_at, updated_at
-		FROM documents
+		FROM %s
 		WHERE id = $1 AND tenant_id = $2
-	`
+	`, TenantTable(ctx, "documents"))
 	doc := &domain.Document{}
 	err := r.db.QueryRowContext(ctx, query, id, tenantID).Scan(
 		&doc.ID, &doc.TenantID, &doc.Title, &doc.Category, &doc.FileURL, &doc.UploadedBy, &doc.CreatedAt, &doc.UpdatedAt,
@@ -221,19 +222,20 @@ func (r *announcementDocRepository) ListDocuments(ctx context.Context, tenantID 
 		return []*domain.Document{}, 0, nil
 	}
 
+	docTable := TenantTable(ctx, "documents")
 	var count int64
-	countQuery := `SELECT COUNT(*) FROM documents WHERE tenant_id = $1`
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, docTable)
 	if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 		return nil, 0, err
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, title, category, file_url, uploaded_by, created_at, updated_at
-		FROM documents
+		FROM %s
 		WHERE tenant_id = $1
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
-	`
+	`, docTable)
 	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -257,7 +259,7 @@ func (r *announcementDocRepository) DeleteDocument(ctx context.Context, tenantID
 		return nil
 	}
 
-	query := `DELETE FROM documents WHERE id = $1 AND tenant_id = $2`
+	query := fmt.Sprintf(`DELETE FROM %s WHERE id = $1 AND tenant_id = $2`, TenantTable(ctx, "documents"))
 	res, err := r.db.ExecContext(ctx, query, id, tenantID)
 	if err != nil {
 		return err

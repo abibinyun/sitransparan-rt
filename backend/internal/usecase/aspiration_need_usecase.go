@@ -41,12 +41,12 @@ func (u *aspirationNeedUsecase) ListAspirations(ctx context.Context, tenantID uu
 	}
 
 	if isPublic {
+		// Public listings must never expose internal resident identifiers, for
+		// anonymous and non-anonymous aspirations alike.
 		sanitized := make([]*domain.Aspiration, 0, len(items))
 		for _, item := range items {
 			cp := *item
-			if cp.IsAnonymous {
-				cp.ResidentID = nil
-			}
+			cp.ResidentID = nil
 			sanitized = append(sanitized, &cp)
 		}
 		return sanitized, total, nil

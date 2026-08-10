@@ -155,6 +155,10 @@ func (h *EventHandler) list(w http.ResponseWriter, r *http.Request, tenantID uui
 }
 
 func (h *EventHandler) create(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	var req domain.Event
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -189,6 +193,10 @@ func (h *EventHandler) getByID(w http.ResponseWriter, r *http.Request, tenantID,
 }
 
 func (h *EventHandler) update(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	var req domain.Event
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -207,6 +215,10 @@ func (h *EventHandler) update(w http.ResponseWriter, r *http.Request, tenantID, 
 }
 
 func (h *EventHandler) delete(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	if err := h.usecase.DeleteEvent(r.Context(), tenantID, id); err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return
@@ -218,6 +230,10 @@ func (h *EventHandler) delete(w http.ResponseWriter, r *http.Request, tenantID, 
 }
 
 func (h *EventHandler) addOrUpdateBudget(w http.ResponseWriter, r *http.Request, tenantID, eventID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	var req domain.EventBudget
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -268,6 +284,10 @@ func (h *EventHandler) rsvp(w http.ResponseWriter, r *http.Request, tenantID, ev
 }
 
 func (h *EventHandler) assignRole(w http.ResponseWriter, r *http.Request, tenantID, eventID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	var req domain.EventRole
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -301,6 +321,10 @@ func (h *EventHandler) listRoles(w http.ResponseWriter, r *http.Request, tenantI
 }
 
 func (h *EventHandler) removeRole(w http.ResponseWriter, r *http.Request, tenantID, eventID, roleID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	if err := h.usecase.RemoveRole(r.Context(), tenantID, eventID, roleID); err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return

@@ -130,7 +130,8 @@ func mockTenantAuthMiddleware(tenant *domain.Tenant) (func(http.Handler) http.Ha
 	}
 	authMw := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			next.ServeHTTP(w, r)
+			ctx := context.WithValue(r.Context(), middleware.RoleContextKey, domain.RoleAdminRT)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 	return tenantMw, authMw

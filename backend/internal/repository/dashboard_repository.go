@@ -21,21 +21,27 @@ func NewDashboardRepository(db *sql.DB) domain.DashboardRepository {
 func (r *dashboardRepository) GetSummary(ctx context.Context, tenantID uuid.UUID) (*domain.DashboardSummary, error) {
 	summary := &domain.DashboardSummary{}
 
+	residentsTable := TenantTable(ctx, "residents")
+	txTable := TenantTable(ctx, "financial_transactions")
+	duesTable := TenantTable(ctx, "dues_payments")
+	eventsTable := TenantTable(ctx, "events")
+	aspTable := TenantTable(ctx, "aspirations")
+
 	// Total Residents
-	err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM residents WHERE tenant_id = $1`, tenantID).Scan(&summary.TotalResidents)
+	err := r.db.QueryRowContext(ctx, fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, residentsTable), tenantID).Scan(&summary.TotalResidents)
 	if err != nil {
 		return nil, err
 	}
 
 	// Total Income from financial_transactions where type='income' + verified dues_payments
 	var txIncome sql.NullFloat64
-	err = r.db.QueryRowContext(ctx, `SELECT SUM(amount) FROM financial_transactions WHERE tenant_id = $1 AND type = 'income'`, tenantID).Scan(&txIncome)
+	err = r.db.QueryRowContext(ctx, fmt.Sprintf(`SELECT SUM(amount) FROM %s WHERE tenant_id = $1 AND type = 'income'`, txTable), tenantID).Scan(&txIncome)
 	if err != nil {
 		return nil, err
 	}
 
 	var duesIncome sql.NullFloat64
-	err = r.db.QueryRowContext(ctx, `SELECT SUM(amount) FROM dues_payments WHERE tenant_id = $1 AND status = 'verified'`, tenantID).Scan(&duesIncome)
+	err = r.db.QueryRowContext(ctx, fmt.Sprintf(`SELECT SUM(amount) FROM %s WHERE tenant_id = $1 AND status = 'verified'`, duesTable), tenantID).Scan(&duesIncome)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +50,7 @@ func (r *dashboardRepository) GetSummary(ctx context.Context, tenantID uuid.UUID
 
 	// Total Expense from financial_transactions where type='expense'
 	var txExpense sql.NullFloat64
-	err = r.db.QueryRowContext(ctx, `SELECT SUM(amount) FROM financial_transactions WHERE tenant_id = $1 AND type = 'expense'`, tenantID).Scan(&txExpense)
+	err = r.db.QueryRowContext(ctx, fmt.Sprintf(`SELECT SUM(amount) FROM %s WHERE tenant_id = $1 AND type = 'expense'`, txTable), tenantID).Scan(&txExpense)
 	if err != nil {
 		return nil, err
 	}
@@ -54,26 +60,28 @@ func (r *dashboardRepository) GetSummary(ctx context.Context, tenantID uuid.UUID
 	summary.Balance = summary.TotalIncome - summary.TotalExpense
 
 	// Total Events
-	err = r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM events WHERE tenant_id = $1`, tenantID).Scan(&summary.TotalEvents)
+	err = r.db.QueryRowContext(ctx, fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, eventsTable), tenantID).Scan(&summary.TotalEvents)
 	if err != nil {
 		return nil, err
 	}
 
-	// New Aspirations Count (aspirations with status 'submitted' or 'pending' or total aspirations)
-	err = r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM aspirations_and_needs WHERE tenant_id = $1 AND type = 'aspiration'`, tenantID).Scan(&summary.NewAspirationsCount)
+	// New Aspirations Count (aspirations with status 'submitted' or 'under_review')
+	var newAsp sql.NullInt64
+	err = r.db.QueryRowContext(ctx, fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND status IN ('submitted', 'under_review')`, aspTable), tenantID).Scan(&newAsp)
 	if err != nil {
 		return nil, err
 	}
+	summary.NewAspirationsCount = newAsp.Int64
 
 	return summary, nil
 }
 
 func (r *dashboardRepository) GetFinancialTransactionsForReport(ctx context.Context, tenantID uuid.UUID, startDate, endDate *time.Time) ([]*domain.FinancialTransaction, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, tenant_id, type, category, amount, transaction_date, description, proof_url, created_by, created_at, updated_at
-		FROM financial_transactions
+		FROM %s
 		WHERE tenant_id = $1
-	`
+	`, TenantTable(ctx, "financial_transactions"))
 	args := []interface{}{tenantID}
 
 	if startDate != nil {

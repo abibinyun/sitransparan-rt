@@ -17,10 +17,15 @@ up:
 
 migrate:
 	@echo "Menjalankan migrasi database..."
-	@for f in backend/migrations/*.up.sql; do \
+	@fail=0; for f in backend/migrations/*.up.sql; do \
 		echo "Applying $$f..."; \
-		docker exec -i transparansi_postgres psql -U postgres -d transparansi_rt < "$$f" > /dev/null 2>&1 || true; \
-	done
+		if ! docker exec -i transparansi_postgres psql -U postgres -d transparansi_rt < "$$f" > /tmp/migrate-$$(basename $$f).log 2>&1; then \
+			echo "ERROR: migration failed: $$f"; \
+			cat /tmp/migrate-$$(basename $$f).log; \
+			fail=1; \
+		fi; \
+	done; \
+	if [ $$fail -ne 0 ]; then echo "Migrasi GAGAL — periksa log di atas."; exit 1; fi
 	@echo "Migrasi selesai."
 
 down:

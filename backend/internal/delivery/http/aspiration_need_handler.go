@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -67,6 +68,10 @@ func (h *AspirationNeedHandler) handlePublicTenantRoutes(w http.ResponseWriter, 
 		return
 	}
 
+	// Make the resolved tenant available to repositories so that tenant-scoped
+	// queries are schema-qualified against tenant_<slug>.
+	r = r.WithContext(context.WithValue(r.Context(), domain.TenantContextKey, tenant))
+
 	switch resource {
 	case "aspirations":
 		switch r.Method {
@@ -94,6 +99,10 @@ func (h *AspirationNeedHandler) publicSubmitAspiration(w http.ResponseWriter, r 
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
 		return
 	}
+
+	// Public submissions are never linked to a resident identity: the caller is
+	// unauthenticated, so any resident_id supplied in the body is ignored.
+	req.ResidentID = nil
 
 	if err := h.usecase.SubmitAspiration(r.Context(), tenantID, &req); err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
@@ -215,6 +224,10 @@ func (h *AspirationNeedHandler) handlePrivateAspirations(w http.ResponseWriter, 
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(asp)
 		case http.MethodPut:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
 			var req struct {
 				Status   string  `json:"status"`
 				Response *string `json:"response"`
@@ -275,6 +288,10 @@ func (h *AspirationNeedHandler) handlePrivateNeeds(w http.ResponseWriter, r *htt
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(resp)
 		case http.MethodPost:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
 			var req domain.CommunityNeed
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 				http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -312,6 +329,10 @@ func (h *AspirationNeedHandler) handlePrivateNeeds(w http.ResponseWriter, r *htt
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(need)
 		case http.MethodPut:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
 			var req domain.CommunityNeed
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 				http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -370,6 +391,10 @@ func (h *AspirationNeedHandler) handleEventSponsors(w http.ResponseWriter, r *ht
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{"data": sponsors})
 		case http.MethodPost:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
 			var req domain.EventSponsor
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 				http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -390,6 +415,10 @@ func (h *AspirationNeedHandler) handleEventSponsors(w http.ResponseWriter, r *ht
 	}
 
 	if len(parts) == 3 && r.Method == http.MethodDelete {
+		if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+			http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+			return
+		}
 		sponsorID, err := uuid.Parse(parts[2])
 		if err != nil {
 			http.Error(w, `{"error":"invalid sponsor id"}`, http.StatusBadRequest)

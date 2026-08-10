@@ -2,9 +2,11 @@ package middleware_test
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"backend/internal/delivery/http/middleware"
 	"backend/internal/domain"
@@ -47,22 +49,79 @@ func (m *mockTenantRepo) List(ctx context.Context, limit, offset int) ([]*domain
 }
 func (m *mockTenantRepo) SetSearchPath(ctx context.Context, slug string) error { return nil }
 
-func TestTenantMiddleware_Header(t *testing.T) {
-	tenantID := uuid.New()
-	tenant := &domain.Tenant{ID: tenantID, Name: "Test Tenant", Slug: "test"}
-	repo := &mockTenantRepo{tenants: map[string]*domain.Tenant{tenantID.String(): tenant}}
+// signedToken signs a JWT with the given claims using the test secret.
+func signedToken(t *testing.T, secret string, claims domain.JWTClaims) string {
+	t.Helper()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err := token.SignedString([]byte(secret))
+	if err != nil {
+		t.Fatalf("failed to sign token: %v", err)
+	}
+	return tokenStr
+}
 
-	mw := middleware.TenantMiddleware(repo)
-	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// authTenantChain wires the production order: AuthMiddleware outermost,
+// TenantMiddleware inner, then the test handler.
+func authTenantChain(secret string, repo domain.TenantRepository, next http.Handler) http.Handler {
+	return middleware.AuthMiddleware(secret)(middleware.TenantMiddleware(repo)(next))
+}
+
+func TestTenantMiddleware_ResolvesFromClaimsOnly(t *testing.T) {
+	secret := "secret-key"
+	tenantA := &domain.Tenant{ID: uuid.New(), Name: "Tenant A", Slug: "tenant-a"}
+	tenantB := &domain.Tenant{ID: uuid.New(), Name: "Tenant B", Slug: "tenant-b"}
+	repo := &mockTenantRepo{tenants: map[string]*domain.Tenant{
+		tenantA.ID.String(): tenantA,
+		tenantB.ID.String(): tenantB,
+	}}
+
+	handler := authTenantChain(secret, repo, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		got := middleware.GetTenantFromContext(r.Context())
-		if got == nil || got.ID != tenantID {
-			t.Errorf("expected tenant ID %s, got %v", tenantID, got)
+		if got == nil || got.ID != tenantA.ID {
+			t.Errorf("expected tenant A, got %v", got)
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
 
+	// Authenticated as tenant A, but the request tries to switch to tenant B
+	// via the X-Tenant-ID header. The header MUST be ignored: the trusted
+	// tenant comes from the signed identity only.
+	tokenStr := signedToken(t, secret, domain.JWTClaims{
+		UserID:   uuid.New(),
+		TenantID: tenantA.ID,
+		Role:     domain.RoleAdminRT,
+	})
 	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("X-Tenant-ID", tenantID.String())
+	req.Header.Set("Authorization", "Bearer "+tokenStr)
+	req.Header.Set("X-Tenant-ID", tenantB.ID.String())
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+}
+
+func TestTenantMiddleware_NoTenantInClaims(t *testing.T) {
+	secret := "secret-key"
+	tenantA := &domain.Tenant{ID: uuid.New(), Name: "Tenant A", Slug: "tenant-a"}
+	repo := &mockTenantRepo{tenants: map[string]*domain.Tenant{tenantA.ID.String(): tenantA}}
+
+	handler := authTenantChain(secret, repo, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got := middleware.GetTenantFromContext(r.Context())
+		if got != nil {
+			t.Errorf("expected no tenant context, got %v", got)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// Header hints must not create a tenant context when the identity has no
+	// tenant scope.
+	tokenStr := signedToken(t, secret, domain.JWTClaims{UserID: uuid.New(), Role: domain.RoleResident})
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenStr)
+	req.Header.Set("X-Tenant-ID", tenantA.ID.String())
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)
@@ -117,6 +176,78 @@ func TestAuthMiddleware(t *testing.T) {
 	handler.ServeHTTP(recAuth, reqAuth)
 	if recAuth.Code != http.StatusOK {
 		t.Errorf("expected status 200, got %d", recAuth.Code)
+	}
+}
+
+func TestAuthMiddleware_JWTSecurity(t *testing.T) {
+	secret := "secret-key"
+	userID := uuid.New()
+	tenantID := uuid.New()
+
+	mw := middleware.AuthMiddleware(secret)
+	okHandler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	makeReq := func(tokenStr string) *http.Request {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenStr)
+		return req
+	}
+
+	// 1. Missing token -> 401
+	rec := httptest.NewRecorder()
+	okHandler.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("missing token: expected 401, got %d", rec.Code)
+	}
+
+	// 2. Malformed token -> 401
+	rec = httptest.NewRecorder()
+	okHandler.ServeHTTP(rec, makeReq("not.a.jwt"))
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("malformed token: expected 401, got %d", rec.Code)
+	}
+
+	// 3. Token signed with a different secret -> 401
+	rec = httptest.NewRecorder()
+	okHandler.ServeHTTP(rec, makeReq(signedToken(t, "other-secret", domain.JWTClaims{UserID: userID, TenantID: tenantID, Role: domain.RoleAdminRT})))
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("wrong secret: expected 401, got %d", rec.Code)
+	}
+
+	// 4. Tampered payload (role changed) -> signature invalid -> 401
+	rec = httptest.NewRecorder()
+	tampered := signedToken(t, secret, domain.JWTClaims{UserID: userID, TenantID: tenantID, Role: domain.RoleSuperAdmin})
+	tampered = tampered[:len(tampered)-8] + "ZZZZZZZZ"
+	okHandler.ServeHTTP(rec, makeReq(tampered))
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("tampered token: expected 401, got %d", rec.Code)
+	}
+
+	// 5. Expired token -> 401
+	rec = httptest.NewRecorder()
+	expiredClaims := domain.JWTClaims{UserID: userID, TenantID: tenantID, Role: domain.RoleAdminRT}
+	expiredClaims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(-time.Hour))
+	okHandler.ServeHTTP(rec, makeReq(signedToken(t, secret, expiredClaims)))
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("expired token: expected 401, got %d", rec.Code)
+	}
+
+	// 6. Token with no user id -> 401 (missing identity)
+	rec = httptest.NewRecorder()
+	okHandler.ServeHTTP(rec, makeReq(signedToken(t, secret, domain.JWTClaims{TenantID: tenantID, Role: domain.RoleAdminRT})))
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("token without user id: expected 401, got %d", rec.Code)
+	}
+
+	// 7. Token signed with the 'none' algorithm (header forgery) -> 401
+	rec = httptest.NewRecorder()
+	noneHeader := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
+	nonePayload := base64.RawURLEncoding.EncodeToString([]byte(`{"user_id":"` + userID.String() + `","tenant_id":"` + tenantID.String() + `","role":"superadmin","exp":4102444800}`))
+	okHandler.ServeHTTP(rec, makeReq(noneHeader + "." + nonePayload + "."))
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("none-algorithm token: expected 401, got %d", rec.Code)
 	}
 }
 

@@ -98,6 +98,12 @@ func (h *ResidentHandler) handleResidents(w http.ResponseWriter, r *http.Request
 }
 
 func (h *ResidentHandler) list(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
+	// Resident demographic data (incl. NIK) is admin-managed; residents do not
+	// get the tenant population list.
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	query := r.URL.Query().Get("q")
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
@@ -129,6 +135,10 @@ func (h *ResidentHandler) list(w http.ResponseWriter, r *http.Request, tenantID 
 }
 
 func (h *ResidentHandler) create(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	var req domain.Resident
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -146,6 +156,10 @@ func (h *ResidentHandler) create(w http.ResponseWriter, r *http.Request, tenantI
 }
 
 func (h *ResidentHandler) getByID(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	resident, err := h.usecase.GetByID(r.Context(), tenantID, id)
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusNotFound)
@@ -158,6 +172,10 @@ func (h *ResidentHandler) getByID(w http.ResponseWriter, r *http.Request, tenant
 }
 
 func (h *ResidentHandler) update(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	var req domain.Resident
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -176,6 +194,10 @@ func (h *ResidentHandler) update(w http.ResponseWriter, r *http.Request, tenantI
 }
 
 func (h *ResidentHandler) delete(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	if err := h.usecase.Delete(r.Context(), tenantID, id); err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return
@@ -187,6 +209,10 @@ func (h *ResidentHandler) delete(w http.ResponseWriter, r *http.Request, tenantI
 }
 
 func (h *ResidentHandler) addFamilyMember(w http.ResponseWriter, r *http.Request, tenantID, residentID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	var member domain.FamilyMember
 	if err := json.NewDecoder(r.Body).Decode(&member); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -205,6 +231,10 @@ func (h *ResidentHandler) addFamilyMember(w http.ResponseWriter, r *http.Request
 }
 
 func (h *ResidentHandler) removeFamilyMember(w http.ResponseWriter, r *http.Request, tenantID, residentID, memberID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	if err := h.usecase.RemoveFamilyMember(r.Context(), tenantID, residentID, memberID); err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return
@@ -216,6 +246,10 @@ func (h *ResidentHandler) removeFamilyMember(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *ResidentHandler) approve(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	adminUserID := middleware.GetUserIDFromContext(r.Context())
 	if err := h.usecase.Approve(r.Context(), tenantID, id, adminUserID); err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
@@ -228,6 +262,10 @@ func (h *ResidentHandler) approve(w http.ResponseWriter, r *http.Request, tenant
 }
 
 func (h *ResidentHandler) reject(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
 	adminUserID := middleware.GetUserIDFromContext(r.Context())
 	if err := h.usecase.Reject(r.Context(), tenantID, id, adminUserID); err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)

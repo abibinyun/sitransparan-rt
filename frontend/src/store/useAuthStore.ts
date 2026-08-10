@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { AuthState, Tenant, User } from '../types/auth';
+import { queryClient } from '../lib/queryClient';
 
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
@@ -21,6 +22,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   activeTenant: getInitialTenant(),
 
   setAuth: (token: string, user: User, activeTenant: Tenant | null = null) => {
+    // Never keep cached tenant data when the session identity changes.
+    queryClient.clear();
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     const selectedTenant = activeTenant || (user.tenants && user.tenants.length > 0 ? user.tenants[0] : null);
@@ -33,6 +36,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setActiveTenant: (activeTenant: Tenant | null) => {
+    // Clearing the cache prevents data of the previously active tenant from
+    // appearing under the newly selected tenant.
+    queryClient.clear();
     if (activeTenant) {
       localStorage.setItem(TENANT_KEY, JSON.stringify(activeTenant));
     } else {
@@ -42,6 +48,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    queryClient.clear();
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(TENANT_KEY);

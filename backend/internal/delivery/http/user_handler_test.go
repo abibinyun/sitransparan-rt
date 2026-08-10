@@ -59,7 +59,7 @@ func (m *mockUserUsecase) UpdateUser(ctx context.Context, p usecase.UpdateUserPa
 	return u, nil
 }
 
-func (m *mockUserUsecase) DeleteUser(ctx context.Context, tenantID, userID uuid.UUID) error {
+func (m *mockUserUsecase) DeleteUser(ctx context.Context, tenantID, userID uuid.UUID, callerRole domain.RoleName) error {
 	if _, ok := m.users[userID]; !ok {
 		return usecase.ErrUserNotFound
 	}

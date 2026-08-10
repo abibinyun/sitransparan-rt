@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -57,6 +58,10 @@ func (h *AnnouncementDocHandler) handlePublicTenantRoutes(w http.ResponseWriter,
 		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
 		return
 	}
+
+	// Make the resolved tenant available to repositories so that tenant-scoped
+	// queries are schema-qualified against tenant_<slug>.
+	r = r.WithContext(context.WithValue(r.Context(), domain.TenantContextKey, tenant))
 
 	switch resource {
 	case "announcements":
@@ -173,6 +178,10 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(resp)
 		case http.MethodPost:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
 			var req domain.Announcement
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 				http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -214,6 +223,10 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(item)
 		case http.MethodPut:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
 			var req domain.Announcement
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 				http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
@@ -228,6 +241,10 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(req)
 		case http.MethodDelete:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
 			if err := h.usecase.DeleteAnnouncement(r.Context(), tenant.ID, id); err != nil {
 				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 				return
@@ -278,6 +295,10 @@ func (h *AnnouncementDocHandler) handlePrivateDocuments(w http.ResponseWriter, r
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(resp)
 		case http.MethodPost:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
 			var doc domain.Document
 			var filename string
 			var contentType string
@@ -351,6 +372,10 @@ func (h *AnnouncementDocHandler) handlePrivateDocuments(w http.ResponseWriter, r
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(item)
 		case http.MethodDelete:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
 			if err := h.usecase.DeleteDocument(r.Context(), tenant.ID, id); err != nil {
 				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 				return

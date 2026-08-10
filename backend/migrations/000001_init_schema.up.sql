@@ -53,6 +53,6 @@ INSERT INTO roles (id, name) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO users (id, email, password_hash, name, phone) VALUES
-    ('00000000-0000-0000-0000-000000000000', 'superadmin@platform.local', '$2a$10$KS3CsufJu4Mgia4az/Zu..uMWgVuhzRk2J7BVnQWsQPKKgpEGz61m', 'Super Admin', NULL),
+    ('00000000-0000-0000-0000-000000000008', 'superadmin@platform.local', '$2a$10$KS3CsufJu4Mgia4az/Zu..uMWgVuhzRk2J7BVnQWsQPKKgpEGz61m', 'Super Admin', NULL),
     ('00000000-0000-0000-0000-000000000009', 'admin@gmail.com', '$2a$10$KS3CsufJu4Mgia4az/Zu..uMWgVuhzRk2J7BVnQWsQPKKgpEGz61m', 'Super Admin', NULL)
 ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash;

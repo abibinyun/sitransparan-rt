@@ -15,29 +15,31 @@ var (
 )
 
 type CreateUserParam struct {
-	TenantID uuid.UUID
-	Name     string
-	Email    string
-	Password string
-	Phone    *string
-	Role     domain.RoleName
+	TenantID   uuid.UUID
+	Name       string
+	Email      string
+	Password   string
+	Phone      *string
+	Role       domain.RoleName
+	CallerRole domain.RoleName
 }
 
 type UpdateUserParam struct {
-	TenantID uuid.UUID
-	UserID   uuid.UUID
-	Name     string
-	Email    string
-	Phone    *string
-	Role     domain.RoleName
-	Password *string
+	TenantID   uuid.UUID
+	UserID     uuid.UUID
+	Name       string
+	Email      string
+	Phone      *string
+	Role       domain.RoleName
+	Password   *string
+	CallerRole domain.RoleName
 }
 
 type UserUsecase interface {
 	CreateUser(ctx context.Context, p CreateUserParam) (*domain.UserWithRole, error)
 	GetUserByID(ctx context.Context, tenantID, userID uuid.UUID) (*domain.UserWithRole, error)
 	UpdateUser(ctx context.Context, p UpdateUserParam) (*domain.UserWithRole, error)
-	DeleteUser(ctx context.Context, tenantID, userID uuid.UUID) error
+	DeleteUser(ctx context.Context, tenantID, userID uuid.UUID, callerRole domain.RoleName) error
 	ListUsers(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.UserWithRole, int64, error)
 	ListAllUsers(ctx context.Context, limit, offset int) ([]*domain.UserWithRole, int64, error)
 }
@@ -60,7 +62,32 @@ func NewUserUsecase(
 	}
 }
 
+// isSuperAdminCaller reports whether the caller holds the platform superadmin role.
+func isSuperAdminCaller(role domain.RoleName) bool {
+	r := strings.ToLower(strings.ReplaceAll(string(role), "-", "_"))
+	return r == "superadmin" || r == "super_admin"
+}
+
+// onlySuperAdminCanGrant blocks non-superadmin callers from assigning or
+// touching the superadmin role (role escalation prevention).
+func onlySuperAdminCanGrant(callerRole, targetRole domain.RoleName) bool {
+	if isSuperAdminCaller(targetRole) && !isSuperAdminCaller(callerRole) {
+		return false
+	}
+	return true
+}
+
 func (u *userUsecase) CreateUser(ctx context.Context, p CreateUserParam) (*domain.UserWithRole, error) {
+	// Role escalation guard: only the platform superadmin may create superadmin accounts.
+	if !onlySuperAdminCanGrant(p.CallerRole, p.Role) {
+		return nil, ErrForbidden
+	}
+
+	// A tenant-scoped caller must create users inside their own tenant.
+	if !isSuperAdminCaller(p.CallerRole) && p.TenantID == uuid.Nil {
+		return nil, ErrForbidden
+	}
+
 	existing, err := u.userRepo.GetByEmail(ctx, p.Email)
 	if err == nil && existing != nil {
 		return nil, ErrUserAlreadyExists
@@ -112,6 +139,25 @@ func (u *userUsecase) CreateUser(ctx context.Context, p CreateUserParam) (*domai
 }
 
 func (u *userUsecase) GetUserByID(ctx context.Context, tenantID, userID uuid.UUID) (*domain.UserWithRole, error) {
+	// Global lookup (superadmin scope): no tenant mapping required.
+	if tenantID == uuid.Nil {
+		user, err := u.userRepo.GetByID(ctx, userID)
+		if err != nil {
+			return nil, ErrUserNotFound
+		}
+		roleName := domain.RoleSuperAdmin
+		var tid *uuid.UUID
+		if tus, err := u.tenantUserRepo.ListByUser(ctx, userID); err == nil && len(tus) > 0 {
+			roleName = tus[0].RoleName
+			tid = &tus[0].TenantID
+		}
+		return &domain.UserWithRole{
+			User:     *user,
+			RoleName: roleName,
+			TenantID: tid,
+		}, nil
+	}
+
 	tu, err := u.tenantUserRepo.GetByTenantAndUser(ctx, tenantID, userID)
 	if err != nil {
 		return nil, ErrUserNotFound
@@ -133,6 +179,17 @@ func (u *userUsecase) UpdateUser(ctx context.Context, p UpdateUserParam) (*domai
 	tu, err := u.tenantUserRepo.GetByTenantAndUser(ctx, p.TenantID, p.UserID)
 	if err != nil {
 		return nil, ErrUserNotFound
+	}
+
+	// Protect superadmin accounts from tenant-scoped admins.
+	if !isSuperAdminCaller(p.CallerRole) && isSuperAdminRole(tu.RoleName) {
+		return nil, ErrForbidden
+	}
+
+	// Role escalation guard: assigning the superadmin role requires the caller
+	// to be a superadmin.
+	if p.Role != "" && !onlySuperAdminCanGrant(p.CallerRole, p.Role) {
+		return nil, ErrForbidden
 	}
 
 	user, err := u.userRepo.GetByID(ctx, p.UserID)
@@ -174,12 +231,29 @@ func (u *userUsecase) UpdateUser(ctx context.Context, p UpdateUserParam) (*domai
 	}, nil
 }
 
-func (u *userUsecase) DeleteUser(ctx context.Context, tenantID, userID uuid.UUID) error {
-	if tenantID != uuid.Nil {
-		_ = u.tenantUserRepo.Delete(ctx, tenantID, userID)
+func (u *userUsecase) DeleteUser(ctx context.Context, tenantID, userID uuid.UUID, callerRole domain.RoleName) error {
+	// Global delete (superadmin scope): remove the account and all mappings.
+	// tenant_users rows cascade via the users(id) ON DELETE CASCADE FK.
+	if tenantID == uuid.Nil {
+		if !isSuperAdminCaller(callerRole) {
+			return ErrForbidden
+		}
+		return u.userRepo.Delete(ctx, userID)
 	}
-	// Delete base user account
-	return u.userRepo.Delete(ctx, userID)
+
+	tu, err := u.tenantUserRepo.GetByTenantAndUser(ctx, tenantID, userID)
+	if err != nil {
+		return ErrUserNotFound
+	}
+
+	// Protect superadmin accounts from tenant-scoped admins.
+	if !isSuperAdminCaller(callerRole) && isSuperAdminRole(tu.RoleName) {
+		return ErrForbidden
+	}
+
+	// Tenant-scoped delete only removes the tenant membership, never the shared
+	// global user account (which may belong to other tenants).
+	return u.tenantUserRepo.Delete(ctx, tenantID, userID)
 }
 
 func (u *userUsecase) ListUsers(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.UserWithRole, int64, error) {

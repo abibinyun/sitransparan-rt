@@ -20,13 +20,18 @@ var (
 	ErrTenantAlreadyExists= errors.New("tenant slug or domain already exists")
 	ErrUnauthorized       = errors.New("unauthorized action")
 	ErrRoleNotFound       = errors.New("role not found")
+	ErrForbidden          = errors.New("forbidden: insufficient permissions")
 )
 
 type AuthUsecase interface {
-	Login(ctx context.Context, email, password string, tenantID *uuid.UUID) (string, *domain.User, error)
+	Login(ctx context.Context, email, password string, tenantID *uuid.UUID) (string, *domain.User, domain.RoleName, error)
 	Register(ctx context.Context, name, email, password string, phone *string) (*domain.User, error)
 	GetUserTenants(ctx context.Context, userID uuid.UUID) ([]*domain.Tenant, error)
-	
+	// SwitchTenant re-issues a JWT scoped to a tenant the user is explicitly
+	// mapped to. This is the only sanctioned way for a multi-tenant user to
+	// change their active tenant; the server verifies the mapping.
+	SwitchTenant(ctx context.Context, userID, tenantID uuid.UUID) (string, *domain.User, domain.RoleName, error)
+
 	// SuperAdmin Tenant CRUD
 	CreateTenant(ctx context.Context, name, slug string, domainName, logoURL *string) (*domain.Tenant, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (*domain.Tenant, error)
@@ -92,43 +97,80 @@ func (u *authUsecase) Register(ctx context.Context, name, email, password string
 	return user, nil
 }
 
-func (u *authUsecase) Login(ctx context.Context, email, password string, tenantID *uuid.UUID) (string, *domain.User, error) {
+// isSuperAdminRole reports whether a role name is the platform superadmin role.
+func isSuperAdminRole(role domain.RoleName) bool {
+	r := strings.ToLower(strings.ReplaceAll(string(role), "-", "_"))
+	return r == "superadmin" || r == "super_admin"
+}
+
+// activeTenantUsers filters to mappings whose status is 'active'. Deactivated
+// mappings must never grant a session role or tenant scope.
+func activeTenantUsers(tus []*domain.TenantUser) []*domain.TenantUser {
+	if len(tus) == 0 {
+		return tus
+	}
+	active := make([]*domain.TenantUser, 0, len(tus))
+	for _, tu := range tus {
+		if strings.EqualFold(tu.Status, "active") || tu.Status == "" {
+			active = append(active, tu)
+		}
+	}
+	return active
+}
+
+// selectLoginTenantUser picks the tenant-user mapping used for the session:
+// 1. an explicit superadmin mapping,
+// 2. the mapping matching the requested tenant_id (if provided),
+// 3. otherwise the first mapping.
+func selectLoginTenantUser(tus []*domain.TenantUser, tenantID *uuid.UUID) *domain.TenantUser {
+	if len(tus) == 0 {
+		return nil
+	}
+	for _, tu := range tus {
+		if isSuperAdminRole(tu.RoleName) {
+			return tu
+		}
+	}
+	if tenantID != nil {
+		for _, tu := range tus {
+			if tu.TenantID == *tenantID {
+				return tu
+			}
+		}
+	}
+	return tus[0]
+}
+
+func (u *authUsecase) Login(ctx context.Context, email, password string, tenantID *uuid.UUID) (string, *domain.User, domain.RoleName, error) {
 	user, err := u.userRepo.GetByEmail(ctx, email)
 	if err != nil {
-		return "", nil, ErrInvalidCredentials
+		return "", nil, "", ErrInvalidCredentials
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return "", nil, ErrInvalidCredentials
+		return "", nil, "", ErrInvalidCredentials
 	}
 
 	var role domain.RoleName
 	var tid uuid.UUID
 
-	// Check role from tenant_users if user has mapping
+	// Role and tenant scope come exclusively from the database mapping
+	// (tenant_users JOIN roles). No role is ever derived from the email address
+	// or from client input. Only active mappings grant a role/tenant scope.
 	tus, err := u.tenantUserRepo.ListByUser(ctx, user.ID)
 	if err == nil && len(tus) > 0 {
-		var selected *domain.TenantUser
-		for _, tu := range tus {
-			if strings.EqualFold(string(tu.RoleName), "superadmin") || strings.EqualFold(string(tu.RoleName), "super_admin") {
-				selected = tu
-				break
-			}
-			if tenantID != nil && tu.TenantID == *tenantID {
-				selected = tu
-			}
+		selected := selectLoginTenantUser(activeTenantUsers(tus), tenantID)
+		if selected != nil {
+			role = selected.RoleName
+			tid = selected.TenantID
 		}
-		if selected == nil {
-			selected = tus[0]
-		}
-		role = selected.RoleName
-		tid = selected.TenantID
 	}
-	if role == "" && (strings.EqualFold(user.Email, "superadmin@platform.local") || strings.EqualFold(user.Email, "admin@gmail.com")) {
-		role = domain.RoleSuperAdmin
-		if tenantID != nil {
-			tid = *tenantID
-		}
+
+	// Users without any tenant mapping get the lowest-privilege role with no
+	// tenant scope. They can authenticate but cannot access tenant data until an
+	// admin assigns them to a tenant.
+	if role == "" {
+		role = domain.RoleResident
 	}
 
 	claims := domain.JWTClaims{
@@ -145,14 +187,93 @@ func (u *authUsecase) Login(ctx context.Context, email, password string, tenantI
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(u.jwtSecret)
 	if err != nil {
-		return "", nil, err
+		return "", nil, "", err
 	}
 
-	return tokenString, user, nil
+	return tokenString, user, role, nil
+}
+
+func (u *authUsecase) SwitchTenant(ctx context.Context, userID, tenantID uuid.UUID) (string, *domain.User, domain.RoleName, error) {
+	if userID == uuid.Nil || tenantID == uuid.Nil {
+		return "", nil, "", ErrUnauthorized
+	}
+
+	tus, err := u.tenantUserRepo.ListByUser(ctx, userID)
+	if err != nil || len(tus) == 0 {
+		return "", nil, "", ErrUnauthorized
+	}
+	tus = activeTenantUsers(tus)
+	if len(tus) == 0 {
+		return "", nil, "", ErrUnauthorized
+	}
+
+	var selected *domain.TenantUser
+	for _, tu := range tus {
+		if tu.TenantID == tenantID {
+			selected = tu
+			break
+		}
+	}
+	if selected == nil {
+		// The user is not mapped to the requested tenant.
+		return "", nil, "", ErrUnauthorized
+	}
+
+	// Ensure the tenant still exists.
+	if _, err := u.tenantRepo.GetByID(ctx, tenantID); err != nil {
+		return "", nil, "", ErrUnauthorized
+	}
+
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return "", nil, "", ErrUnauthorized
+	}
+
+	claims := domain.JWTClaims{
+		UserID:   user.ID,
+		TenantID: tenantID,
+		Role:     selected.RoleName,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(u.jwtDuration)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Subject:   user.ID.String(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(u.jwtSecret)
+	if err != nil {
+		return "", nil, "", err
+	}
+
+	return tokenString, user, selected.RoleName, nil
 }
 
 func (u *authUsecase) GetUserTenants(ctx context.Context, userID uuid.UUID) ([]*domain.Tenant, error) {
-	return u.tenantUserRepo.ListTenantsByUserID(ctx, userID)
+	tenants, err := u.tenantUserRepo.ListTenantsByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Only tenants with an active mapping are switchable/selectable.
+	if len(tenants) == 0 {
+		return tenants, nil
+	}
+	tus, err := u.tenantUserRepo.ListByUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	active := activeTenantUsers(tus)
+	activeTenantIDs := make(map[uuid.UUID]bool, len(active))
+	for _, tu := range active {
+		activeTenantIDs[tu.TenantID] = true
+	}
+	filtered := tenants[:0]
+	for _, t := range tenants {
+		if activeTenantIDs[t.ID] {
+			filtered = append(filtered, t)
+		}
+	}
+	return filtered, nil
 }
 
 func (u *authUsecase) CreateTenant(ctx context.Context, name, slug string, domainName, logoURL *string) (*domain.Tenant, error) {
