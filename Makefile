@@ -19,7 +19,7 @@ migrate:
 	@echo "Menjalankan migrasi database..."
 	@for f in backend/migrations/*.up.sql; do \
 		echo "Applying $$f..."; \
-		docker exec -i transparansi_postgres psql -U postgres -d transparansi_rt < "$$f" > /dev.null 2>&1 || true; \
+		docker exec -i transparansi_postgres psql -U postgres -d transparansi_rt < "$$f" > /dev/null 2>&1 || true; \
 	done
 	@echo "Migrasi selesai."
 
