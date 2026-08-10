@@ -15,12 +15,14 @@ import (
 type AspirationNeedHandler struct {
 	usecase    domain.AspirationNeedUsecase
 	tenantRepo domain.TenantRepository
+	baseDomain string
 }
 
-func NewAspirationNeedHandler(usecase domain.AspirationNeedUsecase, tenantRepo domain.TenantRepository) *AspirationNeedHandler {
+func NewAspirationNeedHandler(usecase domain.AspirationNeedUsecase, tenantRepo domain.TenantRepository, baseDomain string) *AspirationNeedHandler {
 	return &AspirationNeedHandler{
 		usecase:    usecase,
 		tenantRepo: tenantRepo,
+		baseDomain: baseDomain,
 	}
 }
 
@@ -62,8 +64,17 @@ func (h *AspirationNeedHandler) handlePublicTenantRoutes(w http.ResponseWriter, 
 	slug := parts[0]
 	resource := parts[1]
 
+	// Hostname/tenant consistency: when the request arrives on a tenant subdomain
+	// of the base domain, the path slug must match the hostname tenant, otherwise
+	// the request is rejected (404) and the hostname can never select a different
+	// tenant's public resources.
+	if hostSlug, matched := middleware.HostnameSlug(r.Host, h.baseDomain); matched && hostSlug != slug {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
 	tenant, err := h.tenantRepo.GetBySlug(r.Context(), slug)
-	if err != nil || tenant == nil {
+	if err != nil || tenant == nil || !tenant.IsActive() {
 		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
 		return
 	}

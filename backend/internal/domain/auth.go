@@ -22,8 +22,20 @@ type Tenant struct {
 	Slug      string    `json:"slug"`
 	Domain    *string   `json:"domain,omitempty"`
 	LogoURL   *string   `json:"logo_url,omitempty"`
+	Status    string    `json:"status"` // 'active' (default) or 'inactive'
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// IsActive reports whether the tenant is enabled. Tenants are created 'active';
+// disabled tenants must be denied at every resolution boundary (middleware,
+// public handlers, tenant switching) even though wildcard DNS still routes to
+// the application.
+//
+// A nil tenant is never active: callers that hold a nil pointer must not treat
+// it as an allowed tenant.
+func (t *Tenant) IsActive() bool {
+	return t != nil && (t.Status == "" || t.Status == "active")
 }
 
 type User struct {

@@ -124,7 +124,7 @@ func newAuthUsecase(tuRepo *mockTenantUserRepo) (usecase.AuthUsecase, *mockUserR
 	userRepo := &mockUserRepo{users: make(map[string]*domain.User)}
 	tenantRepo := &mockTenantRepo{tenants: make(map[string]*domain.Tenant)}
 	roleRepo := &mockRoleRepo{}
-	return usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, "secret-key", 0), userRepo, tenantRepo
+	return usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, "secret-key", 0, "openrt.local"), userRepo, tenantRepo
 }
 
 func TestAuthUsecase_RegisterAndLogin(t *testing.T) {

@@ -4,6 +4,7 @@ import type { Tenant } from '../types/auth';
 import { SimpleDialog } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { getTenantBaseDomain } from '../utils/tenant';
 
 export const SuperAdminTenantsPage: React.FC = () => {
   const { data: tenants, isLoading, isError, refetch } = useTenantsQuery();
@@ -17,6 +18,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [domain, setDomain] = useState('');
+  const baseDomain = getTenantBaseDomain();
 
   const handleNameChange = (val: string) => {
     setName(val);
@@ -120,7 +122,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
                     <tr key={t.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{t.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-indigo-600">{t.slug}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{t.domain || `${t.slug}.openrt.local`}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{t.domain || `${t.slug}.${baseDomain}`}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                         <Button
                           variant="outline"
@@ -190,13 +192,13 @@ export const SuperAdminTenantsPage: React.FC = () => {
             <Input
               id="tenant-domain"
               type="text"
-              placeholder={slug ? `${slug}.openrt.local (Default Subdomain)` : 'e.g. rt01.perumahan.com'}
+              placeholder={slug ? `${slug}.${baseDomain} (Default Subdomain)` : 'e.g. rt01.perumahan.com'}
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
               className="mt-1"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Jika dikosongkan, domain otomatis diassign ke: <code className="text-indigo-600 font-mono">{slug ? `${slug}.openrt.local` : '<slug>.openrt.local'}</code>
+              Jika dikosongkan, domain otomatis diassign ke: <code className="text-indigo-600 font-mono">{slug ? `${slug}.${baseDomain}` : `<slug>.${baseDomain}`}</code>
             </p>
           </div>
           <div className="flex justify-end space-x-2 pt-4">

@@ -58,7 +58,7 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 | Metode | Path | Akses | Keterangan |
 |---|---|---|---|
 | GET | `/api/v1/superadmin/tenants` | SUPERADMIN | List tenant. Query: `limit`, `offset`. Response: `{tenants, total}`. |
-| POST | `/api/v1/superadmin/tenants` | SUPERADMIN | Buat tenant. Body: `{name, slug, domain?, logo_url?}`. Schema `tenant_<slug>` dibuat otomatis. Domain default: `<slug>.openrt.local`. |
+| POST | `/api/v1/superadmin/tenants` | SUPERADMIN | Buat tenant. Body: `{name, slug, domain?, logo_url?}`. Schema `tenant_<slug>` dibuat otomatis. Domain default: `<slug>.<TENANT_BASE_DOMAIN>` (mis. `rt-003.openrt.local`). |
 | GET | `/api/v1/superadmin/tenants/{id}` | SUPERADMIN | Detail tenant. |
 | PUT | `/api/v1/superadmin/tenants/{id}` | SUPERADMIN | Update tenant (name, slug, domain, logo_url). |
 | DELETE | `/api/v1/superadmin/tenants/{id}` | SUPERADMIN | Hapus tenant **beserta schema `tenant_<slug>`** (`DROP SCHEMA ... CASCADE`). Response 204. |

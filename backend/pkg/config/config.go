@@ -15,6 +15,12 @@ type Config struct {
 	DBName      string
 	DBSSLMode   string
 	JWTSecret   string
+
+	// TenantBaseDomain is the parent domain under which each tenant gets its own
+	// subdomain (<slug>.<baseDomain>). Used for tenant-aware hostname routing
+	// (dev: localhost/openrt.local, production: openrt.com). Configurable so no
+	// production domain is hardcoded.
+	TenantBaseDomain string
 }
 
 func Load() *Config {
@@ -23,6 +29,7 @@ func Load() *Config {
 		port = "8081"
 	}
 	jwtSecret := getenvDefault("JWT_SECRET", "sitransparan-secret-key-change-in-prod")
+	tenantBaseDomain := getenvDefault("TENANT_BASE_DOMAIN", "openrt.local")
 	dbURL := firstNonEmpty(os.Getenv("DATABASE_URL"), os.Getenv("DB_URL"))
 	dbHost := getenvDefault("DB_HOST", "localhost")
 	dbPort := getenvDefault("DB_PORT", "5432")
@@ -41,15 +48,16 @@ func Load() *Config {
 	dbSSLMode := getenvDefault("DB_SSLMODE", "disable")
 
 	return &Config{
-		Port:        port,
-		DatabaseURL: dbURL,
-		DBHost:      dbHost,
-		DBPort:      dbPort,
-		DBUser:      dbUser,
-		DBPassword:  dbPassword,
-		DBName:      dbName,
-		DBSSLMode:   dbSSLMode,
-		JWTSecret:   jwtSecret,
+		Port:             port,
+		DatabaseURL:      dbURL,
+		DBHost:           dbHost,
+		DBPort:           dbPort,
+		DBUser:           dbUser,
+		DBPassword:       dbPassword,
+		DBName:           dbName,
+		DBSSLMode:        dbSSLMode,
+		JWTSecret:        jwtSecret,
+		TenantBaseDomain: tenantBaseDomain,
 	}
 }
 

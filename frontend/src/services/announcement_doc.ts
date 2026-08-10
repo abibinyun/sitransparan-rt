@@ -9,11 +9,11 @@ import {
   UpdateDocumentPayload,
 } from '../types/announcement_doc';
 
-import { getTenantSlugFromHost } from '../utils/tenant';
+import { getTenantSlugOrFallback } from '../utils/tenant';
 
 // Public Announcements & Documents
 export function usePublicAnnouncements(params?: { limit?: number; offset?: number }) {
-  const tenantSlug = getTenantSlugFromHost();
+  const tenantSlug = getTenantSlugOrFallback();
   return useQuery({
     queryKey: ['public-announcements', tenantSlug, params],
     queryFn: async () => {
@@ -24,7 +24,7 @@ export function usePublicAnnouncements(params?: { limit?: number; offset?: numbe
 }
 
 export function usePublicDocuments(params?: { limit?: number; offset?: number }) {
-  const tenantSlug = getTenantSlugFromHost();
+  const tenantSlug = getTenantSlugOrFallback();
   return useQuery({
     queryKey: ['public-documents', tenantSlug, params],
     queryFn: async () => {

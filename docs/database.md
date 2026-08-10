@@ -1,6 +1,6 @@
 # Database — Sitransparan RT/RW
 
-Dokumen ini berdasarkan migrasi SQL aktual di `backend/migrations/` (000001–000013) dan DDL provisi schema tenant di `backend/internal/repository/postgres_repos.go`.
+Dokumen ini berdasarkan migrasi SQL aktual di `backend/migrations/` (000001–000014) dan DDL provisi schema tenant di `backend/internal/repository/postgres_repos.go`.
 
 Database: PostgreSQL 16, nama default `transparansi_rt`.
 
@@ -19,8 +19,9 @@ Database: PostgreSQL 16, nama default `transparansi_rt`.
 | id | UUID PK | `gen_random_uuid()` |
 | name | VARCHAR(255) | Nama RT |
 | slug | VARCHAR(255) UNIQUE | Slug tenant (basis nama schema) |
-| domain | VARCHAR(255) | Domain; default `<slug>.openrt.local` bila kosong |
+| domain | VARCHAR(255) | Domain; default `<slug>.<TENANT_BASE_DOMAIN>` bila kosong (mis. `rt-003.openrt.local`) |
 | logo_url | TEXT | Logo tenant |
+| status | VARCHAR(50) default `active` | Lifecycle tenant: `active` (default) / `inactive`. Tenant `inactive` ditolak di semua boundary resolusi (middleware hostname & claims, endpoint publik, switch-tenant) |
 | created_at / updated_at | TIMESTAMPTZ | Timestamp |
 
 ### users
@@ -144,5 +145,6 @@ Database: PostgreSQL 16, nama default `transparansi_rt`.
 | 000011_seed_superadmin_platform_user | Mapping tenant_users superadmin untuk `superadmin@platform.local` |
 | 000012_backfill_tenant_schemas | Provisi schema tenant untuk tenant lama + salin data seed (idempotent) |
 | 000013_fix_superadmin_nil_uuid | Perbaiki UUID nil `superadmin@platform.local` → UUID valid (guarded) |
+| 000014_add_tenant_status | Tambah kolom `status` (`active`/`inactive`, default `active`) pada `tenants` untuk lifecycle tenant (disable tenant → deny di semua boundary) |
 
 Catatan seed: migrasi 000001 seed `superadmin@platform.local` dengan UUID valid; migrasi 000013 memperbaiki instalasi lama yang terkena seed UUID nil.

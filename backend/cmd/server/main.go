@@ -43,8 +43,8 @@ func main() {
 	jwtSecret := cfg.JWTSecret
 	jwtDuration := 24 * time.Hour
 
-	authUC := usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, jwtSecret, jwtDuration)
-	authHandler := delivery.NewAuthHandler(authUC)
+	authUC := usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, jwtSecret, jwtDuration, cfg.TenantBaseDomain)
+	authHandler := delivery.NewAuthHandler(authUC, cfg.TenantBaseDomain)
 
 	healthUC := usecase.NewHealthUsecase()
 	healthHandler := delivery.NewHealthHandler(healthUC)
@@ -59,10 +59,10 @@ func main() {
 	eventHandler := delivery.NewEventHandler(eventUC)
 
 	aspirationNeedUC := usecase.NewAspirationNeedUsecase(aspirationNeedRepo)
-	aspirationNeedHandler := delivery.NewAspirationNeedHandler(aspirationNeedUC, tenantRepo)
+	aspirationNeedHandler := delivery.NewAspirationNeedHandler(aspirationNeedUC, tenantRepo, cfg.TenantBaseDomain)
 
 	announcementDocUC := usecase.NewAnnouncementDocUsecase(announcementDocRepo)
-	announcementDocHandler := delivery.NewAnnouncementDocHandler(announcementDocUC, tenantRepo)
+	announcementDocHandler := delivery.NewAnnouncementDocHandler(announcementDocUC, tenantRepo, cfg.TenantBaseDomain)
 
 	dashboardUC := usecase.NewDashboardUsecase(dashboardRepo)
 	dashboardHandler := delivery.NewDashboardHandler(dashboardUC)
@@ -70,7 +70,7 @@ func main() {
 	userUC := usecase.NewUserUsecase(userRepo, tuRepo, roleRepo)
 	userHandler := delivery.NewUserHandler(userUC)
 
-	tenantMw := middleware.TenantMiddleware(tenantRepo)
+	tenantMw := middleware.TenantMiddleware(tenantRepo, cfg.TenantBaseDomain)
 	authMw := middleware.AuthMiddleware(jwtSecret)
 	adminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin, domain.RoleAdminRT)
 	superAdminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin)

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLoginMutation, useRegisterMutation, useSwitchTenantMutation, fetchUserTenantsWithToken } from '../services/auth';
 import { useAuthStore } from '../store/useAuthStore';
+import { getTenantSlugFromHost } from '../utils/tenant';
 import type { Role, Tenant } from '../types/auth';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -51,14 +52,22 @@ export const LoginPage: React.FC = () => {
       const tenants = await fetchUserTenantsWithToken(data.token);
       userWithRole.tenants = tenants;
 
+      // When the user arrives on a tenant subdomain (e.g. rt-003.openrt.local),
+      // prefer the tenant matching that hostname so the session starts scoped to
+      // the RT they navigated to. The backend still enforces the hostname/JWT
+      // match on every protected call, so an unregistered or foreign hostname
+      // can never grant access to another tenant.
+      const hostTenantSlug = getTenantSlugFromHost();
+      const hostTenant = hostTenantSlug ? tenants.find((t) => t.slug === hostTenantSlug) : undefined;
+
       if (tenants.length > 1) {
         setPendingAuth({ token: data.token, user: userWithRole });
         setAvailableTenants(tenants);
-        setSelectedTenantId(tenants[0].id);
+        setSelectedTenantId(hostTenant ? hostTenant.id : tenants[0].id);
         return;
       }
 
-      const initialTenant = tenants[0] || null;
+      const initialTenant = hostTenant || tenants[0] || null;
       setAuth(data.token, userWithRole, initialTenant);
       const isSuperAdmin =
         userWithRole.role === 'SUPER_ADMIN' ||

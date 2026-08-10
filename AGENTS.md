@@ -1382,7 +1382,7 @@ tenant isolated in its own PostgreSQL schema.
 | Storage | MinIO (S3-compatible) — file uploads (proofs, receipts, documents, KTP/KK) |
 | Frontend | React 18, TypeScript, Vite, TailwindCSS, Shadcn-style UI primitives, TanStack Query v5, Zustand, React Router v6 |
 | PWA | `vite-plugin-pwa` (injectManifest) + Workbox service worker + IndexedDB offline cache |
-| Reverse proxy | Traefik v3 (dev, wildcard subdomain) + Nginx (frontend container proxies `/api`) |
+| Reverse proxy | Traefik v3.6+ (dev, wildcard subdomain) + Nginx (frontend container proxies `/api`) |
 | Container | Docker Compose |
 
 ```text
@@ -1392,7 +1392,7 @@ backend/                        Go API server
   internal/delivery/http/       handlers + middleware/ + openapi.yaml (embedded)
   internal/usecase/             business logic
   internal/repository/          PostgreSQL, schema-qualified queries (TenantTable)
-  migrations/                   000001–000013 raw SQL
+  migrations/                   000001–000014 raw SQL
   pkg/                          config, crypto (AES-256-GCM + HMAC), storage/minio
 frontend/
   src/pages/                    React.lazy code-split pages
@@ -1416,8 +1416,19 @@ tests/e2e/                      Playwright regression suite
   an admin must assign the user to a tenant via `/users`.
 - **Tenant switching**: `POST /api/v1/auth/switch-tenant` — server-verified, re-issues JWT.
 - **Tenant context is derived ONLY from verified JWT claims.** Header `X-Tenant-ID`,
-  query params, and subdomains are never trusted. All tenant queries are schema-qualified
-  (`tenant_<slug>.<table>`); there is no `SET search_path` on the request path.
+  query params, and `X-Forwarded-Host` are never trusted. All tenant queries are
+  schema-qualified (`tenant_<slug>.<table>`); there is no `SET search_path` on the request
+  path.
+- **Hostname is discovery, never a bypass.** On a tenant subdomain
+  (`rt-003.<TENANT_BASE_DOMAIN>`) `TenantMiddleware` looks the tenant up in the DB, requires
+  it to EXIST and be `status='active'`, and requires the JWT tenant to equal the hostname
+  tenant (mismatch → 403). Unknown/foreign hosts (`rt-999.<base>`, `attacker.com`,
+  `rt-003.<base>.attacker.com`) → 403/404. Tenants have a lifecycle `status` column
+  (`active`/`inactive`, migration 000014); `inactive` tenants are denied at every boundary
+  (middleware, public endpoints, switch-tenant).
+- **Tenant subdomain config is env-driven**: `TENANT_BASE_DOMAIN` (backend,
+  `backend/pkg/config/config.go`) and `VITE_TENANT_BASE_DOMAIN` (frontend build arg,
+  `frontend/src/utils/tenant.ts`) — no production domain hardcoded.
 - **RBAC enforcement**: write/approve/verify/assign operations are guarded with
   `middleware.RequireAnyRole(superadmin, admin_rt)`; `/api/v1/users` requires
   `adminMw`; `/api/v1/superadmin/tenants` requires `superAdminMw`. Only superadmin may
@@ -1435,8 +1446,11 @@ tests/e2e/                      Playwright regression suite
 - Creating a tenant auto-provisions its schema; deleting a tenant drops it
   (`DROP SCHEMA ... CASCADE`).
 - Public portal endpoints resolve the tenant from the **slug in the path**
-  (`/api/v1/t/{slug}/info|announcements|documents|aspirations|needs`). The frontend
-  derives the slug from the hostname (`getTenantSlugFromHost`, fallback `sitransparan-rt`).
+  (`/api/v1/t/{slug}/info|announcements|documents|aspirations|needs`) and reject
+  `inactive` tenants (404). Hostname consistency is enforced: if the hostname is a tenant
+  subdomain, the path slug must equal the hostname slug (else 404). The frontend derives
+  the slug from the hostname (`getTenantSlugFromHost`, env-driven base domain, fallback
+  `sitransparan-rt`).
 - Details: `docs/architecture.md` §5, `docs/database.md`.
 
 ## 46.5 Feature Areas (discovered capabilities)
@@ -1473,6 +1487,12 @@ tests/e2e/                      Playwright regression suite
   (container only — Redis is NOT used by the backend).
 - Local wildcard subdomains (`*.openrt.local`) require `/etc/hosts` entries
   (e.g. `app.openrt.local`, `api.openrt.local`, `rt-003.openrt.local`).
+- `TENANT_BASE_DOMAIN` (backend) and `VITE_TENANT_BASE_DOMAIN` (frontend build arg,
+  `infrastructure/docker-compose.yml`) must match; dev default `openrt.local`,
+  production `openrt.com`. Traefik labels interpolate `${TENANT_BASE_DOMAIN}` and use
+  **v3 anchored HostRegexp** (v2 `{name:regex}` syntax matches nothing in Traefik v3).
+  Traefik **must be v3.6+** on modern Docker daemons (older images pin Docker client API
+  1.24 and fail with `client version 1.24 is too old`).
 - **Seeded credentials** (verified against bcrypt hashes in migrations):
 
 | Role | Email | Password |

@@ -63,7 +63,7 @@ func signedToken(t *testing.T, secret string, claims domain.JWTClaims) string {
 // authTenantChain wires the production order: AuthMiddleware outermost,
 // TenantMiddleware inner, then the test handler.
 func authTenantChain(secret string, repo domain.TenantRepository, next http.Handler) http.Handler {
-	return middleware.AuthMiddleware(secret)(middleware.TenantMiddleware(repo)(next))
+	return middleware.AuthMiddleware(secret)(middleware.TenantMiddleware(repo, "openrt.local")(next))
 }
 
 func TestTenantMiddleware_ResolvesFromClaimsOnly(t *testing.T) {
@@ -92,6 +92,7 @@ func TestTenantMiddleware_ResolvesFromClaimsOnly(t *testing.T) {
 		Role:     domain.RoleAdminRT,
 	})
 	req := httptest.NewRequest("GET", "/", nil)
+	req.Host = "localhost" // platform host: tenant comes from claims only
 	req.Header.Set("Authorization", "Bearer "+tokenStr)
 	req.Header.Set("X-Tenant-ID", tenantB.ID.String())
 	rec := httptest.NewRecorder()
@@ -120,6 +121,7 @@ func TestTenantMiddleware_NoTenantInClaims(t *testing.T) {
 	// tenant scope.
 	tokenStr := signedToken(t, secret, domain.JWTClaims{UserID: uuid.New(), Role: domain.RoleResident})
 	req := httptest.NewRequest("GET", "/", nil)
+	req.Host = "localhost" // platform host: header hints must not create tenant context
 	req.Header.Set("Authorization", "Bearer "+tokenStr)
 	req.Header.Set("X-Tenant-ID", tenantA.ID.String())
 	rec := httptest.NewRecorder()

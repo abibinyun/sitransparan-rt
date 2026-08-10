@@ -36,7 +36,7 @@ type AuthUsecase interface {
 	CreateTenant(ctx context.Context, name, slug string, domainName, logoURL *string) (*domain.Tenant, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (*domain.Tenant, error)
 	GetTenantBySlug(ctx context.Context, slug string) (*domain.Tenant, error)
-	UpdateTenant(ctx context.Context, id uuid.UUID, name, slug string, domainName, logoURL *string) (*domain.Tenant, error)
+	UpdateTenant(ctx context.Context, id uuid.UUID, name, slug string, domainName, logoURL *string, status string) (*domain.Tenant, error)
 	DeleteTenant(ctx context.Context, id uuid.UUID) error
 	ListTenants(ctx context.Context, limit, offset int) ([]*domain.Tenant, int64, error)
 }
@@ -48,6 +48,9 @@ type authUsecase struct {
 	roleRepo       domain.RoleRepository
 	jwtSecret      []byte
 	jwtDuration    time.Duration
+	// baseDomain is the configurable parent domain used to build the default
+	// tenant domain (<slug>.<baseDomain>). Never hardcode a production domain.
+	baseDomain string
 }
 
 func NewAuthUsecase(
@@ -57,9 +60,13 @@ func NewAuthUsecase(
 	roleRepo domain.RoleRepository,
 	jwtSecret string,
 	jwtDuration time.Duration,
+	baseDomain string,
 ) AuthUsecase {
 	if jwtDuration == 0 {
 		jwtDuration = 24 * time.Hour
+	}
+	if baseDomain == "" {
+		baseDomain = "openrt.local"
 	}
 	return &authUsecase{
 		tenantRepo:     tenantRepo,
@@ -68,6 +75,7 @@ func NewAuthUsecase(
 		roleRepo:       roleRepo,
 		jwtSecret:      []byte(jwtSecret),
 		jwtDuration:    jwtDuration,
+		baseDomain:     baseDomain,
 	}
 }
 
@@ -219,8 +227,10 @@ func (u *authUsecase) SwitchTenant(ctx context.Context, userID, tenantID uuid.UU
 		return "", nil, "", ErrUnauthorized
 	}
 
-	// Ensure the tenant still exists.
-	if _, err := u.tenantRepo.GetByID(ctx, tenantID); err != nil {
+	// Ensure the tenant still exists and is active. Disabled tenants must not be
+	// switchable even though their hostname may still resolve.
+	tenant, err := u.tenantRepo.GetByID(ctx, tenantID)
+	if err != nil || tenant == nil || !tenant.IsActive() {
 		return "", nil, "", ErrUnauthorized
 	}
 
@@ -269,7 +279,7 @@ func (u *authUsecase) GetUserTenants(ctx context.Context, userID uuid.UUID) ([]*
 	}
 	filtered := tenants[:0]
 	for _, t := range tenants {
-		if activeTenantIDs[t.ID] {
+		if activeTenantIDs[t.ID] && t.IsActive() {
 			filtered = append(filtered, t)
 		}
 	}
@@ -283,7 +293,7 @@ func (u *authUsecase) CreateTenant(ctx context.Context, name, slug string, domai
 	}
 
 	if domainName == nil || strings.TrimSpace(*domainName) == "" {
-		defaultDomain := fmt.Sprintf("%s.openrt.local", strings.TrimSpace(slug))
+		defaultDomain := fmt.Sprintf("%s.%s", strings.TrimSpace(slug), u.baseDomain)
 		domainName = &defaultDomain
 	}
 
@@ -293,6 +303,7 @@ func (u *authUsecase) CreateTenant(ctx context.Context, name, slug string, domai
 		Slug:    slug,
 		Domain:  domainName,
 		LogoURL: logoURL,
+		Status:  "active",
 	}
 
 	if err := u.tenantRepo.Create(ctx, tenant); err != nil {
@@ -310,14 +321,14 @@ func (u *authUsecase) GetTenantBySlug(ctx context.Context, slug string) (*domain
 	return u.tenantRepo.GetBySlug(ctx, slug)
 }
 
-func (u *authUsecase) UpdateTenant(ctx context.Context, id uuid.UUID, name, slug string, domainName, logoURL *string) (*domain.Tenant, error) {
+func (u *authUsecase) UpdateTenant(ctx context.Context, id uuid.UUID, name, slug string, domainName, logoURL *string, status string) (*domain.Tenant, error) {
 	tenant, err := u.tenantRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	if domainName == nil || strings.TrimSpace(*domainName) == "" {
-		defaultDomain := fmt.Sprintf("%s.openrt.local", strings.TrimSpace(slug))
+		defaultDomain := fmt.Sprintf("%s.%s", strings.TrimSpace(slug), u.baseDomain)
 		domainName = &defaultDomain
 	}
 
@@ -325,6 +336,9 @@ func (u *authUsecase) UpdateTenant(ctx context.Context, id uuid.UUID, name, slug
 	tenant.Slug = slug
 	tenant.Domain = domainName
 	tenant.LogoURL = logoURL
+	if status != "" {
+		tenant.Status = status
+	}
 
 	if err := u.tenantRepo.Update(ctx, tenant); err != nil {
 		return nil, err

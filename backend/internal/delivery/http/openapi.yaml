@@ -189,7 +189,7 @@ paths:
         '200':
           description: '{ tenants: Tenant[], total }'
     post:
-      summary: Buat tenant - schema tenant_<slug> diprovisikan otomatis; domain default <slug>.openrt.local (SUPERADMIN)
+      summary: Buat tenant - schema tenant_<slug> diprovisikan otomatis; domain default <slug>.<TENANT_BASE_DOMAIN> (SUPERADMIN)
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true

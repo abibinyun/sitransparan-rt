@@ -1,10 +1,13 @@
 services:
   traefik:
-    image: traefik:v3.3
+    # traefik:v3.6+ required: older tags (<= v3.5) bundle a docker client that
+    # pins API 1.24, which fails against modern daemons (Docker 25+, min API
+    # 1.40+) with "client version 1.24 is too old" and never loads routers.
+    image: traefik:3.6
     container_name: transparansi_traefik
     restart: always
-    environment:
-      - DOCKER_API_VERSION=1.44
+    # NOTE: do NOT pin DOCKER_API_VERSION here; traefik negotiates the daemon
+    # API version automatically when the variable is unset.
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
@@ -89,6 +92,9 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_USE_SSL: "false"
       PORT: 8080
+      # Parent domain under which each tenant gets <slug>.<TENANT_BASE_DOMAIN>.
+      # Must match the frontend build arg VITE_TENANT_BASE_DOMAIN.
+      TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-openrt.local}
     ports:
       - "8081:8080"
     depends_on:
@@ -100,7 +106,10 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`api.openrt.local`) || Host(`localhost`) || HostRegexp(`api.{subdomain:[a-z0-9-]+}.openrt.local`)"
+      # Traefik v3 HostRegexp uses plain anchored regexes (the v2 {name:regex}
+      # template syntax matches nothing in v3). The regex is anchored so a
+      # suffix-trick host like rt-003.openrt.local.attacker.com never matches.
+      - 'traefik.http.routers.backend.rule=Host(`api.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`localhost`) || HostRegexp(`^api\.[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`)'
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
     healthcheck:
@@ -113,6 +122,10 @@ services:
     build:
       context: ..
       dockerfile: infrastructure/Dockerfile.frontend
+      args:
+        # Baked into the static bundle at build time; must match backend's
+        # TENANT_BASE_DOMAIN so the frontend derives the same tenant slug.
+        VITE_TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-openrt.local}
     container_name: transparansi_frontend
     restart: always
     ports:
@@ -121,7 +134,7 @@ services:
       - backend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`app.openrt.local`) || Host(`openrt.local`) || HostRegexp(`{subdomain:[a-z0-9-]+}.openrt.local`)"
+      - 'traefik.http.routers.frontend.rule=Host(`app.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`${TENANT_BASE_DOMAIN:-openrt.local}`) || HostRegexp(`^[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`)'
       - "traefik.http.routers.frontend.entrypoints=web"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
 

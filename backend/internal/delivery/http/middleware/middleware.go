@@ -73,24 +73,89 @@ func WithClaims(ctx context.Context, claims *domain.JWTClaims) context.Context {
 	return ctx
 }
 
-// TenantMiddleware derives the tenant context from the authenticated identity
-// (JWT claims) ONLY. Client-supplied tenant hints (X-Tenant-ID header, query
-// parameters, subdomains) are never trusted, because they can be manipulated to
-// escalate a user from tenant A to tenant B. The trusted tenant must always be
-// the tenant the signed-in user is authorized for.
+// tenantActive reports whether the tenant record is usable for routing. Tenants
+// are created 'active'; a missing status (legacy rows) is treated as active.
+// Deleted tenants never reach this point because the DB lookup fails.
+func tenantActive(t *domain.Tenant) bool {
+	return t != nil && (t.Status == "" || t.Status == "active")
+}
+
+// TenantMiddleware establishes the trusted tenant context for a request.
+//
+// Security model (hostname -> tenant resolution is discovery, never a bypass):
+//
+//  1. Hostname tenant (when the request arrives on a tenant subdomain of
+//     baseDomain, e.g. rt-003.openrt.local, or on a tenant's custom domain):
+//     the tenant is looked up in the database, must EXIST and be ACTIVE, and
+//     must match the tenant scoped in the verified JWT. A hostname/JWT mismatch
+//     is DENIED (403). This proves "JWT tenant != Host tenant -> DENY".
+//  2. Platform host (localhost, the base domain, app/api subdomains, loopback):
+//     the tenant comes from the JWT claims only (existing behavior).
+//  3. Unknown host (not base domain, not a known custom domain): DENIED (403).
+//     Wildcard DNS is only routing; an unregistered hostname must never reach
+//     tenant data or synthesize a tenant context.
+//
+// Client-supplied tenant hints (X-Tenant-ID header, query parameters) and
+// forwarding headers (X-Forwarded-Host) are never trusted. Only the real Host
+// header is used for hostname resolution.
+//
+// Identity endpoints under /api/v1/auth/ are exempt from the hostname/JWT match:
+// they only expose the caller's own tenants and re-issue tokens server-side, so a
+// user arriving on a tenant hostname can still discover and switch to the tenant
+// they are actually authorized for.
 //
 // The middleware must be mounted INSIDE AuthMiddleware so verified JWT claims
 // are already present in the request context.
-func TenantMiddleware(tenantRepo domain.TenantRepository) func(http.Handler) http.Handler {
+func TenantMiddleware(tenantRepo domain.TenantRepository, baseDomain string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims := GetJWTClaims(r.Context())
-			// An authenticated identity that carries a tenant scope but whose
-			// tenant no longer exists (deleted) must be denied explicitly instead
-			// of silently proceeding without a tenant context.
+			host := NormalizeHost(r.Host)
+			identityRoute := strings.HasPrefix(r.URL.Path, "/api/v1/auth/")
+
+			if !identityRoute {
+				if slug, matched := HostnameSlug(host, baseDomain); matched {
+					// Tenant subdomain of the base domain: tenant must exist, be
+					// active, and match the authenticated identity's tenant.
+					tenant, err := tenantRepo.GetBySlug(r.Context(), slug)
+					if err != nil || tenant == nil || !tenantActive(tenant) {
+						http.Error(w, `{"error":"forbidden: tenant access denied"}`, http.StatusForbidden)
+						return
+					}
+					if claims == nil || claims.UserID == uuid.Nil || claims.TenantID == uuid.Nil || claims.TenantID != tenant.ID {
+						http.Error(w, `{"error":"forbidden: tenant mismatch"}`, http.StatusForbidden)
+						return
+					}
+					ctx := context.WithValue(r.Context(), TenantContextKey, tenant)
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
+				}
+
+				if !IsPlatformHost(host, baseDomain) {
+					// Foreign host: only a tenant's registered custom domain may
+					// resolve; anything else is denied (attacker hostnames must not
+					// reach tenant data).
+					tenant, err := tenantRepo.GetByDomain(r.Context(), host)
+					if err != nil || tenant == nil || !tenantActive(tenant) {
+						http.Error(w, `{"error":"forbidden: tenant access denied"}`, http.StatusForbidden)
+						return
+					}
+					if claims == nil || claims.UserID == uuid.Nil || claims.TenantID == uuid.Nil || claims.TenantID != tenant.ID {
+						http.Error(w, `{"error":"forbidden: tenant mismatch"}`, http.StatusForbidden)
+						return
+					}
+					ctx := context.WithValue(r.Context(), TenantContextKey, tenant)
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
+				}
+			}
+
+			// Platform host (or identity route): tenant context from JWT claims
+			// only. A claims tenant that no longer exists or is disabled must be
+			// denied explicitly instead of silently proceeding without context.
 			if claims != nil && claims.UserID != uuid.Nil && claims.TenantID != uuid.Nil {
 				tenant, err := tenantRepo.GetByID(r.Context(), claims.TenantID)
-				if err != nil || tenant == nil {
+				if err != nil || tenant == nil || !tenantActive(tenant) {
 					http.Error(w, `{"error":"forbidden: tenant access denied"}`, http.StatusForbidden)
 					return
 				}

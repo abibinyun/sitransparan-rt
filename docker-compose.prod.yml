@@ -52,6 +52,9 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       PORT: 8080
+      # Parent domain under which each tenant gets <slug>.<TENANT_BASE_DOMAIN>
+      # (e.g. openrt.com in production). No production domain is hardcoded.
+      TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-openrt.com}
     ports:
       - "8080:8080"
     depends_on:
@@ -64,6 +67,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        # Baked into the static bundle at build time; must match backend's
+        # TENANT_BASE_DOMAIN so the frontend derives the same tenant slug.
+        VITE_TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-openrt.com}
     container_name: platform-rt-frontend
     restart: always
     ports:

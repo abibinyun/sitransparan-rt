@@ -148,7 +148,7 @@ func TestAnnouncementDocHandler(t *testing.T) {
 	tenantRepo := &mockTenantRepoForAnnDoc{tenant: tenant}
 	uc := &mockAnnDocUsecase{}
 
-	handler := delivery.NewAnnouncementDocHandler(uc, tenantRepo)
+	handler := delivery.NewAnnouncementDocHandler(uc, tenantRepo, "openrt.local")
 	mux := http.NewServeMux()
 
 	tenantMw := func(next http.Handler) http.Handler {

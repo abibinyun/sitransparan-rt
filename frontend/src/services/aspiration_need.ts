@@ -9,10 +9,10 @@ import {
   UpdateCommunityNeedPayload,
 } from '../types/aspiration_need';
 
-import { getTenantSlugFromHost } from '../utils/tenant';
+import { getTenantSlugOrFallback } from '../utils/tenant';
 
 export function usePublicAspirations(params?: { limit?: number; offset?: number }) {
-  const tenantSlug = getTenantSlugFromHost();
+  const tenantSlug = getTenantSlugOrFallback();
   return useQuery({
     queryKey: ['public-aspirations', tenantSlug, params],
     queryFn: async () => {
@@ -23,7 +23,7 @@ export function usePublicAspirations(params?: { limit?: number; offset?: number 
 }
 
 export function usePublicCommunityNeeds(params?: { limit?: number; offset?: number }) {
-  const tenantSlug = getTenantSlugFromHost();
+  const tenantSlug = getTenantSlugOrFallback();
   return useQuery({
     queryKey: ['public-community-needs', tenantSlug, params],
     queryFn: async () => {
@@ -55,7 +55,7 @@ export function useCommunityNeeds(params?: { limit?: number; offset?: number }) 
 
 export function useSubmitAspiration() {
   const queryClient = useQueryClient();
-  const tenantSlug = getTenantSlugFromHost();
+  const tenantSlug = getTenantSlugOrFallback();
   return useMutation({
     mutationFn: async (payload: CreateAspirationPayload) => {
       const res = await api.post<Aspiration>(`/t/${tenantSlug}/aspirations`, payload);

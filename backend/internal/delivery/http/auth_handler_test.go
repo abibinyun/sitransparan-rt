@@ -53,8 +53,8 @@ func (m *mockAuthUsecase) GetTenantBySlug(ctx context.Context, slug string) (*do
 	}
 	return nil, nil
 }
-func (m *mockAuthUsecase) UpdateTenant(ctx context.Context, id uuid.UUID, name, slug string, domainName, logoURL *string) (*domain.Tenant, error) {
-	return &domain.Tenant{ID: id, Name: name, Slug: slug}, nil
+func (m *mockAuthUsecase) UpdateTenant(ctx context.Context, id uuid.UUID, name, slug string, domainName, logoURL *string, status string) (*domain.Tenant, error) {
+	return &domain.Tenant{ID: id, Name: name, Slug: slug, Status: status}, nil
 }
 func (m *mockAuthUsecase) DeleteTenant(ctx context.Context, id uuid.UUID) error {
 	return nil
@@ -66,7 +66,7 @@ func (m *mockAuthUsecase) ListTenants(ctx context.Context, limit, offset int) ([
 func TestAuthHandler_Login(t *testing.T) {
 	user := &domain.User{ID: uuid.New(), Email: "test@example.com", Name: "Test User"}
 	usecase := &mockAuthUsecase{user: user, token: "mock-jwt-token"}
-	handler := deliveryHttp.NewAuthHandler(usecase)
+	handler := deliveryHttp.NewAuthHandler(usecase, "openrt.local")
 
 	body, _ := json.Marshal(map[string]string{
 		"email":    "test@example.com",
@@ -93,7 +93,7 @@ func TestAuthHandler_Login(t *testing.T) {
 
 func TestAuthHandler_SuperAdminTenants(t *testing.T) {
 	usecase := &mockAuthUsecase{}
-	handler := deliveryHttp.NewAuthHandler(usecase)
+	handler := deliveryHttp.NewAuthHandler(usecase, "openrt.local")
 
 	// Create Tenant
 	body, _ := json.Marshal(map[string]string{

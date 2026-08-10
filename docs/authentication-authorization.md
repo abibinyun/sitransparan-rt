@@ -20,6 +20,7 @@ Dokumen ini menggambarkan model autentikasi, JWT, RBAC, isolasi tenant, dan otor
 - **Role & tenant scope berasal dari database** (`tenant_users JOIN roles`), hanya mapping `status='active'`. Tidak pernah diturunkan dari email atau input klien.
 - Token tanpa `user_id` valid → ditolak (401).
 - Manipulasi role/tenant/user_id pada JWT → signature invalid → 401.
+- **Hostname tidak pernah mengganti tenant JWT.** Jika request datang di subdomain tenant (`rt-003.<base>`), tenant JWT harus sama dengan tenant hostname; mismatch → 403. Tenant-switching hanya lewat `POST /api/v1/auth/switch-tenant` (server-verified).
 
 ## 2. Role
 
@@ -89,12 +90,13 @@ Invariant (dibuktikan oleh `backend/internal/delivery/http/security_integration_
 
 Mekanisme:
 
-1. **Tenant hanya dari JWT claims** — `X-Tenant-ID` header, query param, dan subdomain tidak pernah dipercaya (cegah tenant escalation).
+1. **Tenant hanya dari JWT claims** — `X-Tenant-ID` header, query param, dan `X-Forwarded-Host` tidak pernah dipercaya (cegah tenant escalation). Hostname digunakan **hanya untuk discovery** (lihat poin 7): subdomain tenant di-lookup ke DB dan **harus cocok dengan tenant JWT**, jika tidak → 403.
 2. **Schema-qualified queries** — semua query tenant menggunakan `TenantTable(ctx, table)` → `tenant_<slug>.table`. Tidak ada `SET search_path` pada request path (cegah kebocoran antar koneksi connection pool).
 3. **Resource-level authorization** — resource diambil/dimutasi dengan `tenantID` dari konteks; resource milik tenant lain → `404` (tidak membocorkan eksistensi) atau ditolak.
 4. **Role escalation prevention** (`usecase/user_usecase.go`) — hanya superadmin yang dapat membuat/men-set role `superadmin`; admin_rt dipaksa ke tenant-nya sendiri; akun superadmin dilindungi dari admin tenant.
 5. **Tenant dihapus** → mapping claims tidak valid → `TenantMiddleware` deny eksplisit `403`.
 6. **Cache frontend** — `queryClient.clear()` pada login/logout/switch tenant mencegah data tenant lama tampil di tenant baru.
+7. **Hostname tenant → DB lookup → match JWT** (`middleware/hostname.go` + `TenantMiddleware`): subdomain `<slug>.<TENANT_BASE_DOMAIN>` di-resolve via tabel `tenants`; tenant harus **exist + `status='active'`** dan sama dengan tenant JWT. Hostname asing / tenant tidak dikenal / tenant `inactive` / mismatch JWT → **403**; endpoint publik dengan hostname yang menunjuk tenant berbeda → 404. Wildcard DNS (`*.openrt.com`) hanyalah routing — ia **bukan** otorisasi.
 
 ## 5. Endpoint Publik
 
@@ -134,14 +136,16 @@ Sanitasi: submit publik **tidak** menerima `resident_id` (selalu di-null-kan); l
 - Terbitkan pengumuman & kelola dokumen.
 
 ### Super Admin (Pengelola Platform)
-- CRUD tenant (membuat tenant otomatis memprovisikan schema `tenant_<slug>`; menghapus tenant menghapus schema).
+- CRUD tenant (membuat tenant otomatis memprovisikan schema `tenant_<slug>`; menghapus tenant menghapus schema; `status=inactive` menonaktifkan tenant di semua boundary).
 - Manajemen user lintas tenant (scope global); satu-satunya role yang bisa membuat/men-set role superadmin.
+- **Superadmin di subdomain tenant**: JWT superadmin ter-scope ke tenant mapping-nya (mis. `sitransparan-rt`). Mengunjungi `rt-003.<base>` tanpa switch tenant → 403 (hostname ≠ JWT tenant), sesuai model keamanan. Untuk mengelola data tenant tertentu lewat subdomain tenant, superadmin harus switch tenant dulu (`/auth/switch-tenant`) — atau mengakses lewat host platform (`localhost` / `app.<base>`) di mana tenant berasal dari JWT.
 
 ## 8. Batasan yang Diketahui
 
 | Level | Item |
 |---|---|
 | MEDIUM | **Tidak ada token revocation on logout.** JWT yang dicuri tetap valid hingga kedaluwarsa (24 jam). Rekomendasi: JWT short-lived + refresh token/blacklist. |
+| MEDIUM | **TLS hanya di lapisan proxy produksi.** Dev memakai HTTP; produksi harus mengonfigurasi wildcard TLS (lihat deployment.md). |
 | LOW | `AuthHandler.Login` memetakan semua error (termasuk DB error) ke 401 — bukan risiko keamanan, hanya menyulitkan debugging. |
 | LOW | Helper `isSuperAdminRole` terduplikasi di package `usecase` dan `http`. |
 | UNTESTED | MinIO storage tidak punya unit test (tidak ada MinIO di environment test lokal). |

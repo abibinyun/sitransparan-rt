@@ -36,6 +36,13 @@ Variabel backend (dibaca langsung dari environment, lihat `backend/pkg/config/co
 | `DB_SSLMODE` | `disable` | SSL mode |
 | `JWT_SECRET` | `sitransparan-secret-key-change-in-prod` | Secret penandatangan JWT — **ganti di produksi** |
 | `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` / `MINIO_USE_SSL` | — | Dikonfigurasi di docker-compose |
+| `TENANT_BASE_DOMAIN` | `openrt.local` | Domain dasar untuk subdomain tenant (`<slug>.<TENANT_BASE_DOMAIN>`). Dev `openrt.local`, produksi `openrt.com`. Tidak boleh hardcode; backend membaca env ini (`config.go`) |
+
+Variabel frontend (build-time, Vite `VITE_*`):
+
+| Variabel | Default | Keterangan |
+|---|---|---|
+| `VITE_TENANT_BASE_DOMAIN` | `openrt.local` | Dipakai `frontend/src/utils/tenant.ts` untuk menurunkan slug tenant dari hostname. **Harus sama** dengan `TENANT_BASE_DOMAIN` backend. Disuntikkan via build arg Docker (`Dockerfile.frontend`) |
 
 ## 3. Menjalankan dengan Docker (disarankan)
 
@@ -58,6 +65,8 @@ Stack development (`infrastructure/docker-compose.yml`):
 | MinIO | `9000`, `9001` (console) | Object storage |
 | Backend | `8081 → 8080` | Go API |
 | Frontend | `3000 → 80` | React PWA (Nginx) |
+
+> **Traefik v3.6+ wajib** (`image: traefik:3.6`). Versi ≤ v3.5 membundel docker client yang pin API 1.24 sehingga gagal melawan Docker daemon modern (error `client version 1.24 is too old`) dan router wildcard tidak pernah termuat. Label `HostRegexp` memakai sintaks v3 (regex ber-anchor, bukan template `{name:regex}` v2).
 
 Migrasi juga otomatis dijalankan saat volume database pertama kali dibuat (mount `/docker-entrypoint-initdb.d`).
 
@@ -87,7 +96,27 @@ npm run build   # tsc && vite build (typecheck + bundle + PWA)
 npm run preview
 ```
 
-## 6. Akun Default (Seed — diverifikasi dari migrasi)
+## 6. Tenant Subdomain Lokal
+
+Development mendukung tenant subdomain (`rt-003.openrt.local`, `rt-004.openrt.local`, ...). Tambahkan ke `/etc/hosts`:
+
+```text
+127.0.0.1 app.openrt.local
+127.0.0.1 api.openrt.local
+127.0.0.1 openrt.local
+127.0.0.1 rt-003.openrt.local
+127.0.0.1 rt-004.openrt.local
+```
+
+Jika `TENANT_BASE_DOMAIN` diganti (mis. `localhost.test`), sesuaikan entri dan build arg `VITE_TENANT_BASE_DOMAIN`.
+
+**Backend adalah security boundary**: wildcard DNS hanya routing. Hostname apa pun tetap di-lookup ke tabel `tenants`, harus exist + `status='active'`, dan tenant JWT harus cocok dengan hostname — jika tidak → 403 (lihat [architecture.md](./architecture.md) §5.2).
+
+> Catatan mode `npm run dev` (Vite): proxy `/api` di `vite.config.ts` **tidak** mengubah header `Host` (`changeOrigin` default false), jadi backend tetap menerima hostname asli (mis. `rt-003.localhost`) dan penegakan hostname tetap berlaku. Pastikan `VITE_TENANT_BASE_DOMAIN` diset (mis. `VITE_TENANT_BASE_DOMAIN=localhost npm run dev`) agar slug turunan frontend konsisten dengan backend.
+
+Tenant baru tidak butuh perubahan source code: cukup buat tenant lewat SuperAdmin (`/superadmin/tenants` atau API) → schema `tenant_<slug>` diprovisikan otomatis dan tenant langsung routable.
+
+## 7. Akun Default (Seed — diverifikasi dari migrasi)
 
 | Role | Email | Password |
 |---|---|---|
@@ -98,7 +127,7 @@ npm run preview
 
 Password diverifikasi terhadap bcrypt hash pada migrasi `000001` dan `000007`.
 
-## 7. URL & Access Points
+## 8. URL & Access Points
 
 | Tujuan | URL |
 |---|---|
@@ -108,8 +137,9 @@ Password diverifikasi terhadap bcrypt hash pada migrasi `000001` dan `000007`.
 | OpenAPI spec | `http://localhost:8081/swagger/openapi.yaml` |
 | Traefik dashboard | `http://localhost:8080` |
 | MinIO console | `http://localhost:9001` (`minioadmin` / `minioadmin`) |
+| Portal tenant (lewat Traefik :80) | `http://rt-003.openrt.local/` (butuh entri `/etc/hosts`) |
 
-## 8. Test & Build
+## 9. Test & Build
 
 ```bash
 # Backend

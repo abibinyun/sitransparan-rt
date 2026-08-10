@@ -15,10 +15,11 @@ import (
 
 type AuthHandler struct {
 	authUsecase usecase.AuthUsecase
+	baseDomain  string
 }
 
-func NewAuthHandler(authUsecase usecase.AuthUsecase) *AuthHandler {
-	return &AuthHandler{authUsecase: authUsecase}
+func NewAuthHandler(authUsecase usecase.AuthUsecase, baseDomain string) *AuthHandler {
+	return &AuthHandler{authUsecase: authUsecase, baseDomain: baseDomain}
 }
 
 type loginRequest struct {
@@ -56,8 +57,18 @@ func (h *AuthHandler) GetPublicTenantInfo(w http.ResponseWriter, r *http.Request
 	}
 
 	slug := parts[0]
+
+	// Hostname/tenant consistency: when the request arrives on a tenant
+	// subdomain of the base domain, the path slug must match the hostname tenant.
+	// A hostname that resolves to a different tenant is rejected (404) so the
+	// hostname can never select another tenant's public identity.
+	if hostSlug, matched := middleware.HostnameSlug(r.Host, h.baseDomain); matched && hostSlug != slug {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
 	tenant, err := h.authUsecase.GetTenantBySlug(r.Context(), slug)
-	if err != nil || tenant == nil {
+	if err != nil || tenant == nil || !tenant.IsActive() {
 		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
 		return
 	}
@@ -211,6 +222,7 @@ type tenantRequest struct {
 	Slug    string  `json:"slug"`
 	Domain  *string `json:"domain,omitempty"`
 	LogoURL *string `json:"logo_url,omitempty"`
+	Status  *string `json:"status,omitempty"` // 'active' | 'inactive' (optional, update only)
 }
 
 func (h *AuthHandler) SuperAdminTenants(w http.ResponseWriter, r *http.Request) {
@@ -280,7 +292,11 @@ func (h *AuthHandler) SuperAdminTenants(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		tenant, err := h.authUsecase.UpdateTenant(r.Context(), id, req.Name, req.Slug, req.Domain, req.LogoURL)
+		status := ""
+		if req.Status != nil {
+			status = *req.Status
+		}
+		tenant, err := h.authUsecase.UpdateTenant(r.Context(), id, req.Name, req.Slug, req.Domain, req.LogoURL, status)
 		if err != nil {
 			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 			return

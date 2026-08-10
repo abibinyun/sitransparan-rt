@@ -27,13 +27,16 @@ func (r *tenantRepository) Create(ctx context.Context, tenant *domain.Tenant) er
 	if tenant.ID == uuid.Nil {
 		tenant.ID = uuid.New()
 	}
+	if tenant.Status == "" {
+		tenant.Status = "active"
+	}
 
 	query := `
-		INSERT INTO tenants (id, name, slug, domain, logo_url, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+		INSERT INTO tenants (id, name, slug, domain, logo_url, status, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
-	if err := r.db.QueryRowContext(ctx, query, tenant.ID, tenant.Name, tenant.Slug, tenant.Domain, tenant.LogoURL).
+	if err := r.db.QueryRowContext(ctx, query, tenant.ID, tenant.Name, tenant.Slug, tenant.Domain, tenant.LogoURL, tenant.Status).
 		Scan(&tenant.CreatedAt, &tenant.UpdatedAt); err != nil {
 		return err
 	}
@@ -245,9 +248,9 @@ func (r *tenantRepository) SetSearchPath(ctx context.Context, slug string) error
 }
 
 func (r *tenantRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Tenant, error) {
-	query := `SELECT id, name, slug, domain, logo_url, created_at, updated_at FROM tenants WHERE id = $1`
+	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants WHERE id = $1`
 	var t domain.Tenant
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&t.ID, &t.Name, &t.Slug, &t.Domain, &t.LogoURL, &t.CreatedAt, &t.UpdatedAt)
+	err := r.db.QueryRowContext(ctx, query, id).Scan(&t.ID, &t.Name, &t.Slug, &t.Domain, &t.LogoURL, &t.Status, &t.CreatedAt, &t.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -255,9 +258,9 @@ func (r *tenantRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.T
 }
 
 func (r *tenantRepository) GetBySlug(ctx context.Context, slug string) (*domain.Tenant, error) {
-	query := `SELECT id, name, slug, domain, logo_url, created_at, updated_at FROM tenants WHERE slug = $1`
+	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants WHERE slug = $1`
 	var t domain.Tenant
-	err := r.db.QueryRowContext(ctx, query, slug).Scan(&t.ID, &t.Name, &t.Slug, &t.Domain, &t.LogoURL, &t.CreatedAt, &t.UpdatedAt)
+	err := r.db.QueryRowContext(ctx, query, slug).Scan(&t.ID, &t.Name, &t.Slug, &t.Domain, &t.LogoURL, &t.Status, &t.CreatedAt, &t.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -265,9 +268,9 @@ func (r *tenantRepository) GetBySlug(ctx context.Context, slug string) (*domain.
 }
 
 func (r *tenantRepository) GetByDomain(ctx context.Context, domainName string) (*domain.Tenant, error) {
-	query := `SELECT id, name, slug, domain, logo_url, created_at, updated_at FROM tenants WHERE domain = $1`
+	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants WHERE domain = $1`
 	var t domain.Tenant
-	err := r.db.QueryRowContext(ctx, query, domainName).Scan(&t.ID, &t.Name, &t.Slug, &t.Domain, &t.LogoURL, &t.CreatedAt, &t.UpdatedAt)
+	err := r.db.QueryRowContext(ctx, query, domainName).Scan(&t.ID, &t.Name, &t.Slug, &t.Domain, &t.LogoURL, &t.Status, &t.CreatedAt, &t.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -275,13 +278,16 @@ func (r *tenantRepository) GetByDomain(ctx context.Context, domainName string) (
 }
 
 func (r *tenantRepository) Update(ctx context.Context, tenant *domain.Tenant) error {
+	if tenant.Status == "" {
+		tenant.Status = "active"
+	}
 	query := `
 		UPDATE tenants
-		SET name = $1, slug = $2, domain = $3, logo_url = $4, updated_at = NOW()
-		WHERE id = $5
+		SET name = $1, slug = $2, domain = $3, logo_url = $4, status = $5, updated_at = NOW()
+		WHERE id = $6
 		RETURNING updated_at
 	`
-	res := r.db.QueryRowContext(ctx, query, tenant.Name, tenant.Slug, tenant.Domain, tenant.LogoURL, tenant.ID)
+	res := r.db.QueryRowContext(ctx, query, tenant.Name, tenant.Slug, tenant.Domain, tenant.LogoURL, tenant.Status, tenant.ID)
 	return res.Scan(&tenant.UpdatedAt)
 }
 
@@ -322,7 +328,7 @@ func (r *tenantRepository) List(ctx context.Context, limit, offset int) ([]*doma
 		return nil, 0, err
 	}
 
-	query := `SELECT id, name, slug, domain, logo_url, created_at, updated_at FROM tenants ORDER BY created_at DESC LIMIT $1 OFFSET $2`
+	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants ORDER BY created_at DESC LIMIT $1 OFFSET $2`
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -332,7 +338,7 @@ func (r *tenantRepository) List(ctx context.Context, limit, offset int) ([]*doma
 	var tenants []*domain.Tenant
 	for rows.Next() {
 		var t domain.Tenant
-		if err := rows.Scan(&t.ID, &t.Name, &t.Slug, &t.Domain, &t.LogoURL, &t.CreatedAt, &t.UpdatedAt); err != nil {
+		if err := rows.Scan(&t.ID, &t.Name, &t.Slug, &t.Domain, &t.LogoURL, &t.Status, &t.CreatedAt, &t.UpdatedAt); err != nil {
 			return nil, 0, err
 		}
 		tenants = append(tenants, &t)

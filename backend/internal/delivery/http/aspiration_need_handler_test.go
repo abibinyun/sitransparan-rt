@@ -175,9 +175,9 @@ func setupAspirationNeedServer() (*http.ServeMux, *domain.Tenant) {
 		},
 	}
 	uc := &mockAspirationNeedUsecase{}
-	handler := delivery.NewAspirationNeedHandler(uc, tenantRepo)
+	handler := delivery.NewAspirationNeedHandler(uc, tenantRepo, "openrt.local")
 
-	tenantMw := middleware.TenantMiddleware(tenantRepo)
+	tenantMw := middleware.TenantMiddleware(tenantRepo, "openrt.local")
 	dummyAuthMw := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Authenticate as an admin of the fixture tenant so the real
@@ -224,6 +224,40 @@ func TestPublicListCommunityNeeds(t *testing.T) {
 	}
 }
 
+// TestPublicRoutes_HostnameConsistency proves public tenant resources reject a
+// hostname that resolves to a different tenant than the path slug: the hostname
+// can never select another tenant's public data.
+func TestPublicRoutes_HostnameConsistency(t *testing.T) {
+	mux, _ := setupAspirationNeedServer()
+
+	// Hostname tenant (rt99) does not match the path slug (rt01) -> 404.
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/t/rt01/needs", nil)
+	req.Host = "rt99.openrt.local"
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("hostname/path slug mismatch expected 404, got %d", w.Code)
+	}
+
+	// Matching hostname tenant is allowed.
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/t/rt01/needs", nil)
+	req.Host = "rt01.openrt.local"
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("matching hostname tenant expected 200, got %d", w.Code)
+	}
+
+	// Unknown tenant hostname (rt-999) also rejected against path slug rt01.
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/t/rt01/needs", nil)
+	req.Host = "rt-999.openrt.local"
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("unknown tenant hostname expected 404, got %d", w.Code)
+	}
+}
+
 func TestEventSponsors(t *testing.T) {
 	mux, tenant := setupAspirationNeedServer()
 
@@ -231,6 +265,7 @@ func TestEventSponsors(t *testing.T) {
 
 	body := []byte(`{"name":"PT Maju","amount":5000000,"type":"cash"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/events/"+eventID.String()+"/sponsors", bytes.NewBuffer(body))
+	req.Host = "localhost" // platform host: tenant resolved from authenticated claims
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Tenant-ID", tenant.ID.String())
 	w := httptest.NewRecorder()
@@ -243,6 +278,7 @@ func TestEventSponsors(t *testing.T) {
 
 	// List sponsors
 	reqList := httptest.NewRequest(http.MethodGet, "/api/v1/events/"+eventID.String()+"/sponsors", nil)
+	reqList.Host = "localhost"
 	reqList.Header.Set("X-Tenant-ID", tenant.ID.String())
 	wList := httptest.NewRecorder()
 

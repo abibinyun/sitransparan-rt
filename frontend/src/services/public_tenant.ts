@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { getTenantSlugFromHost } from '../utils/tenant';
+import { getTenantSlugOrFallback } from '../utils/tenant';
 
 export interface PublicTenantInfo {
   id: string;
@@ -11,7 +11,7 @@ export interface PublicTenantInfo {
 }
 
 export function usePublicTenantQuery() {
-  const slug = getTenantSlugFromHost();
+  const slug = getTenantSlugOrFallback();
   return useQuery<PublicTenantInfo | null, Error>({
     queryKey: ['public-tenant-info', slug],
     queryFn: async () => {

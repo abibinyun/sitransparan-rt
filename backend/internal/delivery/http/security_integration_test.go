@@ -62,8 +62,8 @@ func buildSecurityMux(db *sql.DB) http.Handler {
 	announcementDocRepo := repository.NewAnnouncementDocRepository(db, nil)
 	dashboardRepo := repository.NewDashboardRepository(db)
 
-	authUC := usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, testJWTSecret, 0)
-	authHandler := delivery.NewAuthHandler(authUC)
+	authUC := usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, testJWTSecret, 0, "openrt.local")
+	authHandler := delivery.NewAuthHandler(authUC, "openrt.local")
 
 	residentUC := usecase.NewResidentUsecase(residentRepo)
 	residentHandler := delivery.NewResidentHandler(residentUC)
@@ -75,10 +75,10 @@ func buildSecurityMux(db *sql.DB) http.Handler {
 	eventHandler := delivery.NewEventHandler(eventUC)
 
 	aspirationNeedUC := usecase.NewAspirationNeedUsecase(aspirationNeedRepo)
-	aspirationNeedHandler := delivery.NewAspirationNeedHandler(aspirationNeedUC, tenantRepo)
+	aspirationNeedHandler := delivery.NewAspirationNeedHandler(aspirationNeedUC, tenantRepo, "openrt.local")
 
 	announcementDocUC := usecase.NewAnnouncementDocUsecase(announcementDocRepo)
-	announcementDocHandler := delivery.NewAnnouncementDocHandler(announcementDocUC, tenantRepo)
+	announcementDocHandler := delivery.NewAnnouncementDocHandler(announcementDocUC, tenantRepo, "openrt.local")
 
 	dashboardUC := usecase.NewDashboardUsecase(dashboardRepo)
 	dashboardHandler := delivery.NewDashboardHandler(dashboardUC)
@@ -86,7 +86,7 @@ func buildSecurityMux(db *sql.DB) http.Handler {
 	userUC := usecase.NewUserUsecase(userRepo, tuRepo, roleRepo)
 	userHandler := delivery.NewUserHandler(userUC)
 
-	tenantMw := middleware.TenantMiddleware(tenantRepo)
+	tenantMw := middleware.TenantMiddleware(tenantRepo, "openrt.local")
 	authMw := middleware.AuthMiddleware(testJWTSecret)
 	adminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin, domain.RoleAdminRT)
 	superAdminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin)
@@ -148,6 +148,7 @@ func doJSON(h http.Handler, method, path string, token string, body interface{},
 		buf = *bytes.NewBuffer(b)
 	}
 	req := httptest.NewRequest(method, path, &buf)
+	req.Host = "localhost" // platform host: tenant comes from authenticated claims only
 	req.Header.Set("Content-Type", "application/json")
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
