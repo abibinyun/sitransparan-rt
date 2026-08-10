@@ -9,21 +9,25 @@ import {
   UpdateCommunityNeedPayload,
 } from '../types/aspiration_need';
 
+import { getTenantSlugFromHost } from '../utils/tenant';
+
 export function usePublicAspirations(params?: { limit?: number; offset?: number }) {
+  const tenantSlug = getTenantSlugFromHost();
   return useQuery({
-    queryKey: ['public-aspirations', params],
+    queryKey: ['public-aspirations', tenantSlug, params],
     queryFn: async () => {
-      const res = await api.get<{ data: Aspiration[]; total: number }>('/t/sitransparan-rt/aspirations', { params });
+      const res = await api.get<{ data: Aspiration[]; total: number }>(`/t/${tenantSlug}/aspirations`, { params });
       return res.data;
     },
   });
 }
 
 export function usePublicCommunityNeeds(params?: { limit?: number; offset?: number }) {
+  const tenantSlug = getTenantSlugFromHost();
   return useQuery({
-    queryKey: ['public-community-needs', params],
+    queryKey: ['public-community-needs', tenantSlug, params],
     queryFn: async () => {
-      const res = await api.get<{ data: CommunityNeed[]; total: number }>('/t/sitransparan-rt/needs', { params });
+      const res = await api.get<{ data: CommunityNeed[]; total: number }>(`/t/${tenantSlug}/needs`, { params });
       return res.data;
     },
   });
@@ -51,9 +55,10 @@ export function useCommunityNeeds(params?: { limit?: number; offset?: number }) 
 
 export function useSubmitAspiration() {
   const queryClient = useQueryClient();
+  const tenantSlug = getTenantSlugFromHost();
   return useMutation({
     mutationFn: async (payload: CreateAspirationPayload) => {
-      const res = await api.post<Aspiration>('/t/sitransparan-rt/aspirations', payload);
+      const res = await api.post<Aspiration>(`/t/${tenantSlug}/aspirations`, payload);
       return res.data;
     },
     onSuccess: () => {

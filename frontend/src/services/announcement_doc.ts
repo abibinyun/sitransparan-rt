@@ -9,22 +9,26 @@ import {
   UpdateDocumentPayload,
 } from '../types/announcement_doc';
 
+import { getTenantSlugFromHost } from '../utils/tenant';
+
 // Public Announcements & Documents
 export function usePublicAnnouncements(params?: { limit?: number; offset?: number }) {
+  const tenantSlug = getTenantSlugFromHost();
   return useQuery({
-    queryKey: ['public-announcements', params],
+    queryKey: ['public-announcements', tenantSlug, params],
     queryFn: async () => {
-      const res = await api.get<{ data: Announcement[]; total: number }>('/t/sitransparan-rt/announcements', { params });
+      const res = await api.get<{ data: Announcement[]; total: number }>(`/t/${tenantSlug}/announcements`, { params });
       return res.data;
     },
   });
 }
 
 export function usePublicDocuments(params?: { limit?: number; offset?: number }) {
+  const tenantSlug = getTenantSlugFromHost();
   return useQuery({
-    queryKey: ['public-documents', params],
+    queryKey: ['public-documents', tenantSlug, params],
     queryFn: async () => {
-      const res = await api.get<{ data: Document[]; total: number }>('/t/sitransparan-rt/documents', { params });
+      const res = await api.get<{ data: Document[]; total: number }>(`/t/${tenantSlug}/documents`, { params });
       return res.data;
     },
   });
