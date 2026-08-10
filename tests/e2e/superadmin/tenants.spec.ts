@@ -12,7 +12,7 @@ test.describe('SuperAdmin Tenant Management & CRUD', () => {
     await expect(page.getByText('Super Admin', { exact: true })).toBeVisible();
 
     // Navigate to SuperAdmin Tenant Management page
-    await page.goto('/superadmin/tenants');
+    await page.getByRole('link', { name: 'SuperAdmin RT' }).click();
     await expect(page.getByText('Manajemen Tenant RT')).toBeVisible();
 
     // Click Pendaftaran RT Baru button to open Shadcn Dialog
