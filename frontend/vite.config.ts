@@ -17,18 +17,7 @@ export default defineConfig({
         short_name: 'PlatformRT',
         description: 'Platform RT PWA Application',
         theme_color: '#ffffff',
-        icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
+        icons: []
       },
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}']

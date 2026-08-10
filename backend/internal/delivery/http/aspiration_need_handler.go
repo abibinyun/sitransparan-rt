@@ -33,20 +33,20 @@ func (h *AspirationNeedHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func
 
 	// Private Aspiration routes: /api/v1/aspirations
 	protectedAspirations := http.HandlerFunc(h.handlePrivateAspirations)
-	mux.Handle("/api/v1/aspirations", tenantMw(authMw(protectedAspirations)))
-	mux.Handle("/api/v1/aspirations/", tenantMw(authMw(protectedAspirations)))
+	mux.Handle("/api/v1/aspirations", authMw(tenantMw(protectedAspirations)))
+	mux.Handle("/api/v1/aspirations/", authMw(tenantMw(protectedAspirations)))
 
 	// Private Community Needs routes: /api/v1/needs
 	protectedNeeds := http.HandlerFunc(h.handlePrivateNeeds)
-	mux.Handle("/api/v1/needs", tenantMw(authMw(protectedNeeds)))
-	mux.Handle("/api/v1/needs/", tenantMw(authMw(protectedNeeds)))
+	mux.Handle("/api/v1/needs", authMw(tenantMw(protectedNeeds)))
+	mux.Handle("/api/v1/needs/", authMw(tenantMw(protectedNeeds)))
 
 	// Event Sponsors routes: /api/v1/events/:id/sponsors
 	// These are more specific than the event handler's /api/v1/events/ subtree.
 	protectedSponsors := http.HandlerFunc(h.handleEventSponsors)
-	mux.Handle("GET /api/v1/events/{id}/sponsors", tenantMw(authMw(protectedSponsors)))
-	mux.Handle("POST /api/v1/events/{id}/sponsors", tenantMw(authMw(protectedSponsors)))
-	mux.Handle("DELETE /api/v1/events/{id}/sponsors/{sponsorId}", tenantMw(authMw(protectedSponsors)))
+	mux.Handle("GET /api/v1/events/{id}/sponsors", authMw(tenantMw(protectedSponsors)))
+	mux.Handle("POST /api/v1/events/{id}/sponsors", authMw(tenantMw(protectedSponsors)))
+	mux.Handle("DELETE /api/v1/events/{id}/sponsors/{sponsorId}", authMw(tenantMw(protectedSponsors)))
 }
 
 func (h *AspirationNeedHandler) handlePublicTenantRoutes(w http.ResponseWriter, r *http.Request) {

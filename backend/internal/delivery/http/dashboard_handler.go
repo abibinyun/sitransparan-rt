@@ -22,8 +22,8 @@ func (h *DashboardHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http
 	summaryHandler := http.HandlerFunc(h.GetSummary)
 	exportReportHandler := http.HandlerFunc(h.ExportFinancialReport)
 
-	mux.Handle("GET /api/v1/dashboard/summary", tenantMw(authMw(summaryHandler)))
-	mux.Handle("GET /api/v1/dashboard/reports/financial/export", tenantMw(authMw(exportReportHandler)))
+	mux.Handle("GET /api/v1/dashboard/summary", authMw(tenantMw(summaryHandler)))
+	mux.Handle("GET /api/v1/dashboard/reports/financial/export", authMw(tenantMw(exportReportHandler)))
 }
 
 func (h *DashboardHandler) getTenantID(r *http.Request) uuid.UUID {

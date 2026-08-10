@@ -16,8 +16,9 @@ export function useFeeCategories() {
   return useQuery({
     queryKey: ['financial', 'categories'],
     queryFn: async () => {
-      const res = await api.get<FeeCategory[]>('/financial/categories');
-      return res.data;
+      const res = await api.get<any>('/financial/categories');
+      const data: FeeCategory[] = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      return data;
     },
   });
 }
@@ -38,8 +39,8 @@ export function useDuesPayments(params?: DuesPaymentFilter) {
   return useQuery({
     queryKey: ['financial', 'dues', params],
     queryFn: async () => {
-      const res = await api.get<DuesPayment[]>('/financial/dues', { params });
-      return res.data;
+      const res = await api.get<any>('/financial/dues', { params });
+      return Array.isArray(res.data) ? res.data : (res.data?.data || []);
     },
   });
 }
@@ -75,8 +76,8 @@ export function useFinancialTransactions(params?: TransactionFilter) {
   return useQuery({
     queryKey: ['financial', 'transactions', params],
     queryFn: async () => {
-      const res = await api.get<FinancialTransaction[]>('/financial/transactions', { params });
-      return res.data;
+      const res = await api.get<any>('/financial/transactions', { params });
+      return Array.isArray(res.data) ? res.data : (res.data?.data || []);
     },
   });
 }

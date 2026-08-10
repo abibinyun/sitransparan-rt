@@ -20,13 +20,15 @@ func NewFinancialHandler(usecase domain.FinancialUsecase) *FinancialHandler {
 }
 
 func (h *FinancialHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler) {
-	categoriesHandler := tenantMw(authMw(http.HandlerFunc(h.handleCategories)))
-	duesHandler := tenantMw(authMw(http.HandlerFunc(h.handleDues)))
-	transactionsHandler := tenantMw(authMw(http.HandlerFunc(h.handleTransactions)))
-	uploadHandler := tenantMw(authMw(http.HandlerFunc(h.handleUpload)))
+	categoriesHandler := authMw(tenantMw(http.HandlerFunc(h.handleCategories)))
+	duesHandler := authMw(tenantMw(http.HandlerFunc(h.handleDues)))
+	transactionsHandler := authMw(tenantMw(http.HandlerFunc(h.handleTransactions)))
+	uploadHandler := authMw(tenantMw(http.HandlerFunc(h.handleUpload)))
 
 	mux.Handle("/api/v1/financial/categories", categoriesHandler)
 	mux.Handle("/api/v1/financial/categories/", categoriesHandler)
+
+	mux.Handle("/api/v1/financial/summary", authMw(tenantMw(http.HandlerFunc(h.handleSummary))))
 
 	mux.Handle("/api/v1/financial/dues", duesHandler)
 	mux.Handle("/api/v1/financial/dues/", duesHandler)
@@ -379,6 +381,30 @@ func (h *FinancialHandler) updateTransaction(w http.ResponseWriter, r *http.Requ
 
 func (h *FinancialHandler) deleteTransaction(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
 	http.Error(w, `{"error":"financial transactions are append-only; deletion is disabled"}`, http.StatusMethodNotAllowed)
+}
+
+// /api/v1/financial/summary
+func (h *FinancialHandler) handleSummary(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	tenant := middleware.GetTenantFromContext(r.Context())
+	if tenant == nil {
+		http.Error(w, `{"error":"tenant context missing"}`, http.StatusBadRequest)
+		return
+	}
+
+	summary, err := h.usecase.GetFinancialSummary(r.Context(), tenant.ID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(summary)
 }
 
 // /api/v1/financial/upload

@@ -43,6 +43,32 @@ type userDTO struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+func (h *AuthHandler) GetPublicTenantInfo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/t/")
+	parts := strings.Split(path, "/")
+	if len(parts) < 1 || parts[0] == "" {
+		http.Error(w, `{"error":"tenant slug missing"}`, http.StatusBadRequest)
+		return
+	}
+
+	slug := parts[0]
+	tenant, err := h.authUsecase.GetTenantBySlug(r.Context(), slug)
+	if err != nil || tenant == nil {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"data": tenant,
+	})
+}
+
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)

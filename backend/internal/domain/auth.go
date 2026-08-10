@@ -78,8 +78,9 @@ type TenantRepository interface {
 
 type UserWithRole struct {
 	User
-	RoleName RoleName  `json:"role_name"`
-	TenantID uuid.UUID `json:"tenant_id,omitempty"`
+	RoleName   RoleName   `json:"role_name"`
+	TenantID   *uuid.UUID `json:"tenant_id,omitempty"`
+	TenantName string     `json:"tenant_name,omitempty"`
 }
 
 type UserRepository interface {
@@ -89,6 +90,7 @@ type UserRepository interface {
 	Update(ctx context.Context, user *User) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	ListByTenant(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*UserWithRole, int64, error)
+	ListAll(ctx context.Context, limit, offset int) ([]*UserWithRole, int64, error)
 }
 
 type TenantUserRepository interface {

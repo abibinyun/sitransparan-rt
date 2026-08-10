@@ -10,6 +10,7 @@ export interface UserWithRole {
   phone?: string;
   role_name: RoleName;
   tenant_id?: string;
+  tenant_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +28,7 @@ export interface CreateUserPayload {
   password: string;
   phone?: string;
   role: RoleName;
+  tenant_id?: string;
 }
 
 export interface UpdateUserPayload {
@@ -35,6 +37,7 @@ export interface UpdateUserPayload {
   phone?: string;
   role: RoleName;
   password?: string;
+  tenant_id?: string;
 }
 
 export function useUsers(limit = 10, offset = 0) {

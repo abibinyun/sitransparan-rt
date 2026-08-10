@@ -22,7 +22,7 @@ export interface ListTenantsResponse {
   total: number;
 }
 
-export const useTenantsQuery = () => {
+export const useTenantsQuery = (options?: { enabled?: boolean }) => {
   return useQuery<Tenant[], Error>({
     queryKey: ['tenants'],
     queryFn: async () => {
@@ -32,6 +32,7 @@ export const useTenantsQuery = () => {
       }
       return res.data.tenants || [];
     },
+    enabled: options?.enabled ?? true,
   });
 };
 

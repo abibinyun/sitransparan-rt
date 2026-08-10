@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
 import { UserWithRole, RoleName } from '../services/user';
+import type { Tenant } from '../types/auth';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -15,9 +16,13 @@ interface UserModalProps {
     password?: string;
     phone?: string;
     role: RoleName;
+    tenant_id?: string;
   }) => Promise<void>;
   user?: UserWithRole | null;
   isLoading?: boolean;
+  isSuperAdmin?: boolean;
+  tenants?: Tenant[];
+  defaultTenantId?: string;
 }
 
 export const UserModal: React.FC<UserModalProps> = ({
@@ -26,12 +31,16 @@ export const UserModal: React.FC<UserModalProps> = ({
   onSubmit,
   user,
   isLoading,
+  isSuperAdmin,
+  tenants = [],
+  defaultTenantId,
 }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<RoleName>('resident');
+  const [tenantId, setTenantId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,16 +49,18 @@ export const UserModal: React.FC<UserModalProps> = ({
       setEmail(user.email);
       setPhone(user.phone || '');
       setRole(user.role_name);
+      setTenantId(user.tenant_id || defaultTenantId || (tenants.length > 0 ? tenants[0].id : ''));
       setPassword('');
     } else {
       setName('');
       setEmail('');
       setPhone('');
       setRole('resident');
+      setTenantId(defaultTenantId || (tenants.length > 0 ? tenants[0].id : ''));
       setPassword('');
     }
     setError(null);
-  }, [user, isOpen]);
+  }, [user, isOpen, defaultTenantId, tenants]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +81,7 @@ export const UserModal: React.FC<UserModalProps> = ({
         phone: phone || undefined,
         role,
         password: password || undefined,
+        tenant_id: isSuperAdmin ? tenantId || undefined : undefined,
       });
       onClose();
     } catch (err: any) {
@@ -123,6 +135,25 @@ export const UserModal: React.FC<UserModalProps> = ({
             placeholder="08123456789"
           />
         </div>
+
+        {isSuperAdmin && (
+          <div className="space-y-1.5">
+            <Label htmlFor="tenant_id">Tenant RT *</Label>
+            <Select
+              id="tenant_id"
+              value={tenantId}
+              onChange={(e) => setTenantId(e.target.value)}
+              required
+            >
+              <option value="">-- Pilih Tenant RT --</option>
+              {tenants.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} ({t.slug})
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <Label htmlFor="role">Peran / Hak Akses *</Label>

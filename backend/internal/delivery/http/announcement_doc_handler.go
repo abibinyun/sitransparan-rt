@@ -32,13 +32,13 @@ func (h *AnnouncementDocHandler) RegisterRoutes(mux *http.ServeMux, tenantMw fun
 
 	// Private Announcement routes: /api/v1/announcements
 	protectedAnnouncements := http.HandlerFunc(h.handlePrivateAnnouncements)
-	mux.Handle("/api/v1/announcements", tenantMw(authMw(protectedAnnouncements)))
-	mux.Handle("/api/v1/announcements/", tenantMw(authMw(protectedAnnouncements)))
+	mux.Handle("/api/v1/announcements", authMw(tenantMw(protectedAnnouncements)))
+	mux.Handle("/api/v1/announcements/", authMw(tenantMw(protectedAnnouncements)))
 
 	// Private Document routes: /api/v1/documents
 	protectedDocuments := http.HandlerFunc(h.handlePrivateDocuments)
-	mux.Handle("/api/v1/documents", tenantMw(authMw(protectedDocuments)))
-	mux.Handle("/api/v1/documents/", tenantMw(authMw(protectedDocuments)))
+	mux.Handle("/api/v1/documents", authMw(tenantMw(protectedDocuments)))
+	mux.Handle("/api/v1/documents/", authMw(tenantMw(protectedDocuments)))
 }
 
 func (h *AnnouncementDocHandler) handlePublicTenantRoutes(w http.ResponseWriter, r *http.Request) {

@@ -31,7 +31,7 @@ export const DuesPaymentModal: React.FC<DuesPaymentModalProps> = ({ isOpen, onCl
 
   const handleCategoryChange = (catId: string) => {
     setFeeCategoryId(catId);
-    const cat = categories.find((c) => c.id === catId);
+    const cat = categories.find((c: any) => c.id === catId);
     if (cat) {
       setAmount(cat.amount);
     }
@@ -111,7 +111,7 @@ export const DuesPaymentModal: React.FC<DuesPaymentModalProps> = ({ isOpen, onCl
             required
           >
             <option value="">-- Pilih Kategori --</option>
-            {categories.map((c) => (
+            {categories.map((c: any) => (
               <option key={c.id} value={c.id}>
                 {c.name} (Rp {c.amount.toLocaleString('id-ID')})
               </option>

@@ -383,10 +383,11 @@ func (r *userRepository) ListByTenant(ctx context.Context, tenantID uuid.UUID, l
 	}
 
 	query := `
-		SELECT u.id, u.email, u.name, u.phone, u.created_at, u.updated_at, r.name as role_name, tu.tenant_id
+		SELECT u.id, u.email, u.name, u.phone, u.created_at, u.updated_at, r.name as role_name, tu.tenant_id, COALESCE(t.name, '') as tenant_name
 		FROM users u
 		JOIN tenant_users tu ON u.id = tu.user_id
 		JOIN roles r ON tu.role_id = r.id
+		LEFT JOIN tenants t ON tu.tenant_id = t.id
 		WHERE tu.tenant_id = $1
 		ORDER BY u.created_at DESC
 		LIMIT $2 OFFSET $3
@@ -400,9 +401,50 @@ func (r *userRepository) ListByTenant(ctx context.Context, tenantID uuid.UUID, l
 	var list []*domain.UserWithRole
 	for rows.Next() {
 		var u domain.UserWithRole
-		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Phone, &u.CreatedAt, &u.UpdatedAt, &u.RoleName, &u.TenantID); err != nil {
+		var tid uuid.UUID
+		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Phone, &u.CreatedAt, &u.UpdatedAt, &u.RoleName, &tid, &u.TenantName); err != nil {
 			return nil, 0, err
 		}
+		u.TenantID = &tid
+		list = append(list, &u)
+	}
+	return list, count, rows.Err()
+}
+
+func (r *userRepository) ListAll(ctx context.Context, limit, offset int) ([]*domain.UserWithRole, int64, error) {
+	countQuery := `
+		SELECT COUNT(*)
+		FROM users u
+		LEFT JOIN tenant_users tu ON u.id = tu.user_id
+	`
+	var count int64
+	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&count); err != nil {
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT u.id, u.email, u.name, u.phone, u.created_at, u.updated_at, COALESCE(r.name, 'superadmin') as role_name, tu.tenant_id, COALESCE(t.name, '') as tenant_name
+		FROM users u
+		LEFT JOIN tenant_users tu ON u.id = tu.user_id
+		LEFT JOIN roles r ON tu.role_id = r.id
+		LEFT JOIN tenants t ON tu.tenant_id = t.id
+		ORDER BY u.created_at DESC
+		LIMIT $1 OFFSET $2
+	`
+	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var list []*domain.UserWithRole
+	for rows.Next() {
+		var u domain.UserWithRole
+		var tid *uuid.UUID
+		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Phone, &u.CreatedAt, &u.UpdatedAt, &u.RoleName, &tid, &u.TenantName); err != nil {
+			return nil, 0, err
+		}
+		u.TenantID = tid
 		list = append(list, &u)
 	}
 	return list, count, rows.Err()

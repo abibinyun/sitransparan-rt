@@ -7,6 +7,8 @@ import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
 import { SimpleDialog } from '../components/ui/dialog';
 import { UserModal } from '../components/UserModal';
+import { useAuthStore } from '../store/useAuthStore';
+import { useTenantsQuery } from '../services/tenant';
 import {
   useUsers,
   useCreateUser,
@@ -17,6 +19,10 @@ import {
 } from '../services/user';
 
 export const UsersPage: React.FC = () => {
+  const { user, activeTenant } = useAuthStore();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'superadmin';
+  const { data: tenants = [] } = useTenantsQuery({ enabled: isSuperAdmin });
+
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,6 +53,7 @@ export const UsersPage: React.FC = () => {
     password?: string;
     phone?: string;
     role: RoleName;
+    tenant_id?: string;
   }) => {
     if (selectedUser) {
       await updateUser.mutateAsync({
@@ -57,6 +64,7 @@ export const UsersPage: React.FC = () => {
           phone: formData.phone,
           role: formData.role,
           password: formData.password,
+          tenant_id: formData.tenant_id,
         },
       });
     } else {
@@ -66,6 +74,7 @@ export const UsersPage: React.FC = () => {
         password: formData.password!,
         phone: formData.phone,
         role: formData.role,
+        tenant_id: formData.tenant_id,
       });
     }
   };
@@ -126,6 +135,7 @@ export const UsersPage: React.FC = () => {
               <TableHead>Pengguna</TableHead>
               <TableHead>Kontak</TableHead>
               <TableHead>Peran</TableHead>
+              {isSuperAdmin && <TableHead>Tenant / RT</TableHead>}
               <TableHead>Tanggal Dibuat</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
@@ -137,19 +147,20 @@ export const UsersPage: React.FC = () => {
                   <TableCell><Skeleton className="h-10 w-48" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                  {isSuperAdmin && <TableCell><Skeleton className="h-6 w-24" /></TableCell>}
                   <TableCell><Skeleton className="h-6 w-28" /></TableCell>
                   <TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
                 </TableRow>
               ))
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-red-500">
+                <TableCell colSpan={isSuperAdmin ? 6 : 5} className="text-center py-8 text-red-500">
                   Gagal memuat data pengguna. Silakan coba lagi.
                 </TableCell>
               </TableRow>
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={isSuperAdmin ? 6 : 5} className="text-center py-8 text-slate-500">
                   Tidak ada pengguna ditemukan.
                 </TableCell>
               </TableRow>
@@ -179,6 +190,17 @@ export const UsersPage: React.FC = () => {
                     )}
                   </TableCell>
                   <TableCell>{getRoleBadge(u.role_name)}</TableCell>
+                  {isSuperAdmin && (
+                    <TableCell>
+                      {u.tenant_name ? (
+                        <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200">
+                          {u.tenant_name}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-slate-400 italic">System Global</span>
+                      )}
+                    </TableCell>
+                  )}
                   <TableCell className="text-sm text-slate-500">
                     {new Date(u.created_at).toLocaleDateString('id-ID', {
                       day: 'numeric',
@@ -245,6 +267,9 @@ export const UsersPage: React.FC = () => {
         onSubmit={handleSubmit}
         user={selectedUser}
         isLoading={createUser.isPending || updateUser.isPending}
+        isSuperAdmin={isSuperAdmin}
+        tenants={tenants}
+        defaultTenantId={activeTenant?.id}
       />
 
       <SimpleDialog

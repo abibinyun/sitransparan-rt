@@ -22,8 +22,8 @@ func NewEventHandler(usecase domain.EventUsecase) *EventHandler {
 
 func (h *EventHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler) {
 	protected := http.HandlerFunc(h.handleEvents)
-	mux.Handle("/api/v1/events", tenantMw(authMw(protected)))
-	mux.Handle("/api/v1/events/", tenantMw(authMw(protected)))
+	mux.Handle("/api/v1/events", authMw(tenantMw(protected)))
+	mux.Handle("/api/v1/events/", authMw(tenantMw(protected)))
 }
 
 func (h *EventHandler) handleEvents(w http.ResponseWriter, r *http.Request) {

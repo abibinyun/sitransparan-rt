@@ -21,9 +21,9 @@ func NewResidentHandler(usecase domain.ResidentUsecase) *ResidentHandler {
 
 func (h *ResidentHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler) {
 	protected := http.HandlerFunc(h.handleResidents)
-	mux.Handle("/api/v1/residents", tenantMw(authMw(protected)))
-	mux.Handle("/api/v1/residents/", tenantMw(authMw(protected)))
-	mux.Handle("/api/v1/residents/upload", tenantMw(authMw(http.HandlerFunc(h.handleUpload))))
+	mux.Handle("/api/v1/residents", authMw(tenantMw(protected)))
+	mux.Handle("/api/v1/residents/", authMw(tenantMw(protected)))
+	mux.Handle("/api/v1/residents/upload", authMw(tenantMw(http.HandlerFunc(h.handleUpload))))
 }
 
 func (h *ResidentHandler) handleResidents(w http.ResponseWriter, r *http.Request) {

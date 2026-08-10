@@ -37,6 +37,9 @@ func (m *mockUserRepo) Delete(ctx context.Context, id uuid.UUID) error       { r
 func (m *mockUserRepo) ListByTenant(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.UserWithRole, int64, error) {
 	return nil, 0, nil
 }
+func (m *mockUserRepo) ListAll(ctx context.Context, limit, offset int) ([]*domain.UserWithRole, int64, error) {
+	return nil, 0, nil
+}
 
 type mockTenantRepo struct {
 	tenants map[string]*domain.Tenant

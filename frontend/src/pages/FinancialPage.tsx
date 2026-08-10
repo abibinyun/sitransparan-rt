@@ -14,8 +14,11 @@ export const FinancialPage: React.FC = () => {
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
 
   const { data: summary, isLoading: isSummaryLoading } = useFinancialSummary();
-  const { data: duesList = [], isLoading: isDuesLoading } = useDuesPayments();
-  const { data: txList = [], isLoading: isTxLoading } = useFinancialTransactions();
+  const { data: rawDues, isLoading: isDuesLoading } = useDuesPayments();
+  const { data: rawTx, isLoading: isTxLoading } = useFinancialTransactions();
+
+  const duesList = Array.isArray(rawDues) ? rawDues : (rawDues as any)?.data || [];
+  const txList = Array.isArray(rawTx) ? rawTx : (rawTx as any)?.data || [];
   const verifyDues = useVerifyDuesPayment();
 
   const handleVerify = async (id: string, status: 'verified' | 'rejected') => {
@@ -130,7 +133,7 @@ export const FinancialPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {duesList.map((item) => (
+                {duesList.map((item: any) => (
                   <tr key={item.id}>
                     <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                       {item.resident_name || item.resident_id}
@@ -222,7 +225,7 @@ export const FinancialPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {txList.map((tx) => (
+                {txList.map((tx: any) => (
                   <tr key={tx.id}>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
                       {tx.transaction_date}
