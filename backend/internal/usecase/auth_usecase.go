@@ -3,6 +3,8 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"backend/internal/domain"
@@ -102,25 +104,29 @@ func (u *authUsecase) Login(ctx context.Context, email, password string, tenantI
 	var role domain.RoleName
 	var tid uuid.UUID
 
-	// Check if SuperAdmin default user
-	if user.Email == "superadmin@platform.local" || user.Email == "admin@gmail.com" {
+	// Check role from tenant_users if user has mapping
+	tus, err := u.tenantUserRepo.ListByUser(ctx, user.ID)
+	if err == nil && len(tus) > 0 {
+		var selected *domain.TenantUser
+		for _, tu := range tus {
+			if strings.EqualFold(string(tu.RoleName), "superadmin") || strings.EqualFold(string(tu.RoleName), "super_admin") {
+				selected = tu
+				break
+			}
+			if tenantID != nil && tu.TenantID == *tenantID {
+				selected = tu
+			}
+		}
+		if selected == nil {
+			selected = tus[0]
+		}
+		role = selected.RoleName
+		tid = selected.TenantID
+	}
+	if role == "" && (strings.EqualFold(user.Email, "superadmin@platform.local") || strings.EqualFold(user.Email, "admin@gmail.com")) {
 		role = domain.RoleSuperAdmin
 		if tenantID != nil {
 			tid = *tenantID
-		}
-	} else if tenantID != nil && *tenantID != uuid.Nil {
-		tu, err := u.tenantUserRepo.GetByTenantAndUser(ctx, *tenantID, user.ID)
-		if err != nil {
-			return "", nil, errors.New("user does not belong to specified tenant")
-		}
-		role = tu.RoleName
-		tid = *tenantID
-	} else {
-		// Pick first tenant if exists
-		tus, err := u.tenantUserRepo.ListByUser(ctx, user.ID)
-		if err == nil && len(tus) > 0 {
-			tid = tus[0].TenantID
-			role = tus[0].RoleName
 		}
 	}
 
@@ -154,6 +160,11 @@ func (u *authUsecase) CreateTenant(ctx context.Context, name, slug string, domai
 		return nil, ErrTenantAlreadyExists
 	}
 
+	if domainName == nil || strings.TrimSpace(*domainName) == "" {
+		defaultDomain := fmt.Sprintf("%s.openrt.local", strings.TrimSpace(slug))
+		domainName = &defaultDomain
+	}
+
 	tenant := &domain.Tenant{
 		ID:      uuid.New(),
 		Name:    name,
@@ -177,6 +188,11 @@ func (u *authUsecase) UpdateTenant(ctx context.Context, id uuid.UUID, name, slug
 	tenant, err := u.tenantRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
+	}
+
+	if domainName == nil || strings.TrimSpace(*domainName) == "" {
+		defaultDomain := fmt.Sprintf("%s.openrt.local", strings.TrimSpace(slug))
+		domainName = &defaultDomain
 	}
 
 	tenant.Name = name

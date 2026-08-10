@@ -20,7 +20,11 @@ test.describe('SuperAdmin Tenant Management & CRUD', () => {
     await expect(page.getByText('Pendaftaran RT Baru', { exact: true })).toBeVisible();
 
     // Fill form
-    const tenantName = `RT 99 Test ${Date.now()}`;
+    const timestamp = Date.now();
+    const tenantName = `RT 99 Test ${timestamp}`;
+    const expectedSlug = `rt-99-test-${timestamp}`;
+    const expectedDomain = `${expectedSlug}.openrt.local`;
+
     await page.getByPlaceholder('e.g. RT 01 RW 05 Melati').fill(tenantName);
     
     // Submit
@@ -28,5 +32,6 @@ test.describe('SuperAdmin Tenant Management & CRUD', () => {
 
     // Verify tenant appears in table list
     await expect(page.getByText(tenantName)).toBeVisible();
+    await expect(page.getByText(expectedDomain)).toBeVisible();
   });
 });

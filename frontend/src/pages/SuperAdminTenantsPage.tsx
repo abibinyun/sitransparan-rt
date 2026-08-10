@@ -18,6 +18,17 @@ export const SuperAdminTenantsPage: React.FC = () => {
   const [slug, setSlug] = useState('');
   const [domain, setDomain] = useState('');
 
+  const handleNameChange = (val: string) => {
+    setName(val);
+    if (!editingTenant) {
+      const generatedSlug = val
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      setSlug(generatedSlug);
+    }
+  };
+
   const openCreateModal = () => {
     setEditingTenant(null);
     setName('');
@@ -99,7 +110,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama RT</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug (Identifier)</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custom Domain</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain (Default / Custom)</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
@@ -109,7 +120,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
                     <tr key={t.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{t.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-indigo-600">{t.slug}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.domain || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{t.domain || `${t.slug}.openrt.local`}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                         <Button
                           variant="outline"
@@ -158,12 +169,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
               required
               placeholder="e.g. RT 01 RW 05 Melati"
               value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                if (!editingTenant) {
-                  setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
-                }
-              }}
+              onChange={(e) => handleNameChange(e.target.value)}
               className="mt-1"
             />
           </div>
@@ -184,11 +190,14 @@ export const SuperAdminTenantsPage: React.FC = () => {
             <Input
               id="tenant-domain"
               type="text"
-              placeholder="e.g. rt01.perumahan.com"
+              placeholder={slug ? `${slug}.openrt.local (Default Subdomain)` : 'e.g. rt01.perumahan.com'}
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
               className="mt-1"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Jika dikosongkan, domain otomatis diassign ke: <code className="text-indigo-600 font-mono">{slug ? `${slug}.openrt.local` : '<slug>.openrt.local'}</code>
+            </p>
           </div>
           <div className="flex justify-end space-x-2 pt-4">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>

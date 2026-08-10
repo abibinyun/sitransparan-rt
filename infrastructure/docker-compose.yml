@@ -1,12 +1,15 @@
 services:
   traefik:
-    image: traefik:v2.10
+    image: traefik:v3.3
     container_name: transparansi_traefik
     restart: always
+    environment:
+      - DOCKER_API_VERSION=1.44
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
       - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
@@ -97,7 +100,7 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`api.openrt.local`)"
+      - "traefik.http.routers.backend.rule=Host(`api.openrt.local`) || Host(`localhost`) || HostRegexp(`api.{subdomain:[a-z0-9-]+}.openrt.local`)"
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
     healthcheck:
@@ -118,7 +121,7 @@ services:
       - backend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`app.openrt.local`)"
+      - "traefik.http.routers.frontend.rule=Host(`app.openrt.local`) || Host(`openrt.local`) || HostRegexp(`{subdomain:[a-z0-9-]+}.openrt.local`)"
       - "traefik.http.routers.frontend.entrypoints=web"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
 

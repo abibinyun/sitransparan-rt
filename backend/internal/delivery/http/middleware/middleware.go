@@ -56,17 +56,24 @@ func TenantMiddleware(tenantRepo domain.TenantRepository) func(http.Handler) htt
 
 			// 2. Try Subdomain / Host
 			if tenant == nil {
-				host := r.Host
+				host := r.Header.Get("X-Forwarded-Host")
+				if host == "" {
+					host = r.Host
+				}
 				if idx := strings.Index(host, ":"); idx != -1 {
 					host = host[:idx]
 				}
-				parts := strings.Split(host, ".")
-				if len(parts) >= 3 {
-					subdomain := parts[0]
-					tenant, _ = tenantRepo.GetBySlug(r.Context(), subdomain)
-				}
-				if tenant == nil {
-					tenant, _ = tenantRepo.GetByDomain(r.Context(), host)
+				if host != "" && host != "localhost" && host != "127.0.0.1" && host != "api.openrt.local" && host != "app.openrt.local" {
+					parts := strings.Split(host, ".")
+					if len(parts) >= 3 {
+						subdomain := parts[0]
+						if subdomain != "api" && subdomain != "app" {
+							tenant, _ = tenantRepo.GetBySlug(r.Context(), subdomain)
+						}
+					}
+					if tenant == nil {
+						tenant, _ = tenantRepo.GetByDomain(r.Context(), host)
+					}
 				}
 			}
 
@@ -149,9 +156,11 @@ func RBACMiddleware(allowedRoles ...domain.RoleName) func(http.Handler) http.Han
 				return
 			}
 
+			userRoleLower := strings.ToLower(string(userRole))
 			allowed := false
-			for _, r := range allowedRoles {
-				if r == userRole {
+			for _, role := range allowedRoles {
+				roleLower := strings.ToLower(string(role))
+				if roleLower == userRoleLower || (roleLower == "superadmin" && (userRoleLower == "super_admin" || userRoleLower == "superadmin")) {
 					allowed = true
 					break
 				}
