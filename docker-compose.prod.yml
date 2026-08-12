@@ -59,6 +59,14 @@ services:
       # Parent domain under which each tenant gets <slug>.<TENANT_BASE_DOMAIN>
       # (e.g. openrt.com in production). No production domain is hardcoded.
       TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-openrt.com}
+      # Per-client-IP rate limiting. REQUIRED in production behind Traefik:
+      # set to the proxy's IP/CIDR (e.g. the docker network subnet) so each
+      # real client is limited independently, not all as one proxy.
+      TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-}
+      RATE_LIMIT_CAPACITY: ${RATE_LIMIT_CAPACITY:-1000}
+      RATE_LIMIT_REFILL: ${RATE_LIMIT_REFILL:-100}
+      AUTH_RATE_LIMIT_CAPACITY: ${AUTH_RATE_LIMIT_CAPACITY:-20}
+      AUTH_RATE_LIMIT_REFILL: ${AUTH_RATE_LIMIT_REFILL:-5}
     ports:
       - "8080:8080"
     depends_on:

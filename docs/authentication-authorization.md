@@ -148,7 +148,7 @@ Sanitasi: submit publik **tidak** menerima `resident_id` (selalu di-null-kan); l
 | MEDIUM | **TLS hanya di lapisan proxy produksi.** Dev memakai HTTP; produksi harus mengonfigurasi wildcard TLS (lihat deployment.md). |
 | LOW | `AuthHandler.Login` memetakan semua error (termasuk DB error) ke 401 — bukan risiko keamanan, hanya menyulitkan debugging. |
 | LOW | Helper `isSuperAdminRole` terduplikasi di package `usecase` dan `http`. |
-| UNTESTED | MinIO storage tidak punya unit test (tidak ada MinIO di environment test lokal). |
+| UNTESTED | MinIO masih **stub** (`type Client struct{}`, tidak pernah dipakai): upload menerima file lalu membuang isinya — hanya URL fiktif yang disimpan dan tidak diserve (404). Bukan risiko confidentiality, tapi fitur upload **belum fungsional** (lihat `docs/api.md` §12). |
 
 ## 9. Pengujian Keamanan
 

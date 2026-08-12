@@ -37,6 +37,11 @@ Variabel backend (dibaca langsung dari environment, lihat `backend/pkg/config/co
 | `JWT_SECRET` | **(wajib — tidak ada default)** | Secret penandatangan JWT. **WAJIB diset** minimal 32 karakter; backend menolak start jika kosong/terlalu pendek atau memakai nilai default lama yang sudah publik. Generate: `openssl rand -base64 48`. Isi di `infrastructure/.env` untuk stack Docker (lihat §3). Jangan pernah memakai secret yang sama di lingkungan berbeda |
 | `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` / `MINIO_USE_SSL` | — | Dikonfigurasi di docker-compose |
 | `TENANT_BASE_DOMAIN` | `openrt.local` | Domain dasar untuk subdomain tenant (`<slug>.<TENANT_BASE_DOMAIN>`). Dev `openrt.local`, produksi `openrt.com`. Tidak boleh hardcode; backend membaca env ini (`config.go`) |
+| `RATE_LIMIT_CAPACITY` | `1000` | Token bucket **per client IP** (kapasitas). Satu client tidak bisa 429 seluruh API |
+| `RATE_LIMIT_REFILL` | `100` | Isi ulang bucket per detik per IP |
+| `AUTH_RATE_LIMIT_CAPACITY` | `20` | Budget per IP untuk `/auth/login` & `/auth/register` (permukaan brute-force) |
+| `AUTH_RATE_LIMIT_REFILL` | `5` | Isi ulang per detik untuk endpoint auth |
+| `TRUSTED_PROXY_IPS` | *(kosong)* | Reverse proxy di depan backend (exact IP **atau CIDR**, pisah koma) yang `X-Forwarded-For`-nya dipercaya untuk per-IP rate limiting. **Wajib di produksi** di belakang Traefik/Nginx — jika kosong semua client terhitung sebagai satu IP proxy |
 
 Variabel frontend (build-time, Vite `VITE_*`):
 

@@ -99,6 +99,9 @@ services:
       # Parent domain under which each tenant gets <slug>.<TENANT_BASE_DOMAIN>.
       # Must match the frontend build arg VITE_TENANT_BASE_DOMAIN.
       TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-openrt.local}
+      # Reverse proxies whose X-Forwarded-For is honored for per-IP rate
+      # limiting (exact IP or CIDR). Empty (default) in dev/E2E.
+      TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-}
     ports:
       - "8081:8080"
     depends_on:

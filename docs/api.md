@@ -57,7 +57,7 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 
 | Metode | Path | Akses | Keterangan |
 |---|---|---|---|
-| GET | `/api/v1/superadmin/tenants` | SUPERADMIN | List tenant. Query: `limit`, `offset`. Response: `{tenants, total}`. |
+| GET | `/api/v1/superadmin/tenants` | SUPERADMIN | List tenant. Query: `limit`, `offset`. Response: `{tenants, total}`. **Default `limit` = 500** (sebelumnya 10 — tenant lama tersembunyi dari dropdown superadmin sehingga user tidak bisa di-assign; sudah diperbaiki). |
 | POST | `/api/v1/superadmin/tenants` | SUPERADMIN | Buat tenant. Body: `{name, slug, domain?, logo_url?}`. Schema `tenant_<slug>` dibuat otomatis. Domain default: `<slug>.<TENANT_BASE_DOMAIN>` (mis. `rt-003.openrt.local`). |
 | GET | `/api/v1/superadmin/tenants/{id}` | SUPERADMIN | Detail tenant. |
 | PUT | `/api/v1/superadmin/tenants/{id}` | SUPERADMIN | Update tenant (name, slug, domain, logo_url). |
@@ -81,7 +81,7 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 
 | Metode | Path | Akses | Keterangan |
 |---|---|---|---|
-| GET | `/api/v1/residents` | ADMIN | List warga. Query: `q`, `limit`, `offset`. Response: `{data, total, limit, offset}`. |
+| GET | `/api/v1/residents` | ADMIN | List warga. Query: `q` (cari nama/NIK), `is_head_of_family=true\|false` (filter kepala keluarga), `limit`, `offset`. Response: `{data, total, limit, offset}` — tiap item menyertakan `family_members` (daftar anggota keluarga). |
 | POST | `/api/v1/residents` | ADMIN | Buat warga. NIK dienkripsi (AES-256-GCM) + disimpan hash HMAC untuk pencarian. |
 | GET | `/api/v1/residents/{id}` | ADMIN | Detail warga. |
 | PUT | `/api/v1/residents/{id}` | ADMIN | Update warga. |
@@ -103,8 +103,8 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 | GET | `/api/v1/financial/categories/{id}` | AUTH | Detail kategori. |
 | PUT | `/api/v1/financial/categories/{id}` | ADMIN | Update kategori. |
 | DELETE | `/api/v1/financial/categories/{id}` | ADMIN | Hapus kategori. |
-| GET | `/api/v1/financial/summary` | AUTH | Ringkasan kas: `{total_income, total_expense, balance, ...}`. |
-| GET | `/api/v1/financial/dues` | AUTH | List pembayaran iuran. Query: `resident_id`, `limit`, `offset`. |
+| GET | `/api/v1/financial/summary` | AUTH | Ringkasan kas: `{current_balance, monthly_income, monthly_expense, spending_breakdown}` (field ini yang dikembalikan backend — dashboard/UI memetakannya). |
+| GET | `/api/v1/financial/dues` | AUTH | List pembayaran iuran. Query: `resident_id`, `limit`, `offset`. Response menyertakan `resident_name` & `fee_category_name` (hasil `LEFT JOIN`, bukan UUID). |
 | POST | `/api/v1/financial/dues` | ADMIN | Catat pembayaran iuran. |
 | POST | `/api/v1/financial/dues/{id}/verify` | ADMIN | Verifikasi iuran. Body: `{status: "verified"\|"rejected"}`. |
 | GET | `/api/v1/financial/transactions` | AUTH | List transaksi kas. Query: `type` (`income`/`expense`), `limit`, `offset`. |
@@ -187,4 +187,9 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 - `404` — resource tidak ditemukan (termasuk resource tenant lain — tidak membocorkan eksistensi).
 - `400` — payload tidak valid.
 - `405` — method tidak diizinkan (contoh: update/delete transaksi keuangan).
+- `429` — rate limit tercapai (**per client IP**, header `Retry-After: 1`). `/health` & `/swagger/` dikecualikan; endpoint auth (`/login`, `/register`) memakai budget lebih ketat (default 20 burst / 5 per detik per IP).
 - Response error: `{"error": "<pesan>"}`.
+
+## 12. Catatan Upload File
+
+> ⚠️ **MinIO belum terintegrasi.** Endpoint upload (`/financial/upload`, `/residents/upload`, `POST /documents`, `POST /events/{id}/receipts`) saat ini **menerima file lalu membuang isinya**: hanya URL metadata fiktif (`/uploads/<name>`, `/storage/<name>`) yang disimpan ke database dan URL tersebut **tidak diserve** (404). Fungsionalitas upload belum siap produksi — integrasi MinIO (dengan kunci object terisolasi per tenant) adalah pekerjaan yang belum dikerjakan.

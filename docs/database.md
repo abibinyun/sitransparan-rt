@@ -1,6 +1,6 @@
 # Database — Sitransparan RT/RW
 
-Dokumen ini berdasarkan migrasi SQL aktual di `backend/migrations/` (000001–000014) dan DDL provisi schema tenant di `backend/internal/repository/postgres_repos.go`.
+Dokumen ini berdasarkan migrasi SQL aktual di `backend/migrations/` (000001–000015) dan DDL provisi schema tenant di `backend/internal/repository/postgres_repos.go`.
 
 Database: PostgreSQL 16, nama default `transparansi_rt`.
 
@@ -87,11 +87,17 @@ Database: PostgreSQL 16, nama default `transparansi_rt`.
 ### family_members
 `id`, `resident_id` (FK → residents CASCADE), `full_name`, `nik`, `relation`, `birth_date`, `gender`, `created_at`, `updated_at`.
 
+> `nik` bertipe **TEXT** (bukan `VARCHAR(16)`) karena NIK disimpan **terenkripsi AES-256-GCM** (~96 char). Migration `000015` meng-ALTER kolom ini di semua schema `tenant_%` (sebelumnya `VARCHAR(16)` → overflow 22001 saat menyimpan NIK terenkripsi).
+
 ### fee_categories
 `id`, `tenant_id`, `name`, `amount NUMERIC(15,2)`, `period` (`monthly`/`one_time`), `description`, `created_at`, `updated_at`.
 
+> Saat schema tenant dibuat (`CreateTenantSchema`), kategori default **`Iuran Warga`** (monthly) disisipkan idempotent (`NOT EXISTS` guard) agar alur iuran langsung bisa dipakai.
+
 ### dues_payments (iuran warga)
 `id`, `tenant_id`, `resident_id` (FK CASCADE), `fee_category_id` (FK RESTRICT), `amount`, `period_month`, `period_year`, `status` (`pending`/`verified`/`rejected`), `proof_url`, `verified_at`, `verified_by` (FK → public.users), `created_at`, `updated_at`.
+
+> Endpoint list menyertakan `resident_name` & `fee_category_name` (LEFT JOIN ke `residents`/`fee_categories`) — tabel UI menampilkan nama, bukan UUID.
 
 ### financial_transactions (buku kas — append-only)
 `id`, `tenant_id`, `type` (`income`/`expense`), `category`, `amount`, `transaction_date DATE default CURRENT_DATE`, `description`, `proof_url`, `created_by` (FK → public.users), `created_at`, `updated_at`.
@@ -146,5 +152,6 @@ Database: PostgreSQL 16, nama default `transparansi_rt`.
 | 000012_backfill_tenant_schemas | Provisi schema tenant untuk tenant lama + salin data seed (idempotent) |
 | 000013_fix_superadmin_nil_uuid | Perbaiki UUID nil `superadmin@platform.local` → UUID valid (guarded) |
 | 000014_add_tenant_status | Tambah kolom `status` (`active`/`inactive`, default `active`) pada `tenants` untuk lifecycle tenant (disable tenant → deny di semua boundary) |
+| 000015_alter_family_members_nik_type | `family_members.nik` `VARCHAR(16)` → `TEXT` di semua schema `tenant_%` (NIK terenkripsi overflow; idempotent, mengikuti pola 000012) |
 
 Catatan seed: migrasi 000001 seed `superadmin@platform.local` dengan UUID valid; migrasi 000013 memperbaiki instalasi lama yang terkena seed UUID nil.

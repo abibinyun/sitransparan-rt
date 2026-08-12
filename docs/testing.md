@@ -20,7 +20,7 @@ Coverage per package:
 | Package | Cakupan |
 |---|---|
 | `internal/delivery/http` | handler tests + **security integration tests** (`TestSecurity_*`): cross-tenant matrix, role escalation, RBAC enforcement, superadmin account protection, public sanitization |
-| `internal/delivery/http/middleware` | auth middleware (valid/expired/tampered/missing token), RBAC, tenant |
+| `internal/delivery/http/middleware` | auth middleware (valid/expired/tampered/missing token), RBAC, tenant, **rate limiter** (isolasi per-IP, exempt `/health`/`/swagger`, XFF trusted-proxy & CIDR, penolakan spoof XFF, header `Retry-After`, refill) |
 | `internal/repository` | tenant isolation test (`tenant_isolation_test.go`), repos |
 | `internal/usecase` | auth, resident, financial, event, aspiration_need, dashboard, user |
 | `pkg/crypto` | AES-256-GCM + HMAC |
@@ -37,7 +37,9 @@ Coverage per package:
 
 ## 2. E2E Playwright
 
-Suite di `tests/e2e/` (peran: auth, public portal, admin dashboard, announcements, aspirations, events, roles admin_rt/resident/superadmin/public, superadmin tenants, users).
+Suite di `tests/e2e/` — **36 test**, mencakup: auth, public portal, admin dashboard, announcements, aspirations, events, roles (admin_rt/resident/superadmin/public), superadmin tenants, users, **plus suite CRUD bisnis penuh yang ditambahkan pada audit E2E**: `residents/` (CRUD + keluarga + filter kepala keluarga + validasi), `finance/` (kategori iuran, catat & verifikasi iuran, transaksi, ringkasan saldo), `aspirations/workflow` (submit publik → proses admin → tampil di portal; CRUD kebutuhan), `isolation/tenant-isolation` (isolasi lintas tenant via hostname nyata `rt-003`/`rt-004`: UI + direct URL + API 403/200), `roles/negative-authz` (warga ditolak di halaman/API admin; admin RT ditolak di superadmin).
+
+`tests/e2e/helpers.ts` menyediakan login, parsing Rupiah, dan generator NIK deterministik. Konfigurasi headless memakai `--host-resolver-rules` sehingga subdomain tenant (`rt-003.openrt.local`) berfungsi tanpa menyentuh `/etc/hosts`.
 
 ```bash
 # Butuh stack berjalan (make up) di http://localhost:3000
@@ -57,5 +59,5 @@ Panduan manual pengujian fitur per role (skenario M-01 s.d. M-10) telah dirangku
 
 | Item | Status |
 |---|---|
-| MinIO storage unit test | BLOCKED — tidak ada MinIO terkonfigurasi di environment test lokal (`backend/pkg/storage/minio` [no test files]) |
+| MinIO storage unit test | BLOCKED — `backend/pkg/storage/minio` masih **stub** (`type Client struct{}`, tidak pernah dipakai). Upload saat ini hanya menyimpan URL metadata; isi file dibuang. Integrasi MinIO + test adalah pekerjaan yang belum dikerjakan |
 | Frontend unit test | Tidak ada framework test frontend (hanya typecheck via `npm run build`) |

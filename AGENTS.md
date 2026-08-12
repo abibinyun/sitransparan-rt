@@ -139,7 +139,7 @@ README.md                          - project summary, quick start, credential ta
 docs/architecture.md               - current architecture & multi-tenancy model
 docs/api.md                        - verified endpoint inventory (methods, roles)
 docs/authentication-authorization.md - auth, JWT, RBAC matrix, tenant isolation
-docs/database.md                   - schema & migrations (000001-000013)
+docs/database.md                   - schema & migrations (000001-000015)
 docs/setup.md                      - environment, commands, credentials
 docs/testing.md                    - test suites & commands
 docs/deployment.md                 - Docker/Traefik deployment
@@ -1392,7 +1392,7 @@ backend/                        Go API server
   internal/delivery/http/       handlers + middleware/ + openapi.yaml (embedded)
   internal/usecase/             business logic
   internal/repository/          PostgreSQL, schema-qualified queries (TenantTable)
-  migrations/                   000001–000014 raw SQL
+  migrations/                   000001–000015 raw SQL
   pkg/                          config, crypto (AES-256-GCM + HMAC), storage/minio
 frontend/
   src/pages/                    React.lazy code-split pages
@@ -1519,10 +1519,7 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
 - Backend security suite: `TestSecurity_*` in
   `backend/internal/delivery/http/security_integration_test.go` (cross-tenant matrix,
   role escalation, RBAC enforcement, superadmin account protection, public sanitization).
-- E2E suite (`tests/e2e/`): `auth/`, `public/`, `admin/`, `announcements/`, `aspirations/`,
-  `events/`, `roles/{admin_rt,resident,superadmin,public}.spec.ts`, `superadmin/`,
-  `users/`. Many existing specs primarily verify page rendering/navigation — deeper CRUD
-  flows are often **uncovered**; treat them as coverage gaps to fill.
+- E2E suite (`tests/e2e/`): **36 tests** — `auth/`, `public/`, `admin/`, `announcements/`, `aspirations/` (termasuk `workflow.spec.ts`), `events/`, `roles/{admin_rt,resident,superadmin,public,negative-authz}.spec.ts`, `superadmin/`, `users/`, **plus suite CRUD bisnis penuh dari audit E2E**: `residents/`, `finance/`, `isolation/tenant-isolation` (isolasi lintas tenant via hostname nyata `rt-003`/`rt-004`, termasuk direct URL & API 403/200), `roles/negative-authz` (warga ditolak di halaman/API admin; admin RT ditolak di superadmin). `helpers.ts` menyediakan login/parse Rupiah/NIK deterministik; konfigurasi headless memakai `--host-resolver-rules` (tanpa `/etc/hosts`).
 - E2E creates its own users/tenants via the UI with timestamped emails (e.g.
   `warga_e2e_<ts>@test.local`) and does not seed into the database directly. Note that
   the existing specs do **not** delete the records they create, so test data accumulates
@@ -1530,18 +1527,25 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
 
 ## 46.9 Known Issues & Limitations (report honestly if encountered)
 
-- **Frontend/backend API mismatches** (documented SOURCE CODE findings — the backend
-  route is authoritative; frontend calls below may fail when exercised. This list is
-  expected to shrink if/when the frontend calls are fixed):
-  - `PATCH /financial/dues/{id}/verify` (frontend) vs backend **POST** `/financial/dues/{id}/verify`
-  - `POST /financial/upload-proof` (frontend) vs backend `/financial/upload`
-  - `PATCH /aspirations/{id}/status` (frontend) vs backend **PUT** `/aspirations/{id}`
-  - `/community-needs` (frontend) vs backend `/needs`
-  - `/residents/{id}/family-members` (frontend) vs backend `/residents/{id}/family`
-  - `GET /auth/me` (frontend `useProfileQuery`) — no such route registered
+- **Frontend/backend API mismatches — FIXED in the E2E-coverage audit** (frontend calls now
+  match the backend routes; verified by 36/36 E2E):
+  - `PATCH /financial/dues/{id}/verify` → frontend now **POST** `/financial/dues/{id}/verify`
+  - `POST /financial/upload-proof` → frontend now `/financial/upload` (with `proof_url`)
+  - `PATCH /aspirations/{id}/status` → frontend now **PUT** `/aspirations/{id}`
+  - `/community-needs` → frontend now `/needs` (GET/POST/PUT)
+  - `/residents/{id}/family-members` → frontend now `/residents/{id}/family`
+  - `GET /auth/me` (frontend `useProfileQuery`) — **still no such route registered**, but the
+    hook is **dead code** (defined, never called by any component); low severity
 - Financial transactions are **append-only**; PUT/DELETE return 405 by design.
-- MinIO storage has **no unit tests** (no MinIO configured in the local test environment).
+- **MinIO is a stub** (`type Client struct{}`, never dereferenced): upload endpoints accept files
+  then discard the content, persisting only a fake `/uploads/<name>` URL that is not served (404).
+  Upload features are **not production-ready** — real MinIO integration is open work.
 - No server-side token revocation (JWT valid until expiry).
+- Rate limiter is **per client IP** (default 1000/100 per IP; auth endpoints stricter 20/5),
+  `/health` & `/swagger/` exempt, `X-Forwarded-For` honored only from `TRUSTED_PROXY_IPS`
+  (exact IP or CIDR). Set `TRUSTED_PROXY_IPS` in production behind Traefik/Nginx.
+- Some handlers return 500 (`{"error":"record not found"}`) instead of 404 for cross-tenant
+  writes to a non-existent resource (resident update/delete/approve) — cosmetic, no data impact.
 
 ## 46.10 Documentation Map (canonical)
 

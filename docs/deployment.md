@@ -51,6 +51,8 @@ docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 > Catatan: `.env.example` level root hanya berisi variabel PostgreSQL/MinIO. Untuk produksi wajib set `JWT_SECRET` yang kuat di environment backend dan mengganti password default.
+>
+> **Wajib di produksi:** set `TRUSTED_PROXY_IPS` ke IP/CIDR proxy di depan backend. Rate limiter berbasis **per client IP**; tanpa nilai ini, semua request yang lewat proxy dihitung sebagai satu IP (budget bersama). Tuning opsional: `RATE_LIMIT_CAPACITY`, `RATE_LIMIT_REFILL`, `AUTH_RATE_LIMIT_CAPACITY`, `AUTH_RATE_LIMIT_REFILL` (default: 1000/100 dan 20/5).
 
 ## 3. Mode Produksi Target (Wildcard `*.openrt.com`)
 
@@ -71,6 +73,7 @@ Persyaratan yang **tidak otomatis** dan harus disiapkan operator:
 3. **Traefik v3.6+** dengan router wildcard ber-anchor (lihat §1) + entrypoint `websecure` dan `tls.certresolver`/certificate file.
 4. **Konfigurasi aplikasi**: `TENANT_BASE_DOMAIN=openrt.com` (backend) dan build arg `VITE_TENANT_BASE_DOMAIN=openrt.com` (frontend) — keduanya harus sama.
 5. **Registrasi tenant** lewat SuperAdmin (no source-code change): buat tenant → schema diprovisikan → status `active` → langsung routable. Nonaktifkan tenant (`status=inactive`) → seluruh hostname-nya ditolak (403/404) walaupun wildcard DNS masih aktif.
+6. **Per-IP rate limiting**: set `TRUSTED_PROXY_IPS` ke IP/CIDR Traefik (mis. subnet network Docker `172.16.0.0/12`) agar tiap client riil dibatasi independen, bukan semua sebagai satu proxy. `/health` & `/swagger/` otomatis dikecualikan; endpoint auth memakai budget lebih ketat (default 20 burst / 5 per detik per IP).
 
 Jika infrastruktur produksi belum tersedia untuk pengujian nyata, tandai bagian ini `UNTESTED/BLOCKED` — jangan diklaim terverifikasi.
 
@@ -87,6 +90,6 @@ Jika infrastruktur produksi belum tersedia untuk pengujian nyata, tandai bagian 
 
 Kompose menyuntikkan variabel berikut ke service backend:
 
-`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_USE_SSL`, `PORT` (internal `8080`), `REDIS_HOST`/`REDIS_PORT` (dev), `TENANT_BASE_DOMAIN` (dev default `openrt.local`).
+`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_USE_SSL`, `PORT` (internal `8080`), `REDIS_HOST`/`REDIS_PORT` (dev), `TENANT_BASE_DOMAIN` (dev default `openrt.local`), `TRUSTED_PROXY_IPS` (default kosong), dan di `docker-compose.prod.yml` juga `RATE_LIMIT_CAPACITY`, `RATE_LIMIT_REFILL`, `AUTH_RATE_LIMIT_CAPACITY`, `AUTH_RATE_LIMIT_REFILL` (dengan default).
 
-Backend membaca `PORT`, `DB_*`, `DATABASE_URL`/`DB_URL`, `DB_SSLMODE`, `JWT_SECRET` (lihat `backend/pkg/config/config.go`).
+Backend membaca `PORT`, `DB_*`, `DATABASE_URL`/`DB_URL`, `DB_SSLMODE`, `JWT_SECRET`, `RATE_LIMIT_*`, `AUTH_RATE_LIMIT_*`, `TRUSTED_PROXY_IPS` (lihat `backend/pkg/config/config.go`).
