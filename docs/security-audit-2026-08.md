@@ -151,9 +151,13 @@ CRITICAL:  none.
 HIGH:      none.
 MEDIUM:    none.
 LOW:
-  - Rate limiter is a single global token bucket (100 tokens, 10/s) — not per-tenant/IP/user.
-    A single client can exhaust the whole app's budget (availability), and brute-force login /
-    tenant-slug enumeration is only throttled globally. Reported per task rules (no fix invented).
+  - ~~Rate limiter is a single global token bucket (100 tokens, 10/s) — not per-tenant/IP/user.~~
+    **RESOLVED (2026-08):** `IPRateLimiter` — per-client-IP token buckets (default 1000 tokens,
+    100 req/s per IP, configurable via `RATE_LIMIT_CAPACITY`/`RATE_LIMIT_REFILL`); one client
+    can no longer 429 the whole API. `/health` & `/swagger/` are exempt so probes/static spec
+    always work. `X-Forwarded-For` is honored only from `TRUSTED_PROXY_IPS` (spoof-proof).
+    Memory bounded (idle sweep + oldest eviction). Brute-force login is now throttled per source
+    IP instead of globally.
   - Cross-tenant write attempts to a non-existent resource return 500 with body
     {"error":"record not found"} instead of 404 in some handlers (resident update/delete/approve).
     No data impact — cosmetic status-code inconsistency.
@@ -166,6 +170,16 @@ UNTESTED:
     before returning URLs, but object keys were not brute-forced).
   - PWA behavior end-to-end in browser (build-verified only; no Playwright coverage of SW cache purge).
 BLOCKED: none.
+
+## Functional Gap (updated after hardening)
+
+- **Upload file belum benar-benar menyimpan file (MinIO masih stub).** `backend/pkg/storage/minio`
+  adalah `type Client struct{}` yang tidak pernah di-dereference; repository upload
+  (`UploadFile`/`UploadProof`/`UploadReceiptFile`) hanya membuat URL fiktif (`/uploads/<name>`,
+  `/storage/<name>`) dan **membuang isi file** — URL tersebut tidak diserve (404).
+  Tidak ada dampak confidentiality (tidak ada data sensitif bocor), tapi fitur upload dokumen /
+  bukti iuran / kuitansi donasi **belum fungsional** dan tidak boleh dianggap siap produksi.
+  Integrasi MinIO (object key ber-prefix tenant untuk isolasi) adalah pekerjaan terbuka.
 ```
 
 ## Invariants (proof)

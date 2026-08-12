@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -23,6 +24,23 @@ type Config struct {
 	// (dev: localhost/openrt.local, production: openrt.com). Configurable so no
 	// production domain is hardcoded.
 	TenantBaseDomain string
+
+	// RateLimitCapacity / RateLimitRefill configure the per-client-IP token
+	// bucket (default 1000 tokens, 100 tokens/s per IP). Each source IP gets its
+	// own bucket, so one abusive client cannot exhaust the budget for everyone.
+	RateLimitCapacity int
+	RateLimitRefill   float64
+
+	// AuthRateLimitCapacity / AuthRateLimitRefill configure a stricter
+	// per-client-IP budget for the public auth endpoints (/login, /register),
+	// the brute-force surface. Default 20 tokens, 5 tokens/s per IP.
+	AuthRateLimitCapacity int
+	AuthRateLimitRefill   float64
+
+	// TrustedProxyIPs lists reverse proxies (exact IP or CIDR) whose forwarded
+	// X-Forwarded-For header is honored for per-IP rate limiting. Leave empty
+	// when the backend is only reachable through untrusted peers.
+	TrustedProxyIPs []string
 }
 
 // minJWTSecretLen is the minimum accepted length for JWT_SECRET. Short or
@@ -86,18 +104,28 @@ func Load() *Config {
 		dbName = "transparansi_rt"
 	}
 	dbSSLMode := getenvDefault("DB_SSLMODE", "disable")
+	rateLimitCapacity := getenvInt("RATE_LIMIT_CAPACITY", 1000)
+	rateLimitRefill := getenvFloat("RATE_LIMIT_REFILL", 100)
+	authRateLimitCapacity := getenvInt("AUTH_RATE_LIMIT_CAPACITY", 20)
+	authRateLimitRefill := getenvFloat("AUTH_RATE_LIMIT_REFILL", 5)
+	trustedProxyIPs := splitCSV(os.Getenv("TRUSTED_PROXY_IPS"))
 
 	return &Config{
-		Port:             port,
-		DatabaseURL:      dbURL,
-		DBHost:           dbHost,
-		DBPort:           dbPort,
-		DBUser:           dbUser,
-		DBPassword:       dbPassword,
-		DBName:           dbName,
-		DBSSLMode:        dbSSLMode,
-		JWTSecret:        jwtSecret,
-		TenantBaseDomain: tenantBaseDomain,
+		Port:                  port,
+		DatabaseURL:           dbURL,
+		DBHost:                dbHost,
+		DBPort:                dbPort,
+		DBUser:                dbUser,
+		DBPassword:            dbPassword,
+		DBName:                dbName,
+		DBSSLMode:             dbSSLMode,
+		JWTSecret:             jwtSecret,
+		TenantBaseDomain:      tenantBaseDomain,
+		RateLimitCapacity:     rateLimitCapacity,
+		RateLimitRefill:       rateLimitRefill,
+		AuthRateLimitCapacity: authRateLimitCapacity,
+		AuthRateLimitRefill:   authRateLimitRefill,
+		TrustedProxyIPs:       trustedProxyIPs,
 	}
 }
 
@@ -113,6 +141,51 @@ func getenvDefault(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+// getenvInt parses an integer env var, falling back (with a warning) on unset
+// or invalid values. Rate limiting is an availability knob, not a security
+// invariant, so a malformed value degrades to the safe default rather than
+// crashing the server.
+func getenvInt(key string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value <= 0 {
+		log.Printf("warning: invalid %s=%q, using default %d", key, raw, fallback)
+		return fallback
+	}
+	return value
+}
+
+func getenvFloat(key string, fallback float64) float64 {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+	value, err := strconv.ParseFloat(raw, 64)
+	if err != nil || value <= 0 {
+		log.Printf("warning: invalid %s=%q, using default %v", key, raw, fallback)
+		return fallback
+	}
+	return value
+}
+
+// splitCSV splits a comma-separated list and trims entries, dropping empties.
+func splitCSV(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func firstNonEmpty(values ...string) string {

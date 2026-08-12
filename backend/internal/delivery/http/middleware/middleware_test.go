@@ -306,6 +306,244 @@ func TestRateLimitMiddleware(t *testing.T) {
 	}
 }
 
+func TestRateLimitMiddleware_PerIPIsolation(t *testing.T) {
+	// capacity 2, no refill: each IP has its own budget.
+	mw := middleware.RateLimitMiddleware(2, 0)
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	serve := func(remoteAddr string) int {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.RemoteAddr = remoteAddr
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		return rec.Code
+	}
+
+	// Client A exhausts its own bucket...
+	if serve("203.0.113.1:1234") != http.StatusOK {
+		t.Error("A: expected 1st request 200")
+	}
+	if serve("203.0.113.1:1234") != http.StatusOK {
+		t.Error("A: expected 2nd request 200")
+	}
+	if serve("203.0.113.1:1234") != http.StatusTooManyRequests {
+		t.Error("A: expected 3rd request 429")
+	}
+
+	// ...but client B is completely unaffected (previously a single global
+	// bucket would 429 B too — the unauthenticated DoS gap).
+	if serve("198.51.100.7:1234") != http.StatusOK {
+		t.Error("B: expected 200 after A exhausted its bucket")
+	}
+	if serve("198.51.100.7:1234") != http.StatusOK {
+		t.Error("B: expected 2nd request 200")
+	}
+}
+
+func TestRateLimitMiddleware_ExemptPaths(t *testing.T) {
+	// capacity 1, no refill: only the first non-exempt request per IP passes.
+	mw := middleware.RateLimitMiddleware(1, 0)
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// Exhaust the client's bucket with a normal API request.
+	req := httptest.NewRequest("GET", "/api/v1/auth/tenants", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 for first API request, got %d", rec.Code)
+	}
+
+	// Health probes and the OpenAPI spec must keep working even when the
+	// client's bucket is empty — otherwise an attacker could blind monitoring.
+	for _, path := range []string{"/health", "/swagger/openapi.yaml", "/swagger/"} {
+		req := httptest.NewRequest("GET", path, nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("exempt path %s must not be rate limited, got %d", path, rec.Code)
+		}
+	}
+
+	// The same client is still limited on real API paths.
+	req = httptest.NewRequest("GET", "/api/v1/auth/tenants", nil)
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusTooManyRequests {
+		t.Errorf("expected 429 for second API request, got %d", rec.Code)
+	}
+}
+
+func TestRateLimitMiddleware_TrustedProxyXFF(t *testing.T) {
+	// Peer 10.0.0.1 is a trusted proxy; client identity comes from XFF.
+	mw := middleware.NewIPRateLimiter(2, 0, []string{"10.0.0.1"}).Middleware()
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	serve := func(remoteAddr, xff string) int {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.RemoteAddr = remoteAddr
+		if xff != "" {
+			req.Header.Set("X-Forwarded-For", xff)
+		}
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		return rec.Code
+	}
+
+	// Two different real clients behind the proxy have separate buckets.
+	if serve("10.0.0.1:80", "203.0.113.9") != http.StatusOK {
+		t.Error("client 203.0.113.9: expected 1st request 200")
+	}
+	if serve("10.0.0.1:80", "203.0.113.9") != http.StatusOK {
+		t.Error("client 203.0.113.9: expected 2nd request 200")
+	}
+	if serve("10.0.0.1:80", "203.0.113.9") != http.StatusTooManyRequests {
+		t.Error("client 203.0.113.9: expected 3rd request 429")
+	}
+	if serve("10.0.0.1:80", "198.51.100.7") != http.StatusOK {
+		t.Error("client 198.51.100.7: expected 200 after other client exhausted its bucket")
+	}
+}
+
+func TestRateLimitMiddleware_TrustedPeerWithoutXFF(t *testing.T) {
+	// Trusted peer that does not forward X-Forwarded-For: the peer itself is
+	// the key, so all such requests share one bucket.
+	mw := middleware.NewIPRateLimiter(2, 0, []string{"10.0.0.1"}).Middleware()
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	serve := func() int {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.RemoteAddr = "10.0.0.1:80"
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		return rec.Code
+	}
+
+	if serve() != http.StatusOK || serve() != http.StatusOK {
+		t.Error("expected first two requests 200")
+	}
+	if serve() != http.StatusTooManyRequests {
+		t.Error("expected 3rd request 429: trusted peer without XFF is one bucket")
+	}
+}
+
+func TestRateLimitMiddleware_TrustedProxyCIDR(t *testing.T) {
+	// CIDR matching: the proxy's container IP changes per recreate but stays
+	// inside the configured docker network subnet.
+	mw := middleware.NewIPRateLimiter(2, 0, []string{"10.0.0.0/8"}).Middleware()
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	serve := func(remoteAddr, xff string) int {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.RemoteAddr = remoteAddr
+		if xff != "" {
+			req.Header.Set("X-Forwarded-For", xff)
+		}
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		return rec.Code
+	}
+
+	if serve("10.1.2.3:80", "203.0.113.9") != http.StatusOK {
+		t.Error("peer inside trusted CIDR with XFF: expected 200")
+	}
+	if serve("10.1.2.3:80", "203.0.113.9") != http.StatusOK {
+		t.Error("same client: expected 2nd request 200")
+	}
+	if serve("10.1.2.3:80", "203.0.113.9") != http.StatusTooManyRequests {
+		t.Error("same client: expected 3rd request 429")
+	}
+	// A peer outside the trusted CIDR must not have XFF honored.
+	if serve("192.168.1.5:80", "9.9.9.9") != http.StatusOK {
+		t.Error("untrusted peer: expected 200 (fresh bucket keyed on peer)")
+	}
+}
+
+func TestRateLimitMiddleware_RetryAfterHeader(t *testing.T) {
+	mw := middleware.RateLimitMiddleware(1, 0)
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest("GET", "/api/v1/auth/tenants", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req) // consumes the only token
+	req = httptest.NewRequest("GET", "/api/v1/auth/tenants", nil)
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d", rec.Code)
+	}
+	if got := rec.Header().Get("Retry-After"); got != "1" {
+		t.Errorf("expected Retry-After: 1, got %q", got)
+	}
+}
+
+func TestRateLimitMiddleware_RefillOverTime(t *testing.T) {
+	// capacity 1, refill 100 tokens/s: after a short wait the bucket is full
+	// again and the client is allowed through.
+	mw := middleware.NewIPRateLimiter(1, 100, nil).Middleware()
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	serve := func() int {
+		req := httptest.NewRequest("GET", "/", nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		return rec.Code
+	}
+
+	if serve() != http.StatusOK {
+		t.Fatal("expected 1st request 200")
+	}
+	if serve() != http.StatusTooManyRequests {
+		t.Fatal("expected 2nd request 429 (bucket empty, no time elapsed)")
+	}
+	// 20ms at 100 tokens/s refills 2 tokens (capped at capacity 1).
+	time.Sleep(20 * time.Millisecond)
+	if serve() != http.StatusOK {
+		t.Error("expected request after refill 200")
+	}
+}
+
+func TestRateLimitMiddleware_XFFIgnoredFromUntrustedPeer(t *testing.T) {
+	// No trusted proxies configured: XFF must be ignored entirely, so a client
+	// cannot dodge the limit by rotating X-Forwarded-For values.
+	mw := middleware.NewIPRateLimiter(2, 0, nil).Middleware()
+	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	serve := func(remoteAddr, xff string) int {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.RemoteAddr = remoteAddr
+		req.Header.Set("X-Forwarded-For", xff)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		return rec.Code
+	}
+
+	if serve("203.0.113.99:1234", "6.6.6.6") != http.StatusOK {
+		t.Error("expected 1st request 200")
+	}
+	if serve("203.0.113.99:1234", "7.7.7.7") != http.StatusOK {
+		t.Error("expected 2nd request 200 (same bucket despite different XFF)")
+	}
+	if serve("203.0.113.99:1234", "8.8.8.8") != http.StatusTooManyRequests {
+		t.Error("expected 3rd request 429: XFF from untrusted peer must be ignored")
+	}
+}
+
 func TestSecurityHeadersMiddleware(t *testing.T) {
 	mw := middleware.SecurityHeadersMiddleware()
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

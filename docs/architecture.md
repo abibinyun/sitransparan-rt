@@ -42,7 +42,7 @@ Catatan: Redis ada di `infrastructure/docker-compose.yml` tetapi **tidak digunak
 │   │   │   └── middleware/       # Auth (JWT), Tenant, RBAC, CORS, rate limit, security headers
 │   │   ├── usecase/              # Business logic
 │   │   └── repository/           # PostgreSQL (schema-qualified queries)
-│   ├── migrations/               # 000001–000014 (raw SQL)
+│   ├── migrations/               # 000001–000015 (raw SQL)
 │   └── pkg/                      # config, crypto (AES-256-GCM + HMAC), storage/minio
 ├── frontend/                     # React PWA
 │   ├── src/pages/                # Pages (React.lazy code splitting)
@@ -85,8 +85,8 @@ Urutan mounting (lihat `backend/cmd/server/main.go`):
 | `TenantMiddleware` | **Resolusi hostname→tenant + match JWT** (lihat §5). Pada host platform (`localhost`, domain dasar, subdomain app/api) tenant berasal dari JWT claims. Pada subdomain tenant (`rt-003.<base>`) tenant di-lookup dari DB, harus **exist + active**, dan **harus sama dengan tenant JWT** — mismatch → 403. Host asing/tidak dikenal → 403. `X-Tenant-ID`/query/`X-Forwarded-Host` tidak pernah dipercaya. |
 | `RBACMiddleware` | Cek role terhadap daftar yang diizinkan (case-insensitive; alias `superadmin`/`super_admin`). |
 | `RequireAnyRole` (helper) | Dipakai handler untuk guard write/approve ops (hanya `superadmin`/`admin_rt`). |
-| `CORSMiddleware` | `*` |
-| `RateLimitMiddleware` | Token bucket, capacity 100, 10 req/s. |
+| `CORSMiddleware` | **Allowlist origin** (bukan reflection): hanya subdomain tenant dari `TENANT_BASE_DOMAIN`, domain dasar, dan origin localhost/loopback dev yang mendapat header CORS; origin asing/attacker tidak mendapat header apa pun (browser memblokir baca). `Vary: Origin` diset. |
+| `RateLimitMiddleware` (`IPRateLimiter`) | Token bucket **per client IP** (default capacity 1000, 100 req/s per IP). Satu client tidak bisa menghabiskan kuota global. `/health` & `/swagger/` dikecualikan. `X-Forwarded-For` hanya dipercaya dari peer di `TRUSTED_PROXY_IPS`. |
 | `SecurityHeadersMiddleware` | Security headers di semua response. |
 
 ### 4.3 Lapisan Aplikasi

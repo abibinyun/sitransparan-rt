@@ -75,10 +75,19 @@ func main() {
 	adminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin, domain.RoleAdminRT)
 	superAdminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin)
 	secHeadersMw := middleware.SecurityHeadersMiddleware()
-	// Global token bucket. The UI fires several parallel API requests per page
-	// load, so a too-small bucket makes normal admin usage look like abuse.
-	rateLimitMw := middleware.RateLimitMiddleware(1000, 100) // capacity 1000, 100 req/s
+	// Per-client-IP token bucket: each source IP gets its own budget (default
+	// 1000 tokens, 100 req/s), so the UI's parallel page-load requests are fine
+	// and one abusive client can never 429 the whole API for everyone else.
+	// /health and /swagger are exempt. X-Forwarded-For is only honored from
+	// peers listed in TRUSTED_PROXY_IPS.
+	rateLimitMw := middleware.NewIPRateLimiter(cfg.RateLimitCapacity, cfg.RateLimitRefill, cfg.TrustedProxyIPs).Middleware()
+	// Stricter per-IP budget for the public auth endpoints (brute-force surface).
+	authRateLimitMw := middleware.NewIPRateLimiter(cfg.AuthRateLimitCapacity, cfg.AuthRateLimitRefill, cfg.TrustedProxyIPs).Middleware()
 	corsMw := middleware.CORSMiddleware(cfg.TenantBaseDomain)
+
+	if len(cfg.TrustedProxyIPs) == 0 {
+		log.Printf("WARNING: TRUSTED_PROXY_IPS is empty — per-IP rate limiting keys on the direct peer. Behind a reverse proxy (Traefik/Nginx) all clients share the proxy's IP, so set TRUSTED_PROXY_IPS (exact IP or CIDR) in production.")
+	}
 
 	mux := http.NewServeMux()
 
@@ -86,8 +95,10 @@ func main() {
 	delivery.RegisterSwaggerRoutes(mux)
 	mux.HandleFunc("GET /health", healthHandler.HealthCheck)
 	mux.HandleFunc("GET /api/v1/t/{slug}/info", authHandler.GetPublicTenantInfo)
-	mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
-	mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
+	// Login/register are the public brute-force surface: apply the stricter
+	// per-IP auth budget here (the general limiter below still applies too).
+	mux.Handle("POST /api/v1/auth/login", authRateLimitMw(http.HandlerFunc(authHandler.Login)))
+	mux.Handle("POST /api/v1/auth/register", authRateLimitMw(http.HandlerFunc(authHandler.Register)))
 
 	// Authenticated routes
 	authMux := http.NewServeMux()
