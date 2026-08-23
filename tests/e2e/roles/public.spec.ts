@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Role E2E: Public (Unauthenticated User)', () => {
   test('UC-PUB-01: Should access public announcements portal', async ({ page }) => {
     await page.goto('/public/announcements');
-    await expect(page.getByRole('heading', { name: 'Pengumuman & Dokumen Transparansi RT' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Pengumuman & Dokumen Transparansi/ })).toBeVisible();
   });
 
   test('UC-PUB-02: Should access public aspirations portal', async ({ page }) => {

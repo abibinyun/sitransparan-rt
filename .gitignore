@@ -16,3 +16,6 @@ node_modules/
 
 # Playwright MCP browser artifacts
 .playwright-mcp/
+
+# Visual audit screenshots
+/*.png
