@@ -1519,7 +1519,21 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
 - Backend security suite: `TestSecurity_*` in
   `backend/internal/delivery/http/security_integration_test.go` (cross-tenant matrix,
   role escalation, RBAC enforcement, superadmin account protection, public sanitization).
-- E2E suite (`tests/e2e/`): **36 tests** — `auth/`, `public/`, `admin/`, `announcements/`, `aspirations/` (termasuk `workflow.spec.ts`), `events/`, `roles/{admin_rt,resident,superadmin,public,negative-authz}.spec.ts`, `superadmin/`, `users/`, **plus suite CRUD bisnis penuh dari audit E2E**: `residents/`, `finance/`, `isolation/tenant-isolation` (isolasi lintas tenant via hostname nyata `rt-003`/`rt-004`, termasuk direct URL & API 403/200), `roles/negative-authz` (warga ditolak di halaman/API admin; admin RT ditolak di superadmin). `helpers.ts` menyediakan login/parse Rupiah/NIK deterministik; konfigurasi headless memakai `--host-resolver-rules` (tanpa `/etc/hosts`).
+- E2E suite (`tests/e2e/`): **50 tests** — `auth/`, `public/`, `admin/`
+  (termasuk `dashboard-metrics`: koherensi angka + export CSV + window.print PDF),
+  `announcements/` (termasuk `announcements-crud`: CRUD penuh + sinkronisasi portal
+  publik + penyembunyian `residents_only` dari anonim), `aspirations/` (termasuk
+  `workflow.spec.ts`), `events/` (termasuk `events-workflow`: create → RAB persist via
+  API → RSVP → delete; filter status terverifikasi end-to-end), `meetings/`
+  (termasuk `meetings-authz`: warga ditolak tulis, `visibility=confidential`
+  ditegakkan server-side, isolasi lintas-hostname), `roles/{admin_rt,resident,
+  superadmin,public,negative-authz}.spec.ts`, `superadmin/`, `users/`, **plus suite
+  CRUD bisnis penuh dari audit E2E**: `residents/`, `finance/`,
+  `isolation/tenant-isolation` (isolasi lintas tenant via hostname nyata
+  `rt-003`/`rt-004`, termasuk direct URL & API 403/200), `roles/negative-authz`
+  (warga ditolak di halaman/API admin; admin RT ditolak di superadmin).
+  `helpers.ts` menyediakan login/parse Rupiah/NIK deterministik; konfigurasi headless
+  memakai `--host-resolver-rules` (tanpa `/etc/hosts`).
 - E2E creates its own users/tenants via the UI with timestamped emails (e.g.
   `warga_e2e_<ts>@test.local`) and does not seed into the database directly. Note that
   the existing specs do **not** delete the records they create, so test data accumulates
@@ -1528,7 +1542,7 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
 ## 46.9 Known Issues & Limitations (report honestly if encountered)
 
 - **Frontend/backend API mismatches — FIXED in the E2E-coverage audit** (frontend calls now
-  match the backend routes; verified by 36/36 E2E):
+  match the backend routes; verified by 50/50 E2E):
   - `PATCH /financial/dues/{id}/verify` → frontend now **POST** `/financial/dues/{id}/verify`
   - `POST /financial/upload-proof` → frontend now `/financial/upload` (with `proof_url`)
   - `PATCH /aspirations/{id}/status` → frontend now **PUT** `/aspirations/{id}`
@@ -1546,6 +1560,21 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
   (exact IP or CIDR). Set `TRUSTED_PROXY_IPS` in production behind Traefik/Nginx.
 - Some handlers return 500 (`{"error":"record not found"}`) instead of 404 for cross-tenant
   writes to a non-existent resource (resident update/delete/approve) — cosmetic, no data impact.
+- **FIXED in the second full E2E audit (50/50 green):**
+  - `GET /events?status=...` — backend ignored the `status` query param (filter UI did
+    nothing). Now filtered in handler → usecase → repo (count + list), unit-tested.
+  - Meeting `visibility` was decorative — residents could read `confidential` meetings via
+    `?visibility=confidential` or direct ID. Now enforced server-side: non-admins are forced
+    to `public` on the list, denied 403 on detail, and action items of non-public meetings
+    are hidden from them.
+- **Known UX/limitations found during the audit (open work, by design for now):**
+  - Dashboard "Export PDF" only calls `window.print()`; "Export CSV" is generated
+    client-side from dashboard metrics — the backend endpoint
+    `/dashboard/reports/financial/export` exists but is **unused by the UI**.
+  - Event budget (RAB) saved via modal does not appear on the event card after reload —
+    the events list payload carries no budget data (modal prefill empty); persistence is
+    verifiable via `GET /events/{id}/budget`.
+  - RSVP and RAB modals close silently on success (no toast); success verified via API.
 
 ## 46.10 Documentation Map (canonical)
 

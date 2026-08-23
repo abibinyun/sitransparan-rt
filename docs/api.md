@@ -98,6 +98,11 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 
 | Metode | Path | Akses | Keterangan |
 |---|---|---|---|
+| GET | `/api/v1/financial/funds` | AUTH | List kantong kas (multi-fund). |
+| POST | `/api/v1/financial/funds` | ADMIN | Buat kantong kas. Body: `{name, description?, target_amount?}`. |
+| GET | `/api/v1/financial/funds/{id}` | AUTH | Detail kantong kas. |
+| PUT | `/api/v1/financial/funds/{id}` | ADMIN | Update kantong kas. |
+| DELETE | `/api/v1/financial/funds/{id}` | ADMIN | Hapus kantong kas. |
 | GET | `/api/v1/financial/categories` | AUTH | List kategori iuran. |
 | POST | `/api/v1/financial/categories` | ADMIN | Buat kategori iuran. |
 | GET | `/api/v1/financial/categories/{id}` | AUTH | Detail kategori. |
@@ -108,7 +113,7 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 | POST | `/api/v1/financial/dues` | ADMIN | Catat pembayaran iuran. |
 | POST | `/api/v1/financial/dues/{id}/verify` | ADMIN | Verifikasi iuran. Body: `{status: "verified"\|"rejected"}`. |
 | GET | `/api/v1/financial/transactions` | AUTH | List transaksi kas. Query: `type` (`income`/`expense`), `limit`, `offset`. |
-| POST | `/api/v1/financial/transactions` | ADMIN | Catat transaksi kas. |
+| POST | `/api/v1/financial/transactions` | ADMIN | Catat transaksi kas. Body opsional menyertakan `fund_id` untuk mengaitkan transaksi ke kantong kas. |
 | GET | `/api/v1/financial/transactions/{id}` | AUTH | Detail transaksi. |
 | PUT | `/api/v1/financial/transactions/{id}` | — | **405** — ledger append-only (koreksi via reversing entry). |
 | DELETE | `/api/v1/financial/transactions/{id}` | — | **405** — deletion disabled. |
@@ -180,7 +185,29 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 
 ---
 
-## 11. Konvensi Error
+## 11. Meetings & Notulen Rapat (Action Items)
+
+> **Visibilitas**: `public` (terlihat warga), `internal` & `confidential` (hanya admin).
+> Warga (role `resident`) hanya dapat membaca meeting `public`; percobaan lain → `403`.
+> Action items milik meeting non-public juga disembunyikan dari warga.
+
+| Metode | Path | Akses | Keterangan |
+|---|---|---|---|
+| GET | `/api/v1/meetings` | AUTH | List notulen. Query: `visibility` (**diabaikan untuk non-admin** — warga dipaksa `public`). |
+| POST | `/api/v1/meetings` | ADMIN | Buat notulen. Body: `{title, agenda, meeting_date (RFC3339/YYYY-MM-DD), location?, meeting_type?, visibility?, status?, notes?}`. |
+| GET | `/api/v1/meetings/{id}` | AUTH | Detail notulen + attendees + decisions + action items. Non-admin hanya `public`. |
+| PUT | `/api/v1/meetings/{id}` | ADMIN | Update notulen. |
+| DELETE | `/api/v1/meetings/{id}` | ADMIN | Hapus notulen. |
+| POST | `/api/v1/meetings/{id}/attendees` | ADMIN | Tambah peserta. Body: `{name, role_or_title?, resident_id?, notes?}`. |
+| POST | `/api/v1/meetings/{id}/decisions` | ADMIN | Tambah keputusan. Body: `{decision_text, category?}`. |
+| GET | `/api/v1/action-items` | AUTH | List tugas/tindak lanjut. Query: `status`. Non-admin hanya melihat item milik meeting `public`. |
+| POST | `/api/v1/action-items` | ADMIN | Buat tugas. Body: `{meeting_id, task, assignee_name, due_date?, status?, notes?}`. |
+| PUT | `/api/v1/action-items/{id}` | ADMIN | Update status/detail tugas. |
+| DELETE | `/api/v1/action-items/{id}` | ADMIN | Hapus tugas. |
+
+---
+
+## 12. Konvensi Error
 
 - `401` — token hilang/rusak/kadaluwarsa/manipulasi.
 - `403` — role tidak diizinkan / tenant access denied / role escalation.
@@ -190,6 +217,6 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 - `429` — rate limit tercapai (**per client IP**, header `Retry-After: 1`). `/health` & `/swagger/` dikecualikan; endpoint auth (`/login`, `/register`) memakai budget lebih ketat (default 20 burst / 5 per detik per IP).
 - Response error: `{"error": "<pesan>"}`.
 
-## 12. Catatan Upload File
+## 13. Catatan Upload File
 
 > ⚠️ **MinIO belum terintegrasi.** Endpoint upload (`/financial/upload`, `/residents/upload`, `POST /documents`, `POST /events/{id}/receipts`) saat ini **menerima file lalu membuang isinya**: hanya URL metadata fiktif (`/uploads/<name>`, `/storage/<name>`) yang disimpan ke database dan URL tersebut **tidak diserve** (404). Fungsionalitas upload belum siap produksi — integrasi MinIO (dengan kunci object terisolasi per tenant) adalah pekerjaan yang belum dikerjakan.

@@ -1135,6 +1135,216 @@ paths:
         '200':
           description: File attachment (Content-Disposition)
 
+  # ---------------------------------------------- Funds (Multi-Fund Kas)
+  /api/v1/financial/funds:
+    get:
+      summary: List kantong kas (AUTH)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: '{ data: Fund[] }'
+    post:
+      summary: Buat kantong kas (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                target_amount: { type: number }
+      responses:
+        '201':
+          description: Kantong kas dibuat
+
+  /api/v1/financial/funds/{id}:
+    get:
+      summary: Detail kantong kas (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Fund
+        '404':
+          description: Tidak ditemukan
+    put:
+      summary: Update kantong kas (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Fund diupdate
+    delete:
+      summary: Hapus kantong kas (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Fund dihapus
+
+  # ---------------------------------------------- Meetings & Action Items
+  /api/v1/meetings:
+    get:
+      summary: List notulen rapat (AUTH). Non-admin dipaksa visibility=public.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: visibility, in: query, schema: { type: string, enum: [public, internal, confidential] } }
+      responses:
+        '200':
+          description: '{ data: Meeting[] }'
+    post:
+      summary: Buat notulen rapat (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, agenda, meeting_date]
+              properties:
+                title: { type: string }
+                agenda: { type: string }
+                meeting_date: { type: string, description: RFC3339 atau YYYY-MM-DD }
+                location: { type: string }
+                meeting_type: { type: string, enum: [regular, emergency, karang_taruna, rtrw_pleno] }
+                visibility: { type: string, enum: [public, internal, confidential], default: internal }
+                status: { type: string, enum: [scheduled, ongoing, completed, cancelled], default: scheduled }
+                notes: { type: string }
+      responses:
+        '201':
+          description: Notulen dibuat
+        '403':
+          description: Role tidak diizinkan
+
+  /api/v1/meetings/{id}:
+    get:
+      summary: Detail notulen + attendees + decisions + action items (AUTH). Non-admin hanya meeting public (403 selain itu).
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Meeting
+        '403':
+          description: Meeting tidak public untuk role warga
+        '404':
+          description: Tidak ditemukan
+    put:
+      summary: Update notulen (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Notulen diupdate
+    delete:
+      summary: Hapus notulen (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Notulen dihapus
+
+  /api/v1/meetings/{id}/attendees:
+    post:
+      summary: Tambah peserta rapat (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                role_or_title: { type: string }
+                resident_id: { type: string, format: uuid }
+                notes: { type: string }
+      responses:
+        '201':
+          description: Peserta ditambahkan
+
+  /api/v1/meetings/{id}/decisions:
+    post:
+      summary: Tambah keputusan rapat (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision_text]
+              properties:
+                decision_text: { type: string }
+                category: { type: string }
+      responses:
+        '201':
+          description: Keputusan ditambahkan
+
+  /api/v1/action-items:
+    get:
+      summary: List tugas tindak lanjut (AUTH). Non-admin hanya item milik meeting public.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [pending, in_progress, completed, cancelled] } }
+      responses:
+        '200':
+          description: '{ data: MeetingActionItem[] }'
+    post:
+      summary: Buat tugas tindak lanjut (ADMIN)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meeting_id, task, assignee_name]
+              properties:
+                meeting_id: { type: string, format: uuid }
+                task: { type: string }
+                assignee_name: { type: string }
+                assignee_resident_id: { type: string, format: uuid }
+                due_date: { type: string, format: date }
+                status: { type: string, enum: [pending, in_progress, completed, cancelled] }
+                notes: { type: string }
+      responses:
+        '201':
+          description: Tugas dibuat
+
+  /api/v1/action-items/{id}:
+    put:
+      summary: Update tugas/status tindak lanjut (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Tugas diupdate
+    delete:
+      summary: Hapus tugas tindak lanjut (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Tugas dihapus
+
 components:
   securitySchemes:
     BearerAuth:
