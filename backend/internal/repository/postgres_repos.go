@@ -233,6 +233,58 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.funds (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			name VARCHAR(100) NOT NULL,
+			category VARCHAR(50) NOT NULL DEFAULT 'operasional',
+			description TEXT,
+			is_active BOOLEAN NOT NULL DEFAULT true,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.meetings (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			title VARCHAR(255) NOT NULL,
+			agenda TEXT NOT NULL,
+			meeting_date TIMESTAMP WITH TIME ZONE NOT NULL,
+			location VARCHAR(255) NOT NULL,
+			meeting_type VARCHAR(50) NOT NULL DEFAULT 'regular',
+			visibility VARCHAR(50) NOT NULL DEFAULT 'internal',
+			status VARCHAR(50) NOT NULL DEFAULT 'scheduled',
+			notes TEXT,
+			created_by UUID,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.meeting_attendees (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			meeting_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.meetings(id) ON DELETE CASCADE,
+			resident_id UUID REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.residents(id) ON DELETE SET NULL,
+			name VARCHAR(255) NOT NULL,
+			role_or_title VARCHAR(100) DEFAULT 'Warga',
+			attended BOOLEAN DEFAULT TRUE,
+			notes VARCHAR(255),
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.meeting_decisions (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			meeting_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.meetings(id) ON DELETE CASCADE,
+			decision_text TEXT NOT NULL,
+			category VARCHAR(100) DEFAULT 'Umum',
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.meeting_action_items (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			meeting_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.meetings(id) ON DELETE CASCADE,
+			task TEXT NOT NULL,
+			assignee_name VARCHAR(255) NOT NULL,
+			assignee_resident_id UUID REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.residents(id) ON DELETE SET NULL,
+			due_date DATE,
+			status VARCHAR(50) NOT NULL DEFAULT 'pending',
+			notes TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
 	}
 
 	for _, ddl := range tablesDDL {

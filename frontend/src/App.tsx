@@ -19,6 +19,7 @@ const PublicAnnouncementsPage = lazy(() => import('./pages/PublicAnnouncementsPa
 const PublicEventsPage = lazy(() => import('./pages/PublicEventsPage').then(m => ({ default: m.PublicEventsPage })));
 const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage').then(m => ({ default: m.AnnouncementsPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const MeetingPage = lazy(() => import('./pages/MeetingPage').then(m => ({ default: m.MeetingPage })));
 const UsersPage = lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })));
 
 const PageLoader = () => (
@@ -55,6 +56,7 @@ export function App() {
                 <Route path="/residents" element={<ResidentsPage />} />
                 <Route path="/financial" element={<FinancialPage />} />
                 <Route path="/events" element={<EventsPage />} />
+                <Route path="/meetings" element={<MeetingPage />} />
                 <Route path="/aspirations" element={<AspirationsPage />} />
                 <Route path="/announcements" element={<AnnouncementsPage />} />
                 <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RT_ADMIN']} />}>

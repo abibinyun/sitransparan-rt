@@ -39,6 +39,7 @@ func main() {
 	aspirationNeedRepo := repository.NewAspirationNeedRepository(db)
 	announcementDocRepo := repository.NewAnnouncementDocRepository(db, nil)
 	dashboardRepo := repository.NewDashboardRepository(db)
+	meetingRepo := repository.NewMeetingRepository(db)
 
 	jwtSecret := cfg.JWTSecret
 	jwtDuration := 24 * time.Hour
@@ -69,6 +70,9 @@ func main() {
 
 	userUC := usecase.NewUserUsecase(userRepo, tuRepo, roleRepo)
 	userHandler := delivery.NewUserHandler(userUC)
+
+	meetingUC := usecase.NewMeetingUsecase(meetingRepo)
+	meetingHandler := delivery.NewMeetingHandler(meetingUC)
 
 	tenantMw := middleware.TenantMiddleware(tenantRepo, cfg.TenantBaseDomain)
 	authMw := middleware.AuthMiddleware(jwtSecret)
@@ -125,6 +129,9 @@ func main() {
 
 	// Dashboard & Reports routes
 	dashboardHandler.RegisterRoutes(mux, tenantMw, authMw)
+
+	// Meeting & Action Items routes
+	meetingHandler.RegisterRoutes(mux, tenantMw, authMw)
 
 	// SuperAdmin routes
 	superAdminMux := http.NewServeMux()

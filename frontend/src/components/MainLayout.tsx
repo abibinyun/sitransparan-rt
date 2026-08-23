@@ -35,6 +35,7 @@ const baseNavItems: NavItem[] = [
   { to: '/residents', label: 'Data Warga', icon: Users, adminOnly: true },
   { to: '/financial', label: 'Keuangan', icon: WalletCards },
   { to: '/events', label: 'Kegiatan & Budget', icon: CalendarDays },
+  { to: '/meetings', label: 'Notulen & Tindak Lanjut', icon: ClipboardList },
   { to: '/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
   { to: '/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
   { to: '/users', label: 'Manajemen Pengguna', icon: Users, adminOnly: true },
