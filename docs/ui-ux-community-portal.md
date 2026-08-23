@@ -1,8 +1,14 @@
 # Konsep UI/UX Portal Warga Transparansi RT/RW: "Community Feed Experience"
 
 **Status:** Rencana Desain & Panduan Pengembangan
-**Revisi:** 2 — ditambah bab Metrik Sukses, Keamanan & Moderasi, Dependensi & Effort
+**Revisi:** 3 — ditambah bab Bahasa Visual Anti-AI-Slop & gerbang kualitas berbasis skill (selaras `ANTI-AI-SLOP.md`)
 **Tujuan:** Mengubah portal transparansi pasif menjadi aplikasi komunitas aktif yang nyaman, terlibat rutin, dan mudah digunakan seluruh lapisan warga.
+
+> **Gerbang kualitas visual:** setiap pekerjaan UI pada konsep ini wajib lulus
+> checklist `ANTI-AI-SLOP.md` (§15) sebelum merge. Prinsip intinya: antarmuka harus
+> *terasa didesain khusus untuk produk ini* — hierarki yang disengaja, tanpa
+> gradien/pil/badge/ikon dekoratif tanpa alasan, dan setiap keputusan visual punya
+> jawaban atas pertanyaan *"kenapa ini lebih baik untuk warga RT ini?"*
 
 ---
 
@@ -38,10 +44,24 @@ tidak cukup menyembunyikan tombol di UI. Preseden yang sudah berjalan: enforceme
 ## 3. Pilar Desain UI/UX Sosmed Warga
 
 ### 3.1 Beranda Dinamis (*Kabar Lingkungan Feed*)
-- **Card-Based Timeline**: Pengumuman, dokumentasi kegiatan, dan pencapaian RT muncul seperti linimasa medsos.
-- **Galeri Foto & Cerita Lapangan**: Dokumentasi gotong royong dan renovasi fasilitas disajikan dengan format carousel foto. *(Dependensi keras: object storage aktif — lihat §7.)*
-- **Badge Status Cepat**: Label warna tegas (`🟢 Selesai`, `🟡 Sedang Dikerjakan`, `📢 Pengumuman Resmi`, `💡 Usulan Warga`).
-- **Mikro-Interaksi**: Reaksi ringan (👍 Dukung, ❤️ Suka, 👏 Keren) untuk memberi apresiasi tanpa memicu komentar terbuka. *(Tanpa kolom komentar di fase awal = moderasi minimal.)*
+- **Timeline Berbasis Hierarki**: Pengumuman, dokumentasi kegiatan, dan pencapaian RT
+  dalam satu linimasa — tapi **bukan deretan kartu identik**. Variasikan bobot visual:
+  pengumuman resmi lebih menonjol (tipografi + warna semantik), dokumentasi foto berupa
+  blok lebar, capaian angka berupa baris ringkas. *(Anti-slop: larang pola "grid 3 kartu
+  sama isi + ikon + judul + deskripsi".)*
+- **Galeri Foto & Cerita Lapangan**: Dokumentasi gotong royong dan renovasi fasilitas
+  disajikan dengan format carousel foto. *(Dependensi keras: object storage aktif — sudah terpenuhi di Fase 0.)*
+- **Badge Status Cepat**: Warna semantik + **ikon dari satu keluarga ikon (Lucide)**,
+  bukan emoji: `CheckCircle2 Selesai` (hijau), `Loader Sedang Dikerjakan` (kuning),
+  `Megaphone Pengumuman Resmi` (netral tebal), `Lightbulb Usulan Warga` (aksen).
+  Emoji dilarang sebagai ikon UI — render ikonnya beda di setiap ponsel dan tidak bisa dikontrol kontrasnya.
+- **Mikro-Interaksi**: Reaksi ringan untuk apresiasi tanpa memicu komentar terbuka —
+  tombol ikon Lucide (`ThumbsUp` Dukung, `Heart` Suka, `HandsClapping` Keren) dengan
+  label teks yang bisa dibaca screen reader. *(Tanpa kolom komentar di fase awal = moderasi minimal.)*
+
+> **Aturan reaksi:** reaksi hanyalah salah satu cara memberi feedback; jangan sampai
+> setiap kartu memuat deretan tombol reaksi seragam. Tampilkan hanya pada tipe konten
+> yang relevan (pengumuman resmi & laporan kas), sesuai prinsip *setiap elemen punya alasan*.
 
 ### 3.2 Transparansi Finansial Berbasis Cerita (*Visual Storytelling*)
 - **Grafis Visual Ringkas**: Saldo kas dan alokasi dana divisualisasikan dalam bentuk grafik sederhana dan kartu ringkasan (bukan tabel akuntansi kaku).
@@ -49,7 +69,7 @@ tidak cukup menyembunyikan tombol di UI. Preseden yang sudah berjalan: enforceme
 - **Batas privasi**: ringkasan publik hanya agregat (saldo masuk/keluar per kategori); nama pembayar individual hanya untuk warga login / admin.
 
 ### 3.3 Gamifikasi & Rasa Kepemilikan Komunitas
-- **Polling 1-Klik**: Jajak pendapat warga untuk musyawarah cepat (misal: jadwal fogging, penataan jadwal ronda). Wajib identitas warga-login, 1 orang 1 suara (lihat §6).
+- **Polling 1-Klik**: Jajak pendapat warga untuk musyawarah cepat (misal: jadwal fogging, penataan jadwal ronda). Wajib identitas warga-login, 1 orang 1 suara (lihat §7).
 - **Progress Bar Target**: Tampilan visual pencapaian dana atau partisipasi kerja bakti (misal: `Target Kas Acara: 80% Terkumpul`).
 - **Apresiasi Partisipasi**: Badge relawan atau kehadiran musyawarah warga.
 
@@ -64,7 +84,70 @@ tidak cukup menyembunyikan tombol di UI. Preseden yang sudah berjalan: enforceme
 
 ---
 
-## 4. Metrik Sukses (KPI)
+## 4. Bahasa Visual & Gerbang Anti-AI-Slop
+
+Bab ini mencegah portal berubah menjadi "dashboard SaaS generik hasil AI". Selaras
+`ANTI-AI-SLOP.md`: *intentionality over decoration* — setiap keputusan visual harus
+bisa dijustifikasi dari konteks produk (tata kelola RT/RW Indonesia, pengguna lintas
+usia, kepercayaan terhadap uang warga).
+
+### 4.1 Arah Desain (Product Character)
+
+**"Institusional lingkungan yang hangat"** — terasa seperti kantor RT yang rapi dan
+ramah, bukan startup fintech dan bukan panel admin korporat:
+
+- Netral tenang sebagai dasar (slate/zinc), **satu warna aksen saja** untuk identitas
+  (kandidat: emerald — berasosiasi kas sehat & transparansi; saturasi < 80%).
+- Warna semantik dipakai hanya untuk makna: hijau = masuk/berhasil, rose = keluar/ditolak,
+  amber = menunggu verifikasi. **Larangan**: gradien ungu-biru ala AI, glow neon,
+  glassmorphism tanpa fungsi.
+- Tipografi dengan karakter, bukan default Inter: kandidat kuat **Plus Jakarta Sans**
+  (buatan desainer Indonesia — identitas lokal yang jujur) + angka `tabular-nums`
+  untuk semua nominal Rupiah agar kolom kas lurus rapi. Teks utama ≥ 16px demi
+  pembaca lanjut usia.
+
+### 4.2 Bentuk, Elevasi & Motion
+
+| Token | Aturan | Alasan |
+|---|---|---|
+| Radius | HIERARKI, bukan seragam: kontainer besar `rounded-xl`, kontrol `rounded-md`, badge `rounded-full` | Semua elemen sama-bulat = tidak ada hierarki bentuk |
+| Shadow | Maksimal 2 level (resting & raised/dialog); andalkan border tipis + kontras latar | Bayangan di mana-mana = visual noise |
+| Border | Default 1px netral; border berwarna hanya untuk status | Border warna acak = polusi |
+| Motion | 3 durasi (instan/fast/standard), hanya `transform`+`opacity`, hormati `prefers-reduced-motion` | Motion harus mengkomunikasikan perubahan state, bukan dekorasi |
+
+### 4.3 Larangan Eksplisit (deteksi slop)
+
+- ❌ Grid kartu identik 3–6 kolom untuk konten yang bobotnya berbeda
+- ❌ Ikon dekoratif pengisi ruang kosong; emoji sebagai ikon UI
+- ❌ Gradien karena "halaman terasa kosong"
+- ❌ Badge/pill berlebihan — satu kartu maksimal satu badge status
+- ❌ Kartu sebagai solusi default semua pengelompokan — kadang whitespace & garis pemisah lebih jujur
+- ❌ Layout semuanya center; konten operasional left-aligned
+- ❌ Nominal Rupiah pakai font proporsional biasa (angka bergoyang)
+
+### 4.4 UX States Wajib per Interaksi
+
+Setiap fitur baru wajib mendefinisikan 9 state sebelum koding: **default, loading,
+empty, error, success, disabled, destructive (aksi bahaya), permission (akses ditolak),
+mobile**. Preseden buruk yang sudah kita alami sendiri: modal RSVP & RAB menutup diam
+tanpa feedback sukses — persis jenis lubang UX yang bab ini larang.
+
+### 4.5 Skill sebagai Alat Verifikasi (terpasang di `.opencode/skills/`)
+
+| Tahapan kerja | Skill yang dipakai | Fungsinya |
+|---|---|---|
+| Definisi arah visual & komponen baru | `frontend-design`, `design-taste-frontend` | Memaksa arah spesifik-produk, melarang klise AI |
+| Pemilihan style/palette/pairing | `ui-ux-pro-max` | Database style/palette/font pairable dengan konteks |
+| Implementasi komponen | `shadcn`, `vercel-composition-patterns` | Komposisi bersih di atas primitif existing, anti boolean-prop explosion |
+| Performa implementasi React | `vercel-react-best-practices` | Anti waterfall fetch, bundle, re-render |
+| Audit sebelum merge | `web-design-guidelines` + checklist `ANTI-AI-SLOP.md` §15 | Temuan format `file:line`, gate merge |
+
+Urutan prioritas saat skill saling bertentangan mengikuti `ANTI-AI-SLOP.md`:
+kebutuhan produk → identitas brand → kejelasan UX → aksesibilitas → hierarki visual → konsistensi → arsitektur React → performa → eksperimen estetika.
+
+---
+
+## 5. Metrik Sukses (KPI)
 
 Fitur interaktivitas tidak boleh dieksekusi tanpa cara mengukurnya. Target setelah 3 bulan pasca-rilis tiap fase:
 
@@ -82,7 +165,7 @@ metrik ringan) — hindari third-party tracker demi privasi.
 
 ---
 
-## 5. Arsitektur Interaksi Baru (Backend)
+## 6. Arsitektur Interaksi Baru (Backend)
 
 Endpoint baru yang diperlukan (semua tenant-scoped, konsisten pola existing):
 
@@ -95,7 +178,7 @@ Endpoint baru yang diperlukan (semua tenant-scoped, konsisten pola existing):
 
 ---
 
-## 6. Keamanan & Moderasi
+## 7. Keamanan & Moderasi
 
 Interaksi sosial membuka permukaan penyalahgunaan baru. Aturan minimum sebelum Fase 3 (interaktivitas) rilis:
 
@@ -118,7 +201,7 @@ Interaksi sosial membuka permukaan penyalahgunaan baru. Aturan minimum sebelum F
 
 ---
 
-## 7. Dependensi & Estimasi Effort
+## 8. Dependensi & Estimasi Effort
 
 Urutan eksekusi disusun ulang berdasarkan dependensi nyata (bukan sekadar nomor fase):
 
@@ -138,11 +221,14 @@ Fase 2 — FEED TIMELINE (estimasi: 1–2 minggu)
   • Komponen FeedCard, badge status, BottomNav + responsive MainLayout
   • Restrukturisasi portal publik eksisting menjadi timeline
   • Galerinya mengisi dari objek MinIO yang publishable
+  → Gerbang visual §4 wajib: arah desain dikunci via frontend-design +
+    design-taste-frontend SEBELUM koding; audit web-design-guidelines +
+    checklist ANTI-AI-SLOP.md sebelum merge.
 
 Fase 3 — INTERAKTIVITAS SOSIAL (estimasi: 2–3 minggu)
   • Reaksi warga-login (tabel reactions + unique constraint)
   • Polling 1-klik (tabel polls/poll_votes)
-  • Rate limit ketat + audit trail (bab §6 wajib lulus review)
+  • Rate limit ketat + audit trail (bab §7 wajib lulus review)
 
 Fase 4 — NOTIFIKASI & GAMIFIKASI (estimasi: 2–3 minggu)
   • Web Push (VAPID, consent, scheduler reminder LPJ/aspirasi)
@@ -154,9 +240,11 @@ regresi tiap fase wajib hijau sebelum merge (disiplin trunk yang sudah berjalan)
 
 ---
 
-## 8. Rencana Implementasi Bertahap (ringkas)
+## 9. Rencana Implementasi Bertahap (ringkas)
 
-1. **Fase Desain & Komponen**: `FeedCard`, `ReactionButton`, `VisualStatWidget`, `BottomNav`.
-2. **Fase Integrasi Endpoint Publik**: `financial-summary`, `meetings` publik (§5).
+1. **Fase Desain & Komponen**: `FeedCard`, `ReactionButton`, `VisualStatWidget`, `BottomNav`
+   — dirancang lewat gerbang §4.5 (`frontend-design` + `design-taste-frontend` untuk arah,
+   audit `web-design-guidelines` sebelum merge).
+2. **Fase Integrasi Endpoint Publik**: `financial-summary`, `meetings` publik (§6).
 3. **Fase Interaktivitas & Sosmed**: reaksi, polling instan, kartu preview WhatsApp —
-   dengan gerbang keamanan §6.
+   dengan gerbang keamanan §7.
