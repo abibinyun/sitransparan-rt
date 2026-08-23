@@ -14,6 +14,8 @@ import (
 	"backend/pkg/config"
 
 	_ "github.com/lib/pq"
+
+	"backend/pkg/storage/minio"
 )
 
 func main() {
@@ -29,15 +31,29 @@ func main() {
 		log.Fatalf("failed to ping database: %v", err)
 	}
 
+	// Object storage (MinIO / S3-compatible). If the endpoint is unreachable the
+	// server still starts, but uploads fall back to metadata-only URLs.
+	storageClient, err := minio.New(
+		cfg.MinioEndpoint,
+		cfg.MinioAccessKey,
+		cfg.MinioSecretKey,
+		cfg.MinioUseSSL,
+		cfg.MinioBucket,
+		cfg.MinioPublicURL,
+	)
+	if err != nil {
+		log.Printf("WARNING: object storage disabled (%v) — uploads will not be persisted", err)
+	}
+
 	tenantRepo := repository.NewTenantRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	tuRepo := repository.NewTenantUserRepository(db)
 	roleRepo := repository.NewRoleRepository(db)
-	residentRepo := repository.NewResidentRepository(db)
-	financialRepo := repository.NewFinancialRepository(db, nil)
-	eventRepo := repository.NewEventRepository(db, nil)
+	residentRepo := repository.NewResidentRepository(db, storageClient)
+	financialRepo := repository.NewFinancialRepository(db, storageClient)
+	eventRepo := repository.NewEventRepository(db, storageClient)
 	aspirationNeedRepo := repository.NewAspirationNeedRepository(db)
-	announcementDocRepo := repository.NewAnnouncementDocRepository(db, nil)
+	announcementDocRepo := repository.NewAnnouncementDocRepository(db, storageClient)
 	dashboardRepo := repository.NewDashboardRepository(db)
 	meetingRepo := repository.NewMeetingRepository(db)
 

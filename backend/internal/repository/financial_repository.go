@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -617,8 +618,13 @@ func (r *financialRepository) ListFinancialTransactionsByFund(ctx context.Contex
 
 // MinIO upload helper
 func (r *financialRepository) UploadProof(ctx context.Context, filename string, content io.Reader, contentType string) (string, error) {
-	uniqueName := fmt.Sprintf("proofs/%d_%s%s", time.Now().UnixNano(), uuid.New().String()[:8], filepath.Ext(filename))
-	// Standard path pattern for uploaded files / proofs
-	url := fmt.Sprintf("/uploads/%s", uniqueName)
-	return url, nil
+	objectKey := minio.ObjectKey(TenantSlug(ctx), "proofs", fmt.Sprintf("%d_%s", time.Now().UnixNano(), uuid.New().String()[:8]), filepath.Ext(filename))
+	if size, ok := contentSize(content); ok {
+		return r.minioClient.Upload(ctx, objectKey, content, size, contentType)
+	}
+	data, err := io.ReadAll(content)
+	if err != nil {
+		return "", err
+	}
+	return r.minioClient.Upload(ctx, objectKey, bytes.NewReader(data), int64(len(data)), contentType)
 }

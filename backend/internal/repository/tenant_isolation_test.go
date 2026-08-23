@@ -79,7 +79,7 @@ func TestTenantIsolation_SchemaIsolation(t *testing.T) {
 	ctxA := ctxWithTenant(baseCtx, tenantA)
 	ctxB := ctxWithTenant(baseCtx, tenantB)
 
-	resRepo := repository.NewResidentRepository(db)
+	resRepo := repository.NewResidentRepository(db, nil)
 
 	// Insert resident in Tenant A (schema tenant_<slugA>)
 	nameA := "Resident in Tenant A"

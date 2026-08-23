@@ -58,7 +58,7 @@ func buildSecurityMux(db *sql.DB) http.Handler {
 	userRepo := repository.NewUserRepository(db)
 	tuRepo := repository.NewTenantUserRepository(db)
 	roleRepo := repository.NewRoleRepository(db)
-	residentRepo := repository.NewResidentRepository(db)
+	residentRepo := repository.NewResidentRepository(db, nil)
 	financialRepo := repository.NewFinancialRepository(db, nil)
 	eventRepo := repository.NewEventRepository(db, nil)
 	aspirationNeedRepo := repository.NewAspirationNeedRepository(db)

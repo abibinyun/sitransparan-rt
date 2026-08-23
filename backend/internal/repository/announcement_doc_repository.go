@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -272,7 +273,13 @@ func (r *announcementDocRepository) DeleteDocument(ctx context.Context, tenantID
 }
 
 func (r *announcementDocRepository) UploadFile(ctx context.Context, filename string, content io.Reader, contentType string) (string, error) {
-	uniqueName := fmt.Sprintf("documents/%d_%s%s", time.Now().UnixNano(), uuid.New().String()[:8], filepath.Ext(filename))
-	url := fmt.Sprintf("/uploads/%s", uniqueName)
-	return url, nil
+	objectKey := minio.ObjectKey(TenantSlug(ctx), "documents", fmt.Sprintf("%d_%s", time.Now().UnixNano(), uuid.New().String()[:8]), filepath.Ext(filename))
+	if size, ok := contentSize(content); ok {
+		return r.minioClient.Upload(ctx, objectKey, content, size, contentType)
+	}
+	data, err := io.ReadAll(content)
+	if err != nil {
+		return "", err
+	}
+	return r.minioClient.Upload(ctx, objectKey, bytes.NewReader(data), int64(len(data)), contentType)
 }

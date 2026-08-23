@@ -1,26 +1,30 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 
 	"backend/internal/domain"
 	"backend/pkg/crypto"
+	"backend/pkg/storage/minio"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
 
 type residentRepository struct {
-	db *sql.DB
+	db          *sql.DB
+	minioClient *minio.Client
 }
 
-func NewResidentRepository(db *sql.DB) domain.ResidentRepository {
-	return &residentRepository{db: db}
+func NewResidentRepository(db *sql.DB, minioClient *minio.Client) domain.ResidentRepository {
+	return &residentRepository{db: db, minioClient: minioClient}
 }
 
 func (r *residentRepository) Create(ctx context.Context, resident *domain.Resident) error {
@@ -476,6 +480,13 @@ func (r *residentRepository) UploadDocument(ctx context.Context, docType, filena
 	} else if docType == "kk" {
 		subDir = "kk"
 	}
-	objectKey := fmt.Sprintf("%s/%s_%s", subDir, uuid.New().String(), filename)
-	return "/uploads/" + objectKey, nil
+	objectKey := minio.ObjectKey(TenantSlug(ctx), subDir, uuid.New().String()+"_"+filepath.Base(filename), "")
+	if size, ok := contentSize(content); ok {
+		return r.minioClient.Upload(ctx, objectKey, content, size, contentType)
+	}
+	data, err := io.ReadAll(content)
+	if err != nil {
+		return "", err
+	}
+	return r.minioClient.Upload(ctx, objectKey, bytes.NewReader(data), int64(len(data)), contentType)
 }

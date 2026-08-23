@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -449,8 +450,13 @@ func (r *eventRepository) ListReceiptsByEventID(ctx context.Context, eventID uui
 }
 
 func (r *eventRepository) UploadReceiptFile(ctx context.Context, filename string, content io.Reader, contentType string) (string, error) {
-	ext := filepath.Ext(filename)
-	objectName := fmt.Sprintf("events/receipts/%s%s", uuid.New().String(), ext)
-	fileURL := fmt.Sprintf("/storage/%s", objectName)
-	return fileURL, nil
+	objectKey := minio.ObjectKey(TenantSlug(ctx), "events/receipts", uuid.New().String(), filepath.Ext(filename))
+	if size, ok := contentSize(content); ok {
+		return r.minioClient.Upload(ctx, objectKey, content, size, contentType)
+	}
+	data, err := io.ReadAll(content)
+	if err != nil {
+		return "", err
+	}
+	return r.minioClient.Upload(ctx, objectKey, bytes.NewReader(data), int64(len(data)), contentType)
 }

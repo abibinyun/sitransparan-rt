@@ -1,9 +1,12 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"backend/internal/domain"
@@ -44,6 +47,33 @@ func TenantSchemaName(ctx context.Context) string {
 		return "tenant_" + strings.ReplaceAll(t.Slug, "-", "_")
 	}
 	return ""
+}
+
+// TenantSlug returns the raw tenant slug from the request context, or "" when
+// no tenant is present. Used for tenant-scoped object storage keys.
+func TenantSlug(ctx context.Context) string {
+	if t, ok := ctx.Value(domain.TenantContextKey).(*domain.Tenant); ok && t != nil {
+		return t.Slug
+	}
+	return ""
+}
+
+// contentSize reports the byte size of r when it is knowable without reading
+// the whole stream (multipart files via Stat, in-memory buffers via Len).
+func contentSize(r io.Reader) (int64, bool) {
+	switch v := r.(type) {
+	case *os.File:
+		if st, err := v.Stat(); err == nil {
+			return st.Size(), true
+		}
+	case *bytes.Buffer:
+		return int64(v.Len()), true
+	case *bytes.Reader:
+		return int64(v.Len()), true
+	case *strings.Reader:
+		return int64(v.Len()), true
+	}
+	return 0, false
 }
 
 // TenantTable qualifies a tenant-scoped table with the tenant schema derived

@@ -41,6 +41,17 @@ type Config struct {
 	// X-Forwarded-For header is honored for per-IP rate limiting. Leave empty
 	// when the backend is only reachable through untrusted peers.
 	TrustedProxyIPs []string
+
+	// MinIO / S3-compatible object storage for uploaded files (payment proofs,
+	// documents, receipts). MinioEndpoint is "host:port". MinioPublicURL is the
+	// base URL used to build download links handed to clients (differs from the
+	// endpoint when storage is only reachable through a proxy/host mapping).
+	MinioEndpoint  string
+	MinioAccessKey string
+	MinioSecretKey string
+	MinioUseSSL    bool
+	MinioBucket    string
+	MinioPublicURL string
 }
 
 // minJWTSecretLen is the minimum accepted length for JWT_SECRET. Short or
@@ -110,6 +121,11 @@ func Load() *Config {
 	authRateLimitRefill := getenvFloat("AUTH_RATE_LIMIT_REFILL", 5)
 	trustedProxyIPs := splitCSV(os.Getenv("TRUSTED_PROXY_IPS"))
 
+	minioEndpoint := getenvDefault("MINIO_ENDPOINT", "localhost:9000")
+	minioUseSSL := strings.EqualFold(getenvDefault("MINIO_USE_SSL", "false"), "true")
+	minioBucket := getenvDefault("MINIO_BUCKET", "sitransparan-files")
+	minioPublicURL := getenvDefault("MINIO_PUBLIC_URL", "http://localhost:9000")
+
 	return &Config{
 		Port:                  port,
 		DatabaseURL:           dbURL,
@@ -126,6 +142,12 @@ func Load() *Config {
 		AuthRateLimitCapacity: authRateLimitCapacity,
 		AuthRateLimitRefill:   authRateLimitRefill,
 		TrustedProxyIPs:       trustedProxyIPs,
+		MinioEndpoint:         minioEndpoint,
+		MinioAccessKey:        firstNonEmpty(os.Getenv("MINIO_ACCESS_KEY"), "minioadmin"),
+		MinioSecretKey:        firstNonEmpty(os.Getenv("MINIO_SECRET_KEY"), "minioadmin"),
+		MinioUseSSL:           minioUseSSL,
+		MinioBucket:           minioBucket,
+		MinioPublicURL:        minioPublicURL,
 	}
 }
 
