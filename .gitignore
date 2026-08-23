@@ -13,3 +13,6 @@ node_modules/
 .DS_Store
 .vscode/
 .idea/
+
+# Playwright MCP browser artifacts
+.playwright-mcp/
