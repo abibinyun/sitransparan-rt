@@ -41,12 +41,16 @@ func (m *mockEventUsecase) CreateEvent(ctx context.Context, tenantID uuid.UUID, 
 	return nil
 }
 
-func (m *mockEventUsecase) ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.Event, int64, error) {
+func (m *mockEventUsecase) ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int, status string) ([]*domain.Event, int64, error) {
 	var list []*domain.Event
 	for _, e := range m.events {
-		if e.TenantID == tenantID {
-			list = append(list, e)
+		if e.TenantID != tenantID {
+			continue
 		}
+		if status != "" && e.Status != status {
+			continue
+		}
+		list = append(list, e)
 	}
 	return list, int64(len(list)), nil
 }

@@ -68,12 +68,16 @@ func (m *mockEventRepo) DeleteEvent(ctx context.Context, tenantID, id uuid.UUID)
 	return nil
 }
 
-func (m *mockEventRepo) ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.Event, int64, error) {
+func (m *mockEventRepo) ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int, status string) ([]*domain.Event, int64, error) {
 	var list []*domain.Event
 	for _, e := range m.events {
-		if e.TenantID == tenantID {
-			list = append(list, e)
+		if e.TenantID != tenantID {
+			continue
 		}
+		if status != "" && e.Status != status {
+			continue
+		}
+		list = append(list, e)
 	}
 	total := int64(len(list))
 	if offset >= len(list) {
@@ -201,7 +205,7 @@ func TestEventUsecase_CRUD_Budget_RSVP(t *testing.T) {
 	}
 
 	// 3. List Events
-	events, count, err := uc.ListEvents(ctx, tenantID, 10, 0)
+	events, count, err := uc.ListEvents(ctx, tenantID, 10, 0, "")
 	if err != nil || count != 1 || len(events) != 1 {
 		t.Fatalf("ListEvents failed: count=%d, err=%v", count, err)
 	}

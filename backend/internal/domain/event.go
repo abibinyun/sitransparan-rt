@@ -82,7 +82,7 @@ type EventRepository interface {
 	GetEventByID(ctx context.Context, tenantID, id uuid.UUID) (*Event, error)
 	UpdateEvent(ctx context.Context, event *Event) error
 	DeleteEvent(ctx context.Context, tenantID, id uuid.UUID) error
-	ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*Event, int64, error)
+	ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int, status string) ([]*Event, int64, error)
 
 	AddOrUpdateBudget(ctx context.Context, budget *EventBudget) error
 	GetBudgetByEventID(ctx context.Context, eventID uuid.UUID) (*EventBudget, error)
@@ -104,7 +104,7 @@ type EventRepository interface {
 
 type EventUsecase interface {
 	CreateEvent(ctx context.Context, tenantID uuid.UUID, event *Event) error
-	ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*Event, int64, error)
+	ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int, status string) ([]*Event, int64, error)
 	GetEvent(ctx context.Context, tenantID, id uuid.UUID) (*Event, error)
 	UpdateEvent(ctx context.Context, tenantID uuid.UUID, event *Event) error
 	DeleteEvent(ctx context.Context, tenantID, id uuid.UUID) error

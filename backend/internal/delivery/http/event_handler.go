@@ -127,12 +127,13 @@ func (h *EventHandler) handleEvents(w http.ResponseWriter, r *http.Request) {
 func (h *EventHandler) list(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	status := strings.TrimSpace(r.URL.Query().Get("status"))
 
 	if limit <= 0 {
 		limit = 10
 	}
 
-	events, total, err := h.usecase.ListEvents(r.Context(), tenantID, limit, offset)
+	events, total, err := h.usecase.ListEvents(r.Context(), tenantID, limit, offset, status)
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return

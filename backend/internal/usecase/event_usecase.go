@@ -29,14 +29,14 @@ func (u *eventUsecase) CreateEvent(ctx context.Context, tenantID uuid.UUID, even
 	return u.repo.CreateEvent(ctx, event)
 }
 
-func (u *eventUsecase) ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.Event, int64, error) {
+func (u *eventUsecase) ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int, status string) ([]*domain.Event, int64, error) {
 	if limit <= 0 {
 		limit = 10
 	}
 	if offset < 0 {
 		offset = 0
 	}
-	return u.repo.ListEvents(ctx, tenantID, limit, offset)
+	return u.repo.ListEvents(ctx, tenantID, limit, offset, status)
 }
 
 func (u *eventUsecase) GetEvent(ctx context.Context, tenantID, id uuid.UUID) (*domain.Event, error) {
@@ -201,7 +201,7 @@ func (u *eventUsecase) GetTransparency(ctx context.Context, tenantID, eventID uu
 		}
 	}
 
-	timeline, _, _ := u.repo.ListEvents(ctx, tenantID, 100, 0)
+	timeline, _, _ := u.repo.ListEvents(ctx, tenantID, 100, 0, "")
 
 	return &domain.EventTransparency{
 		Event:           event,

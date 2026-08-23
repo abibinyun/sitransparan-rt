@@ -115,21 +115,40 @@ func (r *eventRepository) DeleteEvent(ctx context.Context, tenantID, id uuid.UUI
 	return nil
 }
 
-func (r *eventRepository) ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.Event, int64, error) {
+func (r *eventRepository) ListEvents(ctx context.Context, tenantID uuid.UUID, limit, offset int, status string) ([]*domain.Event, int64, error) {
 	eventsTable := TenantTable(ctx, "events")
 	var count int64
+	var countArgs []interface{}
 	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, eventsTable)
-	if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
+	countArgs = append(countArgs, tenantID)
+	if status != "" {
+		countQuery += ` AND status = $2`
+		countArgs = append(countArgs, status)
+	}
+	if err := r.db.QueryRowContext(ctx, countQuery, countArgs...).Scan(&count); err != nil {
 		return nil, 0, err
 	}
 
-	query := fmt.Sprintf(`
+	var query string
+	var args []interface{}
+	if status != "" {
+		query = fmt.Sprintf(`
+		SELECT id, tenant_id, title, description, event_date, location, status, created_by, created_at, updated_at
+		FROM %s
+		WHERE tenant_id = $1 AND status = $2
+		ORDER BY created_at DESC LIMIT $3 OFFSET $4
+	`, eventsTable)
+		args = append(args, tenantID, status, limit, offset)
+	} else {
+		query = fmt.Sprintf(`
 		SELECT id, tenant_id, title, description, event_date, location, status, created_by, created_at, updated_at
 		FROM %s
 		WHERE tenant_id = $1
 		ORDER BY created_at DESC LIMIT $2 OFFSET $3
 	`, eventsTable)
-	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
+		args = append(args, tenantID, limit, offset)
+	}
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
