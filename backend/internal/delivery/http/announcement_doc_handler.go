@@ -96,11 +96,11 @@ func (h *AnnouncementDocHandler) publicListAnnouncements(w http.ResponseWriter, 
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 
-	target := r.URL.Query().Get("target")
-	var targetFilter *string
-	if target != "" {
-		targetFilter = &target
-	}
+	// The anonymous public feed may only see announcements targeted at
+	// everyone ("all"). Never honor a caller-supplied target filter here —
+	// otherwise residents-only/internal announcements would leak publicly.
+	all := "all"
+	targetFilter := &all
 
 	announcements, total, err := h.usecase.ListAnnouncements(r.Context(), tenantID, targetFilter, limit, offset)
 	if err != nil {

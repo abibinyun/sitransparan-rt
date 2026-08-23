@@ -76,9 +76,13 @@ func (m *mockAnnDocUsecase) GetAnnouncement(ctx context.Context, tenantID, id uu
 func (m *mockAnnDocUsecase) ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, limit, offset int) ([]*domain.Announcement, int64, error) {
 	var list []*domain.Announcement
 	for _, a := range m.announcements {
-		if a.TenantID == tenantID {
-			list = append(list, a)
+		if a.TenantID != tenantID {
+			continue
 		}
+		if targetFilter != nil && *targetFilter != "" && a.Target != *targetFilter {
+			continue
+		}
+		list = append(list, a)
 	}
 	return list, int64(len(list)), nil
 }
@@ -174,6 +178,45 @@ func TestAnnouncementDocHandler(t *testing.T) {
 
 		if rec.Code != http.StatusOK {
 			t.Errorf("expected 200 OK, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Public feed never leaks residents_only announcements", func(t *testing.T) {
+		all := &domain.Announcement{Title: "Publik", Content: "x", Target: "all"}
+		internal := &domain.Announcement{Title: "Internal", Content: "y", Target: "residents_only"}
+		if err := uc.CreateAnnouncement(context.Background(), tenantID, all); err != nil {
+			t.Fatalf("seed all announcement: %v", err)
+		}
+		if err := uc.CreateAnnouncement(context.Background(), tenantID, internal); err != nil {
+			t.Fatalf("seed residents_only announcement: %v", err)
+		}
+
+		for _, url := range []string{
+			"/api/v1/t/rt01/announcements",
+			// A caller must not be able to widen the filter via query params.
+			"/api/v1/t/rt01/announcements?target=residents_only",
+		} {
+			req := httptest.NewRequest("GET", url, nil)
+			rec := httptest.NewRecorder()
+			mux.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("%s: expected 200 OK, got %d", url, rec.Code)
+			}
+			var resp struct {
+				Data []domain.Announcement `json:"data"`
+			}
+			if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+				t.Fatalf("%s: decode response: %v", url, err)
+			}
+			for _, a := range resp.Data {
+				if a.Target != "all" {
+					t.Errorf("%s: leaked non-public announcement %q (target=%s)", url, a.Title, a.Target)
+				}
+			}
+			if len(resp.Data) != 1 || resp.Data[0].Title != "Publik" {
+				t.Errorf("%s: expected only the public announcement, got %d items", url, len(resp.Data))
+			}
 		}
 	})
 
