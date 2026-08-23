@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
 import {
   FeeCategory,
+  FeePeriod,
   DuesPayment,
   CreateDuesPaymentPayload,
   FinancialTransaction,
@@ -19,6 +20,45 @@ export function useFeeCategories() {
       const res = await api.get<any>('/financial/categories');
       const data: FeeCategory[] = Array.isArray(res.data) ? res.data : (res.data?.data || []);
       return data;
+    },
+  });
+}
+
+export function useCreateFeeCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { name: string; amount: number; period: FeePeriod; description?: string }) => {
+      const res = await api.post<FeeCategory>('/financial/categories', payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['financial', 'categories'] });
+    },
+  });
+}
+
+export function useUpdateFeeCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string; name: string; amount: number; period: FeePeriod; description?: string }) => {
+      const res = await api.put<FeeCategory>(`/financial/categories/${id}`, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['financial', 'categories'] });
+    },
+  });
+}
+
+export function useDeleteFeeCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.delete(`/financial/categories/${id}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['financial', 'categories'] });
     },
   });
 }

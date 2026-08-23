@@ -4,6 +4,16 @@ import { login, SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD, nik16 } from '../helpers'
 const RT003 = 'http://rt-003.openrt.local';
 const RT004 = 'http://rt-004.openrt.local';
 
+async function ensureTenant(page: Page, name: string, slug: string) {
+  await page.goto('/superadmin/tenants');
+  const existing = page.locator('table').filter({ hasText: slug });
+  if ((await existing.count()) > 0) return;
+  await page.getByRole('button', { name: '+ Pendaftaran RT Baru' }).click();
+  await page.getByPlaceholder('e.g. RT 01 RW 05 Melati').fill(name);
+  await page.getByRole('button', { name: 'Simpan Tenant' }).click();
+  await expect(page.locator('table')).toContainText(slug);
+}
+
 async function createUserForTenant(
   page: Page,
   name: string,
@@ -48,6 +58,8 @@ test.describe('Tenant isolation through real tenant hostnames', () => {
 
     // Superadmin provisions admin_rt users for tenants rt-003 and rt-004
     await login(page, SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD);
+    await ensureTenant(page, 'rt 003', 'rt-003');
+    await ensureTenant(page, 'rt 004', 'rt-004');
     await createUserForTenant(page, `Admin A ${ts}`, aEmail, pw, 'admin_rt', 'rt-003');
     await createUserForTenant(page, `Admin B ${ts}`, bEmail, pw, 'admin_rt', 'rt-004');
 

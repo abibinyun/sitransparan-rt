@@ -20,6 +20,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
 
   const [type, setType] = useState<TransactionType>('income');
   const [category, setCategory] = useState('');
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategory, setCustomCategory] = useState('');
   const [amount, setAmount] = useState<number>(0);
   const [transactionDate, setTransactionDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -46,7 +48,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!category || amount <= 0 || !transactionDate) {
+    const finalCategory = isCustomCategory ? customCategory.trim() : category;
+    if (!finalCategory || amount <= 0 || !transactionDate) {
       setError('Harap isi semua bidang wajib');
       return;
     }
@@ -55,13 +58,20 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
       setError('');
       await createTx.mutateAsync({
         type,
-        category,
+        category: finalCategory,
         amount: Number(amount),
         transaction_date: dateOnlyToISO(transactionDate)!,
         description: description || undefined,
         proof_url: proofUrl || undefined,
       });
       onClose();
+      // Reset form
+      setCategory('');
+      setIsCustomCategory(false);
+      setCustomCategory('');
+      setAmount(0);
+      setDescription('');
+      setProofUrl('');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Gagal mencatat transaksi kas');
     }
@@ -107,30 +117,66 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
 
         <div className="space-y-2">
           <Label htmlFor="txCategory">Kategori Transaksi *</Label>
-          <Select
-            id="txCategory"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            required
-          >
-            <option value="">-- Pilih Kategori --</option>
-            {type === 'income' ? (
-              <>
-                <option value="IURAN_WARGA">Iuran Warga</option>
-                <option value="DONASI">Donasi / Sumbangan</option>
-                <option value="DANA_DESA">Dana Bantuan Desa/Pemerintah</option>
-                <option value="LAINNYA_PEMASUKAN">Pemasukan Lain-lain</option>
-              </>
-            ) : (
-              <>
-                <option value="OPERASIONAL_RT">Operasional & Keamanan</option>
-                <option value="KEBERSIHAN">Kebersihan & Sampah</option>
-                <option value="KEGIATAN_WARGA">Kegiatan & Acara RT</option>
-                <option value="PERBAIKAN_FASILITAS">Perbaikan Fasilitas</option>
-                <option value="LAINNYA_PENGELUARAN">Pengeluaran Lain-lain</option>
-              </>
-            )}
-          </Select>
+          {!isCustomCategory ? (
+            <div className="space-y-2">
+              <Select
+                id="txCategory"
+                value={category}
+                onChange={(e) => {
+                  if (e.target.value === '__CUSTOM__') {
+                    setIsCustomCategory(true);
+                    setCategory('');
+                  } else {
+                    setCategory(e.target.value);
+                  }
+                }}
+                required
+              >
+                <option value="">-- Pilih Kategori --</option>
+                {type === 'income' ? (
+                  <>
+                    <option value="IURAN_WARGA">Iuran Warga</option>
+                    <option value="DONASI">Donasi / Sumbangan</option>
+                    <option value="DANA_DESA">Dana Bantuan Desa/Pemerintah</option>
+                    <option value="LAINNYA_PEMASUKAN">Pemasukan Lain-lain</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="OPERASIONAL_RT">Operasional & Keamanan</option>
+                    <option value="KEBERSIHAN">Kebersihan & Sampah</option>
+                    <option value="KEGIATAN_WARGA">Kegiatan & Acara RT</option>
+                    <option value="PERBAIKAN_FASILITAS">Perbaikan Fasilitas</option>
+                    <option value="LAINNYA_PENGELUARAN">Pengeluaran Lain-lain</option>
+                  </>
+                )}
+                <option value="__CUSTOM__">+ Buat Kategori Kustom / Baru...</option>
+              </Select>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="flex gap-2">
+                <Input
+                  id="customCategory"
+                  type="text"
+                  placeholder="Ketik nama kategori (misal: POSYANDU, JIMPITAN)"
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsCustomCategory(false);
+                    setCustomCategory('');
+                  }}
+                >
+                  Pilih List
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
