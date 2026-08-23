@@ -14,7 +14,7 @@ import (
 type contextKey string
 
 const (
-	TenantContextKey = domain.TenantContextKey
+	TenantContextKey            = domain.TenantContextKey
 	UserContextKey   contextKey = "user_id"
 	RoleContextKey   contextKey = "role"
 )

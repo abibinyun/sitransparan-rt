@@ -100,7 +100,7 @@ func (h *UserHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 type createUserReq struct {
-	TenantID *uuid.UUID       `json:"tenant_id,omitempty"`
+	TenantID *uuid.UUID      `json:"tenant_id,omitempty"`
 	Name     string          `json:"name"`
 	Email    string          `json:"email"`
 	Password string          `json:"password"`
@@ -109,7 +109,7 @@ type createUserReq struct {
 }
 
 type updateUserReq struct {
-	TenantID *uuid.UUID       `json:"tenant_id,omitempty"`
+	TenantID *uuid.UUID      `json:"tenant_id,omitempty"`
 	Name     string          `json:"name"`
 	Email    string          `json:"email"`
 	Phone    *string         `json:"phone,omitempty"`

@@ -70,7 +70,7 @@ func main() {
 	residentHandler := delivery.NewResidentHandler(residentUC)
 
 	financialUC := usecase.NewFinancialUsecase(financialRepo)
-	financialHandler := delivery.NewFinancialHandler(financialUC)
+	financialHandler := delivery.NewFinancialHandler(financialUC, tenantRepo, cfg.TenantBaseDomain)
 
 	eventUC := usecase.NewEventUsecase(eventRepo)
 	eventHandler := delivery.NewEventHandler(eventUC)
@@ -88,7 +88,7 @@ func main() {
 	userHandler := delivery.NewUserHandler(userUC)
 
 	meetingUC := usecase.NewMeetingUsecase(meetingRepo)
-	meetingHandler := delivery.NewMeetingHandler(meetingUC)
+	meetingHandler := delivery.NewMeetingHandler(meetingUC, tenantRepo, cfg.TenantBaseDomain)
 
 	tenantMw := middleware.TenantMiddleware(tenantRepo, cfg.TenantBaseDomain)
 	authMw := middleware.AuthMiddleware(jwtSecret)

@@ -1345,6 +1345,35 @@ paths:
         '200':
           description: Tugas dihapus
 
+  # ---------------------------------------------- Public Transparency Feed
+  /api/v1/t/{slug}/meetings:
+    get:
+      summary: Daftar notulen rapat publik untuk portal transparansi anonim (PUBLIC)
+      description: >
+        Hanya meeting dengan visibility='public'. Respons disanitasi: tanpa notes
+        internal dan tanpa identitas pembuat. Slug harus tenant aktif; jika request
+        datang dari subdomain tenant, slug harus cocok dengan hostname.
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: '{ data: [{ id, title, agenda, meeting_date, location, meeting_type, status }] }'
+        '404':
+          description: Tenant tidak ditemukan / tidak aktif / mismatch hostname
+
+  /api/v1/t/{slug}/financial-summary:
+    get:
+      summary: Ringkasan kas agregat untuk portal transparansi anonim (PUBLIC)
+      description: >
+        Agregat saja — tanpa baris per-pembayar, tanpa metadata funds, tanpa bukti.
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: '{ current_balance, monthly_income, monthly_expense, spending_breakdown }'
+        '404':
+          description: Tenant tidak ditemukan / tidak aktif / mismatch hostname
+
 components:
   securitySchemes:
     BearerAuth:

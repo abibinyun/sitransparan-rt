@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { usePublicAnnouncements, usePublicDocuments } from '../services/announcement_doc';
+import { usePublicTenantQuery } from '../services/public_tenant';
+import { ShareCardModal, ShareableAnnouncement } from '../components/ShareCardModal';
 import {
   FileText,
   Download,
@@ -9,14 +11,18 @@ import {
   AlertCircle,
   FileCheck,
   Sparkles,
-  ArrowUpRight
+  ArrowUpRight,
+  Share2
 } from 'lucide-react';
 
 export const PublicAnnouncementsPage: React.FC = () => {
   const { data: announcementsData, isLoading: loadingAnnouncements } = usePublicAnnouncements();
   const { data: documentsData, isLoading: loadingDocuments } = usePublicDocuments();
+  const { data: tenantInfo } = usePublicTenantQuery();
+  const tenantName = tenantInfo?.name || 'Portal RT';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [shareTarget, setShareTarget] = useState<ShareableAnnouncement | null>(null);
 
   const announcements = announcementsData?.data || [];
   const documents = documentsData?.data || [];
@@ -127,6 +133,13 @@ export const PublicAnnouncementsPage: React.FC = () => {
                       </a>
                     </div>
                   )}
+
+                  <button
+                    onClick={() => setShareTarget(item)}
+                    className="self-start inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <Share2 className="w-3.5 h-3.5" /> Bagikan ke WhatsApp
+                  </button>
                 </div>
               ))}
             </div>
@@ -215,6 +228,13 @@ export const PublicAnnouncementsPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <ShareCardModal
+        isOpen={shareTarget !== null}
+        onClose={() => setShareTarget(null)}
+        announcement={shareTarget}
+        tenantName={tenantName}
+      />
     </div>
   );
 };

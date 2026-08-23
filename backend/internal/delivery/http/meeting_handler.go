@@ -1,25 +1,30 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"backend/internal/delivery/http/middleware"
 	"backend/internal/domain"
 	"backend/internal/repository"
+	"github.com/google/uuid"
 )
 
 type MeetingHandler struct {
 	meetingUsecase domain.MeetingUsecase
+	tenantRepo     domain.TenantRepository
+	baseDomain     string
 }
 
-func NewMeetingHandler(meetingUsecase domain.MeetingUsecase) *MeetingHandler {
+func NewMeetingHandler(meetingUsecase domain.MeetingUsecase, tenantRepo domain.TenantRepository, baseDomain string) *MeetingHandler {
 	return &MeetingHandler{
 		meetingUsecase: meetingUsecase,
+		tenantRepo:     tenantRepo,
+		baseDomain:     baseDomain,
 	}
 }
 
@@ -492,7 +497,66 @@ func (h *MeetingHandler) HandleActionItemByID(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// publicMeetingView is the anonymous-safe projection of a meeting: internal
+// notes and creator identity are never exposed on the public feed.
+type publicMeetingView struct {
+	ID          uuid.UUID `json:"id"`
+	Title       string    `json:"title"`
+	Agenda      string    `json:"agenda"`
+	MeetingDate time.Time `json:"meeting_date"`
+	Location    string    `json:"location"`
+	MeetingType string    `json:"meeting_type"`
+	Status      string    `json:"status"`
+}
+
+// handlePublicTenantMeetings serves GET /api/v1/t/{slug}/meetings — the
+// anonymous transparency feed. Only meetings with visibility='public' are
+// returned, and only through a valid, active tenant slug.
+func (h *MeetingHandler) handlePublicTenantMeetings(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+
+	// Hostname/tenant consistency: on a tenant subdomain of the base domain,
+	// the path slug must match the hostname tenant (else 404).
+	if hostSlug, matched := middleware.HostnameSlug(r.Host, h.baseDomain); matched && hostSlug != slug {
+		writeMeetingError(w, http.StatusNotFound, "tenant not found")
+		return
+	}
+
+	tenant, err := h.tenantRepo.GetBySlug(r.Context(), slug)
+	if err != nil || tenant == nil || !tenant.IsActive() {
+		writeMeetingError(w, http.StatusNotFound, "tenant not found")
+		return
+	}
+
+	r = r.WithContext(context.WithValue(r.Context(), domain.TenantContextKey, tenant))
+
+	meetings, err := h.meetingUsecase.ListMeetings(r.Context(), "public")
+	if err != nil {
+		writeMeetingError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	view := make([]publicMeetingView, 0, len(meetings))
+	for _, m := range meetings {
+		view = append(view, publicMeetingView{
+			ID:          m.ID,
+			Title:       m.Title,
+			Agenda:      m.Agenda,
+			MeetingDate: m.MeetingDate,
+			Location:    m.Location,
+			MeetingType: m.MeetingType,
+			Status:      m.Status,
+		})
+	}
+
+	writeMeetingJSON(w, http.StatusOK, map[string]interface{}{"data": view})
+}
+
 func (h *MeetingHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler) {
+	// Public tenant route: /api/v1/t/{slug}/meetings — anonymous transparency
+	// feed, strictly limited to meetings with visibility='public'.
+	mux.HandleFunc("GET /api/v1/t/{slug}/meetings", h.handlePublicTenantMeetings)
+
 	meetingHandler := authMw(tenantMw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/api/v1/meetings")
 		path = strings.TrimPrefix(path, "/")

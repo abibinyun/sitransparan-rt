@@ -25,7 +25,6 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 | POST | `/api/v1/auth/register` | Registrasi user baru. Body: `{name, email, password, phone?}`. **Tidak** membuat mapping tenant. |
 
 ### Public Tenant Resources (resolusi tenant via slug di path)
-
 | Metode | Path | Keterangan |
 |---|---|---|
 | GET | `/api/v1/t/{slug}/info` | Info tenant publik (id, name, slug, domain, logo_url). Response: `{data: tenant}`. |
@@ -34,6 +33,8 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 | GET | `/api/v1/t/{slug}/aspirations` | List aspirasi publik (tanpa identitas resident). |
 | POST | `/api/v1/t/{slug}/aspirations` | Submit aspirasi publik anonim (`resident_id` diabaikan). |
 | GET | `/api/v1/t/{slug}/needs` | List kebutuhan lingkungan publik. |
+| GET | `/api/v1/t/{slug}/meetings` | Notulen rapat **publik saja** (sanitasi: tanpa notes internal & tanpa `created_by`). Tenant harus aktif; hostname mismatch → 404. |
+| GET | `/api/v1/t/{slug}/financial-summary` | Ringkasan kas **agregat saja** (`current_balance`, `monthly_income`, `monthly_expense`, `spending_breakdown`) — tanpa data pembayar/funds. |
 
 ### Swagger
 

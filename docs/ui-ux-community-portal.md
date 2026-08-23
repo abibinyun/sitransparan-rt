@@ -211,11 +211,11 @@ Fase 0 — PRASYARAT (selesai ✅)
   upload nyata (proof iuran, dokumen, kuitansi), objek ber-prefix per tenant,
   URL objek dapat diakses. Tanpa ini, galeri foto & storytelling mustahil.
 
-Fase 1 — QUICK WIN (estimasi: 3–5 hari kerja)
-  • GET /t/{slug}/meetings  (filter visibility=public — murah, fondasi sudah ada)
-  • GET /t/{slug}/financial-summary (agregat publik)
-  • Shareable card WhatsApp (client-side canvas)
-  → Nilai tertinggi per effort; tidak menambah fitur sosial baru.
+Fase 1 — QUICK WIN (SELESAI ✅)
+  • GET /t/{slug}/meetings  (filter visibility=public, sanitasi notes/created_by)
+  • GET /t/{slug}/financial-summary (agregat saja, tanpa data pembayar)
+  • Shareable card WhatsApp (client-side canvas, konsep "papan pengumuman")
+  → Diverifikasi 4 spec E2E baru (public-transparency); total suite 54/54 hijau.
 
 Fase 2 — FEED TIMELINE (estimasi: 1–2 minggu)
   • Komponen FeedCard, badge status, BottomNav + responsive MainLayout

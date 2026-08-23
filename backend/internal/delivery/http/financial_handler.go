@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -12,14 +13,20 @@ import (
 )
 
 type FinancialHandler struct {
-	usecase domain.FinancialUsecase
+	usecase    domain.FinancialUsecase
+	tenantRepo domain.TenantRepository
+	baseDomain string
 }
 
-func NewFinancialHandler(usecase domain.FinancialUsecase) *FinancialHandler {
-	return &FinancialHandler{usecase: usecase}
+func NewFinancialHandler(usecase domain.FinancialUsecase, tenantRepo domain.TenantRepository, baseDomain string) *FinancialHandler {
+	return &FinancialHandler{usecase: usecase, tenantRepo: tenantRepo, baseDomain: baseDomain}
 }
 
 func (h *FinancialHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler) {
+	// Public tenant route: /api/v1/t/{slug}/financial-summary — aggregate-only
+	// transparency data for the anonymous public portal (no payer rows).
+	mux.HandleFunc("GET /api/v1/t/{slug}/financial-summary", h.handlePublicTenantSummary)
+
 	fundsHandler := authMw(tenantMw(http.HandlerFunc(h.handleFunds)))
 	categoriesHandler := authMw(tenantMw(http.HandlerFunc(h.handleCategories)))
 	duesHandler := authMw(tenantMw(http.HandlerFunc(h.handleDues)))
@@ -554,6 +561,54 @@ func (h *FinancialHandler) handleSummary(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(summary)
+}
+
+// publicFinancialSummaryView is the anonymous-safe projection of the kas
+// summary: aggregates only — never payer rows, funds metadata, or notes.
+type publicFinancialSummaryView struct {
+	CurrentBalance    float64                    `json:"current_balance"`
+	MonthlyIncome     float64                    `json:"monthly_income"`
+	MonthlyExpense    float64                    `json:"monthly_expense"`
+	SpendingBreakdown []domain.CategoryBreakdown `json:"spending_breakdown"`
+}
+
+// handlePublicTenantSummary serves GET /api/v1/t/{slug}/financial-summary for
+// the anonymous transparency portal. Aggregate figures only.
+func (h *FinancialHandler) handlePublicTenantSummary(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+
+	if hostSlug, matched := middleware.HostnameSlug(r.Host, h.baseDomain); matched && hostSlug != slug {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	tenant, err := h.tenantRepo.GetBySlug(r.Context(), slug)
+	if err != nil || tenant == nil || !tenant.IsActive() {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	r = r.WithContext(context.WithValue(r.Context(), domain.TenantContextKey, tenant))
+
+	summary, err := h.usecase.GetFinancialSummary(r.Context(), tenant.ID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	breakdown := summary.SpendingBreakdown
+	if breakdown == nil {
+		breakdown = []domain.CategoryBreakdown{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(publicFinancialSummaryView{
+		CurrentBalance:    summary.CurrentBalance,
+		MonthlyIncome:     summary.MonthlyIncome,
+		MonthlyExpense:    summary.MonthlyExpense,
+		SpendingBreakdown: breakdown,
+	})
 }
 
 // /api/v1/financial/upload

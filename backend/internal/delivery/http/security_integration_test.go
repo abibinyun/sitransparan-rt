@@ -72,7 +72,7 @@ func buildSecurityMux(db *sql.DB) http.Handler {
 	residentHandler := delivery.NewResidentHandler(residentUC)
 
 	financialUC := usecase.NewFinancialUsecase(financialRepo)
-	financialHandler := delivery.NewFinancialHandler(financialUC)
+	financialHandler := delivery.NewFinancialHandler(financialUC, nil, "")
 
 	eventUC := usecase.NewEventUsecase(eventRepo)
 	eventHandler := delivery.NewEventHandler(eventUC)

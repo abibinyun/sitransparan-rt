@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -245,7 +246,7 @@ func mockFinancialAuthMiddleware(tenant *domain.Tenant, userID uuid.UUID) (func(
 
 func TestFinancialHandler(t *testing.T) {
 	uc := newMockFinancialUsecase()
-	handler := delivery.NewFinancialHandler(uc)
+	handler := delivery.NewFinancialHandler(uc, nil, "")
 
 	tenant := &domain.Tenant{ID: uuid.New(), Name: "RT 01"}
 	userID := uuid.New()
@@ -322,5 +323,57 @@ func TestFinancialHandler(t *testing.T) {
 	mux.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Upload proof failed, got status %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func noopFinancialMW(next http.Handler) http.Handler { return next }
+
+// The anonymous public kas summary must expose aggregates only — no funds
+// metadata, no payer rows, no proof URLs.
+func TestFinancialHandler_PublicTenantSummary(t *testing.T) {
+	tenant := &domain.Tenant{ID: uuid.New(), Name: "RT 01", Slug: "rt01", Status: "active"}
+	tenantRepo := &mockTenantRepoForAnnDoc{tenant: tenant}
+	uc := &mockFinancialUsecase{}
+	handler := delivery.NewFinancialHandler(uc, tenantRepo, "openrt.local")
+
+	mux := http.NewServeMux()
+	handler.RegisterRoutes(mux, noopFinancialMW, noopFinancialMW)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/t/rt01/financial-summary", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d: %s", w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	for _, key := range []string{"current_balance", "monthly_income", "monthly_expense", "spending_breakdown"} {
+		if !strings.Contains(body, key) {
+			t.Errorf("public summary missing aggregate field %q", key)
+		}
+	}
+	for _, leaked := range []string{"proof_url", "resident_id", `"funds"`, "period_month"} {
+		if strings.Contains(body, leaked) {
+			t.Errorf("public summary leaked sensitive field %q", leaked)
+		}
+	}
+}
+
+// Hostname/slug mismatch on a tenant subdomain must 404.
+func TestFinancialHandler_PublicTenantSummary_HostMismatchDenied(t *testing.T) {
+	tenant := &domain.Tenant{ID: uuid.New(), Name: "RT 01", Slug: "rt01", Status: "active"}
+	tenantRepo := &mockTenantRepoForAnnDoc{tenant: tenant}
+	handler := delivery.NewFinancialHandler(&mockFinancialUsecase{}, tenantRepo, "openrt.local")
+
+	mux := http.NewServeMux()
+	handler.RegisterRoutes(mux, noopFinancialMW, noopFinancialMW)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/t/rt01/financial-summary", nil)
+	req.Host = "rt-other.openrt.local"
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 on hostname mismatch, got %d", w.Code)
 	}
 }

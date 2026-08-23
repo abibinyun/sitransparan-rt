@@ -115,7 +115,7 @@ func (m *mockMeetingUsecase) ListActionItems(ctx context.Context, status string,
 
 func TestMeetingHandler_ListMeetings(t *testing.T) {
 	mockUC := new(mockMeetingUsecase)
-	handler := delivery.NewMeetingHandler(mockUC)
+	handler := delivery.NewMeetingHandler(mockUC, nil, "")
 
 	now := time.Now()
 	mockUC.On("ListMeetings", mock.Anything, "public").Return([]domain.Meeting{
@@ -146,7 +146,7 @@ func TestMeetingHandler_ListMeetings(t *testing.T) {
 // widen the visibility filter via the query string.
 func TestMeetingHandler_ListMeetings_ResidentForcedPublic(t *testing.T) {
 	mockUC := new(mockMeetingUsecase)
-	handler := delivery.NewMeetingHandler(mockUC)
+	handler := delivery.NewMeetingHandler(mockUC, nil, "")
 
 	mockUC.On("ListMeetings", mock.Anything, "public").Return([]domain.Meeting{}, nil)
 
@@ -160,7 +160,7 @@ func TestMeetingHandler_ListMeetings_ResidentForcedPublic(t *testing.T) {
 // An admin may query any visibility filter, including confidential.
 func TestMeetingHandler_ListMeetings_AdminAnyVisibility(t *testing.T) {
 	mockUC := new(mockMeetingUsecase)
-	handler := delivery.NewMeetingHandler(mockUC)
+	handler := delivery.NewMeetingHandler(mockUC, nil, "")
 
 	mockUC.On("ListMeetings", mock.Anything, "confidential").Return([]domain.Meeting{}, nil)
 
@@ -174,7 +174,7 @@ func TestMeetingHandler_ListMeetings_AdminAnyVisibility(t *testing.T) {
 // A resident requesting a confidential meeting by ID must get 403.
 func TestMeetingHandler_GetConfidentialMeeting_ResidentDenied(t *testing.T) {
 	mockUC := new(mockMeetingUsecase)
-	handler := delivery.NewMeetingHandler(mockUC)
+	handler := delivery.NewMeetingHandler(mockUC, nil, "")
 
 	id := uuid.New()
 	confidential := &domain.Meeting{ID: id, Title: "Rapat Rahasia", Visibility: "confidential"}
@@ -187,4 +187,55 @@ func TestMeetingHandler_GetConfidentialMeeting_ResidentDenied(t *testing.T) {
 	handler.HandleMeetingByID(rr, req.WithContext(ctx))
 
 	assert.Equal(t, http.StatusForbidden, rr.Code)
+}
+
+func noopMiddleware(next http.Handler) http.Handler { return next }
+
+// The anonymous public tenant feed must only expose public meetings, with
+// internal notes and creator identity stripped.
+func TestMeetingHandler_PublicTenantMeetings(t *testing.T) {
+	tenant := &domain.Tenant{ID: uuid.New(), Name: "RT 01", Slug: "rt01", Status: "active"}
+	tenantRepo := &mockTenantRepoForAnnDoc{tenant: tenant}
+	mockUC := new(mockMeetingUsecase)
+	handler := delivery.NewMeetingHandler(mockUC, tenantRepo, "openrt.local")
+
+	creator := uuid.New()
+	note := "catatan internal"
+	pub := &domain.Meeting{ID: uuid.New(), Title: "Musyawarah Terbuka", Agenda: "A", Visibility: "public", Notes: &note, CreatedBy: &creator}
+	// The real repository filters by visibility; the mock mirrors that contract
+	// by returning only the public meeting for a visibility='public' query.
+	mockUC.On("ListMeetings", mock.Anything, "public").Return([]domain.Meeting{*pub}, nil)
+
+	mux := http.NewServeMux()
+	handler.RegisterRoutes(mux, noopMiddleware, noopMiddleware)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/t/rt01/meetings", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	body := rr.Body.String()
+	assert.Contains(t, body, "Musyawarah Terbuka")
+	assert.NotContains(t, body, "Rapat Tertutup", "non-public meeting leaked to anonymous feed")
+	assert.NotContains(t, body, `"notes"`, "internal notes leaked to anonymous feed")
+	assert.NotContains(t, body, `"created_by"`, "creator identity leaked to anonymous feed")
+}
+
+// Hostname/slug mismatch on a tenant subdomain must 404.
+func TestMeetingHandler_PublicTenantMeetings_HostMismatchDenied(t *testing.T) {
+	tenant := &domain.Tenant{ID: uuid.New(), Name: "RT 01", Slug: "rt01", Status: "active"}
+	tenantRepo := &mockTenantRepoForAnnDoc{tenant: tenant}
+	mockUC := new(mockMeetingUsecase)
+	handler := delivery.NewMeetingHandler(mockUC, tenantRepo, "openrt.local")
+	mockUC.On("ListMeetings", mock.Anything, "public").Return([]domain.Meeting{}, nil)
+
+	mux := http.NewServeMux()
+	handler.RegisterRoutes(mux, noopMiddleware, noopMiddleware)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/t/rt01/meetings", nil)
+	req.Host = "rt-other.openrt.local"
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
 }
