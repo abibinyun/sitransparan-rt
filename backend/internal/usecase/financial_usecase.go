@@ -17,6 +17,56 @@ func NewFinancialUsecase(repo domain.FinancialRepository) domain.FinancialUsecas
 	return &financialUsecase{repo: repo}
 }
 
+// Funds CRUD
+func (u *financialUsecase) CreateFund(ctx context.Context, tenantID uuid.UUID, fund *domain.Fund) error {
+	if fund == nil || fund.Name == "" {
+		return ErrInvalidInput
+	}
+	fund.TenantID = tenantID
+	return u.repo.CreateFund(ctx, fund)
+}
+
+func (u *financialUsecase) GetFundByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.Fund, error) {
+	return u.repo.GetFundByID(ctx, tenantID, id)
+}
+
+func (u *financialUsecase) UpdateFund(ctx context.Context, tenantID uuid.UUID, fund *domain.Fund) error {
+	if fund == nil || fund.Name == "" {
+		return ErrInvalidInput
+	}
+	fund.TenantID = tenantID
+	return u.repo.UpdateFund(ctx, fund)
+}
+
+func (u *financialUsecase) DeleteFund(ctx context.Context, tenantID, id uuid.UUID) error {
+	return u.repo.DeleteFund(ctx, tenantID, id)
+}
+
+func (u *financialUsecase) ListFunds(ctx context.Context, tenantID uuid.UUID) ([]*domain.Fund, error) {
+	funds, err := u.repo.ListFunds(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	// Calculate balance per fund
+	txs, _, err := u.repo.ListFinancialTransactions(ctx, tenantID, "", 10000, 0)
+	if err == nil {
+		fundBalanceMap := make(map[uuid.UUID]float64)
+		for _, tx := range txs {
+			if tx.FundID != nil {
+				if tx.Type == "income" {
+					fundBalanceMap[*tx.FundID] += tx.Amount
+				} else if tx.Type == "expense" {
+					fundBalanceMap[*tx.FundID] -= tx.Amount
+				}
+			}
+		}
+		for _, f := range funds {
+			f.Balance = fundBalanceMap[f.ID]
+		}
+	}
+	return funds, nil
+}
+
 // FeeCategory CRUD
 func (u *financialUsecase) CreateFeeCategory(ctx context.Context, tenantID uuid.UUID, category *domain.FeeCategory) error {
 	if category == nil || category.Name == "" || category.Amount < 0 {
@@ -214,11 +264,14 @@ func (u *financialUsecase) GetFinancialSummary(ctx context.Context, tenantID uui
 		})
 	}
 
+	funds, _ := u.ListFunds(ctx, tenantID)
+
 	return &domain.FinancialSummary{
 		CurrentBalance:    totalIncome - totalExpense,
 		MonthlyIncome:     monthlyIncome,
 		MonthlyExpense:    monthlyExpense,
 		SpendingBreakdown: breakdown,
+		Funds:             funds,
 	}, nil
 }
 

@@ -107,6 +107,36 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     expect(saldoAfter).toBe(saldoBefore + 60000);
   });
 
+  test('multi-fund management — create fund and record transaction scoped to the fund', async ({ page }) => {
+    await page.goto('/financial');
+    const ts = Date.now();
+    const fundName = `Kas Karang Taruna ${ts}`;
+
+    // Open Add Fund Modal
+    await page.getByRole('button', { name: '+ Kantong Kas Baru' }).click();
+    await expect(page.getByRole('heading', { name: 'Tambah Kantong Kas Baru' })).toBeVisible();
+    await page.fill('#fundName', fundName);
+    await page.selectOption('#fundType', 'youth');
+    await page.fill('#fundDesc', 'Kas khusus pemuda dan 17-an');
+    await page.getByRole('button', { name: 'Simpan Kantong Kas' }).click();
+
+    // Verify fund tab shows the new fund
+    await page.getByRole('button', { name: /^Kantong Kas/ }).click();
+    await expect(page.locator('table')).toContainText(fundName);
+
+    // Record income transaction assigned to this new fund
+    await page.getByRole('button', { name: '+ Transaksi Kas RT' }).click();
+    await page.selectOption('#txFund', { label: fundName });
+    await page.selectOption('#txCategory', 'DONASI');
+    await page.fill('#txAmount', '75000');
+    await page.getByRole('button', { name: 'Simpan Transaksi' }).click();
+
+    // Verify transaction row displays the assigned fund name
+    await page.getByRole('button', { name: 'Transaksi Kas RT', exact: true }).click();
+    await expect(page.locator('table')).toContainText(fundName);
+    await expect(page.locator('table')).toContainText('+ Rp 75.000');
+  });
+
   test('financial transactions are append-only — no edit/delete actions in the UI', async ({ page }) => {
     await page.goto('/financial');
     await page.getByRole('button', { name: 'Transaksi Kas RT', exact: true }).click();

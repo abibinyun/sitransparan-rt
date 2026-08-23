@@ -8,6 +8,18 @@ import (
 	"github.com/google/uuid"
 )
 
+type Fund struct {
+	ID          uuid.UUID `json:"id"`
+	TenantID    uuid.UUID `json:"tenant_id"`
+	Name        string    `json:"name"`
+	Type        string    `json:"type"` // 'operational', 'social', 'youth', 'infrastructure', 'other'
+	Description *string   `json:"description,omitempty"`
+	IsDefault   bool      `json:"is_default"`
+	Balance     float64   `json:"balance,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 type FeeCategory struct {
 	ID          uuid.UUID `json:"id"`
 	TenantID    uuid.UUID `json:"tenant_id"`
@@ -40,6 +52,8 @@ type DuesPayment struct {
 type FinancialTransaction struct {
 	ID              uuid.UUID  `json:"id"`
 	TenantID        uuid.UUID  `json:"tenant_id"`
+	FundID          *uuid.UUID `json:"fund_id,omitempty"`
+	FundName        *string    `json:"fund_name,omitempty"`
 	Type            string     `json:"type"` // 'income' or 'expense'
 	Category        string     `json:"category"`
 	Amount          float64    `json:"amount"`
@@ -61,9 +75,17 @@ type FinancialSummary struct {
 	MonthlyIncome     float64             `json:"monthly_income"`
 	MonthlyExpense    float64             `json:"monthly_expense"`
 	SpendingBreakdown []CategoryBreakdown `json:"spending_breakdown"`
+	Funds             []*Fund             `json:"funds,omitempty"`
 }
 
 type FinancialRepository interface {
+	// Funds
+	CreateFund(ctx context.Context, fund *Fund) error
+	GetFundByID(ctx context.Context, tenantID, id uuid.UUID) (*Fund, error)
+	UpdateFund(ctx context.Context, fund *Fund) error
+	DeleteFund(ctx context.Context, tenantID, id uuid.UUID) error
+	ListFunds(ctx context.Context, tenantID uuid.UUID) ([]*Fund, error)
+
 	// FeeCategory
 	CreateFeeCategory(ctx context.Context, category *FeeCategory) error
 	GetFeeCategoryByID(ctx context.Context, tenantID, id uuid.UUID) (*FeeCategory, error)
@@ -81,12 +103,20 @@ type FinancialRepository interface {
 	CreateFinancialTransaction(ctx context.Context, tx *FinancialTransaction) error
 	GetFinancialTransactionByID(ctx context.Context, tenantID, id uuid.UUID) (*FinancialTransaction, error)
 	ListFinancialTransactions(ctx context.Context, tenantID uuid.UUID, txType string, limit, offset int) ([]*FinancialTransaction, int64, error)
+	ListFinancialTransactionsByFund(ctx context.Context, tenantID, fundID uuid.UUID, txType string, limit, offset int) ([]*FinancialTransaction, int64, error)
 
 	// Storage
 	UploadProof(ctx context.Context, filename string, content io.Reader, contentType string) (string, error)
 }
 
 type FinancialUsecase interface {
+	// Funds CRUD
+	CreateFund(ctx context.Context, tenantID uuid.UUID, fund *Fund) error
+	GetFundByID(ctx context.Context, tenantID, id uuid.UUID) (*Fund, error)
+	UpdateFund(ctx context.Context, tenantID uuid.UUID, fund *Fund) error
+	DeleteFund(ctx context.Context, tenantID, id uuid.UUID) error
+	ListFunds(ctx context.Context, tenantID uuid.UUID) ([]*Fund, error)
+
 	// FeeCategory CRUD
 	CreateFeeCategory(ctx context.Context, tenantID uuid.UUID, category *FeeCategory) error
 	GetFeeCategoryByID(ctx context.Context, tenantID, id uuid.UUID) (*FeeCategory, error)

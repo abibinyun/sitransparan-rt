@@ -20,10 +20,14 @@ func NewFinancialHandler(usecase domain.FinancialUsecase) *FinancialHandler {
 }
 
 func (h *FinancialHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler) {
+	fundsHandler := authMw(tenantMw(http.HandlerFunc(h.handleFunds)))
 	categoriesHandler := authMw(tenantMw(http.HandlerFunc(h.handleCategories)))
 	duesHandler := authMw(tenantMw(http.HandlerFunc(h.handleDues)))
 	transactionsHandler := authMw(tenantMw(http.HandlerFunc(h.handleTransactions)))
 	uploadHandler := authMw(tenantMw(http.HandlerFunc(h.handleUpload)))
+
+	mux.Handle("/api/v1/financial/funds", fundsHandler)
+	mux.Handle("/api/v1/financial/funds/", fundsHandler)
 
 	mux.Handle("/api/v1/financial/categories", categoriesHandler)
 	mux.Handle("/api/v1/financial/categories/", categoriesHandler)
@@ -37,6 +41,127 @@ func (h *FinancialHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http
 	mux.Handle("/api/v1/financial/transactions/", transactionsHandler)
 
 	mux.Handle("/api/v1/financial/upload", uploadHandler)
+}
+
+// /api/v1/financial/funds
+func (h *FinancialHandler) handleFunds(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenantFromContext(r.Context())
+	if tenant == nil {
+		http.Error(w, `{"error":"tenant context missing"}`, http.StatusBadRequest)
+		return
+	}
+
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/financial/funds")
+	path = strings.TrimPrefix(path, "/")
+
+	if path == "" {
+		switch r.Method {
+		case http.MethodGet:
+			h.listFunds(w, r, tenant.ID)
+		case http.MethodPost:
+			h.createFund(w, r, tenant.ID)
+		default:
+			http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		}
+		return
+	}
+
+	id, err := uuid.Parse(path)
+	if err != nil {
+		http.Error(w, `{"error":"invalid fund id"}`, http.StatusBadRequest)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		h.getFundByID(w, r, tenant.ID, id)
+	case http.MethodPut:
+		h.updateFund(w, r, tenant.ID, id)
+	case http.MethodDelete:
+		h.deleteFund(w, r, tenant.ID, id)
+	default:
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *FinancialHandler) listFunds(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
+	funds, err := h.usecase.ListFunds(r.Context(), tenantID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+	if funds == nil {
+		funds = []*domain.Fund{}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"data": funds,
+	})
+}
+
+func (h *FinancialHandler) createFund(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
+	var fund domain.Fund
+	if err := json.NewDecoder(r.Body).Decode(&fund); err != nil {
+		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+	if err := h.usecase.CreateFund(r.Context(), tenantID, &fund); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(fund)
+}
+
+func (h *FinancialHandler) getFundByID(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	fund, err := h.usecase.GetFundByID(r.Context(), tenantID, id)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(fund)
+}
+
+func (h *FinancialHandler) updateFund(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
+	var fund domain.Fund
+	if err := json.NewDecoder(r.Body).Decode(&fund); err != nil {
+		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+	fund.ID = id
+	if err := h.usecase.UpdateFund(r.Context(), tenantID, &fund); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(fund)
+}
+
+func (h *FinancialHandler) deleteFund(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
+	if err := h.usecase.DeleteFund(r.Context(), tenantID, id); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "deleted"})
 }
 
 // /api/v1/financial/categories

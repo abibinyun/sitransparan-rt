@@ -1,6 +1,19 @@
 export type FeePeriod = 'monthly' | 'one_time';
 export type PaymentStatus = 'pending' | 'verified' | 'rejected';
 export type TransactionType = 'income' | 'expense';
+export type FundType = 'operational' | 'social' | 'youth' | 'infrastructure' | 'other';
+
+export interface Fund {
+  id: string;
+  tenant_id: string;
+  name: string;
+  type: FundType;
+  description?: string;
+  is_default: boolean;
+  balance?: number;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface FeeCategory {
   id: string;
@@ -43,6 +56,8 @@ export interface CreateDuesPaymentPayload {
 export interface FinancialTransaction {
   id: string;
   tenant_id: string;
+  fund_id?: string;
+  fund_name?: string;
   type: TransactionType;
   category: string;
   amount: number;
@@ -56,6 +71,7 @@ export interface FinancialTransaction {
 
 export interface CreateTransactionPayload {
   type: TransactionType;
+  fund_id?: string;
   category: string;
   amount: number;
   transaction_date: string;
@@ -63,12 +79,12 @@ export interface CreateTransactionPayload {
   proof_url?: string;
 }
 
-// Field names match the backend /financial/summary response.
 export interface FinancialSummary {
   current_balance: number;
   monthly_income: number;
   monthly_expense: number;
   spending_breakdown?: { category: string; amount: number }[];
+  funds?: Fund[];
 }
 
 export interface DuesPaymentFilter {
@@ -83,6 +99,7 @@ export interface DuesPaymentFilter {
 
 export interface TransactionFilter {
   type?: TransactionType;
+  fund_id?: string;
   category?: string;
   start_date?: string;
   end_date?: string;

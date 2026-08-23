@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useCreateFinancialTransaction, useUploadProof } from '../services/financial';
+import { useCreateFinancialTransaction, useUploadProof, useFunds } from '../services/financial';
 import { TransactionType } from '../types/financial';
 import { dateOnlyToISO } from '../utils/date';
 import { Dialog } from './ui/dialog';
@@ -17,8 +17,11 @@ interface TransactionModalProps {
 export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose }) => {
   const createTx = useCreateFinancialTransaction();
   const uploadProof = useUploadProof();
+  const { data: rawFunds } = useFunds();
+  const funds = Array.isArray(rawFunds) ? rawFunds : (rawFunds as any)?.data || [];
 
   const [type, setType] = useState<TransactionType>('income');
+  const [fundId, setFundId] = useState<string>('');
   const [category, setCategory] = useState('');
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState('');
@@ -58,6 +61,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
       setError('');
       await createTx.mutateAsync({
         type,
+        fund_id: fundId || undefined,
         category: finalCategory,
         amount: Number(amount),
         transaction_date: dateOnlyToISO(transactionDate)!,
@@ -69,6 +73,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
       setCategory('');
       setIsCustomCategory(false);
       setCustomCategory('');
+      setFundId('');
       setAmount(0);
       setDescription('');
       setProofUrl('');
@@ -113,6 +118,22 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
               Pengeluaran (Expense)
             </button>
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="txFund">Kantong Kas (Fund) *</Label>
+          <Select
+            id="txFund"
+            value={fundId}
+            onChange={(e) => setFundId(e.target.value)}
+          >
+            <option value="">-- Default (Kas Utama RT) --</option>
+            {funds.map((f: any) => (
+              <option key={f.id} value={f.id}>
+                {f.name} {f.is_default ? '(Utama)' : ''}
+              </option>
+            ))}
+          </Select>
         </div>
 
         <div className="space-y-2">

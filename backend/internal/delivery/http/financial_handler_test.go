@@ -19,6 +19,7 @@ import (
 )
 
 type mockFinancialUsecase struct {
+	funds        map[uuid.UUID]*domain.Fund
 	categories   map[uuid.UUID]*domain.FeeCategory
 	duesPayments map[uuid.UUID]*domain.DuesPayment
 	transactions map[uuid.UUID]*domain.FinancialTransaction
@@ -26,10 +27,55 @@ type mockFinancialUsecase struct {
 
 func newMockFinancialUsecase() *mockFinancialUsecase {
 	return &mockFinancialUsecase{
+		funds:        make(map[uuid.UUID]*domain.Fund),
 		categories:   make(map[uuid.UUID]*domain.FeeCategory),
 		duesPayments: make(map[uuid.UUID]*domain.DuesPayment),
 		transactions: make(map[uuid.UUID]*domain.FinancialTransaction),
 	}
+}
+
+func (m *mockFinancialUsecase) CreateFund(ctx context.Context, tenantID uuid.UUID, fund *domain.Fund) error {
+	fund.ID = uuid.New()
+	fund.TenantID = tenantID
+	m.funds[fund.ID] = fund
+	return nil
+}
+
+func (m *mockFinancialUsecase) GetFundByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.Fund, error) {
+	f, ok := m.funds[id]
+	if !ok || f.TenantID != tenantID {
+		return nil, repository.ErrNotFound
+	}
+	return f, nil
+}
+
+func (m *mockFinancialUsecase) UpdateFund(ctx context.Context, tenantID uuid.UUID, fund *domain.Fund) error {
+	f, ok := m.funds[fund.ID]
+	if !ok || f.TenantID != tenantID {
+		return repository.ErrNotFound
+	}
+	fund.TenantID = tenantID
+	m.funds[fund.ID] = fund
+	return nil
+}
+
+func (m *mockFinancialUsecase) DeleteFund(ctx context.Context, tenantID, id uuid.UUID) error {
+	f, ok := m.funds[id]
+	if !ok || f.TenantID != tenantID {
+		return repository.ErrNotFound
+	}
+	delete(m.funds, id)
+	return nil
+}
+
+func (m *mockFinancialUsecase) ListFunds(ctx context.Context, tenantID uuid.UUID) ([]*domain.Fund, error) {
+	var res []*domain.Fund
+	for _, f := range m.funds {
+		if f.TenantID == tenantID {
+			res = append(res, f)
+		}
+	}
+	return res, nil
 }
 
 func (m *mockFinancialUsecase) CreateFeeCategory(ctx context.Context, tenantID uuid.UUID, category *domain.FeeCategory) error {

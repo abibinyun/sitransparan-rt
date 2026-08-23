@@ -13,6 +13,7 @@ import (
 )
 
 type mockFinancialRepo struct {
+	funds        map[uuid.UUID]*domain.Fund
 	categories   map[uuid.UUID]*domain.FeeCategory
 	duesPayments map[uuid.UUID]*domain.DuesPayment
 	transactions map[uuid.UUID]*domain.FinancialTransaction
@@ -20,10 +21,67 @@ type mockFinancialRepo struct {
 
 func newMockFinancialRepo() *mockFinancialRepo {
 	return &mockFinancialRepo{
+		funds:        make(map[uuid.UUID]*domain.Fund),
 		categories:   make(map[uuid.UUID]*domain.FeeCategory),
 		duesPayments: make(map[uuid.UUID]*domain.DuesPayment),
 		transactions: make(map[uuid.UUID]*domain.FinancialTransaction),
 	}
+}
+
+func (m *mockFinancialRepo) CreateFund(ctx context.Context, fund *domain.Fund) error {
+	if fund.ID == uuid.Nil {
+		fund.ID = uuid.New()
+	}
+	m.funds[fund.ID] = fund
+	return nil
+}
+
+func (m *mockFinancialRepo) GetFundByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.Fund, error) {
+	f, ok := m.funds[id]
+	if !ok || f.TenantID != tenantID {
+		return nil, repository.ErrNotFound
+	}
+	return f, nil
+}
+
+func (m *mockFinancialRepo) UpdateFund(ctx context.Context, fund *domain.Fund) error {
+	f, ok := m.funds[fund.ID]
+	if !ok || f.TenantID != fund.TenantID {
+		return repository.ErrNotFound
+	}
+	m.funds[fund.ID] = fund
+	return nil
+}
+
+func (m *mockFinancialRepo) DeleteFund(ctx context.Context, tenantID, id uuid.UUID) error {
+	f, ok := m.funds[id]
+	if !ok || f.TenantID != tenantID {
+		return repository.ErrNotFound
+	}
+	delete(m.funds, id)
+	return nil
+}
+
+func (m *mockFinancialRepo) ListFunds(ctx context.Context, tenantID uuid.UUID) ([]*domain.Fund, error) {
+	var res []*domain.Fund
+	for _, f := range m.funds {
+		if f.TenantID == tenantID {
+			res = append(res, f)
+		}
+	}
+	return res, nil
+}
+
+func (m *mockFinancialRepo) ListFinancialTransactionsByFund(ctx context.Context, tenantID, fundID uuid.UUID, txType string, limit, offset int) ([]*domain.FinancialTransaction, int64, error) {
+	var res []*domain.FinancialTransaction
+	for _, tx := range m.transactions {
+		if tx.TenantID == tenantID && tx.FundID != nil && *tx.FundID == fundID {
+			if txType == "" || tx.Type == txType {
+				res = append(res, tx)
+			}
+		}
+	}
+	return res, int64(len(res)), nil
 }
 
 func (m *mockFinancialRepo) CreateFeeCategory(ctx context.Context, category *domain.FeeCategory) error {

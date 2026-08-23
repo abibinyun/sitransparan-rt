@@ -7,6 +7,9 @@ import {
   useFeeCategories,
   useCreateFeeCategory,
   useDeleteFeeCategory,
+  useFunds,
+  useCreateFund,
+  useDeleteFund,
 } from '../services/financial';
 import { DuesPaymentModal } from '../components/DuesPaymentModal';
 import { TransactionModal } from '../components/TransactionModal';
@@ -15,14 +18,15 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
-import { Plus, Trash2 } from 'lucide-react';
-import { FeePeriod } from '../types/financial';
+import { Plus, Trash2, Wallet } from 'lucide-react';
+import { FeePeriod, FundType } from '../types/financial';
 
 export const FinancialPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dues' | 'transactions' | 'categories'>('dues');
+  const [activeTab, setActiveTab] = useState<'dues' | 'transactions' | 'categories' | 'funds'>('dues');
   const [isDuesModalOpen, setIsDuesModalOpen] = useState(false);
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
+  const [isFundModalOpen, setIsFundModalOpen] = useState(false);
 
   // Fee category form state
   const [catName, setCatName] = useState('');
@@ -30,18 +34,27 @@ export const FinancialPage: React.FC = () => {
   const [catPeriod, setCatPeriod] = useState<FeePeriod>('monthly');
   const [catDesc, setCatDesc] = useState('');
 
+  // Fund form state
+  const [fundName, setFundName] = useState('');
+  const [fundType, setFundType] = useState<FundType>('operational');
+  const [fundDesc, setFundDesc] = useState('');
+
   const { data: summary, isLoading: isSummaryLoading } = useFinancialSummary();
   const { data: rawDues, isLoading: isDuesLoading } = useDuesPayments();
   const { data: rawTx, isLoading: isTxLoading } = useFinancialTransactions();
   const { data: rawCats, isLoading: isCatsLoading } = useFeeCategories();
+  const { data: rawFunds, isLoading: isFundsLoading } = useFunds();
 
   const duesList = Array.isArray(rawDues) ? rawDues : (rawDues as any)?.data || [];
   const txList = Array.isArray(rawTx) ? rawTx : (rawTx as any)?.data || [];
   const catList = Array.isArray(rawCats) ? rawCats : (rawCats as any)?.data || [];
+  const fundList = Array.isArray(rawFunds) ? rawFunds : (rawFunds as any)?.data || [];
 
   const verifyDues = useVerifyDuesPayment();
   const createFeeCat = useCreateFeeCategory();
   const deleteFeeCat = useDeleteFeeCategory();
+  const createFund = useCreateFund();
+  const deleteFund = useDeleteFund();
 
   const handleVerify = async (id: string, status: 'verified' | 'rejected') => {
     try {
@@ -81,6 +94,38 @@ export const FinancialPage: React.FC = () => {
     }
   };
 
+  const handleCreateFund = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fundName) return;
+    try {
+      await createFund.mutateAsync({
+        name: fundName,
+        type: fundType,
+        description: fundDesc || undefined,
+      });
+      setIsFundModalOpen(false);
+      setFundName('');
+      setFundType('operational');
+      setFundDesc('');
+    } catch (err) {
+      console.error('Failed to create fund', err);
+    }
+  };
+
+  const handleDeleteFund = async (id: string, isDefault: boolean) => {
+    if (isDefault) {
+      alert('Kantong Kas Utama tidak dapat dihapus.');
+      return;
+    }
+    if (confirm('Hapus kantong kas ini?')) {
+      try {
+        await deleteFund.mutateAsync(id);
+      } catch (err) {
+        console.error('Failed to delete fund', err);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -108,6 +153,12 @@ export const FinancialPage: React.FC = () => {
           >
             + Master Jenis Iuran
           </button>
+          <button
+            onClick={() => setIsFundModalOpen(true)}
+            className="rounded-md border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-100"
+          >
+            + Kantong Kas Baru
+          </button>
         </div>
       </div>
 
@@ -126,12 +177,58 @@ export const FinancialPage: React.FC = () => {
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Saldo Kas RT</p>
+          <p className="text-sm font-medium text-gray-500">Saldo Kas RT (Total)</p>
           <p className="mt-2 text-2xl font-bold text-indigo-600">
             {isSummaryLoading ? '...' : `Rp ${(summary?.current_balance || 0).toLocaleString('id-ID')}`}
           </p>
         </div>
       </div>
+
+      {/* Multi-Fund Overview Cards */}
+      {fundList.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <Wallet className="h-4 w-4 text-indigo-600" /> Saldo per Kantong Kas (Multi-Fund)
+            </h3>
+            <button
+              onClick={() => setActiveTab('funds')}
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            >
+              Kelola Kantong Kas →
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {fundList.map((f: any) => (
+              <div
+                key={f.id}
+                className={`p-3.5 rounded-lg border bg-white shadow-xs ${
+                  f.is_default ? 'border-indigo-200 bg-indigo-50/20' : 'border-slate-200'
+                }`}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-800">{f.name}</span>
+                    {f.is_default && (
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700">
+                        Utama
+                      </span>
+                    )}
+                    <p className="text-[11px] text-slate-400 mt-0.5">{f.description || f.type}</p>
+                  </div>
+                  <span
+                    className={`text-sm font-bold ${
+                      (f.balance || 0) >= 0 ? 'text-slate-900' : 'text-rose-600'
+                    }`}
+                  >
+                    Rp {(f.balance || 0).toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
@@ -155,6 +252,16 @@ export const FinancialPage: React.FC = () => {
             }`}
           >
             Transaksi Kas RT
+          </button>
+          <button
+            onClick={() => setActiveTab('funds')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'funds'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+            }`}
+          >
+            Kantong Kas ({fundList.length})
           </button>
           <button
             onClick={() => setActiveTab('categories')}
@@ -283,6 +390,9 @@ export const FinancialPage: React.FC = () => {
                     Tipe
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Kantong Kas
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                     Kategori / Ket.
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -308,6 +418,9 @@ export const FinancialPage: React.FC = () => {
                         {tx.type === 'income' ? 'Masuk' : 'Keluar'}
                       </span>
                     </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700 font-medium">
+                      {tx.fund_name || 'Kas Utama RT'}
+                    </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                       <div className="font-medium">{tx.category}</div>
                       {tx.description && (
@@ -329,6 +442,69 @@ export const FinancialPage: React.FC = () => {
                         </a>
                       ) : (
                         '-'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Tab Content: Funds */}
+      {activeTab === 'funds' && (
+        <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+            <div>
+              <h3 className="font-semibold text-gray-900">Daftar Kantong Kas RT (Multi-Fund)</h3>
+              <p className="text-xs text-gray-500">Pemisahan dana kas khusus operasional, sosial, kepemudaan, atau pembangunan</p>
+            </div>
+            <Button size="sm" onClick={() => setIsFundModalOpen(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" /> Tambah Kantong Kas
+            </Button>
+          </div>
+          {isFundsLoading ? (
+            <div className="p-6 text-center text-gray-500">Memuat data kantong kas...</div>
+          ) : fundList.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">Belum ada kantong kas</div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Nama Kantong Kas</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tipe</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Saldo Saat Ini</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Deskripsi / Peruntukan</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {fundList.map((f: any) => (
+                  <tr key={f.id}>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">
+                      {f.name} {f.is_default && <span className="ml-2 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">Utama</span>}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                      <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
+                        {f.type}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-bold text-gray-900">
+                      Rp {(f.balance || 0).toLocaleString('id-ID')}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{f.description || '-'}</td>
+                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
+                      {!f.is_default && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteFund(f.id, f.is_default)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Hapus Kantong Kas"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       )}
                     </td>
                   </tr>
@@ -459,6 +635,59 @@ export const FinancialPage: React.FC = () => {
             </Button>
             <Button type="submit" disabled={createFeeCat.isPending}>
               {createFeeCat.isPending ? 'Menyimpan...' : 'Simpan Kategori'}
+            </Button>
+          </div>
+        </form>
+      </SimpleDialog>
+
+      {/* Fund Modal */}
+      <SimpleDialog
+        isOpen={isFundModalOpen}
+        onClose={() => setIsFundModalOpen(false)}
+        title="Tambah Kantong Kas Baru"
+      >
+        <form onSubmit={handleCreateFund} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="fundName">Nama Kantong Kas *</Label>
+            <Input
+              id="fundName"
+              type="text"
+              placeholder="Contoh: Dana Peringatan HUT RI, Kas Karang Taruna"
+              value={fundName}
+              onChange={(e) => setFundName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="fundType">Tipe / Kategori Kas *</Label>
+            <Select
+              id="fundType"
+              value={fundType}
+              onChange={(e) => setFundType(e.target.value as FundType)}
+            >
+              <option value="operational">Operasional & Lingkungan</option>
+              <option value="social">Sosial & Dana Duka</option>
+              <option value="youth">Kepemudaan / Karang Taruna</option>
+              <option value="infrastructure">Pembangunan & Fasilitas</option>
+              <option value="other">Lain-lain</option>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="fundDesc">Deskripsi / Tujuan Kas</Label>
+            <Input
+              id="fundDesc"
+              type="text"
+              placeholder="Contoh: Khusus kegiatan pemuda dan lomba kemerdekaan"
+              value={fundDesc}
+              onChange={(e) => setFundDesc(e.target.value)}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setIsFundModalOpen(false)}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={createFund.isPending}>
+              {createFund.isPending ? 'Menyimpan...' : 'Simpan Kantong Kas'}
             </Button>
           </div>
         </form>

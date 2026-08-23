@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
 import {
+  Fund,
+  FundType,
   FeeCategory,
   FeePeriod,
   DuesPayment,
@@ -11,6 +13,57 @@ import {
   DuesPaymentFilter,
   TransactionFilter,
 } from '../types/financial';
+
+// Funds
+export function useFunds() {
+  return useQuery({
+    queryKey: ['financial', 'funds'],
+    queryFn: async () => {
+      const res = await api.get<any>('/financial/funds');
+      const data: Fund[] = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      return data;
+    },
+  });
+}
+
+export function useCreateFund() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { name: string; type: FundType; description?: string; is_default?: boolean }) => {
+      const res = await api.post<Fund>('/financial/funds', payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['financial'] });
+    },
+  });
+}
+
+export function useUpdateFund() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string; name: string; type: FundType; description?: string; is_default?: boolean }) => {
+      const res = await api.put<Fund>(`/financial/funds/${id}`, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['financial'] });
+    },
+  });
+}
+
+export function useDeleteFund() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.delete(`/financial/funds/${id}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['financial'] });
+    },
+  });
+}
 
 // Fee Categories
 export function useFeeCategories() {
