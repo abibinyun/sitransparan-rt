@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	delivery "backend/internal/delivery/http"
+	"backend/internal/delivery/http/middleware"
 	"backend/internal/domain"
 )
 
@@ -104,8 +105,8 @@ func (m *mockMeetingUsecase) DeleteActionItem(ctx context.Context, id uuid.UUID)
 	return args.Error(0)
 }
 
-func (m *mockMeetingUsecase) ListActionItems(ctx context.Context, status string) ([]domain.MeetingActionItem, error) {
-	args := m.Called(ctx, status)
+func (m *mockMeetingUsecase) ListActionItems(ctx context.Context, status string, onlyPublic bool) ([]domain.MeetingActionItem, error) {
+	args := m.Called(ctx, status, onlyPublic)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -117,7 +118,7 @@ func TestMeetingHandler_ListMeetings(t *testing.T) {
 	handler := delivery.NewMeetingHandler(mockUC)
 
 	now := time.Now()
-	mockUC.On("ListMeetings", mock.Anything, "").Return([]domain.Meeting{
+	mockUC.On("ListMeetings", mock.Anything, "public").Return([]domain.Meeting{
 		{
 			ID:          uuid.New(),
 			Title:       "Rapat Bulanan RT",
@@ -139,4 +140,51 @@ func TestMeetingHandler_ListMeetings(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, resp["data"], 1)
 	assert.Equal(t, "Rapat Bulanan RT", resp["data"][0].Title)
+}
+
+// A resident (or any non-admin role in the context) must not be able to
+// widen the visibility filter via the query string.
+func TestMeetingHandler_ListMeetings_ResidentForcedPublic(t *testing.T) {
+	mockUC := new(mockMeetingUsecase)
+	handler := delivery.NewMeetingHandler(mockUC)
+
+	mockUC.On("ListMeetings", mock.Anything, "public").Return([]domain.Meeting{}, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/meetings?visibility=confidential", nil)
+	ctx := context.WithValue(req.Context(), middleware.RoleContextKey, domain.RoleResident)
+	handler.HandleMeetings(httptest.NewRecorder(), req.WithContext(ctx))
+
+	mockUC.AssertCalled(t, "ListMeetings", mock.Anything, "public")
+}
+
+// An admin may query any visibility filter, including confidential.
+func TestMeetingHandler_ListMeetings_AdminAnyVisibility(t *testing.T) {
+	mockUC := new(mockMeetingUsecase)
+	handler := delivery.NewMeetingHandler(mockUC)
+
+	mockUC.On("ListMeetings", mock.Anything, "confidential").Return([]domain.Meeting{}, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/meetings?visibility=confidential", nil)
+	ctx := context.WithValue(req.Context(), middleware.RoleContextKey, domain.RoleAdminRT)
+	handler.HandleMeetings(httptest.NewRecorder(), req.WithContext(ctx))
+
+	mockUC.AssertCalled(t, "ListMeetings", mock.Anything, "confidential")
+}
+
+// A resident requesting a confidential meeting by ID must get 403.
+func TestMeetingHandler_GetConfidentialMeeting_ResidentDenied(t *testing.T) {
+	mockUC := new(mockMeetingUsecase)
+	handler := delivery.NewMeetingHandler(mockUC)
+
+	id := uuid.New()
+	confidential := &domain.Meeting{ID: id, Title: "Rapat Rahasia", Visibility: "confidential"}
+	mockUC.On("GetMeetingByID", mock.Anything, id).Return(confidential, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/meetings/"+id.String(), nil)
+	ctx := context.WithValue(req.Context(), middleware.RoleContextKey, domain.RoleResident)
+	rr := httptest.NewRecorder()
+
+	handler.HandleMeetingByID(rr, req.WithContext(ctx))
+
+	assert.Equal(t, http.StatusForbidden, rr.Code)
 }

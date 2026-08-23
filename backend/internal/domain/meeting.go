@@ -76,7 +76,7 @@ type MeetingRepository interface {
 	CreateActionItem(ctx context.Context, item *MeetingActionItem) error
 	UpdateActionItem(ctx context.Context, item *MeetingActionItem) error
 	DeleteActionItem(ctx context.Context, id uuid.UUID) error
-	ListActionItems(ctx context.Context, status string) ([]MeetingActionItem, error)
+	ListActionItems(ctx context.Context, status string, onlyPublic bool) ([]MeetingActionItem, error)
 }
 
 type MeetingUsecase interface {
@@ -95,5 +95,5 @@ type MeetingUsecase interface {
 	CreateActionItem(ctx context.Context, item *MeetingActionItem) (*MeetingActionItem, error)
 	UpdateActionItem(ctx context.Context, item *MeetingActionItem) (*MeetingActionItem, error)
 	DeleteActionItem(ctx context.Context, id uuid.UUID) error
-	ListActionItems(ctx context.Context, status string) ([]MeetingActionItem, error)
+	ListActionItems(ctx context.Context, status string, onlyPublic bool) ([]MeetingActionItem, error)
 }

@@ -69,11 +69,22 @@ func writeMeetingError(w http.ResponseWriter, status int, msg string) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
 
+// isMeetingAdmin reports whether the requester may see confidential and
+// internal meetings. Residents are limited to public meetings.
+func isMeetingAdmin(r *http.Request) bool {
+	return middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT)
+}
+
 // HandleMeetings handles GET (list) and POST (create)
 func (h *MeetingHandler) HandleMeetings(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		visibility := r.URL.Query().Get("visibility")
+		if !isMeetingAdmin(r) {
+			// Non-admins (residents) may only list public meetings,
+			// regardless of what the query string asks for.
+			visibility = "public"
+		}
 		meetings, err := h.meetingUsecase.ListMeetings(r.Context(), visibility)
 		if err != nil {
 			writeMeetingError(w, http.StatusInternalServerError, err.Error())
@@ -166,6 +177,10 @@ func (h *MeetingHandler) HandleMeetingByID(w http.ResponseWriter, r *http.Reques
 				return
 			}
 			writeMeetingError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if !isMeetingAdmin(r) && m.Visibility != "public" {
+			writeMeetingError(w, http.StatusForbidden, "forbidden: meeting is not public")
 			return
 		}
 		writeMeetingJSON(w, http.StatusOK, m)
@@ -337,7 +352,7 @@ func (h *MeetingHandler) HandleActionItems(w http.ResponseWriter, r *http.Reques
 	switch r.Method {
 	case http.MethodGet:
 		status := r.URL.Query().Get("status")
-		items, err := h.meetingUsecase.ListActionItems(r.Context(), status)
+		items, err := h.meetingUsecase.ListActionItems(r.Context(), status, !isMeetingAdmin(r))
 		if err != nil {
 			writeMeetingError(w, http.StatusInternalServerError, err.Error())
 			return

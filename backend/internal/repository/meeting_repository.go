@@ -372,18 +372,40 @@ func (r *meetingRepository) DeleteActionItem(ctx context.Context, id uuid.UUID) 
 	return nil
 }
 
-func (r *meetingRepository) ListActionItems(ctx context.Context, status string) ([]domain.MeetingActionItem, error) {
+func (r *meetingRepository) ListActionItems(ctx context.Context, status string, onlyPublic bool) ([]domain.MeetingActionItem, error) {
 	table := TenantTable(ctx, "meeting_action_items")
+	meetings := TenantTable(ctx, "meetings")
 	var query string
 	var args []interface{}
 
-	if status != "" {
+	visibilityFilter := ""
+	if onlyPublic {
+		// Non-admin viewers may only see action items that belong to
+		// public meetings (confidential/internal meeting tasks stay hidden).
+		visibilityFilter = " AND m.visibility = 'public'"
+	}
+
+	switch {
+	case status != "" && onlyPublic:
+		query = fmt.Sprintf(`
+			SELECT ai.id, ai.meeting_id, ai.task, ai.assignee_name, ai.assignee_resident_id, ai.due_date::text, ai.status, ai.notes, ai.created_at, ai.updated_at
+			FROM %s ai JOIN %s m ON m.id = ai.meeting_id
+			WHERE ai.status = $1%s ORDER BY ai.created_at DESC
+		`, table, meetings, visibilityFilter)
+		args = append(args, status)
+	case status != "":
 		query = fmt.Sprintf(`
 			SELECT id, meeting_id, task, assignee_name, assignee_resident_id, due_date::text, status, notes, created_at, updated_at
 			FROM %s WHERE status = $1 ORDER BY created_at DESC
 		`, table)
 		args = append(args, status)
-	} else {
+	case onlyPublic:
+		query = fmt.Sprintf(`
+			SELECT ai.id, ai.meeting_id, ai.task, ai.assignee_name, ai.assignee_resident_id, ai.due_date::text, ai.status, ai.notes, ai.created_at, ai.updated_at
+			FROM %s ai JOIN %s m ON m.id = ai.meeting_id
+			WHERE m.visibility = 'public' ORDER BY ai.created_at DESC
+		`, table, meetings)
+	default:
 		query = fmt.Sprintf(`
 			SELECT id, meeting_id, task, assignee_name, assignee_resident_id, due_date::text, status, notes, created_at, updated_at
 			FROM %s ORDER BY created_at DESC

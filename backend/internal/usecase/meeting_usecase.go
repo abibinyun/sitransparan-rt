@@ -131,6 +131,6 @@ func (u *meetingUsecase) DeleteActionItem(ctx context.Context, id uuid.UUID) err
 	return u.meetingRepo.DeleteActionItem(ctx, id)
 }
 
-func (u *meetingUsecase) ListActionItems(ctx context.Context, status string) ([]domain.MeetingActionItem, error) {
-	return u.meetingRepo.ListActionItems(ctx, status)
+func (u *meetingUsecase) ListActionItems(ctx context.Context, status string, onlyPublic bool) ([]domain.MeetingActionItem, error) {
+	return u.meetingRepo.ListActionItems(ctx, status, onlyPublic)
 }
