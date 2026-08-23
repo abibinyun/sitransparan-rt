@@ -1551,9 +1551,13 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
   - `GET /auth/me` (frontend `useProfileQuery`) — **still no such route registered**, but the
     hook is **dead code** (defined, never called by any component); low severity
 - Financial transactions are **append-only**; PUT/DELETE return 405 by design.
-- **MinIO is a stub** (`type Client struct{}`, never dereferenced): upload endpoints accept files
-  then discard the content, persisting only a fake `/uploads/<name>` URL that is not served (404).
-  Upload features are **not production-ready** — real MinIO integration is open work.
+- **MinIO integrated (local dev, fixed after the stub era)**: `pkg/storage/minio` wraps
+  minio-go; uploads persist real objects under a per-tenant key prefix
+  (`<tenant-slug>/<category>/…`) in bucket `sitransparan-files` (auto-created with
+  public-download policy at startup). Upload endpoints return host-reachable URLs via
+  `MINIO_PUBLIC_URL` (default `http://localhost:9000`). If storage is unreachable the
+  server degrades to metadata-only `/uploads/...` URLs. Production still needs presigned
+  URLs / proxy reads and TLS review.
 - No server-side token revocation (JWT valid until expiry).
 - Rate limiter is **per client IP** (default 1000/100 per IP; auth endpoints stricter 20/5),
   `/health` & `/swagger/` exempt, `X-Forwarded-For` honored only from `TRUSTED_PROXY_IPS`
