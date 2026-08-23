@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"backend/internal/domain"
+	"github.com/google/uuid"
 )
 
 type meetingRepository struct {
