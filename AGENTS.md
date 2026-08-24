@@ -1519,7 +1519,7 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
 - Backend security suite: `TestSecurity_*` in
   `backend/internal/delivery/http/security_integration_test.go` (cross-tenant matrix,
   role escalation, RBAC enforcement, superadmin account protection, public sanitization).
-- E2E suite (`tests/e2e/`): **54 tests** — `auth/`, `public/`
+- E2E suite (`tests/e2e/`): **57 tests** — `auth/`, `public/`
   (termasuk `public-transparency`: endpoint publik meetings/financial-summary +
   share card modal), `admin/`
   (termasuk `dashboard-metrics`: koherensi angka + export CSV + window.print PDF),
@@ -1544,7 +1544,7 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
 ## 46.9 Known Issues & Limitations (report honestly if encountered)
 
 - **Frontend/backend API mismatches — FIXED in the E2E-coverage audit** (frontend calls now
-  match the backend routes; verified by 54/54 E2E):
+  match the backend routes; verified by 57/57 E2E):
   - `PATCH /financial/dues/{id}/verify` → frontend now **POST** `/financial/dues/{id}/verify`
   - `POST /financial/upload-proof` → frontend now `/financial/upload` (with `proof_url`)
   - `PATCH /aspirations/{id}/status` → frontend now **PUT** `/aspirations/{id}`

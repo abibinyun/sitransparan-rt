@@ -1374,6 +1374,106 @@ paths:
         '404':
           description: Tenant tidak ditemukan / tidak aktif / mismatch hostname
 
+  # ---------------------------------------------- Social Interactions (Fase 3)
+  /api/v1/reactions:
+    get:
+      summary: Ringkasan reaksi satu target (AUTH). Query target_type & target_id.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: target_type, in: query, required: true, schema: { type: string, enum: [announcement, event, meeting] } }
+        - { name: target_id, in: query, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: '{ counts: {support|like|applause: n}, mine, total }'
+    post:
+      summary: Beri/ubah reaksi — identitas dari JWT, 1 user 1 reaksi per target (AUTH)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_type, target_id, reaction]
+              properties:
+                target_type: { type: string, enum: [announcement, event, meeting] }
+                target_id: { type: string, format: uuid }
+                reaction: { type: string, enum: [support, like, applause] }
+      responses:
+        '200':
+          description: Summary reaksi terkini
+        '401':
+          description: Login diperlukan
+    delete:
+      summary: Tarik reaksi (AUTH). Query target_type & target_id.
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Summary reaksi terkini
+
+  /api/v1/polls:
+    get:
+      summary: List polling berstatus open (AUTH, menyertakan my_vote)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: '{ data: [{ id, question, options, status, votes, total_votes, my_vote }] }'
+    post:
+      summary: Buat polling (ADMIN). 2..6 opsi.
+      security: [{ BearerAuth: [] }]
+      responses:
+        '201':
+          description: Polling dibuat
+        '403':
+          description: Bukan admin
+
+  /api/v1/polls/{id}:
+    get:
+      summary: Detail polling + hasil agregat (AUTH, menyertakan my_vote)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Poll
+        '404':
+          description: Tidak ditemukan
+    delete:
+      summary: Tutup polling (ADMIN)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Polling ditutup
+
+  /api/v1/polls/{id}/vote:
+    post:
+      summary: Beri/ubah suara — 1 warga 1 suara (AUTH, unique constraint)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [option_index]
+              properties:
+                option_index: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Poll dengan hasil terkini
+        '400':
+          description: Polling tutup / option_index di luar jangkauan
+
+  /api/v1/t/{slug}/polls/{id}:
+    get:
+      summary: Hasil agregat polling untuk portal publik (PUBLIC, tanpa my_vote)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: '{ id, question, options, status, votes, total_votes }'
+        '404':
+          description: Tenant/polling tidak ditemukan
+
 components:
   securitySchemes:
     BearerAuth:

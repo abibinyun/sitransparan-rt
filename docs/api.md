@@ -35,6 +35,7 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 | GET | `/api/v1/t/{slug}/needs` | List kebutuhan lingkungan publik. |
 | GET | `/api/v1/t/{slug}/meetings` | Notulen rapat **publik saja** (sanitasi: tanpa notes internal & tanpa `created_by`). Tenant harus aktif; hostname mismatch → 404. |
 | GET | `/api/v1/t/{slug}/financial-summary` | Ringkasan kas **agregat saja** (`current_balance`, `monthly_income`, `monthly_expense`, `spending_breakdown`) — tanpa data pembayar/funds. |
+| GET | `/api/v1/t/{slug}/polls/{id}` | Hasil **agregat** polling untuk portal publik (tanpa `my_vote`, tanpa identitas voter). |
 
 ### Swagger
 
@@ -208,7 +209,27 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 
 ---
 
-## 12. Konvensi Error
+## 12. Social Interactions — Reaksi & Polling (Fase 3)
+
+> Gerbang keamanan: identitas selalu dari JWT (bukan body); 1 user 1 reaksi per target
+> dan 1 user 1 suara per polling (unique constraint DB); kelola polling = admin;
+> endpoint interaksi memakai budget rate-limit ketat.
+
+| Metode | Path | Akses | Keterangan |
+|---|---|---|---|
+| GET | `/api/v1/reactions?target_type=&target_id=` | AUTH | Ringkasan: `{counts, mine, total}`. |
+| POST | `/api/v1/reactions` | AUTH | Beri/ubah reaksi. Body: `{target_type (announcement\|event\|meeting), target_id, reaction (support\|like\|applause)}`. |
+| DELETE | `/api/v1/reactions?target_type=&target_id=` | AUTH | Tarik reaksi. |
+| GET | `/api/v1/polls` | AUTH | Polling `open` + hasil agregat + `my_vote`. |
+| POST | `/api/v1/polls` | ADMIN | Buat polling. Body: `{question, options[2..6]}`. |
+| GET | `/api/v1/polls/{id}` | AUTH | Detail + agregat + `my_vote`. |
+| DELETE | `/api/v1/polls/{id}` | ADMIN | Tutup polling. |
+| POST | `/api/v1/polls/{id}/vote` | AUTH | Beri/ubah suara. Body: `{option_index}`. |
+| GET | `/api/v1/t/{slug}/polls/{id}` | PUBLIC | Hasil agregat saja (tanpa `my_vote`). |
+
+---
+
+## 13. Konvensi Error
 
 - `401` — token hilang/rusak/kadaluwarsa/manipulasi.
 - `403` — role tidak diizinkan / tenant access denied / role escalation.
@@ -218,6 +239,6 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 - `429` — rate limit tercapai (**per client IP**, header `Retry-After: 1`). `/health` & `/swagger/` dikecualikan; endpoint auth (`/login`, `/register`) memakai budget lebih ketat (default 20 burst / 5 per detik per IP).
 - Response error: `{"error": "<pesan>"}`.
 
-## 13. Catatan Upload File
+## 14. Catatan Upload File
 
 > ✅ **MinIO terintegrasi (local dev).** Endpoint upload (`/financial/upload`, `/residents/upload`, `POST /documents`, `POST /events/{id}/receipts`) kini menyimpan file sungguhan ke bucket object storage (default `sitransparan-files`) dengan key ber-prefix per tenant (`<tenant-slug>/<kategori>/<uuid><ext>`), dan mengembalikan URL unduh publik (`MINIO_PUBLIC_URL/<bucket>/<key>`, default `http://localhost:9000/...`). Bucket dibuat otomatis saat startup dengan kebijakan download-publik; tulis selalu melalui API. Jika storage tidak tersedia, server tetap jalan namun upload hanya menghasilkan URL metadata (`/uploads/...`) yang tidak terserve. Konfigurasi: `MINIO_ENDPOINT` (hostname dalam network docker), `MINIO_PUBLIC_URL` (alamat yang dapat dijangkau browser), `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_USE_SSL`, `MINIO_BUCKET`. Catatan produksi: pertimbangkan presigned URL agar bucket tidak public-read.

@@ -285,6 +285,35 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.reactions (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			target_type VARCHAR(50) NOT NULL,
+			target_id UUID NOT NULL,
+			user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+			reaction VARCHAR(20) NOT NULL CHECK (reaction IN ('support', 'like', 'applause')),
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			UNIQUE (target_type, target_id, user_id)
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_` + strings.ReplaceAll(slug, "-", "_") + `_reactions_target
+			ON ` + pq.QuoteIdentifier(schemaName) + `.reactions (target_type, target_id);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.polls (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			question TEXT NOT NULL,
+			options JSONB NOT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+			created_by UUID,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			closed_at TIMESTAMPTZ
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.poll_votes (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			poll_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.polls(id) ON DELETE CASCADE,
+			user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+			option_index SMALLINT NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			UNIQUE (poll_id, user_id),
+			CHECK (option_index >= 0)
+		);`,
 	}
 
 	for _, ddl := range tablesDDL {

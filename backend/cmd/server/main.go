@@ -90,6 +90,12 @@ func main() {
 	meetingUC := usecase.NewMeetingUsecase(meetingRepo)
 	meetingHandler := delivery.NewMeetingHandler(meetingUC, tenantRepo, cfg.TenantBaseDomain)
 
+	// Interaksi sosial Fase 3 (reaksi & polling) — budget rate-limit ketat
+	// selaras endpoint auth (anti-spam, konsep portal §7.3).
+	socialRepo := repository.NewSocialRepository(db)
+	socialUC := usecase.NewSocialUsecase(socialRepo)
+	socialHandler := delivery.NewSocialHandler(socialUC, tenantRepo, cfg.TenantBaseDomain)
+
 	tenantMw := middleware.TenantMiddleware(tenantRepo, cfg.TenantBaseDomain)
 	authMw := middleware.AuthMiddleware(jwtSecret)
 	adminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin, domain.RoleAdminRT)
@@ -148,6 +154,9 @@ func main() {
 
 	// Meeting & Action Items routes
 	meetingHandler.RegisterRoutes(mux, tenantMw, authMw)
+
+	// Social interactions (reactions & polls) — strict rate budget
+	socialHandler.RegisterRoutes(mux, tenantMw, authMw, authRateLimitMw)
 
 	// SuperAdmin routes
 	superAdminMux := http.NewServeMux()

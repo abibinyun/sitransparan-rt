@@ -215,7 +215,7 @@ Fase 1 — QUICK WIN (SELESAI ✅)
   • GET /t/{slug}/meetings  (filter visibility=public, sanitasi notes/created_by)
   • GET /t/{slug}/financial-summary (agregat saja, tanpa data pembayar)
   • Shareable card WhatsApp (client-side canvas, konsep "papan pengumuman")
-  → Diverifikasi 4 spec E2E baru (public-transparency); total suite 54/54 hijau.
+  → Diverifikasi 4 spec E2E baru (public-transparency); total suite 57/57 hijau.
 
 Fase 2 — FEED TIMELINE (estimasi: 1–2 minggu)
   • Komponen FeedCard, badge status, BottomNav + responsive MainLayout
@@ -225,7 +225,7 @@ Fase 2 — FEED TIMELINE (estimasi: 1–2 minggu)
     design-taste-frontend SEBELUM koding; audit web-design-guidelines +
     checklist ANTI-AI-SLOP.md sebelum merge.
 
-Fase 3 — INTERAKTIVITAS SOSIAL (estimasi: 2–3 minggu)
+Fase 3 — INTERAKTIVITAS SOSIAL (SELESAI ✅)
   • Reaksi warga-login (tabel reactions + unique constraint)
   • Polling 1-klik (tabel polls/poll_votes)
   • Rate limit ketat + audit trail (bab §7 wajib lulus review)
