@@ -1,100 +1,99 @@
 import React from 'react';
-import { CalendarDays, MapPin, Clock, Sparkles } from 'lucide-react';
+import { CalendarDays, MapPin, Clock, AlertCircle } from 'lucide-react';
+import { usePublicEvents } from '../services/public_transparency';
+
+const STATUS_LABEL: Record<string, string> = {
+  planned: 'Terjadwal',
+  ongoing: 'Berlangsung',
+  completed: 'Selesai',
+  cancelled: 'Dibatalkan',
+};
 
 export const PublicEventsPage: React.FC = () => {
-  const events = [
-    {
-      id: '1',
-      title: 'Kerja Bakti Bersih Lingkungan & Fogging RT 05',
-      date: '2026-08-10',
-      time: '07:30 WIB',
-      location: 'Area Fasum & Saluran Air RT 05',
-      description: 'Kegiatan gotong royong warga membersihkan selokan, pemangkasan dahan pohon, serta fogging antisipasi DBD.',
-      category: 'Kerja Bakti',
-      status: 'UPCOMING'
-    },
-    {
-      id: '2',
-      title: 'Posyandu Balita & Lansia Ceria',
-      date: '2026-08-15',
-      time: '08:30 - 11:30 WIB',
-      location: 'Balai Warga RT 05',
-      description: 'Pemeriksaan kesehatan gratis balita, imunisasi rutin, dan cek tekanan darah & gula darah lansia.',
-      category: 'Kesehatan',
-      status: 'UPCOMING'
-    },
-    {
-      id: '3',
-      title: 'Musyawarah RT & Laporan Kas Semesteran',
-      date: '2026-08-22',
-      time: '19:30 WIB (Ba-da Isya)',
-      location: 'Balai Warga RT 05',
-      description: 'Rapat rutin pengurus dan warga penyampaian pertanggungjawaban keuangan kas RT serta pembahasan persiapan Lomba 17-an.',
-      category: 'Rapat Warga',
-      status: 'UPCOMING'
-    }
-  ];
+  const { data: events, isLoading } = usePublicEvents();
 
   return (
-    <div className="space-y-10 pb-16">
-      {/* Hero */}
-      <section className="bg-gradient-to-b from-indigo-900 via-indigo-900 to-slate-900 text-white pt-12 pb-16 px-4 sm:px-6 lg:px-8 border-b border-indigo-950 text-center relative overflow-hidden">
-        <div className="max-w-5xl mx-auto space-y-6 relative z-10">
-          <span className="inline-flex items-center gap-2 bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 px-3 py-1 rounded-full text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Agenda Keanggotaan & Kebersamaan RT
-          </span>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-            Jadwal & Agenda Kegiatan Warga
+    <div className="pb-16">
+      {/* Kepala halaman: solid, left-aligned — konsisten dengan seluruh portal */}
+      <section className="bg-slate-900 text-white px-4 sm:px-6 py-10">
+        <div className="max-w-6xl mx-auto space-y-4">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
+            Jadwal &amp; Agenda Kegiatan
           </h1>
-          <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-300 font-normal leading-relaxed">
-            Informasi terbuka jadwal kerja bakti, posyandu, musyawarah RT, serta kegiatan sosial warga lingkungan.
+          <p className="max-w-2xl text-sm text-slate-300 leading-relaxed">
+            Kerja bakti, posyandu, musyawarah RT — semua agenda terbuka untuk warga.
+            Datang dan berpartisipasilah.
           </p>
         </div>
       </section>
 
-      {/* Events Grid */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-              <CalendarDays className="w-5 h-5 text-indigo-600" /> Agenda Mendatang
-            </h2>
-            <p className="text-xs text-slate-500 mt-1">Mari berpartisipasi aktif dalam kegiatan kebersamaan lingkungan</p>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-5">
+        <div className="flex items-baseline justify-between border-b border-slate-200 pb-3">
+          <h2 className="flex items-center gap-2 text-lg font-extrabold text-slate-900">
+            <CalendarDays className="w-5 h-5 text-emerald-700" /> Agenda Mendatang
+          </h2>
+          <span className="text-xs font-semibold text-slate-500 tabular-nums">
+            {events?.length ?? 0} kegiatan
+          </span>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="h-28 animate-pulse rounded-xl bg-slate-100" />
+            ))}
           </div>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {events.map((evt) => (
-            <div
-              key={evt.id}
-              className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-all space-y-4 flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100">
-                    {evt.category}
-                  </span>
-                  <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                    Terjadwal
-                  </span>
-                </div>
-                <h3 className="text-base font-bold text-slate-900 leading-snug">{evt.title}</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">{evt.description}</p>
-              </div>
-
-              <div className="space-y-2 pt-3 border-t border-slate-100 text-xs text-slate-600">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-indigo-600 shrink-0" />
-                  <span>{new Date(evt.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ({evt.time})</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
-                  <span>{evt.location}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        ) : !events || events.length === 0 ? (
+          <div className="border border-dashed border-slate-300 rounded-xl p-10 text-center space-y-2">
+            <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" />
+            <h4 className="text-sm font-bold text-slate-700">Belum Ada Agenda</h4>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              Kegiatan mendatang akan tampil di sini setelah diumumkan pengurus.
+            </p>
+          </div>
+        ) : (
+          <ol className="relative space-y-4 border-l-2 border-slate-200 pl-5 ml-2">
+            {events.map((evt) => {
+              const d = new Date(evt.event_date);
+              return (
+                <li key={evt.id} className="relative">
+                  {/* titik timeline */}
+                  <span
+                    aria-hidden
+                    className="absolute -left-[27px] top-5 h-3 w-3 rounded-full border-2 border-emerald-700 bg-white"
+                  />
+                  <article className="rounded-xl border border-slate-200 bg-white p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-base font-bold text-slate-900 leading-snug">{evt.title}</h3>
+                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">
+                        {STATUS_LABEL[evt.status] ?? evt.status}
+                      </span>
+                    </div>
+                    {evt.description && (
+                      <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">{evt.description}</p>
+                    )}
+                    <div className="mt-3 space-y-1.5 text-xs text-slate-600">
+                      <p className="flex items-start gap-2">
+                        <Clock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" aria-hidden />
+                        <span>
+                          {d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                          {' · '}
+                          {d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                        </span>
+                      </p>
+                      {evt.location && (
+                        <p className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" aria-hidden />
+                          <span>{evt.location}</span>
+                        </p>
+                      )}
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ol>
+        )}
       </div>
     </div>
   );

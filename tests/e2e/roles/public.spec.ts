@@ -13,7 +13,7 @@ test.describe('Role E2E: Public (Unauthenticated User)', () => {
 
   test('UC-PUB-03: Should access public events portal', async ({ page }) => {
     await page.goto('/public/events');
-    await expect(page.getByRole('heading', { name: 'Jadwal & Agenda Kegiatan Warga' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Jadwal & Agenda Kegiatan' })).toBeVisible();
   });
 });
 

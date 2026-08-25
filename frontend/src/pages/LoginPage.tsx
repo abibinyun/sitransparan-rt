@@ -123,7 +123,7 @@ export const LoginPage: React.FC = () => {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-slate-200/80">
         <CardHeader className="text-center space-y-2 pb-4">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
             <Building2 className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl font-bold text-slate-900">
@@ -145,7 +145,7 @@ export const LoginPage: React.FC = () => {
                 type="button"
                 onClick={() => switchMode('login')}
                 className={`rounded-md py-2 text-center transition-all ${
-                  mode === 'login' ? 'bg-white text-indigo-600 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'
+                  mode === 'login' ? 'bg-white text-emerald-700 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Masuk
@@ -154,7 +154,7 @@ export const LoginPage: React.FC = () => {
                 type="button"
                 onClick={() => switchMode('register')}
                 className={`rounded-md py-2 text-center transition-all ${
-                  mode === 'register' ? 'bg-white text-indigo-600 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'
+                  mode === 'register' ? 'bg-white text-emerald-700 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Daftar

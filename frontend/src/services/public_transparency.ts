@@ -51,6 +51,31 @@ export function usePublicFinancialSummary() {
   });
 }
 
+export interface PublicEvent {
+  id: string;
+  title: string;
+  description: string;
+  event_date: string;
+  location: string;
+  status: string;
+}
+
+export function usePublicEvents() {
+  const slug = getTenantSlugOrFallback();
+  return useQuery<PublicEvent[], Error>({
+    queryKey: ['public-events', slug],
+    queryFn: async () => {
+      try {
+        const res = await axios.get<{ data: PublicEvent[] }>(`/api/v1/t/${slug}/events`);
+        return res.data.data ?? [];
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** "Rp 1.335.000" — pemisah ribuan tanpa desimal. */
 export function formatRupiah(value: number): string {
   return `Rp ${Math.round(value).toLocaleString('id-ID')}`;

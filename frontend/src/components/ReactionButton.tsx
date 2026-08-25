@@ -45,14 +45,14 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({ targetType, targ
             aria-pressed={active}
             aria-label={`${label}${count > 0 ? ` (${count})` : ''}`}
             title={user ? label : 'Masuk untuk bereaksi'}
-            className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${
+            className={`inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold px-2 sm:px-2.5 py-1.5 rounded-lg border ${
               active
                 ? 'bg-emerald-700 text-white border-emerald-700'
                 : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-900'
             } disabled:opacity-50`}
           >
             <Icon className="w-3.5 h-3.5" aria-hidden />
-            {label}
+            <span className="hidden sm:inline">{label}</span>
             {count > 0 && <span className="tabular-nums">{count}</span>}
           </button>
         );

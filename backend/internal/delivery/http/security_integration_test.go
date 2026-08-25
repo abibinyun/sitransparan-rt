@@ -75,7 +75,7 @@ func buildSecurityMux(db *sql.DB) http.Handler {
 	financialHandler := delivery.NewFinancialHandler(financialUC, nil, "")
 
 	eventUC := usecase.NewEventUsecase(eventRepo)
-	eventHandler := delivery.NewEventHandler(eventUC)
+	eventHandler := delivery.NewEventHandler(eventUC, nil, "")
 
 	aspirationNeedUC := usecase.NewAspirationNeedUsecase(aspirationNeedRepo)
 	aspirationNeedHandler := delivery.NewAspirationNeedHandler(aspirationNeedUC, tenantRepo, "openrt.local")

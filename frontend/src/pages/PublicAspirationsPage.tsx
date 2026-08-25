@@ -10,7 +10,6 @@ import {
   AlertTriangle,
   Lightbulb,
   Building,
-  Sparkles,
   XCircle
 } from 'lucide-react';
 
@@ -54,56 +53,51 @@ export const PublicAspirationsPage: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-16">
-      {/* Hero Header */}
-      <section className="bg-gradient-to-b from-indigo-900 via-indigo-900 to-slate-900 text-white pt-12 pb-16 px-4 sm:px-6 lg:px-8 border-b border-indigo-950 relative overflow-hidden">
-        <div className="max-w-5xl mx-auto space-y-6 relative z-10 text-center">
-          <span className="inline-flex items-center gap-2 bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wide">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Suara & Inisiatif Warga RT
-          </span>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-            Aspirasi & Kebutuhan Lingkungan RT
-          </h1>
-          <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-300 font-normal leading-relaxed">
-            Sampaikan gagasan, usulan fasilitas, maupun keluhan lingkungan secara terbuka. Semua masukan diproses dan dipantau statusnya secara realtime.
-          </p>
-
-          <div className="pt-4 flex justify-center">
-            <button
-              onClick={() => setShowFormModal(true)}
-              className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm px-6 py-3 rounded-2xl shadow-xl shadow-indigo-950/50 transition-all hover:-translate-y-0.5"
-            >
-              <PlusCircle className="w-5 h-5" /> Buat Aspirasi Baru
-            </button>
+      {/* Kepala halaman: solid, left-aligned */}
+      <section className="bg-slate-900 text-white px-4 sm:px-6 py-10">
+        <div className="max-w-6xl mx-auto space-y-5">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
+              Aspirasi &amp; Kebutuhan Lingkungan
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm text-slate-300 leading-relaxed">
+              Sampaikan gagasan, usulan fasilitas, maupun keluhan lingkungan. Semua masukan
+              diproses dan statusnya dapat dipantau warga.
+            </p>
           </div>
+          <button
+            onClick={() => setShowFormModal(true)}
+            className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm px-5 py-2.5 rounded-lg"
+          >
+            <PlusCircle className="w-5 h-5" /> Sampaikan Aspirasi
+          </button>
         </div>
       </section>
 
       {/* Main Container */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Navigation Tabs */}
-        <div className="flex items-center justify-center">
-          <div className="bg-slate-200/70 p-1.5 rounded-2xl flex items-center gap-2 max-w-md w-full border border-slate-300/60 shadow-inner">
-            <button
-              onClick={() => setActiveTab('aspirations')}
-              className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 ${
-                activeTab === 'aspirations'
-                  ? 'bg-white text-indigo-700 shadow-md border border-slate-200/60'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <MessageSquareHeart className="w-4 h-4" /> Aspirasi Warga
-            </button>
-            <button
-              onClick={() => setActiveTab('needs')}
-              className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 ${
-                activeTab === 'needs'
-                  ? 'bg-white text-indigo-700 shadow-md border border-slate-200/60'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Building className="w-4 h-4" /> Kebutuhan RT
-            </button>
-          </div>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+        {/* Tabs */}
+        <div className="flex items-center gap-2 border-b border-slate-200">
+          <button
+            onClick={() => setActiveTab('aspirations')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 -mb-px ${
+              activeTab === 'aspirations'
+                ? 'text-emerald-800 border-emerald-700'
+                : 'text-slate-500 border-transparent hover:text-slate-800'
+            }`}
+          >
+            <MessageSquareHeart className="w-4 h-4" /> Aspirasi Warga
+          </button>
+          <button
+            onClick={() => setActiveTab('needs')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 -mb-px ${
+              activeTab === 'needs'
+                ? 'text-emerald-800 border-emerald-700'
+                : 'text-slate-500 border-transparent hover:text-slate-800'
+            }`}
+          >
+            <Building className="w-4 h-4" /> Kebutuhan RT
+          </button>
         </div>
 
         {/* Tab 1: Aspirasi Warga */}
@@ -123,11 +117,11 @@ export const PublicAspirationsPage: React.FC = () => {
                 ))}
               </div>
             ) : aspirationsData?.data?.length ? (
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-4">
                 {aspirationsData.data.map((asp) => (
-                  <div
+                  <article
                     key={asp.id}
-                    className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-all space-y-4 flex flex-col justify-between"
+                    className="bg-white rounded-xl border border-slate-200 p-5 sm:p-6 space-y-3"
                   >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-2">
@@ -142,19 +136,19 @@ export const PublicAspirationsPage: React.FC = () => {
 
                     {/* Feedback / Admin Response */}
                     {asp.response && (
-                      <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 space-y-1">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700 block">
-                          Tanggapan Resmi Pengurus RT:
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3.5 space-y-1">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 block">
+                          Tanggapan Resmi Pengurus
                         </span>
-                        <p className="text-xs text-indigo-900 font-medium leading-relaxed">{asp.response}</p>
+                        <p className="text-xs text-emerald-950 font-medium leading-relaxed">{asp.response}</p>
                       </div>
                     )}
 
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-                      <span>Pengirim: {asp.is_anonymous ? 'Warga (Anonim)' : 'Warga RT 05'}</span>
-                      <span>{new Date(asp.created_at).toLocaleDateString('id-ID')}</span>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                      <span>{asp.is_anonymous ? 'Warga (Anonim)' : 'Warga RT'}</span>
+                      <span className="tabular-nums">{new Date(asp.created_at).toLocaleDateString('id-ID')}</span>
                     </div>
-                  </div>
+                  </article>
                 ))}
               </div>
             ) : (
@@ -182,31 +176,22 @@ export const PublicAspirationsPage: React.FC = () => {
             {loadingNeeds ? (
               <div className="h-44 bg-slate-100 animate-pulse rounded-2xl border border-slate-200" />
             ) : needsData?.data?.length ? (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
                 {needsData.data.map((need) => (
-                  <div
-                    key={need.id}
-                    className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4 flex flex-col justify-between"
-                  >
-                    <div className="space-y-2">
-                      <span className="text-[10px] font-extrabold tracking-wider uppercase px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 border border-sky-100">
+                  <li key={need.id} className="px-5 py-4 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-100">
                         {need.status === 'completed' ? 'Selesai Terpenuhi' : 'Program Aktif'}
                       </span>
-                      <h3 className="text-base font-bold text-slate-900 leading-snug">{need.title}</h3>
-                      <p className="text-xs text-slate-600 leading-relaxed">{need.description}</p>
+                      <span className="text-xs font-semibold text-slate-700 tabular-nums">
+                        Estimasi Rp {need.estimated_cost?.toLocaleString('id-ID') || '0'}
+                      </span>
                     </div>
-
-                    <div className="space-y-2 pt-2 border-t border-slate-100">
-                      <div className="flex justify-between text-xs font-semibold text-slate-700">
-                        <span>Estimasi Anggaran</span>
-                        <span className="text-indigo-600 font-bold">
-                          Rp {need.estimated_cost?.toLocaleString('id-ID') || '0'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                    <h3 className="text-sm font-bold text-slate-900 leading-snug">{need.title}</h3>
+                    <p className="text-xs text-slate-600 leading-relaxed">{need.description}</p>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
               <div className="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-10 text-center space-y-3">
                 <Building className="w-10 h-10 text-slate-400 mx-auto" />

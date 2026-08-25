@@ -2,10 +2,13 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"backend/internal/delivery/http/middleware"
 	"backend/internal/domain"
@@ -13,17 +16,86 @@ import (
 )
 
 type EventHandler struct {
-	usecase domain.EventUsecase
+	usecase    domain.EventUsecase
+	tenantRepo domain.TenantRepository
+	baseDomain string
 }
 
-func NewEventHandler(usecase domain.EventUsecase) *EventHandler {
-	return &EventHandler{usecase: usecase}
+func NewEventHandler(usecase domain.EventUsecase, tenantRepo domain.TenantRepository, baseDomain string) *EventHandler {
+	return &EventHandler{usecase: usecase, tenantRepo: tenantRepo, baseDomain: baseDomain}
 }
 
 func (h *EventHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler) {
+	// Public tenant route: /api/v1/t/{slug}/events — agenda terbuka untuk
+	// portal transparansi anonim (tanpa data sensitif).
+	mux.HandleFunc("GET /api/v1/t/{slug}/events", h.handlePublicTenantEvents)
+
 	protected := http.HandlerFunc(h.handleEvents)
 	mux.Handle("/api/v1/events", authMw(tenantMw(protected)))
 	mux.Handle("/api/v1/events/", authMw(tenantMw(protected)))
+}
+
+// publicEventView adalah proyeksi aman agenda untuk portal anonim.
+type publicEventView struct {
+	ID          uuid.UUID `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	EventDate   time.Time `json:"event_date"`
+	Location    string    `json:"location"`
+	Status      string    `json:"status"`
+}
+
+// handlePublicTenantEvents menyajikan agenda mendatang (urut tanggal).
+func (h *EventHandler) handlePublicTenantEvents(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	if hostSlug, matched := middleware.HostnameSlug(r.Host, h.baseDomain); matched && hostSlug != slug {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+	tenant, err := h.tenantRepo.GetBySlug(r.Context(), slug)
+	if err != nil || tenant == nil || !tenant.IsActive() {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+	r = r.WithContext(context.WithValue(r.Context(), domain.TenantContextKey, tenant))
+
+	events, _, err := h.usecase.ListEvents(r.Context(), tenant.ID, 50, 0, "")
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	now := time.Now()
+	view := make([]publicEventView, 0, len(events))
+	for _, e := range events {
+		if e.EventDate == nil || e.EventDate.Before(now) {
+			continue // agenda = mendatang saja
+		}
+		desc := ""
+		if e.Description != nil {
+			desc = *e.Description
+		}
+		loc := ""
+		if e.Location != nil {
+			loc = *e.Location
+		}
+		view = append(view, publicEventView{
+			ID:          e.ID,
+			Title:       e.Title,
+			Description: desc,
+			EventDate:   *e.EventDate,
+			Location:    loc,
+			Status:      e.Status,
+		})
+	}
+	sort.Slice(view, func(i, j int) bool { return view[i].EventDate.Before(view[j].EventDate) })
+	if len(view) > 20 {
+		view = view[:20]
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"data": view})
 }
 
 func (h *EventHandler) handleEvents(w http.ResponseWriter, r *http.Request) {

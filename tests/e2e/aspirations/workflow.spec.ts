@@ -10,7 +10,7 @@ test.describe('Aspirations & Community Needs — business workflows', () => {
 
     // 1. Public (unauthenticated) submits an aspiration
     await page.goto('/public/aspirations');
-    await page.getByRole('button', { name: 'Buat Aspirasi Baru' }).click();
+    await page.getByRole('button', { name: 'Sampaikan Aspirasi' }).click();
     await expect(page.getByRole('heading', { name: 'Kirim Aspirasi / Usulan / Keluhan' })).toBeVisible();
     await page.fill('#aspTitle', title);
     await page.selectOption('#aspCategory', 'suggestion');
@@ -45,9 +45,9 @@ test.describe('Aspirations & Community Needs — business workflows', () => {
     // 3. Logout and verify the public portal reflects the resolved status + response
     await page.getByRole('button', { name: 'Logout' }).click();
     await page.goto('/public/aspirations');
-    const publicCard = page.locator('div.rounded-2xl').filter({ hasText: title }).first();
+    const publicCard = page.locator('article').filter({ hasText: title }).first();
     await expect(publicCard).toContainText('Selesai / Ditindaklanjuti');
-    await expect(publicCard).toContainText('Tanggapan Resmi Pengurus RT:');
+    await expect(publicCard).toContainText('Tanggapan Resmi Pengurus');
     await expect(publicCard).toContainText(responseText);
   });
 

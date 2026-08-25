@@ -73,7 +73,7 @@ func main() {
 	financialHandler := delivery.NewFinancialHandler(financialUC, tenantRepo, cfg.TenantBaseDomain)
 
 	eventUC := usecase.NewEventUsecase(eventRepo)
-	eventHandler := delivery.NewEventHandler(eventUC)
+	eventHandler := delivery.NewEventHandler(eventUC, tenantRepo, cfg.TenantBaseDomain)
 
 	aspirationNeedUC := usecase.NewAspirationNeedUsecase(aspirationNeedRepo)
 	aspirationNeedHandler := delivery.NewAspirationNeedHandler(aspirationNeedUC, tenantRepo, cfg.TenantBaseDomain)

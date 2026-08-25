@@ -217,7 +217,7 @@ func (m *mockEventUsecase) GetTransparency(ctx context.Context, tenantID, eventI
 
 func TestEventHandler(t *testing.T) {
 	uc := newMockEventUsecase()
-	handler := delivery.NewEventHandler(uc)
+	handler := delivery.NewEventHandler(uc, nil, "")
 
 	tenant := &domain.Tenant{ID: uuid.New(), Name: "RT 01"}
 	tenantMw := func(next http.Handler) http.Handler {
