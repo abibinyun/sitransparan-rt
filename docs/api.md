@@ -27,6 +27,7 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 ### Public Tenant Resources (resolusi tenant via slug di path)
 | Metode | Path | Keterangan |
 |---|---|---|
+| GET | `/api/v1/t/resolve` | Resolusi hostname/custom domain ke slug tenant yang aktif. Query: `host={domain}`. Response: `{"slug":"..."}`. |
 | GET | `/api/v1/t/{slug}/info` | Info tenant publik (id, name, slug, domain, logo_url). Response: `{data: tenant}`. |
 | GET | `/api/v1/t/{slug}/announcements` | List pengumuman publik. Query: `limit`, `offset`. |
 | GET | `/api/v1/t/{slug}/documents` | List dokumen publik. Query: `limit`, `offset`. |

@@ -12,8 +12,8 @@ test.describe('Role E2E: Admin RT (Tenant Admin)', () => {
   });
 
   test('UC-ADM-01: User Management CRUD', async ({ page }) => {
-    await page.goto('/users');
-    await expect(page).toHaveURL('/users');
+    await page.goto('/admin/users');
+    await expect(page).toHaveURL('/admin/users');
 
     const timestamp = Date.now();
     const testName = `Warga RT ${timestamp}`;
@@ -48,22 +48,22 @@ test.describe('Role E2E: Admin RT (Tenant Admin)', () => {
   });
 
   test('UC-ADM-02: Resident Data Access', async ({ page }) => {
-    await page.goto('/residents');
-    await expect(page).toHaveURL('/residents');
+    await page.goto('/admin/residents');
+    await expect(page).toHaveURL('/admin/residents');
   });
 
   test('UC-ADM-03: Financial Ledger Access', async ({ page }) => {
-    await page.goto('/financial');
-    await expect(page).toHaveURL('/financial');
+    await page.goto('/admin/financial');
+    await expect(page).toHaveURL('/admin/financial');
   });
 
   test('UC-ADM-04: Events & Budgeting Access', async ({ page }) => {
-    await page.goto('/events');
-    await expect(page).toHaveURL('/events');
+    await page.goto('/admin/events');
+    await expect(page).toHaveURL('/admin/events');
   });
 
   test('UC-ADM-05: Announcements & Documents Access', async ({ page }) => {
-    await page.goto('/announcements');
-    await expect(page).toHaveURL('/announcements');
+    await page.goto('/admin/announcements');
+    await expect(page).toHaveURL('/admin/announcements');
   });
 });

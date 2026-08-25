@@ -31,19 +31,19 @@ type NavItem = {
 };
 
 const baseNavItems: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/residents', label: 'Data Warga', icon: Users, adminOnly: true },
-  { to: '/financial', label: 'Keuangan', icon: WalletCards },
-  { to: '/events', label: 'Kegiatan & Budget', icon: CalendarDays },
-  { to: '/meetings', label: 'Notulen & Tindak Lanjut', icon: ClipboardList },
-  { to: '/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
-  { to: '/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
-  { to: '/users', label: 'Manajemen Pengguna', icon: Users, adminOnly: true },
+  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/admin/residents', label: 'Data Warga', icon: Users, adminOnly: true },
+  { to: '/admin/financial', label: 'Keuangan', icon: WalletCards },
+  { to: '/admin/events', label: 'Kegiatan & Budget', icon: CalendarDays },
+  { to: '/admin/meetings', label: 'Notulen & Tindak Lanjut', icon: ClipboardList },
+  { to: '/admin/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
+  { to: '/admin/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
+  { to: '/admin/users', label: 'Manajemen Pengguna', icon: Users, adminOnly: true },
 ];
 
 const publicNavItems: NavItem[] = [
-  { to: '/public/announcements', label: 'Publik Pengumuman', icon: Bell },
-  { to: '/public/aspirations', label: 'Publik Warga', icon: ClipboardList },
+  { to: '/', label: 'Portal Transparansi', icon: Bell, end: true },
+  { to: '/usulan', label: 'Usulan Warga', icon: MessageSquareHeart },
 ];
 
 export const MainLayout: React.FC = () => {
@@ -59,15 +59,21 @@ export const MainLayout: React.FC = () => {
     const isAdminRT =
       user?.role === 'RT_ADMIN' || (user?.role as string) === 'admin_rt';
 
-    // Admin-only pages (blocked on the backend for residents) are hidden from
-    // the navigation so the UI stays consistent with backend authorization.
+    // Role-based separation:
+    // SuperAdmin only manages Platform Tenants & Global Users (never RT operations/residents)
+    if (isSuperAdmin) {
+      return [
+        { to: '/admin/tenants', label: 'Manajemen Tenant RT', icon: Shield },
+        { to: '/admin/users', label: 'Manajemen Pengguna', icon: Users },
+        { to: '/', label: 'Landing Page Platform', icon: Bell, end: true },
+      ];
+    }
+
+    // Admin RT manages RT operations
     const items = [
-      ...baseNavItems.filter((item) => !item.adminOnly || isAdminRT || isSuperAdmin),
+      ...baseNavItems.filter((item) => !item.adminOnly || isAdminRT),
       ...publicNavItems,
     ];
-    if (isSuperAdmin) {
-      items.push({ to: '/superadmin/tenants', label: 'SuperAdmin RT', icon: Shield });
-    }
     return items;
   }, [user?.role]);
 

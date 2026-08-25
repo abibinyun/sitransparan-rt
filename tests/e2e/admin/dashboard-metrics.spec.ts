@@ -6,7 +6,7 @@ const API = 'http://127.0.0.1:8081';
 test.describe('Dashboard — metrik ringkasan & export laporan', () => {
   async function openDashboard(page: import('@playwright/test').Page) {
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
-    await page.goto('/');
+    await page.goto('/admin');
     // Wait until real metric values render (not skeletons)
     await expect(page.getByText('Total Warga')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(/^Rp\s[\d.,]+$/).first()).toBeVisible({ timeout: 15000 });

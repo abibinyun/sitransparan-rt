@@ -4,9 +4,9 @@ import { Newspaper, MessageSquareHeart, CalendarDays, UserRound } from 'lucide-r
 import { useAuthStore } from '../store/useAuthStore';
 
 const items = [
-  { to: '/public/announcements', label: 'Kabar', icon: Newspaper },
-  { to: '/public/aspirations', label: 'Usulan', icon: MessageSquareHeart },
-  { to: '/public/events', label: 'Agenda', icon: CalendarDays },
+  { to: '/', label: 'Kabar', icon: Newspaper, end: true },
+  { to: '/usulan', label: 'Usulan', icon: MessageSquareHeart },
+  { to: '/agenda', label: 'Agenda', icon: CalendarDays },
 ];
 
 /** Navigasi bawah untuk portal publik di ponsel (mobile-first). */
@@ -35,7 +35,7 @@ export const PublicBottomNav: React.FC = () => {
           </NavLink>
         ))}
         <button
-          onClick={() => navigate(user ? '/' : '/login')}
+          onClick={() => navigate(user ? '/admin' : '/login')}
           className="flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold text-slate-500"
         >
           <UserRound className="h-5 w-5" aria-hidden />

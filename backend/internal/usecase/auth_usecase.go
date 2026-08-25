@@ -36,6 +36,7 @@ type AuthUsecase interface {
 	CreateTenant(ctx context.Context, name, slug string, domainName, logoURL *string) (*domain.Tenant, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (*domain.Tenant, error)
 	GetTenantBySlug(ctx context.Context, slug string) (*domain.Tenant, error)
+	GetTenantByDomain(ctx context.Context, domainName string) (*domain.Tenant, error)
 	UpdateTenant(ctx context.Context, id uuid.UUID, name, slug string, domainName, logoURL *string, status string) (*domain.Tenant, error)
 	DeleteTenant(ctx context.Context, id uuid.UUID) error
 	ListTenants(ctx context.Context, limit, offset int) ([]*domain.Tenant, int64, error)
@@ -319,6 +320,10 @@ func (u *authUsecase) GetTenantByID(ctx context.Context, id uuid.UUID) (*domain.
 
 func (u *authUsecase) GetTenantBySlug(ctx context.Context, slug string) (*domain.Tenant, error) {
 	return u.tenantRepo.GetBySlug(ctx, slug)
+}
+
+func (u *authUsecase) GetTenantByDomain(ctx context.Context, domainName string) (*domain.Tenant, error) {
+	return u.tenantRepo.GetByDomain(ctx, domainName)
 }
 
 func (u *authUsecase) UpdateTenant(ctx context.Context, id uuid.UUID, name, slug string, domainName, logoURL *string, status string) (*domain.Tenant, error) {

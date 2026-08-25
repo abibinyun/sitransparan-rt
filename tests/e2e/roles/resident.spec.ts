@@ -31,8 +31,8 @@ test.describe('Role E2E: Resident (Warga RT)', () => {
   });
 
   test('UC-RES-02 & UC-RES-03: Resident Dashboard & Submit Aspirations', async ({ page }) => {
-    await page.goto('/aspirations');
-    await expect(page).toHaveURL('/aspirations');
+    await page.goto('/admin/aspirations');
+    await expect(page).toHaveURL('/admin/aspirations');
     await expect(page.getByRole('heading', { name: 'Manajemen Aspirasi & Kebutuhan Lingkungan' })).toBeVisible();
   });
 });

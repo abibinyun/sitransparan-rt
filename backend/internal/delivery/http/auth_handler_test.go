@@ -53,6 +53,14 @@ func (m *mockAuthUsecase) GetTenantBySlug(ctx context.Context, slug string) (*do
 	}
 	return nil, nil
 }
+func (m *mockAuthUsecase) GetTenantByDomain(ctx context.Context, domainName string) (*domain.Tenant, error) {
+	for _, t := range m.tenants {
+		if t.Domain != nil && *t.Domain == domainName {
+			return t, nil
+		}
+	}
+	return nil, nil
+}
 func (m *mockAuthUsecase) UpdateTenant(ctx context.Context, id uuid.UUID, name, slug string, domainName, logoURL *string, status string) (*domain.Tenant, error) {
 	return &domain.Tenant{ID: id, Name: name, Slug: slug, Status: status}, nil
 }
@@ -61,6 +69,93 @@ func (m *mockAuthUsecase) DeleteTenant(ctx context.Context, id uuid.UUID) error 
 }
 func (m *mockAuthUsecase) ListTenants(ctx context.Context, limit, offset int) ([]*domain.Tenant, int64, error) {
 	return m.tenants, int64(len(m.tenants)), nil
+}
+
+func TestAuthHandler_ResolveHost(t *testing.T) {
+	activeTenant := &domain.Tenant{
+		ID:     uuid.New(),
+		Name:   "RT 01",
+		Slug:   "rt01",
+		Status: "active",
+	}
+	customTenant := &domain.Tenant{
+		ID:     uuid.New(),
+		Name:   "Perumahan Indah",
+		Slug:   "perum-indah",
+		Domain: func() *string { s := "rt01.perumahan.com"; return &s }(),
+		Status: "active",
+	}
+	defaultTenant := &domain.Tenant{
+		ID:     uuid.New(),
+		Name:   "SiTransparan RT",
+		Slug:   "sitransparan-rt",
+		Status: "active",
+	}
+
+	usecase := &mockAuthUsecase{
+		tenants: []*domain.Tenant{activeTenant, customTenant, defaultTenant},
+	}
+	handler := deliveryHttp.NewAuthHandler(usecase, "openrt.local")
+
+	tests := []struct {
+		name       string
+		hostParam  string
+		reqHost    string
+		wantStatus int
+		wantSlug   string
+	}{
+		{
+			name:       "Subdomain of baseDomain",
+			hostParam:  "rt01.openrt.local",
+			wantStatus: http.StatusOK,
+			wantSlug:   "rt01",
+		},
+		{
+			name:       "Custom registered domain",
+			hostParam:  "rt01.perumahan.com",
+			wantStatus: http.StatusOK,
+			wantSlug:   "perum-indah",
+		},
+		{
+			name:       "Platform host (localhost) fallback",
+			hostParam:  "localhost",
+			wantStatus: http.StatusOK,
+			wantSlug:   "sitransparan-rt",
+		},
+		{
+			name:       "Unknown custom domain",
+			hostParam:  "unknown-domain.com",
+			wantStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url := "/api/v1/t/resolve"
+			if tt.hostParam != "" {
+				url += "?host=" + tt.hostParam
+			}
+			req := httptest.NewRequest(http.MethodGet, url, nil)
+			if tt.reqHost != "" {
+				req.Host = tt.reqHost
+			}
+			rec := httptest.NewRecorder()
+			handler.ResolveHost(rec, req)
+
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("expected status %d, got %d", tt.wantStatus, rec.Code)
+			}
+			if tt.wantStatus == http.StatusOK {
+				var res map[string]string
+				if err := json.NewDecoder(rec.Body).Decode(&res); err != nil {
+					t.Fatalf("failed to decode response: %v", err)
+				}
+				if res["slug"] != tt.wantSlug {
+					t.Fatalf("expected slug %s, got %s", tt.wantSlug, res["slug"])
+				}
+			}
+		})
+	}
 }
 
 func TestAuthHandler_Login(t *testing.T) {

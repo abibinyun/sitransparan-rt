@@ -6,9 +6,9 @@ test.describe('Announcements & Public Documents', () => {
     await page.getByLabel('Email').fill('admin@sitransparan.rt');
     await page.getByLabel('Kata Sandi').fill('password123');
     await page.getByRole('button', { name: 'Masuk Akun' }).click();
-    await expect(page).toHaveURL('http://localhost:3000/');
+    await expect(page).toHaveURL(/\/admin$/);
 
-    await page.goto('/announcements');
+    await page.goto('/admin/announcements');
     await expect(page.getByRole('heading', { name: 'Kelola Pengumuman & Dokumen RT/RW' })).toBeVisible();
     await expect(page.getByRole('button', { name: '+ Tambah Pengumuman' })).toBeVisible();
   });

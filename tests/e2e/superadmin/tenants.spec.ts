@@ -8,7 +8,7 @@ test.describe('SuperAdmin Tenant Management & CRUD', () => {
     await page.getByLabel('Kata Sandi').fill('admin123');
     await page.getByRole('button', { name: 'Masuk Akun' }).click();
     
-    await expect(page).toHaveURL('http://localhost:3000/superadmin/tenants');
+    await expect(page).toHaveURL(/\/admin\/tenants$/);
     await expect(page.getByText('Super Admin', { exact: true })).toBeVisible();
 
     // Navigate to SuperAdmin Tenant Management page

@@ -17,12 +17,12 @@ import { usePublicFinancialSummary, formatRupiah } from '../services/public_tran
 import { PublicBottomNav } from './PublicBottomNav';
 
 const NAV_ITEMS = [
-  { to: '/public/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
-  { to: '/public/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
-  { to: '/public/events', label: 'Agenda & Kegiatan', icon: CalendarDays },
+  { to: '/', label: 'Pengumuman & Dokumen', icon: FileText, end: true },
+  { to: '/usulan', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
+  { to: '/agenda', label: 'Agenda & Kegiatan', icon: CalendarDays },
 ];
 
-export const PublicLayout: React.FC = () => {
+export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
   const { data: tenantInfo } = usePublicTenantQuery();
   const { data: kas } = usePublicFinancialSummary();
@@ -55,7 +55,7 @@ export const PublicLayout: React.FC = () => {
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            <Link to="/public/announcements" className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center text-white overflow-hidden">
                 {tenantInfo?.logo_url ? (
                   <img src={tenantInfo.logo_url} alt={tenantName} className="w-full h-full object-cover" />
@@ -71,10 +71,11 @@ export const PublicLayout: React.FC = () => {
 
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-1">
-              {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+              {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
                 <NavLink
                   key={to}
                   to={to}
+                  end={end}
                   className={({ isActive }) =>
                     `flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold border ${
                       isActive
@@ -93,7 +94,7 @@ export const PublicLayout: React.FC = () => {
             <div className="hidden sm:flex items-center gap-2">
               {isAuthenticated ? (
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/admin')}
                   className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg"
                 >
                   <Building2 className="w-4 h-4" /> Dashboard Pengurus
@@ -132,10 +133,11 @@ export const PublicLayout: React.FC = () => {
         {/* Mobile drawer (di luar BottomNav: untuk konten panjang seperti login) */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1">
-            {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+            {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}
                 to={to}
+                end={end}
                 onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold ${
@@ -148,7 +150,7 @@ export const PublicLayout: React.FC = () => {
             ))}
             <div className="pt-2 border-t border-slate-100">
               <Link
-                to="/login"
+                to={isAuthenticated ? '/admin' : '/login'}
                 onClick={() => setMobileMenuOpen(false)}
                 className="block w-full text-center bg-slate-900 text-white font-semibold text-sm py-2.5 rounded-lg"
               >
@@ -161,7 +163,7 @@ export const PublicLayout: React.FC = () => {
 
       {/* Main Content Area — ruang untuk BottomNav di ponsel */}
       <main className="flex-1 pb-20 md:pb-0">
-        <Outlet />
+        {children || <Outlet />}
       </main>
 
       {/* Footer — tanpa alamat/email fiktif */}
@@ -172,9 +174,9 @@ export const PublicLayout: React.FC = () => {
               <Building2 className="w-4 h-4 text-emerald-400" /> {tenantName.toUpperCase()}
             </div>
             <ul className="flex flex-wrap gap-x-6 gap-y-2">
-              <li><Link to="/public/announcements" className="hover:text-white">Pengumuman &amp; Kas</Link></li>
-              <li><Link to="/public/aspirations" className="hover:text-white">Usulan Warga</Link></li>
-              <li><Link to="/public/events" className="hover:text-white">Agenda</Link></li>
+              <li><Link to="/" className="hover:text-white">Pengumuman &amp; Kas</Link></li>
+              <li><Link to="/usulan" className="hover:text-white">Usulan Warga</Link></li>
+              <li><Link to="/agenda" className="hover:text-white">Agenda</Link></li>
             </ul>
           </div>
           <div className="pt-6 mt-6 border-t border-slate-800 text-slate-500">

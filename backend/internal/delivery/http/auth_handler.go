@@ -43,6 +43,53 @@ type userDTO struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+func (h *AuthHandler) ResolveHost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	host := strings.TrimSpace(r.URL.Query().Get("host"))
+	if host == "" {
+		host = r.Host
+	}
+	host = middleware.NormalizeHost(host)
+
+	// 1. Check if host is base domain subdomain
+	if slug, matched := middleware.HostnameSlug(host, h.baseDomain); matched {
+		tenant, err := h.authUsecase.GetTenantBySlug(r.Context(), slug)
+		if err == nil && tenant != nil && tenant.IsActive() {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{"slug": tenant.Slug})
+			return
+		}
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// 2. Check if host is registered custom domain
+	if !middleware.IsPlatformHost(host, h.baseDomain) {
+		tenant, err := h.authUsecase.GetTenantByDomain(r.Context(), host)
+		if err == nil && tenant != nil && tenant.IsActive() {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{"slug": tenant.Slug})
+			return
+		}
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// 3. Platform host fallback (default tenant)
+	defaultTenant, err := h.authUsecase.GetTenantBySlug(r.Context(), "sitransparan-rt")
+	if err == nil && defaultTenant != nil && defaultTenant.IsActive() {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"slug": defaultTenant.Slug})
+		return
+	}
+
+	http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+}
+
 func (h *AuthHandler) GetPublicTenantInfo(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)

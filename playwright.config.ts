@@ -4,7 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
 // /etc/hosts. Used by the tenant-isolation specs to run the real
 // hostname-based tenant routing (rt-003.openrt.local / rt-004.openrt.local).
 export const TENANT_HOST_RESOLVER_ARGS = [
-  '--host-resolver-rules=MAP rt-003.openrt.local 127.0.0.1, MAP rt-004.openrt.local 127.0.0.1',
+  '--host-resolver-rules=MAP openrt.local 127.0.0.1, MAP rt-003.openrt.local 127.0.0.1, MAP rt-004.openrt.local 127.0.0.1, MAP sitransparan-rt.openrt.local 127.0.0.1',
 ];
 
 export default defineConfig({

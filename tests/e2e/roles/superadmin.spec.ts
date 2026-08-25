@@ -12,8 +12,8 @@ test.describe('Role E2E: Super Admin (Platform Admin)', () => {
   });
 
   test('UC-SUP-01: SuperAdmin Tenant Management CRUD', async ({ page }) => {
-    await page.goto('/superadmin/tenants');
-    await expect(page).toHaveURL('/superadmin/tenants');
+    await page.goto('/admin/tenants');
+    await expect(page).toHaveURL('/admin/tenants');
     await expect(page.getByText('Manajemen Tenant RT')).toBeVisible();
 
     // Click Add Tenant Button
@@ -33,8 +33,8 @@ test.describe('Role E2E: Super Admin (Platform Admin)', () => {
   });
 
   test('UC-SUP-02: SuperAdmin Can Access Users & Create User With Selected Tenant', async ({ page }) => {
-    await page.goto('/users');
-    await expect(page).toHaveURL('/users');
+    await page.goto('/admin/users');
+    await expect(page).toHaveURL('/admin/users');
     await expect(page.getByRole('heading', { name: 'Manajemen Pengguna' })).toBeVisible();
     await expect(page.locator('th', { hasText: 'Tenant / RT' })).toBeVisible();
 

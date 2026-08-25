@@ -11,8 +11,9 @@ test.describe('Authentication Flow', () => {
     // Submit login form via submit button "Masuk Akun"
     await page.getByRole('button', { name: 'Masuk Akun' }).click();
     
-    // Verify successful login navigation to superadmin tenants page
-    await expect(page).toHaveURL('http://localhost:3000/superadmin/tenants');
+    // Verify successful login navigation to the superadmin tenants page
+    // (canonical path per docs/domains-and-routing.md)
+    await expect(page).toHaveURL(/\/admin\/tenants$/);
   });
 
   test('User receives error on invalid password', async ({ page }) => {

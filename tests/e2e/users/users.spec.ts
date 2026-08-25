@@ -12,15 +12,15 @@ test.describe('User Management E2E', () => {
   });
 
   test('should display Users Management page and list users', async ({ page }) => {
-    await page.goto('/users');
-    await expect(page).toHaveURL('/users');
+    await page.goto('/admin/users');
+    await expect(page).toHaveURL('/admin/users');
 
     await expect(page.getByRole('heading', { name: 'Manajemen Pengguna' })).toBeVisible();
     await expect(page.getByPlaceholder('Cari nama atau email pengguna...')).toBeVisible();
   });
 
   test('should create, update, and delete user successfully', async ({ page }) => {
-    await page.goto('/users');
+    await page.goto('/admin/users');
 
     const timestamp = Date.now();
     const testName = `Warga E2E ${timestamp}`;

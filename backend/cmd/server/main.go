@@ -125,6 +125,7 @@ func main() {
 	// Public routes
 	delivery.RegisterSwaggerRoutes(mux)
 	mux.HandleFunc("GET /health", healthHandler.HealthCheck)
+	mux.HandleFunc("GET /api/v1/t/resolve", authHandler.ResolveHost)
 	mux.HandleFunc("GET /api/v1/t/{slug}/info", authHandler.GetPublicTenantInfo)
 	// Login/register are the public brute-force surface: apply the stricter
 	// per-IP auth budget here (the general limiter below still applies too).

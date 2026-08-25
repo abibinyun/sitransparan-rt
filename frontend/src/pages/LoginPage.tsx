@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLoginMutation, useRegisterMutation, useSwitchTenantMutation, fetchUserTenantsWithToken } from '../services/auth';
 import { useAuthStore } from '../store/useAuthStore';
-import { getTenantSlugFromHost } from '../utils/tenant';
+import { getTenantSlugFromHost, getTenantUrl, getPlatformUrl } from '../utils/tenant';
 import type { Role, Tenant } from '../types/auth';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -73,7 +73,24 @@ export const LoginPage: React.FC = () => {
         userWithRole.role === 'SUPER_ADMIN' ||
         (userWithRole.role as string) === 'superadmin' ||
         (userWithRole.role as string) === 'super_admin';
-      navigate(isSuperAdmin ? '/superadmin/tenants' : '/');
+
+      // Only cross-origin redirect if host is truly different and not running on generic localhost
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isSuperAdmin) {
+        if (hostTenantSlug && !isLocalhost) {
+          window.location.href = getPlatformUrl('/admin/tenants');
+          return;
+        }
+        navigate('/admin/tenants');
+        return;
+      }
+
+      if (initialTenant && initialTenant.slug !== hostTenantSlug && !isLocalhost) {
+        window.location.href = getTenantUrl(initialTenant.slug, '/admin');
+        return;
+      }
+
+      navigate('/admin');
     } catch {
       // error surfaced via loginMutation.isError below
     }
@@ -82,11 +99,18 @@ export const LoginPage: React.FC = () => {
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     setRegisterSuccess('');
+    const hostTenantSlug = getTenantSlugFromHost();
     registerMutation.mutate(
       { name, email, password, phone: phone.trim() || undefined },
       {
         onSuccess: () => {
-          setRegisterSuccess('Pendaftaran berhasil. Silakan login menggunakan akun baru Anda.');
+          if (hostTenantSlug) {
+            setRegisterSuccess(
+              `Pendaftaran berhasil untuk RT ${hostTenantSlug.toUpperCase()}. Silakan login, akun Anda akan diverifikasi oleh Pengurus RT.`
+            );
+          } else {
+            setRegisterSuccess('Pendaftaran berhasil. Silakan login menggunakan akun baru Anda.');
+          }
           setMode('login');
           setPassword('');
           setPhone('');
@@ -113,7 +137,24 @@ export const LoginPage: React.FC = () => {
         userWithRole.role === 'SUPER_ADMIN' ||
         (userWithRole.role as string) === 'superadmin' ||
         (userWithRole.role as string) === 'super_admin';
-      navigate(isSuperAdmin ? '/superadmin/tenants' : '/');
+
+      const hostTenantSlug = getTenantSlugFromHost();
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isSuperAdmin) {
+        if (hostTenantSlug && !isLocalhost) {
+          window.location.href = getPlatformUrl('/admin/tenants');
+          return;
+        }
+        navigate('/admin/tenants');
+        return;
+      }
+
+      if (selected.slug !== hostTenantSlug && !isLocalhost) {
+        window.location.href = getTenantUrl(selected.slug, '/admin');
+        return;
+      }
+
+      navigate('/admin');
     } catch {
       // error surfaced via switchTenantMutation.isError below
     }
