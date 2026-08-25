@@ -496,7 +496,7 @@ func (r *financialRepository) ListFinancialTransactions(ctx context.Context, ten
 			return nil, 0, err
 		}
 		query = fmt.Sprintf(`
-			SELECT t.id, t.tenant_id, t.fund_id, f.name, t.type, t.category, t.amount, t.transaction_date, t.description, t.proof_url, t.created_by, t.created_at, t.updated_at
+			SELECT t.id, t.tenant_id, t.fund_id, COALESCE(f.name, ''), t.type, t.category, t.amount, t.transaction_date, t.description, t.proof_url, t.created_by, t.created_at, t.updated_at
 			FROM %s t
 			LEFT JOIN %s f ON f.id = t.fund_id
 			WHERE t.tenant_id = $1 AND t.type = $2
@@ -509,7 +509,7 @@ func (r *financialRepository) ListFinancialTransactions(ctx context.Context, ten
 			return nil, 0, err
 		}
 		query = fmt.Sprintf(`
-			SELECT t.id, t.tenant_id, t.fund_id, f.name, t.type, t.category, t.amount, t.transaction_date, t.description, t.proof_url, t.created_by, t.created_at, t.updated_at
+			SELECT t.id, t.tenant_id, t.fund_id, COALESCE(f.name, ''), t.type, t.category, t.amount, t.transaction_date, t.description, t.proof_url, t.created_by, t.created_at, t.updated_at
 			FROM %s t
 			LEFT JOIN %s f ON f.id = t.fund_id
 			WHERE t.tenant_id = $1

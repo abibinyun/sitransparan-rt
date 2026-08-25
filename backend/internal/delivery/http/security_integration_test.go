@@ -437,7 +437,7 @@ func TestSecurity_RBACEnforcement(t *testing.T) {
 	// resident_A can read the financial summary (read-only transparency).
 	rec, _ = doJSON(fx.handler, "GET", "/api/v1/financial/summary", fx.resToken, nil, nil)
 	if rec.Code != http.StatusOK {
-		t.Errorf("resident financial summary expected 200, got %d", rec.Code)
+		t.Errorf("resident financial summary expected 200, got %d (body: %s)", rec.Code, rec.Body.String())
 	}
 
 	// resident_A cannot create financial transactions.

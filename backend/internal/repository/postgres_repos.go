@@ -115,6 +115,7 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.financial_transactions (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+			fund_id UUID,
 			type VARCHAR(50) NOT NULL CHECK (type IN ('income', 'expense')),
 			category VARCHAR(255) NOT NULL,
 			amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
