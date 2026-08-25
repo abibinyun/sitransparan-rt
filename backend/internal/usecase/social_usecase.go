@@ -82,3 +82,15 @@ func (u *socialUsecase) Vote(ctx context.Context, pollID, userID uuid.UUID, opti
 func (u *socialUsecase) ClosePoll(ctx context.Context, id uuid.UUID) error {
 	return u.repo.ClosePoll(ctx, id)
 }
+
+var validPortalEventTypes = map[string]bool{"feed_view": true, "share_opened": true}
+
+func (u *socialUsecase) RecordPortalEvent(ctx context.Context, slug, eventType string, targetID, userID *uuid.UUID) error {
+	if strings.TrimSpace(slug) == "" {
+		return errors.New("tenant slug required")
+	}
+	if !validPortalEventTypes[eventType] {
+		return errors.New("event_type must be one of: feed_view, share_opened")
+	}
+	return u.repo.RecordPortalEvent(ctx, slug, eventType, targetID, userID)
+}

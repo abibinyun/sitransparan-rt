@@ -51,6 +51,9 @@ type SocialRepository interface {
 	ListOpenPolls(ctx context.Context, viewerID uuid.UUID, includeViewer bool) ([]*Poll, error)
 	VotePoll(ctx context.Context, pollID, userID uuid.UUID, optionIndex int) error
 	ClosePoll(ctx context.Context, id uuid.UUID) error
+
+	// KPI instrumentasi (konsep portal §4)
+	RecordPortalEvent(ctx context.Context, slug, eventType string, targetID, userID *uuid.UUID) error
 }
 
 type SocialUsecase interface {
@@ -63,4 +66,7 @@ type SocialUsecase interface {
 	OpenPolls(ctx context.Context, viewerID uuid.UUID, includeViewer bool) ([]*Poll, error)
 	Vote(ctx context.Context, pollID, userID uuid.UUID, optionIndex int) error
 	ClosePoll(ctx context.Context, id uuid.UUID) error
+
+	// KPI instrumentasi (konsep portal §4): event ringan sisi server.
+	RecordPortalEvent(ctx context.Context, slug, eventType string, targetID, userID *uuid.UUID) error
 }

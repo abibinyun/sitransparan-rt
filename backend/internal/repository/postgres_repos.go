@@ -314,6 +314,8 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 			UNIQUE (poll_id, user_id),
 			CHECK (option_index >= 0)
 		);`,
+		`ALTER TABLE ` + pq.QuoteIdentifier(schemaName) + `.announcements
+			ADD COLUMN IF NOT EXISTS media_urls JSONB NOT NULL DEFAULT '[]'::jsonb;`,
 	}
 
 	for _, ddl := range tablesDDL {

@@ -243,3 +243,18 @@ func (r *socialRepository) ClosePoll(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+// ---------- KPI portal (tabel public.portal_events, lintas tenant) ----------
+
+var validPortalEvents = map[string]bool{
+	"feed_view": true, "share_opened": true,
+}
+
+func (r *socialRepository) RecordPortalEvent(ctx context.Context, slug, eventType string, targetID, userID *uuid.UUID) error {
+	if !validPortalEvents[eventType] {
+		return errors.New("event_type must be one of: feed_view, share_opened")
+	}
+	query := `INSERT INTO portal_events (tenant_slug, event_type, target_id, user_id) VALUES ($1, $2, $3, $4)`
+	_, err := r.db.ExecContext(ctx, query, slug, eventType, targetID, userID)
+	return err
+}
+

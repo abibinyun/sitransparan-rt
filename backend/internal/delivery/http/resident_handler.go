@@ -289,12 +289,18 @@ func (h *ResidentHandler) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	limitUploadBody(r)
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, `{"error":"file is required"}`, http.StatusBadRequest)
+		http.Error(w, `{"error":"file is required atau melebihi 5 MB"}`, http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
+
+	if msg := validateUploadFile(header.Filename, header.Header.Get("Content-Type"), header.Size); msg != "" {
+		http.Error(w, `{"error":"`+msg+`"}`, http.StatusBadRequest)
+		return
+	}
 
 	docType := r.FormValue("type")
 	if docType == "" {

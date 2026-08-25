@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -27,6 +28,43 @@ func NewAnnouncementDocRepository(db *sql.DB, minioClient *minio.Client) domain.
 	}
 }
 
+// ---------- helpers media_urls (JSONB <-> []string) ----------
+
+func mediaJSON(urls []string) []byte {
+	if len(urls) == 0 {
+		return []byte("[]")
+	}
+	b, err := json.Marshal(urls)
+	if err != nil {
+		return []byte("[]")
+	}
+	return b
+}
+
+func scanMedia(dest interface{}) ([]string, error) {
+	raw, ok := dest.([]byte)
+	if !ok {
+		return []string{}, nil
+	}
+	var urls []string
+	if err := json.Unmarshal(raw, &urls); err != nil {
+		return []string{}, nil
+	}
+	return urls, nil
+}
+
+const announcementCols = `id, tenant_id, title, content, attachment_url, media_urls, target, created_by, created_at, updated_at`
+
+func scanAnnouncement(scan func(dest ...interface{}) error) (*domain.Announcement, error) {
+	a := &domain.Announcement{}
+	var mediaRaw []byte
+	if err := scan(&a.ID, &a.TenantID, &a.Title, &a.Content, &a.AttachmentURL, &mediaRaw, &a.Target, &a.CreatedBy, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		return nil, err
+	}
+	a.MediaURLs, _ = scanMedia(mediaRaw)
+	return a, nil
+}
+
 func (r *announcementDocRepository) CreateAnnouncement(ctx context.Context, a *domain.Announcement) error {
 	if a.ID == uuid.Nil {
 		a.ID = uuid.New()
@@ -43,11 +81,11 @@ func (r *announcementDocRepository) CreateAnnouncement(ctx context.Context, a *d
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, tenant_id, title, content, attachment_url, target, created_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO %s (id, tenant_id, title, content, attachment_url, media_urls, target, created_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`, TenantTable(ctx, "announcements"))
 	_, err := r.db.ExecContext(ctx, query,
-		a.ID, a.TenantID, a.Title, a.Content, a.AttachmentURL, a.Target, a.CreatedBy, a.CreatedAt, a.UpdatedAt,
+		a.ID, a.TenantID, a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), a.Target, a.CreatedBy, a.CreatedAt, a.UpdatedAt,
 	)
 	return err
 }
@@ -58,14 +96,11 @@ func (r *announcementDocRepository) GetAnnouncementByID(ctx context.Context, ten
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, tenant_id, title, content, attachment_url, target, created_by, created_at, updated_at
+		SELECT `+announcementCols+`
 		FROM %s
 		WHERE id = $1 AND tenant_id = $2
 	`, TenantTable(ctx, "announcements"))
-	a := &domain.Announcement{}
-	err := r.db.QueryRowContext(ctx, query, id, tenantID).Scan(
-		&a.ID, &a.TenantID, &a.Title, &a.Content, &a.AttachmentURL, &a.Target, &a.CreatedBy, &a.CreatedAt, &a.UpdatedAt,
-	)
+	a, err := scanAnnouncement(r.db.QueryRowContext(ctx, query, id, tenantID).Scan)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -92,7 +127,7 @@ func (r *announcementDocRepository) ListAnnouncements(ctx context.Context, tenan
 			return nil, 0, err
 		}
 		query = fmt.Sprintf(`
-			SELECT id, tenant_id, title, content, attachment_url, target, created_by, created_at, updated_at
+			SELECT ` + announcementCols + `
 			FROM %s
 			WHERE tenant_id = $1 AND target = $2
 			ORDER BY created_at DESC
@@ -105,7 +140,7 @@ func (r *announcementDocRepository) ListAnnouncements(ctx context.Context, tenan
 			return nil, 0, err
 		}
 		query = fmt.Sprintf(`
-			SELECT id, tenant_id, title, content, attachment_url, target, created_by, created_at, updated_at
+			SELECT ` + announcementCols + `
 			FROM %s
 			WHERE tenant_id = $1
 			ORDER BY created_at DESC
@@ -122,8 +157,8 @@ func (r *announcementDocRepository) ListAnnouncements(ctx context.Context, tenan
 
 	list := []*domain.Announcement{}
 	for rows.Next() {
-		a := &domain.Announcement{}
-		if err := rows.Scan(&a.ID, &a.TenantID, &a.Title, &a.Content, &a.AttachmentURL, &a.Target, &a.CreatedBy, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		a, err := scanAnnouncement(rows.Scan)
+		if err != nil {
 			return nil, 0, err
 		}
 		list = append(list, a)
@@ -140,11 +175,11 @@ func (r *announcementDocRepository) UpdateAnnouncement(ctx context.Context, a *d
 
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET title = $1, content = $2, attachment_url = $3, target = $4, updated_at = $5
-		WHERE id = $6 AND tenant_id = $7
+		SET title = $1, content = $2, attachment_url = $3, media_urls = $4, target = $5, updated_at = $6
+		WHERE id = $7 AND tenant_id = $8
 	`, TenantTable(ctx, "announcements"))
 	res, err := r.db.ExecContext(ctx, query,
-		a.Title, a.Content, a.AttachmentURL, a.Target, a.UpdatedAt, a.ID, a.TenantID,
+		a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), a.Target, a.UpdatedAt, a.ID, a.TenantID,
 	)
 	if err != nil {
 		return err

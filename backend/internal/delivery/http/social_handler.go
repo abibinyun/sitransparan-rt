@@ -278,6 +278,40 @@ func (h *SocialHandler) handlePublicPollResults(w http.ResponseWriter, r *http.R
 	writeSocialJSON(w, http.StatusOK, poll)
 }
 
+// handlePortalEvent mencatat KPI ringan dari portal publik (feed_view,
+// share_opened) — tanpa login, user opsional bila ada sesi.
+func (h *SocialHandler) handlePortalEvent(w http.ResponseWriter, r *http.Request) {
+	r, ok := h.resolvePublicTenant(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		EventType string `json:"event_type"`
+		TargetID  string `json:"target_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeSocialError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	var targetID *uuid.UUID
+	if req.TargetID != "" {
+		if id, err := uuid.Parse(req.TargetID); err == nil {
+			targetID = &id
+		}
+	}
+	var userID *uuid.UUID
+	if uid := middleware.GetUserIDFromContext(r.Context()); uid != uuid.Nil {
+		userID = &uid
+	}
+
+	if err := h.usecase.RecordPortalEvent(r.Context(), r.PathValue("slug"), req.EventType, targetID, userID); err != nil {
+		writeSocialError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeSocialJSON(w, http.StatusNoContent, nil)
+}
+
 // RegisterRoutes mendaftarkan route sosial. rateLimiter memperketat budget
 // endpoint interaksi (anti-spam, konsep portal §7.3).
 func (h *SocialHandler) RegisterRoutes(
@@ -294,4 +328,6 @@ func (h *SocialHandler) RegisterRoutes(
 
 	// Hasil agregat publik
 	mux.HandleFunc("GET /api/v1/t/{slug}/polls/{id}", h.handlePublicPollResults)
+	// KPI portal (publik, rate-limited)
+	mux.Handle("POST /api/v1/t/{slug}/events", rateLimiter(http.HandlerFunc(h.handlePortalEvent)))
 }

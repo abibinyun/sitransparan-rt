@@ -325,6 +325,10 @@ func (h *AnnouncementDocHandler) handlePrivateDocuments(w http.ResponseWriter, r
 				file, header, err := r.FormFile("file")
 				if err == nil {
 					defer file.Close()
+					if msg := validateUploadFile(header.Filename, header.Header.Get("Content-Type"), header.Size); msg != "" {
+						http.Error(w, `{"error":"`+msg+`"}`, http.StatusBadRequest)
+						return
+					}
 					filename = header.Filename
 					contentType = header.Header.Get("Content-Type")
 					userID := middleware.GetUserIDFromContext(r.Context())

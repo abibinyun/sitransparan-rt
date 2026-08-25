@@ -14,7 +14,8 @@ type Announcement struct {
 	Title         string     `json:"title"`
 	Content       string     `json:"content"`
 	AttachmentURL *string    `json:"attachment_url,omitempty"`
-	Target        string     `json:"target"` // 'all', 'residents_only'
+	MediaURLs     []string   `json:"media_urls,omitempty"` // galeri foto feed (Fase 2)
+	Target        string     `json:"target"`               // 'all', 'residents_only'
 	CreatedBy     *uuid.UUID `json:"created_by,omitempty"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`

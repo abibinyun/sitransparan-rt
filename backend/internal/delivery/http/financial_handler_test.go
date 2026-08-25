@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/textproto"
 	"strings"
 	"testing"
 	"time"
@@ -310,10 +311,13 @@ func TestFinancialHandler(t *testing.T) {
 		t.Fatalf("Create Transaction failed, got status %d: %s", w.Code, w.Body.String())
 	}
 
-	// 4. Upload Route
+	// 4. Upload Route (tipe di-whitelist: image/png)
 	bodyBuf := &bytes.Buffer{}
 	writer := multipart.NewWriter(bodyBuf)
-	part, _ := writer.CreateFormFile("file", "bukti_transfer.png")
+	mh := textproto.MIMEHeader{}
+	mh.Set("Content-Disposition", `form-data; name="file"; filename="bukti_transfer.png"`)
+	mh.Set("Content-Type", "image/png")
+	part, _ := writer.CreatePart(mh)
 	part.Write([]byte("fake image data"))
 	writer.Close()
 

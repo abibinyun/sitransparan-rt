@@ -245,3 +245,7 @@ func TestSocialUsecase_Polls(t *testing.T) {
 		t.Fatal("expected vote on closed poll to be rejected")
 	}
 }
+
+func (m *mockSocialRepo) RecordPortalEvent(ctx context.Context, slug, eventType string, targetID, userID *uuid.UUID) error {
+	return nil
+}

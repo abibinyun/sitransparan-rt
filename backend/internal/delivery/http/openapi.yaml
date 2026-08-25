@@ -1026,6 +1026,10 @@ paths:
                 title: { type: string }
                 content: { type: string }
                 attachment_url: { type: string }
+                media_urls:
+                  type: array
+                  description: URL foto galeri feed (objek MinIO tenant)
+                  items: { type: string }
                 target: { type: string, enum: [all, residents_only] }
       responses:
         '201':
@@ -1473,6 +1477,30 @@ paths:
           description: '{ id, question, options, status, votes, total_votes }'
         '404':
           description: Tenant/polling tidak ditemukan
+
+  /api/v1/t/{slug}/events:
+    post:
+      summary: Catat KPI portal — feed_view / share_opened (PUBLIC, rate-limited)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event_type]
+              properties:
+                event_type: { type: string, enum: [feed_view, share_opened] }
+                target_id: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Tercatat
+        '400':
+          description: event_type tidak valid
+
+  # Upload guard (semua endpoint upload): maksimal 5 MB per file,
+  # hanya JPG/PNG/WebP/PDF. Melebihi -> 400.
 
 components:
   securitySchemes:

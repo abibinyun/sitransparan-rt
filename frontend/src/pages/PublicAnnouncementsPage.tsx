@@ -6,6 +6,9 @@ import { KasSummaryWidget } from '../components/KasSummaryWidget';
 import { MeetingDecisionsWidget } from '../components/MeetingDecisionsWidget';
 import { ReactionButton } from '../components/ReactionButton';
 import { PollWidget } from '../components/PollWidget';
+import { MediaCarousel } from '../components/MediaCarousel';
+import axios from 'axios';
+import { getTenantSlugOrFallback } from '../utils/tenant';
 import {
   FileText,
   Download,
@@ -27,6 +30,18 @@ export const PublicAnnouncementsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [shareTarget, setShareTarget] = useState<ShareableAnnouncement | null>(null);
+
+  // KPI §4: catat feed_view sekali per kunjungan halaman
+  React.useEffect(() => {
+    axios.post(`/api/v1/t/${getTenantSlugOrFallback()}/events`, { event_type: 'feed_view' }).catch(() => {});
+  }, []);
+
+  const openShare = (item: ShareableAnnouncement) => {
+    setShareTarget(item);
+    axios
+      .post(`/api/v1/t/${getTenantSlugOrFallback()}/events`, { event_type: 'share_opened', target_id: (item as any).id })
+      .catch(() => {});
+  };
 
   const announcements = announcementsData?.data || [];
   const documents = documentsData?.data || [];
@@ -131,6 +146,10 @@ export const PublicAnnouncementsPage: React.FC = () => {
                         {item.content}
                       </p>
 
+                      {item.media_urls && item.media_urls.length > 0 && (
+                        <MediaCarousel urls={item.media_urls} alt={item.title} />
+                      )}
+
                       {item.attachment_url && (
                         <div className="pt-1">
                           <a
@@ -147,7 +166,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <ReactionButton targetType="announcement" targetId={item.id} />
                         <button
-                          onClick={() => setShareTarget(item)}
+                          onClick={() => openShare(item)}
                           className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg"
                         >
                           <Share2 className="w-3.5 h-3.5" /> Bagikan ke WhatsApp

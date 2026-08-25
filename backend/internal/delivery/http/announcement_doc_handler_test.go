@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/textproto"
 	"testing"
 
 	delivery "backend/internal/delivery/http"
@@ -251,7 +252,10 @@ func TestAnnouncementDocHandler(t *testing.T) {
 		writer := multipart.NewWriter(body)
 		_ = writer.WriteField("title", "Notulen Rapat")
 		_ = writer.WriteField("category", "minutes")
-		part, _ := writer.CreateFormFile("file", "notulen.pdf")
+		mh := textproto.MIMEHeader{}
+		mh.Set("Content-Disposition", `form-data; name="file"; filename="notulen.pdf"`)
+		mh.Set("Content-Type", "application/pdf")
+		part, _ := writer.CreatePart(mh)
 		_, _ = part.Write([]byte("pdf content"))
 		writer.Close()
 

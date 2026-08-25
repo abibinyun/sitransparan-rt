@@ -618,14 +618,19 @@ func (h *FinancialHandler) handleUpload(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	limitUploadBody(r)
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, `{"error":"file is required"}`, http.StatusBadRequest)
+		http.Error(w, `{"error":"file is required atau melebihi 5 MB"}`, http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
 	contentType := header.Header.Get("Content-Type")
+	if msg := validateUploadFile(header.Filename, contentType, header.Size); msg != "" {
+		http.Error(w, `{"error":"`+msg+`"}`, http.StatusBadRequest)
+		return
+	}
 	proofURL, err := h.usecase.UploadProof(r.Context(), header.Filename, file, contentType)
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)

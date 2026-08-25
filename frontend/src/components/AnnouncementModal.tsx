@@ -24,6 +24,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
   const [title, setTitle] = useState(initialData?.title || '');
   const [content, setContent] = useState(initialData?.content || '');
   const [attachmentUrl, setAttachmentUrl] = useState(initialData?.attachment_url || '');
+  const [mediaUrls, setMediaUrls] = useState((initialData?.media_urls || []).join(', '));
   const [target, setTarget] = useState<AnnouncementTarget>(initialData?.target || 'all');
 
   React.useEffect(() => {
@@ -31,6 +32,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       setTitle(initialData?.title || '');
       setContent(initialData?.content || '');
       setAttachmentUrl(initialData?.attachment_url || '');
+      setMediaUrls((initialData?.media_urls || []).join(', '));
       setTarget(initialData?.target || 'all');
     }
   }, [isOpen, initialData]);
@@ -41,6 +43,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       title,
       content,
       attachment_url: attachmentUrl || undefined,
+      media_urls: mediaUrls.split(',').map((u) => u.trim()).filter(Boolean),
       target,
     });
     onClose();
@@ -88,6 +91,20 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
             onChange={(e) => setAttachmentUrl(e.target.value)}
             placeholder="https://..."
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="mediaUrls">URL Foto Galeri (Opsional, pisahkan dengan koma)</Label>
+          <Input
+            id="mediaUrls"
+            type="text"
+            value={mediaUrls}
+            onChange={(e) => setMediaUrls(e.target.value)}
+            placeholder="https://storage.../foto1.jpg, https://storage.../foto2.jpg"
+          />
+          <p className="text-[11px] text-slate-500">
+            Foto tampil sebagai galeri di portal warga. Unggah file lewat menu Dokumen untuk mendapat URL.
+          </p>
         </div>
 
         <div className="space-y-2">

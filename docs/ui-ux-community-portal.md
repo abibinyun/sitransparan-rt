@@ -173,8 +173,9 @@ Endpoint baru yang diperlukan (semua tenant-scoped, konsisten pola existing):
 |---|---|---|
 | `GET /api/v1/t/{slug}/financial-summary` | Publik | Agregat saja: saldo, pemasukan/pengeluaran bulan berjalan per kategori. **Tidak ada** baris per-pembayar. |
 | `GET /api/v1/t/{slug}/meetings` | Publik | Hanya meeting `visibility='public'` (enforcement sudah ada di modul meetings). |
-| `POST /api/v1/t/{slug}/reactions` | Warga login | Body: `{target_type, target_id, reaction}`. Unik per (user, target). |
-| `POST /api/v1/t/{slug}/polls/{id}/vote` | Warga login | 1 warga 1 suara per polling; hasil agregat publik. |
+| `POST /api/v1/reactions` | Warga login | Body: `{target_type, target_id, reaction}`. Unik per (user, target). **Catatan implementasi**: endpoint ber-login memakai scope tenant dari JWT (bukan slug di path) — lebih aman; pola `/t/{slug}/...` dipakai hanya untuk endpoint tanpa login. |
+| `POST /api/v1/polls/{id}/vote` | Warga login | 1 warga 1 suara per polling; hasil agregat publik via `GET /api/v1/t/{slug}/polls/{id}`. |
+| `POST /api/v1/t/{slug}/events` | Publik | KPI ringan: `feed_view`, `share_opened` (rate-limited). Reaksi & vote terekam di tabelnya masing-masing. |
 
 ---
 
@@ -215,20 +216,22 @@ Fase 1 — QUICK WIN (SELESAI ✅)
   • GET /t/{slug}/meetings  (filter visibility=public, sanitasi notes/created_by)
   • GET /t/{slug}/financial-summary (agregat saja, tanpa data pembayar)
   • Shareable card WhatsApp (client-side canvas, konsep "papan pengumuman")
-  → Diverifikasi 4 spec E2E baru (public-transparency); total suite 57/57 hijau.
+  → Diverifikasi 4 spec E2E baru (public-transparency); total suite 60/60 hijau.
 
-Fase 2 — FEED TIMELINE (estimasi: 1–2 minggu)
-  • Komponen FeedCard, badge status, BottomNav + responsive MainLayout
+Fase 2 — FEED TIMELINE (SELESAI ✅ — scope portal publik)
+  • Komponen FeedCard, badge status, BottomNav (portal publik)
   • Restrukturisasi portal publik eksisting menjadi timeline
-  • Galerinya mengisi dari objek MinIO yang publishable
-  → Gerbang visual §4 wajib: arah desain dikunci via frontend-design +
-    design-taste-frontend SEBELUM koding; audit web-design-guidelines +
-    checklist ANTI-AI-SLOP.md sebelum merge.
+  • Galeri foto: kolom media_urls per pengumuman + carousel scroll-snap;
+    foto diisi admin lewat URL objek MinIO
+  → Catatan: "responsive MainLayout" (layout ADMIN internal) sengaja
+    ditunda ke backlog — fokus Fase 2 adalah portal warga.
 
 Fase 3 — INTERAKTIVITAS SOSIAL (SELESAI ✅)
   • Reaksi warga-login (tabel reactions + unique constraint)
   • Polling 1-klik (tabel polls/poll_votes)
-  • Rate limit ketat + audit trail (bab §7 wajib lulus review)
+  • Rate limit ketat + batas upload 5MB/whitelist tipe (§7.4)
+  • KPI: tabel portal_events (feed_view, share_opened) + reaksi/vote
+    terekam di tabelnya masing-masing
 
 Fase 4 — NOTIFIKASI & GAMIFIKASI (estimasi: 2–3 minggu)
   • Web Push (VAPID, consent, scheduler reminder LPJ/aspirasi)

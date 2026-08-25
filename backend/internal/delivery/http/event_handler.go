@@ -338,8 +338,9 @@ func (h *EventHandler) removeRole(w http.ResponseWriter, r *http.Request, tenant
 
 func (h *EventHandler) uploadReceipt(w http.ResponseWriter, r *http.Request, tenantID, eventID uuid.UUID) {
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
-		if err := r.ParseMultipartForm(10 << 20); err != nil {
-			http.Error(w, `{"error":"unable to parse multipart form"}`, http.StatusBadRequest)
+		limitUploadBody(r)
+		if err := r.ParseMultipartForm(maxMultipartMemory); err != nil {
+			http.Error(w, `{"error":"unable to parse multipart form atau melebihi batas ukuran"}`, http.StatusBadRequest)
 			return
 		}
 
@@ -350,6 +351,10 @@ func (h *EventHandler) uploadReceipt(w http.ResponseWriter, r *http.Request, ten
 		}
 		defer file.Close()
 
+		if msg := validateUploadFile(header.Filename, header.Header.Get("Content-Type"), header.Size); msg != "" {
+			http.Error(w, `{"error":"`+msg+`"}`, http.StatusBadRequest)
+			return
+		}
 		var residentID *uuid.UUID
 		if resStr := r.FormValue("resident_id"); resStr != "" {
 			if id, err := uuid.Parse(resStr); err == nil {
