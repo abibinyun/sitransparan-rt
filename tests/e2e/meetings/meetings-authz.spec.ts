@@ -17,7 +17,8 @@ test.describe('Meetings — authorization & visibility enforcement', () => {
 
     // Superadmin provisions a resident user in the sitransparan-rt tenant
     await login(page, SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD);
-    await page.goto('/users');
+    await page.goto('/admin/users');
+    await expect(page.getByRole('heading', { level: 1, name: 'Manajemen Pengguna' })).toBeVisible({ timeout: 15000 });
     await page.getByRole('button', { name: 'Tambah Pengguna' }).click();
     await page.fill('#name', `Warga Meeting ${ts}`);
     await page.fill('#email', email);

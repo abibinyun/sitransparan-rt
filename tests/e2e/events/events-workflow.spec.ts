@@ -90,6 +90,17 @@ test.describe('Events — full business workflow (CRUD + RAB + RSVP)', () => {
     await page.goto('/events');
     await expect(page.getByRole('heading', { name: 'Daftar Kegiatan RT/RW' })).toBeVisible();
 
+    // Create an ongoing event so filter has deterministic cards
+    const ts = Date.now();
+    await page.getByRole('button', { name: '+ Tambah Kegiatan' }).click();
+    await page.fill('#eventTitle', `Event Ongoing ${ts}`);
+    await page.fill('#eventDescription', 'Deskripsi ongoing');
+    await page.fill('#eventDate', '2026-09-01T08:00');
+    await page.fill('#eventLocation', 'Lapangan RT');
+    await page.selectOption('#eventStatus', 'ongoing');
+    await page.getByRole('button', { name: 'Tambah', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Tambah Kegiatan Baru' })).not.toBeVisible();
+
     // With "all" there is at least one card
     await expect(page.getByRole('heading', { level: 3 }).first()).toBeVisible({ timeout: 10000 });
 

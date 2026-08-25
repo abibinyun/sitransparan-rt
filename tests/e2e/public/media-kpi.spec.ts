@@ -27,7 +27,7 @@ test.describe('Fase 2/3 gap fixes — galeri foto, batas upload, KPI', () => {
     });
     expect(res.status()).toBe(201);
 
-    await page.goto('/public/announcements');
+    await page.goto('/kabar');
     const card = page.locator('article').filter({ hasText: title });
     await expect(card).toBeVisible({ timeout: 15000 });
     // Carousel renders the image

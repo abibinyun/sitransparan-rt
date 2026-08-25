@@ -14,24 +14,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) 
     return <Navigate to="/login" replace />;
   }
 
-  // Role detection relies exclusively on the role issued by the backend JWT;
-  // never on email addresses or client-supplied role values.
-  const isSuperAdmin =
-    user.role === 'SUPER_ADMIN' ||
-    (user.role as string) === 'superadmin' ||
-    (user.role as string) === 'super_admin';
+  const roleStr = String(user.role).toLowerCase();
+  const isSuperAdmin = roleStr === 'superadmin' || roleStr === 'super_admin';
+  const isAdminRT = roleStr === 'admin_rt' || roleStr === 'rt_admin';
 
-  const isAdminRT =
-    user.role === 'RT_ADMIN' ||
-    (user.role as string) === 'admin_rt';
+  if (allowedRoles) {
+    const isAllowed = allowedRoles.some((r) => {
+      const allowed = String(r).toLowerCase();
+      if (allowed === 'super_admin' || allowed === 'superadmin') return isSuperAdmin;
+      if (allowed === 'rt_admin' || allowed === 'admin_rt') return isAdminRT;
+      return allowed === roleStr;
+    });
 
-  if (
-    allowedRoles &&
-    !allowedRoles.includes(user.role) &&
-    !(allowedRoles.includes('SUPER_ADMIN') && isSuperAdmin) &&
-    !(allowedRoles.includes('RT_ADMIN') && isAdminRT)
-  ) {
-    return <Navigate to="/" replace />;
+    if (!isAllowed) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <Outlet />;

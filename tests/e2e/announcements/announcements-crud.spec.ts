@@ -27,7 +27,7 @@ test.describe('Announcements — CRUD lengkap & sinkronisasi portal publik', () 
 
     // PUBLIC PORTAL shows the same content without login (titles are h3 there)
     const publicPage = await page.context().newPage();
-    await publicPage.goto('/public/announcements');
+    await publicPage.goto('/kabar');
     await expect(publicPage.getByRole('heading', { level: 3, name: title })).toBeVisible({ timeout: 15000 });
     await publicPage.close();
   });
@@ -47,7 +47,7 @@ test.describe('Announcements — CRUD lengkap & sinkronisasi portal publik', () 
 
     // Anonymous portal must NOT show it
     const publicPage = await page.context().newPage();
-    await publicPage.goto('/public/announcements');
+    await publicPage.goto('/kabar');
     await expect(publicPage.getByRole("heading", { level: 3, name: internalTitle })).not.toBeVisible({ timeout: 10000 });
     await publicPage.close();
   });
@@ -82,7 +82,7 @@ test.describe('Announcements — CRUD lengkap & sinkronisasi portal publik', () 
 
     // Gone from the public portal too after reload
     const publicPage = await page.context().newPage();
-    await publicPage.goto('/public/announcements');
+    await publicPage.goto('/kabar');
     await expect(publicPage.getByRole("heading", { level: 3, name: updatedTitle })).not.toBeVisible({ timeout: 10000 });
     await publicPage.close();
   });

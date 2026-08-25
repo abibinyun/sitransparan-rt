@@ -66,7 +66,7 @@ test.describe('Public transparency API — anonymous access', () => {
   });
 
   test('share card modal renders a non-blank canvas preview', async ({ page }) => {
-    await page.goto('/public/announcements');
+    await page.goto('/kabar');
     const shareBtn = page.getByRole('button', { name: 'Bagikan ke WhatsApp' }).first();
     await shareBtn.waitFor({ timeout: 15000 });
     await shareBtn.click();

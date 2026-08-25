@@ -63,7 +63,7 @@ export const MainLayout: React.FC = () => {
     // SuperAdmin only manages Platform Tenants & Global Users (never RT operations/residents)
     if (isSuperAdmin) {
       return [
-        { to: '/admin/tenants', label: 'Manajemen Tenant RT', icon: Shield },
+        { to: '/admin/tenants', label: 'SuperAdmin RT', icon: Shield },
         { to: '/admin/users', label: 'Manajemen Pengguna', icon: Users },
         { to: '/', label: 'Landing Page Platform', icon: Bell, end: true },
       ];

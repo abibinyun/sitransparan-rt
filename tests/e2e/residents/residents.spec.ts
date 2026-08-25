@@ -52,7 +52,9 @@ test.describe('Resident Management — business workflow', () => {
     await expect(page.locator('table')).toContainText(updatedName);
 
     // 4. DELETE: confirm dialog, then verify it is gone after reload
-    page.on('dialog', (dialog) => dialog.accept());
+    page.once('dialog', async (dialog) => {
+      await dialog.accept();
+    });
     const updatedRow = page.locator('tr', { hasText: updatedName });
     await updatedRow.getByTitle('Hapus Warga').click();
     await expect(page.locator('table')).not.toContainText(updatedName);
@@ -84,7 +86,9 @@ test.describe('Resident Management — business workflow', () => {
     await page.fill('#famName', childName);
     await page.fill('#famNik', nik16(ts + 1));
     await page.selectOption('#famRelation', 'Anak');
+    await page.fill('#famBirthDate', '2015-05-20');
     await page.getByRole('button', { name: 'Tambah Anggota' }).click();
+    await expect(page.getByRole('heading', { name: 'Tambah Anggota Keluarga' })).not.toBeVisible();
 
     // Expand the KK detail and verify the member is listed with its relation
     await page.locator('tr', { hasText: headName }).getByTitle('Lihat/Kelola Anggota Keluarga').click();
