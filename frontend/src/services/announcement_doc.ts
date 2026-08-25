@@ -100,8 +100,11 @@ export function useDocuments(params?: { limit?: number; offset?: number }) {
 export function useCreateDocument() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: CreateDocumentPayload) => {
-      const res = await api.post<Document>('/documents', payload);
+    mutationFn: async (payload: CreateDocumentPayload | FormData) => {
+      const isFormData = payload instanceof FormData;
+      const res = await api.post<Document>('/documents', payload, {
+        headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+      });
       return res.data;
     },
     onSuccess: () => {

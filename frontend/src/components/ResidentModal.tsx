@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Resident, CreateResidentPayload } from '../types/resident';
-import { useCreateResident, useUpdateResident } from '../services/resident';
+import { useCreateResident, useUpdateResident, useUploadResidentDoc } from '../services/resident';
 import { dateOnlyToISO } from '../utils/date';
 import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
+import { UploadCloud, FileText } from 'lucide-react';
 
 interface ResidentModalProps {
   isOpen: boolean;
@@ -17,6 +18,9 @@ interface ResidentModalProps {
 export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, resident }) => {
   const createMutation = useCreateResident();
   const updateMutation = useUpdateResident();
+  const uploadDocMutation = useUploadResidentDoc();
+  const [uploadingKtp, setUploadingKtp] = useState(false);
+  const [uploadingKk, setUploadingKk] = useState(false);
 
   const [formData, setFormData] = useState<CreateResidentPayload>({
     nik: '',
@@ -195,6 +199,96 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
             <Label htmlFor="is_head_of_family" className="cursor-pointer select-none">
               Kepala Keluarga
             </Label>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+          <div className="space-y-2">
+            <Label htmlFor="ktpInput">Foto KTP Warga</Label>
+            <div className="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center hover:border-indigo-400 transition-colors bg-slate-50/50">
+              <input
+                id="ktpInput"
+                type="file"
+                accept="image/*,.pdf"
+                className="hidden"
+                disabled={uploadingKtp}
+                onChange={async (e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setUploadingKtp(true);
+                    try {
+                      const res = await uploadDocMutation.mutateAsync({
+                        file: e.target.files[0],
+                        type: 'ktp',
+                      });
+                      setFormData((prev) => ({ ...prev, ktp_url: res.url }));
+                    } catch {
+                      // ignore
+                    } finally {
+                      setUploadingKtp(false);
+                    }
+                  }
+                }}
+              />
+              <label htmlFor="ktpInput" className="cursor-pointer flex flex-col items-center justify-center gap-1">
+                {formData.ktp_url ? (
+                  <div className="flex items-center gap-2 text-emerald-600 font-semibold text-xs truncate max-w-full">
+                    <FileText className="w-4 h-4 shrink-0" />
+                    <span className="truncate">KTP Terunggah</span>
+                  </div>
+                ) : (
+                  <>
+                    <UploadCloud className="w-6 h-6 text-slate-400" />
+                    <span className="text-xs font-semibold text-slate-700">
+                      {uploadingKtp ? 'Mengunggah...' : 'Pilih Foto KTP'}
+                    </span>
+                  </>
+                )}
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="kkInput">Foto Kartu Keluarga (KK)</Label>
+            <div className="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center hover:border-indigo-400 transition-colors bg-slate-50/50">
+              <input
+                id="kkInput"
+                type="file"
+                accept="image/*,.pdf"
+                className="hidden"
+                disabled={uploadingKk}
+                onChange={async (e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setUploadingKk(true);
+                    try {
+                      const res = await uploadDocMutation.mutateAsync({
+                        file: e.target.files[0],
+                        type: 'kk',
+                      });
+                      setFormData((prev) => ({ ...prev, kk_url: res.url }));
+                    } catch {
+                      // ignore
+                    } finally {
+                      setUploadingKk(false);
+                    }
+                  }
+                }}
+              />
+              <label htmlFor="kkInput" className="cursor-pointer flex flex-col items-center justify-center gap-1">
+                {formData.kk_url ? (
+                  <div className="flex items-center gap-2 text-emerald-600 font-semibold text-xs truncate max-w-full">
+                    <FileText className="w-4 h-4 shrink-0" />
+                    <span className="truncate">KK Terunggah</span>
+                  </div>
+                ) : (
+                  <>
+                    <UploadCloud className="w-6 h-6 text-slate-400" />
+                    <span className="text-xs font-semibold text-slate-700">
+                      {uploadingKk ? 'Mengunggah...' : 'Pilih Foto KK'}
+                    </span>
+                  </>
+                )}
+              </label>
+            </div>
           </div>
         </div>
 

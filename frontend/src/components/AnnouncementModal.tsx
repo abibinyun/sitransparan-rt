@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Announcement, CreateAnnouncementPayload, AnnouncementTarget } from '../types/announcement_doc';
+import { useUploadProof } from '../services/financial';
 import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
+import { UploadCloud, Image as ImageIcon } from 'lucide-react';
 
 interface AnnouncementModalProps {
   isOpen: boolean;
@@ -21,6 +23,8 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
   initialData,
   isLoading = false,
 }) => {
+  const uploadMutation = useUploadProof();
+  const [uploading, setUploading] = useState(false);
   const [title, setTitle] = useState(initialData?.title || '');
   const [content, setContent] = useState(initialData?.content || '');
   const [attachmentUrl, setAttachmentUrl] = useState(initialData?.attachment_url || '');
@@ -83,18 +87,48 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="attachmentUrl">URL Lampiran (Opsional)</Label>
-          <Input
-            id="attachmentUrl"
-            type="url"
-            value={attachmentUrl}
-            onChange={(e) => setAttachmentUrl(e.target.value)}
-            placeholder="https://..."
-          />
+          <Label htmlFor="bannerInput">Foto Banner / Lampiran</Label>
+          <div className="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center hover:border-indigo-400 transition-colors bg-slate-50/50">
+            <input
+              id="bannerInput"
+              type="file"
+              accept="image/*,.pdf"
+              className="hidden"
+              disabled={uploading}
+              onChange={async (e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setUploading(true);
+                  try {
+                    const res = await uploadMutation.mutateAsync(e.target.files[0]);
+                    setAttachmentUrl(res.proof_url);
+                  } catch {
+                    // ignore
+                  } finally {
+                    setUploading(false);
+                  }
+                }
+              }}
+            />
+            <label htmlFor="bannerInput" className="cursor-pointer flex flex-col items-center justify-center gap-1">
+              {attachmentUrl ? (
+                <div className="flex items-center gap-2 text-emerald-600 font-semibold text-xs truncate max-w-full">
+                  <ImageIcon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Foto Terpilih: {attachmentUrl}</span>
+                </div>
+              ) : (
+                <>
+                  <UploadCloud className="w-6 h-6 text-slate-400" />
+                  <span className="text-xs font-semibold text-slate-700">
+                    {uploading ? 'Mengunggah...' : 'Pilih Foto / Gambar Banner'}
+                  </span>
+                </>
+              )}
+            </label>
+          </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="mediaUrls">URL Foto Galeri (Opsional, pisahkan dengan koma)</Label>
+          <Label htmlFor="mediaUrls">URL Tambahan Foto Galeri (Opsional, pisahkan dengan koma)</Label>
           <Input
             id="mediaUrls"
             type="text"
@@ -102,9 +136,6 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
             onChange={(e) => setMediaUrls(e.target.value)}
             placeholder="https://storage.../foto1.jpg, https://storage.../foto2.jpg"
           />
-          <p className="text-[11px] text-slate-500">
-            Foto tampil sebagai galeri di portal warga. Unggah file lewat menu Dokumen untuk mendapat URL.
-          </p>
         </div>
 
         <div className="space-y-2">

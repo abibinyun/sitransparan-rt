@@ -70,9 +70,16 @@ export const AnnouncementsPage: React.FC = () => {
     setIsDocumentModalOpen(true);
   };
 
-  const handleSaveDocument = async (payload: CreateDocumentPayload) => {
+  const handleSaveDocument = async (payload: CreateDocumentPayload | FormData) => {
     if (editingDocument) {
-      await updateDocumentMutation.mutateAsync({ id: editingDocument.id, payload });
+      if (payload instanceof FormData) {
+        // If editing with a new file, update title/category
+        const title = payload.get('title') as string;
+        const category = payload.get('category') as string;
+        await updateDocumentMutation.mutateAsync({ id: editingDocument.id, payload: { title, category } });
+      } else {
+        await updateDocumentMutation.mutateAsync({ id: editingDocument.id, payload });
+      }
     } else {
       await createDocumentMutation.mutateAsync(payload);
     }

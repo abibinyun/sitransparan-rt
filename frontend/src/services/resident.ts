@@ -109,3 +109,20 @@ export function useAddFamilyMember() {
     },
   });
 }
+
+// Upload KTP / KK document
+export function useUploadResidentDoc() {
+  return useMutation({
+    mutationFn: async ({ file, type }: { file: File; type: 'ktp' | 'kk' }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      const res = await api.post<{ url: string }>('/residents/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return res.data;
+    },
+  });
+}
