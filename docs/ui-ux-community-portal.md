@@ -74,8 +74,8 @@ tidak cukup menyembunyikan tombol di UI. Preseden yang sudah berjalan: enforceme
 - **Apresiasi Partisipasi**: Badge relawan atau kehadiran musyawarah warga.
 
 ### 3.4 Distribusi & Integrasi WhatsApp
-- **Shareable Card**: Fitur generate gambar ringkasan pengumuman/laporan kas berukuran ramah WhatsApp untuk dibagikan ke grup RT. *(Implementasi: render canvas/SVG di sisi klien — tidak butuh backend baru. Quick win dengan dampak distribusi terbesar.)*
-- **PWA & Web Push Notification**: Notifikasi langsung saat keluhan/aspirasi warga direspon atau diselesaikan pengurus. *(Butuh VAPID keys, consent flow, dan scheduler di backend — fase lanjut.)*
+- **Shareable Card**: Fitur generate gambar ringkasan pengumuman/laporan kas berukuran ramah WhatsApp untuk dibagikan ke grup RT. *(Implementasi: render canvas/SVG di sisi klien — tidak butuh backend baru. Quick win dengan dampak distribusi terbesar.)* ✅
+- **PWA & Web Push Notification**: Notifikasi saat pengumuman baru diterbitkan (broadcast otomatis ke langganan tenant). Consent flow di kartu "Partisipasi Anda". ✅ *(Scheduler reminder LPJ/aspirasi → backlog Fase 5.)*
 
 ### 3.5 Aksesibilitas & Navigasi Mobile-First
 - **Bottom Navigation Bar**: Menu utama di bawah layar ponsel (Beranda, Kas RT, Agenda, Usulan, Akun). *(Implikasi: MainLayout internal saat ini berbasis sidebar; ini pekerjaan redesign responsif tersendiri, bukan sekadar komponen baru.)*
@@ -216,7 +216,7 @@ Fase 1 — QUICK WIN (SELESAI ✅)
   • GET /t/{slug}/meetings  (filter visibility=public, sanitasi notes/created_by)
   • GET /t/{slug}/financial-summary (agregat saja, tanpa data pembayar)
   • Shareable card WhatsApp (client-side canvas, konsep "papan pengumuman")
-  → Diverifikasi 4 spec E2E baru (public-transparency); total suite 60/60 hijau.
+  → Diverifikasi 4 spec E2E baru (public-transparency); total suite 62/62 hijau.
 
 Fase 2 — FEED TIMELINE (SELESAI ✅ — scope portal publik)
   • Komponen FeedCard, badge status, BottomNav (portal publik)
@@ -233,9 +233,15 @@ Fase 3 — INTERAKTIVITAS SOSIAL (SELESAI ✅)
   • KPI: tabel portal_events (feed_view, share_opened) + reaksi/vote
     terekam di tabelnya masing-masing
 
-Fase 4 — NOTIFIKASI & GAMIFIKASI (estimasi: 2–3 minggu)
-  • Web Push (VAPID, consent, scheduler reminder LPJ/aspirasi)
-  • Badge partisipasi & progress bar target dana
+Fase 4 — NOTIFIKASI & GAMIFIKASI (SELESAI ✅ — sebagian backlog)
+  • Web Push: VAPID + consent flow + langganan per perangkat
+    (push_subscriptions); broadcast otomatis saat pengumuman baru
+    diterbitkan; push dinonaktifkan anggun bila VAPID kosong
+  • Badge partisipasi dari data nyata (reaksi + suara polling):
+    Warga Baru → Aktif → Teladan → Utusan Warga; tampil di kartu
+    "Partisipasi Anda" pada rail portal saat warga login
+  → Backlog tersisa: scheduler reminder LPJ/aspirasi 7 hari (butuh
+    cron/worker terjadwal)
 ```
 
 Estimasi adalah untuk 1 engineer full-stack dengan suite E2E sebagai jaring pengaman;

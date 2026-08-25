@@ -102,6 +102,10 @@ services:
       # Reverse proxies whose X-Forwarded-For is honored for per-IP rate
       # limiting (exact IP or CIDR). Empty (default) in dev/E2E.
       TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-}
+      # Web Push (Fase 4). Kosong = push dinonaktifkan dengan anggun.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@openrt.local}
     ports:
       - "127.0.0.1:8081:8080"
     depends_on:

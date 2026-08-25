@@ -1502,6 +1502,39 @@ paths:
   # Upload guard (semua endpoint upload): maksimal 5 MB per file,
   # hanya JPG/PNG/WebP/PDF. Melebihi -> 400.
 
+  /api/v1/push/config:
+    get:
+      summary: Status Web Push + kunci VAPID publik (PUBLIC)
+      responses:
+        '200':
+          description: '{ enabled, public_key }'
+
+  /api/v1/push/subscribe:
+    post:
+      summary: Simpan langganan Web Push (AUTH, identitas dari JWT)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '201':
+          description: Langganan tersimpan
+        '401':
+          description: Login diperlukan
+
+  /api/v1/push/unsubscribe:
+    post:
+      summary: Hapus langganan milik sendiri (AUTH)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Langganan dihapus
+
+  /api/v1/social/badge:
+    get:
+      summary: Badge partisipasi warga (AUTH) — dihitung dari reaksi + suara nyata
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: '{ reactions_given, votes_cast, total, level }'
+
 components:
   securitySchemes:
     BearerAuth:

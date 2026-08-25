@@ -16,13 +16,15 @@ type AnnouncementDocHandler struct {
 	usecase    domain.AnnouncementDocUsecase
 	tenantRepo domain.TenantRepository
 	baseDomain string
+	pushUC     domain.PushUsecase // opsional (nil = broadcast dinonaktifkan)
 }
 
-func NewAnnouncementDocHandler(usecase domain.AnnouncementDocUsecase, tenantRepo domain.TenantRepository, baseDomain string) *AnnouncementDocHandler {
+func NewAnnouncementDocHandler(usecase domain.AnnouncementDocUsecase, tenantRepo domain.TenantRepository, baseDomain string, pushUC domain.PushUsecase) *AnnouncementDocHandler {
 	return &AnnouncementDocHandler{
 		usecase:    usecase,
 		tenantRepo: tenantRepo,
 		baseDomain: baseDomain,
+		pushUC:     pushUC,
 	}
 }
 
@@ -205,6 +207,13 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 			if err := h.usecase.CreateAnnouncement(r.Context(), tenant.ID, &req); err != nil {
 				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 				return
+			}
+			// Fase 4: broadcast push ke warga tenant (async, tidak menggagalkan create)
+			if h.pushUC != nil {
+				go func(tID uuid.UUID, title string) {
+					broadcastCtx := context.Background()
+					_ = h.pushUC.BroadcastTenant(broadcastCtx, tID, "Pengumuman Baru", title, "/public/announcements")
+				}(tenant.ID, req.Title)
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)

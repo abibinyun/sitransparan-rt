@@ -78,8 +78,12 @@ func main() {
 	aspirationNeedUC := usecase.NewAspirationNeedUsecase(aspirationNeedRepo)
 	aspirationNeedHandler := delivery.NewAspirationNeedHandler(aspirationNeedUC, tenantRepo, cfg.TenantBaseDomain)
 
+	// Web Push & gamifikasi Fase 4 (dibuat lebih awal: dipakai broadcast pengumuman)
+	pushRepo := repository.NewPushRepository(db)
+	pushUC := usecase.NewPushUsecase(pushRepo, cfg)
+
 	announcementDocUC := usecase.NewAnnouncementDocUsecase(announcementDocRepo)
-	announcementDocHandler := delivery.NewAnnouncementDocHandler(announcementDocUC, tenantRepo, cfg.TenantBaseDomain)
+	announcementDocHandler := delivery.NewAnnouncementDocHandler(announcementDocUC, tenantRepo, cfg.TenantBaseDomain, pushUC)
 
 	dashboardUC := usecase.NewDashboardUsecase(dashboardRepo)
 	dashboardHandler := delivery.NewDashboardHandler(dashboardUC)
@@ -95,6 +99,7 @@ func main() {
 	socialRepo := repository.NewSocialRepository(db)
 	socialUC := usecase.NewSocialUsecase(socialRepo)
 	socialHandler := delivery.NewSocialHandler(socialUC, tenantRepo, cfg.TenantBaseDomain)
+	pushHandler := delivery.NewPushHandler(pushUC)
 
 	tenantMw := middleware.TenantMiddleware(tenantRepo, cfg.TenantBaseDomain)
 	authMw := middleware.AuthMiddleware(jwtSecret)
@@ -157,6 +162,9 @@ func main() {
 
 	// Social interactions (reactions & polls) — strict rate budget
 	socialHandler.RegisterRoutes(mux, tenantMw, authMw, authRateLimitMw)
+
+	// Web Push & badge partisipasi (Fase 4)
+	pushHandler.RegisterRoutes(mux, authMw)
 
 	// SuperAdmin routes
 	superAdminMux := http.NewServeMux()

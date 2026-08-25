@@ -7,6 +7,7 @@ import { MeetingDecisionsWidget } from '../components/MeetingDecisionsWidget';
 import { ReactionButton } from '../components/ReactionButton';
 import { PollWidget } from '../components/PollWidget';
 import { MediaCarousel } from '../components/MediaCarousel';
+import { ParticipationCard } from '../components/ParticipationCard';
 import axios from 'axios';
 import { getTenantSlugOrFallback } from '../utils/tenant';
 import {
@@ -90,6 +91,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <aside className="space-y-6 lg:order-2" aria-label="Ringkasan transparansi">
           <KasSummaryWidget />
+          <ParticipationCard />
           <PollWidget />
           <MeetingDecisionsWidget />
         </aside>

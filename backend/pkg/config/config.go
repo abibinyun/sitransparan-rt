@@ -42,6 +42,13 @@ type Config struct {
 	// when the backend is only reachable through untrusted peers.
 	TrustedProxyIPs []string
 
+	// Web Push (Fase 4). Jika VAPIDPublicKey/VAPIDPrivateKey kosong, fitur
+	// push dinonaktifkan dengan anggun (endpoint melaporkan disabled).
+	// Generate: npx web-push generate-vapid-keys
+	VAPIDPublicKey  string
+	VAPIDPrivateKey string
+	VAPIDSubject    string
+
 	// MinIO / S3-compatible object storage for uploaded files (payment proofs,
 	// documents, receipts). MinioEndpoint is "host:port". MinioPublicURL is the
 	// base URL used to build download links handed to clients (differs from the
@@ -142,6 +149,9 @@ func Load() *Config {
 		AuthRateLimitCapacity: authRateLimitCapacity,
 		AuthRateLimitRefill:   authRateLimitRefill,
 		TrustedProxyIPs:       trustedProxyIPs,
+		VAPIDPublicKey:        os.Getenv("VAPID_PUBLIC_KEY"),
+		VAPIDPrivateKey:       os.Getenv("VAPID_PRIVATE_KEY"),
+		VAPIDSubject:          getenvDefault("VAPID_SUBJECT", "mailto:admin@openrt.local"),
 		MinioEndpoint:         minioEndpoint,
 		MinioAccessKey:        firstNonEmpty(os.Getenv("MINIO_ACCESS_KEY"), "minioadmin"),
 		MinioSecretKey:        firstNonEmpty(os.Getenv("MINIO_SECRET_KEY"), "minioadmin"),

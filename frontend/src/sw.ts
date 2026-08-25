@@ -83,3 +83,41 @@ self.addEventListener('skipWaiting', () => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
+
+// ---------- Web Push (Fase 4) ----------
+interface PushPayload {
+  title?: string;
+  body?: string;
+  url?: string;
+}
+
+self.addEventListener('push', (event) => {
+  let data: PushPayload = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data?.text() || '' };
+  }
+  const title = data.title || 'Kabar RT';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      data: { url: data.url || '/public/announcements' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url: string = (event.notification.data && event.notification.data.url) || '/public/announcements';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.includes(url) && 'focus' in client) return client.focus();
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});
