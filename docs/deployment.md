@@ -12,22 +12,22 @@ Stack penuh di `infrastructure/docker-compose.yml`:
 make up     # build + up + tunggu DB + migrasi
 ```
 
-Services: **Traefik**, **PostgreSQL 16**, **Redis**, **MinIO**, **Backend** (Go, port host `8081`), **Frontend** (Nginx, port host `3000`).
+Services: **Traefik 3.6+**, **PostgreSQL 16**, **MinIO**, **Backend** (Go 1.25, port host `8081`), **Frontend** (Nginx, port host `3000`). **Redis sudah dihapus** — rate-limit in-memory per-IP (was `6379`).
 
-- Frontend container me-*proxy* `/api/` ke backend (`frontend/nginx.conf`).
-- Backend hanya start setelah PostgreSQL, Redis, dan MinIO healthy (`depends_on: condition: service_healthy`).
-- Migrasi berjalan otomatis saat volume database pertama dibuat (`/docker-entrypoint-initdb.d`), dan manual via `make migrate`.
+- Frontend container proxy `/api/` ke backend (`frontend/nginx.conf`).
+- Backend hanya start setelah PostgreSQL dan MinIO healthy (`depends_on: condition: service_healthy`).
+- Migrasi 000001–000020 berjalan otomatis saat volume DB pertama dibuat (`/docker-entrypoint-initdb.d`), dan manual via `make migrate`.
 
 ### Wildcard subdomain (`*.<TENANT_BASE_DOMAIN>`)
 
-Domain dasar dikonfigurasi lewat env `TENANT_BASE_DOMAIN` (dev default `openrt.local`, lihat `.env.example`) — **tidak ada domain produksi hardcoded**. Traefik routing (labels pada service, memakai interpolasi `${TENANT_BASE_DOMAIN}`):
+Domain dasar via env `TENANT_BASE_DOMAIN` (dev `openrt.local`) — **tidak hardcode**. Traefik routing (labels, interpolasi `${TENANT_BASE_DOMAIN}`):
 
 - `api.<base>` / `localhost` → backend.
 - `app.<base>` / `<base>` / `<subdomain>.<base>` → frontend.
 
-Label `HostRegexp` memakai **sintaks Traefik v3** (regex ber-anchor, mis. `^[a-z0-9-]+\.openrt\.local$`) — sintaks template v2 `{subdomain:[a-z0-9-]+}` tidak cocok apa pun di v3. Anchor `^...$` mencegah hostname suffix-trick (`rt-003.openrt.local.attacker.com`) masuk router.
+Label `HostRegexp` **sintaks Traefik v3** anchored regex (mis. `^[a-z0-9-]+\.openrt\.local$`) — template v2 `{subdomain:[a-z0-9-]+}` tidak match di v3. Anchor mencegah suffix-trick (`rt-003.openrt.local.attacker.com`).
 
-Untuk mengakses subdomain tenant lokal, tambahkan ke `/etc/hosts`:
+Untuk subdomain lokal, tambah ke `/etc/hosts`:
 
 ```text
 127.0.0.1 app.openrt.local
@@ -35,61 +35,57 @@ Untuk mengakses subdomain tenant lokal, tambahkan ke `/etc/hosts`:
 127.0.0.1 rt-003.openrt.local
 ```
 
-Tenant baru otomatis mendapat domain default `<slug>.<TENANT_BASE_DOMAIN>` (lihat `auth_usecase.go: CreateTenant`). **Wildcard DNS hanya routing**: tenant existence + status + authorization tetap diverifikasi backend (`TenantMiddleware`).
+Tenant baru otomatis domain `<slug>.<TENANT_BASE_DOMAIN>` (lihat `auth_usecase.go: CreateTenant`). **Wildcard DNS hanya routing**: tenant existence + status + auth tetap backend (`TenantMiddleware`).
 
 ## 2. Mode Produksi (Sederhana)
 
-`docker-compose.prod.yml` menyediakan komposisi minimal produksi tanpa Traefik/Redis:
+`docker-compose.prod.yml` komposisi minimal tanpa Traefik:
 
-- PostgreSQL (container `platform-rt-db`, port `5432`)
-- MinIO (container `platform-rt-minio`, port `9000`/`9001`)
-- Backend (`platform-rt-backend`, port `8080`)
-- Frontend (`platform-rt-frontend`, port `80`)
+- PostgreSQL (`platform-rt-db`, `5432`)
+- MinIO (`platform-rt-minio`, `9000`/`9001`)
+- Backend (`platform-rt-backend`, `8080`)
+- Frontend (`platform-rt-frontend`, `80`)
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-> Catatan: `.env.example` level root hanya berisi variabel PostgreSQL/MinIO. Untuk produksi wajib set `JWT_SECRET` yang kuat di environment backend dan mengganti password default.
->
-> **Wajib di produksi:** set `TRUSTED_PROXY_IPS` ke IP/CIDR proxy di depan backend. Rate limiter berbasis **per client IP**; tanpa nilai ini, semua request yang lewat proxy dihitung sebagai satu IP (budget bersama). Tuning opsional: `RATE_LIMIT_CAPACITY`, `RATE_LIMIT_REFILL`, `AUTH_RATE_LIMIT_CAPACITY`, `AUTH_RATE_LIMIT_REFILL` (default: 1000/100 dan 20/5).
+> `.env.example` root hanya vars PG/MinIO. Produksi wajib `JWT_SECRET` kuat + ganti password default. **Wajib:** `TRUSTED_PROXY_IPS` ke IP/CIDR proxy (rate-limit per-IP; tanpa ini semua via proxy dihitung satu IP). Tuning: `RATE_LIMIT_CAPACITY`, `RATE_LIMIT_REFILL`, `AUTH_RATE_LIMIT_CAPACITY`, `AUTH_RATE_LIMIT_REFILL` (default 1000/100 dan 20/5).
 
 ## 3. Mode Produksi Target (Wildcard `*.openrt.com`)
 
-Arsitektur target produksi dengan wildcard DNS + TLS:
-
 ```text
 *.openrt.com (wildcard DNS A/AAAA)
-  → Traefik (router wildcard, entrypoint websecure)
+  → Traefik (router wildcard, websecure)
   → Frontend (Nginx) → Backend (proxy /api)
-  → TenantMiddleware (hostname → tenant lookup → status active → match JWT)
+  → TenantMiddleware (hostname → tenant lookup → active → match JWT)
   → schema tenant_<slug>
 ```
 
-Persyaratan yang **tidak otomatis** dan harus disiapkan operator:
+Persyaratan operator:
 
 1. **Wildcard DNS** `*.openrt.com` → IP server.
-2. **TLS wildcard certificate** `*.openrt.com`. Dengan Let's Encrypt, wildcard memerlukan **DNS-01 challenge** (bukan HTTP-01); pastikan provider DNS didukung. Alternatif: sertifikat wildcard dari CA lain (mis. ZeroSSL) dipasang sebagai file TLS di Traefik.
-3. **Traefik v3.6+** dengan router wildcard ber-anchor (lihat §1) + entrypoint `websecure` dan `tls.certresolver`/certificate file.
-4. **Konfigurasi aplikasi**: `TENANT_BASE_DOMAIN=openrt.com` (backend) dan build arg `VITE_TENANT_BASE_DOMAIN=openrt.com` (frontend) — keduanya harus sama.
-5. **Registrasi tenant** lewat SuperAdmin (no source-code change): buat tenant → schema diprovisikan → status `active` → langsung routable. Nonaktifkan tenant (`status=inactive`) → seluruh hostname-nya ditolak (403/404) walaupun wildcard DNS masih aktif.
-6. **Per-IP rate limiting**: set `TRUSTED_PROXY_IPS` ke IP/CIDR Traefik (mis. subnet network Docker `172.16.0.0/12`) agar tiap client riil dibatasi independen, bukan semua sebagai satu proxy. `/health` & `/swagger/` otomatis dikecualikan; endpoint auth memakai budget lebih ketat (default 20 burst / 5 per detik per IP).
+2. **TLS wildcard** `*.openrt.com` (Let's Encrypt wildcard butuh **DNS-01 challenge**).
+3. **Traefik v3.6+** dengan router wildcard anchored + `websecure` + `tls.certresolver`/file.
+4. **Konfig**: `TENANT_BASE_DOMAIN=openrt.com` (backend) dan build arg `VITE_TENANT_BASE_DOMAIN=openrt.com` (frontend) — harus sama.
+5. **Registrasi tenant** via SuperAdmin (no source change): buat → schema provisi → `active` → routable. `inactive` → hostname ditolak (403/404).
+6. **Per-IP rate limiting**: `TRUSTED_PROXY_IPS` ke IP/CIDR Traefik (mis. `172.16.0.0/12`). `/health` & `/swagger/` exempt; auth budget ketat 20/5.
 
-Jika infrastruktur produksi belum tersedia untuk pengujian nyata, tandai bagian ini `UNTESTED/BLOCKED` — jangan diklaim terverifikasi.
+Jika infra prod belum tersedia, tandai `UNTESTED/BLOCKED`.
 
 ## 4. Docker Images
 
 | Dockerfile | Isi |
 |---|---|
-| `infrastructure/Dockerfile.backend` | Multi-stage build backend Go (digunakan kompose dev) |
-| `Dockerfile.backend` (root) | Digunakan `docker-compose.prod.yml` |
-| `infrastructure/Dockerfile.frontend` | Build Vite → Nginx (digunakan kompose dev); menerima build arg `VITE_TENANT_BASE_DOMAIN` |
-| `Dockerfile.frontend` (root) | Digunakan `docker-compose.prod.yml` |
+| `infrastructure/Dockerfile.backend` | Multi-stage Go (compose dev) |
+| `Dockerfile.backend` (root) | Untuk `docker-compose.prod.yml` |
+| `infrastructure/Dockerfile.frontend` | Vite → Nginx (compose dev); arg `VITE_TENANT_BASE_DOMAIN` |
+| `Dockerfile.frontend` (root) | Untuk `docker-compose.prod.yml` |
 
 ## 5. Environment untuk Backend di Docker
 
-Kompose menyuntikkan variabel berikut ke service backend:
+Kompose suntik ke backend:
 
-`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_USE_SSL`, `PORT` (internal `8080`), `REDIS_HOST`/`REDIS_PORT` (dev), `TENANT_BASE_DOMAIN` (dev default `openrt.local`), `TRUSTED_PROXY_IPS` (default kosong), dan di `docker-compose.prod.yml` juga `RATE_LIMIT_CAPACITY`, `RATE_LIMIT_REFILL`, `AUTH_RATE_LIMIT_CAPACITY`, `AUTH_RATE_LIMIT_REFILL` (dengan default).
+`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_USE_SSL`, `MINIO_PUBLIC_URL`, `MINIO_BUCKET`, `PORT` (internal `8080`), `TENANT_BASE_DOMAIN` (default `openrt.local`), `TRUSTED_PROXY_IPS`, `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`, `NIK_ENCRYPTION_KEY`, `JWT_SECRET`, dan di prod juga `RATE_LIMIT_*`/`AUTH_RATE_LIMIT_*`.
 
-Backend membaca `PORT`, `DB_*`, `DATABASE_URL`/`DB_URL`, `DB_SSLMODE`, `JWT_SECRET`, `RATE_LIMIT_*`, `AUTH_RATE_LIMIT_*`, `TRUSTED_PROXY_IPS` (lihat `backend/pkg/config/config.go`).
+Backend baca `PORT`, `DB_*`, `DATABASE_URL`/`DB_URL`, `DB_SSLMODE`, `JWT_SECRET`, `NIK_ENCRYPTION_KEY`, `VAPID_*`, `RATE_LIMIT_*`, `AUTH_RATE_LIMIT_*`, `TRUSTED_PROXY_IPS`, `TENANT_BASE_DOMAIN` (lihat `backend/pkg/config/config.go`).

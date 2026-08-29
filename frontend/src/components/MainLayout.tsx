@@ -22,6 +22,9 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { TenantSwitcher } from '../components/TenantSwitcher';
 import { OfflineBanner } from './OfflineBanner';
+import { useTenantsQuery } from '../services/tenant';
+import { useSwitchTenantMutation } from '../services/auth';
+import { getTenantUrl, getTenantSlugFromHost } from '../utils/tenant';
 
 type NavItem = {
   to: string;
@@ -48,9 +51,69 @@ const publicNavItems: NavItem[] = [
   { to: '/usulan', label: 'Usulan Warga', icon: MessageSquareHeart },
 ];
 
+const SuperAdminTenantSwitchCard: React.FC = () => {
+  const { data: tenants } = useTenantsQuery();
+  const { activeTenant, setAuth, user } = useAuthStore();
+  const switchTenantMutation = useSwitchTenantMutation();
+  const handleSwitch = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const tenant = tenants?.find((t) => t.id === e.target.value);
+    if (!tenant) return;
+    try {
+      const switched = await switchTenantMutation.mutateAsync(tenant.id);
+      const nextUser = { ...switched.user, role: (switched.user.role || user?.role) as any, tenants: (user as any)?.tenants };
+      setAuth(switched.token, nextUser as any, tenant as any);
+      window.location.href = getTenantUrl(tenant.slug, '/admin');
+    } catch {}
+  };
+  if (!tenants || tenants.length === 0) {
+    return (
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 rounded-2xl bg-emerald-400/15 p-2 text-emerald-200"><Building2 className="h-5 w-5" /></div>
+        <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Tenant Aktif</p><p className="mt-1 truncate text-sm font-bold">{activeTenant?.name || 'Platform'}</p><p className="text-xs text-slate-400">{(activeTenant as any)?.slug || 'superadmin'}</p></div>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <div className="rounded-2xl bg-emerald-400/15 p-2 text-emerald-200"><Building2 className="h-5 w-5" /></div>
+        <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Tenant Aktif (SuperAdmin)</p>
+      </div>
+      <select
+        value={activeTenant?.id || ''}
+        onChange={handleSwitch}
+        disabled={switchTenantMutation.isPending}
+        className="w-full rounded-xl bg-white/10 border border-white/20 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-white/30"
+      >
+        <option value="" disabled className="text-slate-900">Pilih RT untuk masuk...</option>
+        {tenants.map((tenant) => (
+          <option key={tenant.id} value={tenant.id} className="text-slate-900">{tenant.name} ({tenant.slug})</option>
+        ))}
+      </select>
+      <p className="text-[11px] text-slate-400">Pilih RT → masuk sebagai superadmin ke tenant. Aktif: <span className="text-white font-bold">{activeTenant?.name || 'Platform'}</span></p>
+    </div>
+  );
+};
+
 export const MainLayout: React.FC = () => {
   const { user, logout, activeTenant } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  React.useEffect(() => {
+    const hostSlug = (() => { try { return getTenantSlugFromHost(); } catch { return null; } })();
+    if (!hostSlug || !user || !activeTenant) return;
+    const isSuper = String(user.role).toLowerCase().replace('-','_') === 'superadmin' || String(user.role).toLowerCase() === 'super_admin';
+    if (isSuper) return;
+    const allowedSlugs = (user.tenants || []).map((t: any) => t.slug);
+    const isAllowed = allowedSlugs.includes(hostSlug);
+    const isMismatch = hostSlug !== (activeTenant as any).slug;
+    if (!isAllowed || isMismatch) {
+      const correct = (activeTenant as any).slug;
+      if (correct && correct !== hostSlug) {
+        window.location.href = getTenantUrl(correct, window.location.pathname + window.location.search);
+      }
+    }
+  }, [user?.id, activeTenant?.id]);
 
   const navItems = useMemo(() => {
     const isSuperAdmin =
@@ -60,8 +123,17 @@ export const MainLayout: React.FC = () => {
     const isAdminRT =
       user?.role === 'RT_ADMIN' || (user?.role as string) === 'admin_rt';
 
-    // Role-based separation:
-    // SuperAdmin only manages Platform Tenants & Global Users (never RT operations/residents)
+    const hostSlug = (() => { try { return getTenantSlugFromHost(); } catch { return null; } })();
+    const isInTenant = Boolean(isSuperAdmin && hostSlug);
+
+    if (isSuperAdmin && isInTenant) {
+      return [
+        { to: '/admin', label: 'Dashboard (Support)', icon: LayoutDashboard, end: true },
+        ...baseNavItems.filter((item) => item.to !== '/admin'),
+        { to: '/admin/tenants', label: '← Kembali Platform', icon: Shield },
+      ];
+    }
+
     if (isSuperAdmin) {
       return [
         { to: '/admin/tenants', label: 'SuperAdmin RT', icon: Shield },
@@ -70,13 +142,12 @@ export const MainLayout: React.FC = () => {
       ];
     }
 
-    // Admin RT manages RT operations
     const items = [
       ...baseNavItems.filter((item) => !item.adminOnly || isAdminRT),
       ...publicNavItems,
     ];
     return items;
-  }, [user?.role]);
+  }, [user?.role, activeTenant?.id]);
 
   const handleLogout = () => {
     logout();
@@ -162,16 +233,24 @@ export const MainLayout: React.FC = () => {
           </div>
 
           <div className="mx-6 mt-6 shrink-0 rounded-3xl border border-white/10 bg-white/10 p-4 text-white shadow-2xl shadow-slate-950/20 backdrop-blur">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-2xl bg-emerald-400/15 p-2 text-emerald-200">
-                <Building2 className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Tenant Aktif</p>
-                <p className="mt-1 truncate text-sm font-bold">{activeTenant?.name || 'Pilih RT'}</p>
-                <p className="text-xs text-slate-400">{activeTenant?.code || 'Belum tersedia'}</p>
-              </div>
-            </div>
+            {(() => {
+              const isSuper = user?.role === 'SUPER_ADMIN' || String(user?.role).toLowerCase().replace('-','_') === 'superadmin' || String(user?.role).toLowerCase() === 'super_admin';
+              if (!isSuper) {
+                return (
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-2xl bg-emerald-400/15 p-2 text-emerald-200">
+                      <Building2 className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Tenant Aktif</p>
+                      <p className="mt-1 truncate text-sm font-bold">{activeTenant?.name || 'Pilih RT'}</p>
+                      <p className="text-xs text-slate-400">{activeTenant?.code || (activeTenant as any)?.slug || 'Belum tersedia'}</p>
+                    </div>
+                  </div>
+                );
+              }
+              return <SuperAdminTenantSwitchCard />;
+            })()}
           </div>
 
           <div className="flex-1 overflow-y-auto min-h-0 py-2">

@@ -89,7 +89,7 @@ func main() {
 	dashboardHandler := delivery.NewDashboardHandler(dashboardUC)
 
 	userUC := usecase.NewUserUsecase(userRepo, tuRepo, roleRepo)
-	userHandler := delivery.NewUserHandler(userUC)
+	userHandler := delivery.NewUserHandlerWithDomain(userUC, cfg.TenantBaseDomain)
 
 	meetingUC := usecase.NewMeetingUsecase(meetingRepo)
 	meetingHandler := delivery.NewMeetingHandler(meetingUC, tenantRepo, cfg.TenantBaseDomain)

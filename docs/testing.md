@@ -1,63 +1,87 @@
 # Testing — Sitransparan RT/RW
 
-Ringkasan suite test aktual dan cara menjalankannya. Proses audit E2E mandiri project diatur di `AGENTS.md`.
+Ringkasan suite test aktual dan cara menjalankannya. Proses audit E2E di `AGENTS.md`.
 
 ---
 
-## 1. Backend: Unit, Integration & Security Test
+## 1. Backend: Unit, Integration & Security Test (104 + 7)
 
-Test ditulis dalam Go (`*_test.go`) berdampingan dengan source.
+Test Go (`*_test.go`) berdampingan source.
 
 ```bash
 cd backend
 go build ./...
 go vet ./...
-go test ./...        # -count=1 untuk tanpa cache
+go test ./...        # -count=1 tanpa cache
+# go test ./... : 104 tests + 7 security (cross-tenant, escalation, RBAC, social isolation, meeting visibility)
 ```
 
 Coverage per package:
 
 | Package | Cakupan |
 |---|---|
-| `internal/delivery/http` | handler tests + **security integration tests** (`TestSecurity_*`): cross-tenant matrix, role escalation, RBAC enforcement, superadmin account protection, public sanitization |
-| `internal/delivery/http/middleware` | auth middleware (valid/expired/tampered/missing token), RBAC, tenant, **rate limiter** (isolasi per-IP, exempt `/health`/`/swagger`, XFF trusted-proxy & CIDR, penolakan spoof XFF, header `Retry-After`, refill) |
-| `internal/repository` | tenant isolation test (`tenant_isolation_test.go`), repos |
-| `internal/usecase` | auth, resident, financial, event, aspiration_need, dashboard, user |
-| `pkg/crypto` | AES-256-GCM + HMAC |
+| `internal/delivery/http` | handler tests + **security integration tests** (`TestSecurity_*` 7 tests): cross-tenant matrix, role escalation, RBAC, superadmin protection, public sanitasi, **social isolation** (reaction/poll cross-tenant), **meeting visibility** |
+| `internal/delivery/http/middleware` | auth (valid/expired/tampered/missing), RBAC, tenant, **rate limiter** (per-IP, exempt `/health`/`/swagger`, XFF trusted-proxy & CIDR, spoof reject, `Retry-After`, refill) |
+| `internal/repository` | tenant isolation (`tenant_isolation_test.go`) |
+| `internal/usecase` | auth, resident, financial (funds `is_default` guard), event (budget agregat, status filter), aspiration_need, announcement_doc (`media_urls`), dashboard, meeting, social, push |
+| `pkg/crypto` | AES-256-GCM + HMAC (panic jika `NIK_ENCRYPTION_KEY` ≠32 di prod) |
 
-### Test keamanan (security_integration_test.go)
+### Security tests (security_integration_test.go — 7)
 
-| Test | Memverifikasi |
+| Test | Verifikasi |
 |---|---|
-| `TestSecurity_CrossTenantMatrix` | A→A allow, A→B deny, B→A deny, B→B allow; resource by-ID; spoof header/query diabaikan |
-| `TestSecurity_RoleEscalation` | admin→superadmin 403; admin→resident 201; body tenant spoof diabaikan |
-| `TestSecurity_RBACEnforcement` | warga write → 403, read → 200 |
-| `TestSecurity_SuperadminAccountProtection` | cross-tenant delete akun superadmin ditolak |
-| `TestSecurity_PublicSanitization` | aspirasi publik tidak mengekspos `resident_id` |
+| `TestSecurity_CrossTenantMatrix` | A→A allow, A→B deny, dll; by-ID; spoof header/query diabaikan |
+| `TestSecurity_RoleEscalation` | admin→superadmin 403; admin→resident 201; tenant spoof diabaikan |
+| `TestSecurity_RBACEnforcement` | warga write →403, read →200 |
+| `TestSecurity_SuperadminAccountProtection` | cross-tenant delete superadmin ditolak |
+| `TestSecurity_PublicSanitization` | aspirasi publik tanpa `resident_id`; public endpoints sanitasi |
+| `TestSecurity_SocialIsolation` | reaksi/poll_votes unique constraint, cross-tenant isolation |
+| `TestSecurity_MeetingVisibility` | warga dipaksa `public`, 403 non-public, action items hidden |
 
-## 2. E2E Playwright
-
-Suite di `tests/e2e/` — **62 test**, mencakup: auth, public portal, admin dashboard, announcements, aspirations, events, roles (admin_rt/resident/superadmin/public), superadmin tenants, users, **plus suite CRUD bisnis penuh yang ditambahkan pada audit E2E**: `residents/` (CRUD + keluarga + filter kepala keluarga + validasi), `finance/` (kategori iuran, catat & verifikasi iuran, transaksi, ringkasan saldo), `aspirations/workflow` (submit publik → proses admin → tampil di portal; CRUD kebutuhan), `isolation/tenant-isolation` (isolasi lintas tenant via hostname nyata `rt-003`/`rt-004`: UI + direct URL + API 403/200), `roles/negative-authz` (warga ditolak di halaman/API admin; admin RT ditolak di superadmin). **Ditambahkan pada audit kedua**: `events/events-workflow` (create → RAB budget persist via API → RSVP; filter status terverifikasi end-to-end setelah perbaikan bug backend), `announcements/announcements-crud` (CRUD + sinkronisasi portal publik + penyembunyian `residents_only` dari anonim), `meetings/meetings-authz` (warga ditolak tulis; `visibility=confidential` ditegakkan server-side; isolasi lintas-hostname), `admin/dashboard-metrics` (koherensi angka saldo = masuk − keluar, kesesuaian dengan API summary, export CSV berunduh, Export PDF = window.print).
-
-`tests/e2e/helpers.ts` menyediakan login, parsing Rupiah, dan generator NIK deterministik. Konfigurasi headless memakai `--host-resolver-rules` sehingga subdomain tenant (`rt-003.openrt.local`) berfungsi tanpa menyentuh `/etc/hosts`.
+## 2. Frontend: Typecheck + Build
 
 ```bash
-# Butuh stack berjalan (make up) di http://localhost:3000
-npx playwright test                                          # headed (config default, slowMo 300)
+cd frontend
+npm run build   # tsc && vite build (typecheck + bundle + PWA)
+```
+
+Tidak ada framework unit test frontend (hanya `tsc` + `vite build`). `social.ts` fix double prefix, `push.ts` via `api`, `dashboard` blob, `PollsPage` semua terverifikasi build.
+
+## 3. E2E Playwright (64 tests)
+
+Suite `tests/e2e/` — **64 tests** (62 + `polls-ui` + dashboard blob), mencakup: auth, public portal, admin dashboard, announcements, aspirations, events, meetings, finance, residents, roles (admin_rt/resident/superadmin/public), superadmin tenants, users, isolation.
+
+- `residents/` — CRUD + family + filter `is_head_of_family` + validasi
+- `finance/` — funds (is_default guard), categories, dues `status` filter + verify, transactions append-only, summary, upload
+- `events/events-workflow` — create → RAB budget persist via API → RSVP → delete; filter `status` backend terverifikasi
+- `announcements/announcements-crud` — CRUD + sync portal publik + `residents_only` hidden dari anonim
+- `meetings/meetings-authz` — warga ditolak tulis, `visibility=confidential` server-side, isolasi lintas-hostname
+- `admin/dashboard-metrics` — saldo = income−expense, API summary match, export CSV blob + PDF blob
+- `polls-ui` — create poll 2–6 opsi, vote, close, public agregat
+- `isolation/tenant-isolation` — lintas tenant via hostname `rt-003`/`rt-004` (UI + direct URL + API 403/200)
+- `roles/negative-authz` — warga ditolak halaman/API admin; admin_rt ditolak superadmin
+
+`helpers.ts` login/parse Rupiah/NIK deterministik. Headless config pakai `--host-resolver-rules` (tanpa `/etc/hosts`).
+
+```bash
+# Butuh stack (make up) di http://localhost:3000
+npx playwright test                                          # headed (slowMo 300)
 npx playwright test --config=playwright.headless.config.ts   # headless (CI)
 ```
 
 - `baseURL`: `http://localhost:3000`
-- Default credentials yang dipakai test: `superadmin@platform.local` / `admin123`, `admin@sitransparan.rt` / `password123`.
-- Laporan satu kali (bukan hasil yang selalu valid): lihat riwayat di git; jalankan ulang untuk hasil terkini.
+- Credentials: `superadmin@platform.local`/`admin123`, `admin@sitransparan.rt`/`password123`
+- Laporan: jalankan ulang untuk hasil terkini (tidak always valid dari git history).
 
-## 3. Manual Testing
+## 4. Manual Testing
 
-Panduan manual pengujian fitur per role (skenario M-01 s.d. M-10) telah dirangkum ke dalam matriks fitur & use case di [authentication-authorization.md](./authentication-authorization.md) dan [api.md](./api.md). Untuk menjalankan ulang E2E, ikuti perintah di atas.
+Matriks fitur & use case di [authentication-authorization.md](./authentication-authorization.md) dan [api.md](./api.md).
 
-## 4. Keterbatasan Lingkungan Test
+## 5. Keterbatasan
 
 | Item | Status |
 |---|---|
-| MinIO storage unit test | BLOCKED — `backend/pkg/storage/minio` masih **stub** (`type Client struct{}`, tidak pernah dipakai). Upload saat ini hanya menyimpan URL metadata; isi file dibuang. Integrasi MinIO + test adalah pekerjaan yang belum dikerjakan |
-| Frontend unit test | Tidak ada framework test frontend (hanya typecheck via `npm run build`) |
+| MinIO storage unit test | **Terintegrasi local dev** (`pkg/storage/minio` bucket `sitransparan-files`, per-tenant prefix, fallback `/uploads`). Unit test masih butuh MinIO running; E2E verifikasi upload via API. |
+| Frontend unit test | Tidak ada (hanya `tsc` + build) |
+| Push E2E | VAPID keys kosong di dev → push disabled graceful (config `enabled:false`). Test push via `GET /push/config` |
+

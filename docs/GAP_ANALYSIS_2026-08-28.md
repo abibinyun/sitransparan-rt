@@ -5,6 +5,7 @@
 ## Ringkasan
 - **Fixed minggu ini (8 item):** double-prefix `social.ts`, `push.ts` axios tanpa auth, `dues status=pending`, `PUT /documents`, `crypto fallback`, `media_urls` validasi, `broadcast timeout`, `Reaction/Poll/Badge` error handling.
 - **Sisa TODO:** 0 gap — semua P0/P1/P2 DONE. E2E 64/64, unit 104, security 7, `go vet` ✅, `tsc` ✅, `vite build` ✅
+- **FIX 2026-08-28 superadmin Masuk Tenant:** `SwitchTenant` superadmin bypass `tenant_users` (virtual mapping) + tombol `Masuk` di `SuperAdminTenantsPage.tsx` → `getTenantUrl(slug,'/admin')` + audit (abi `rt-003` → `sitransparan-rt` 200, uung `admin_rt` → 401)
 - **FIX 2026-08-28 mix-match login:** `localStorage` per-host → `cookie Domain=.openrt.local` (`useAuthStore.ts` `getCookie/setCookie/deleteCookie`) + `localStorage` fallback + `?token` URL fallback — superadmin↔tenant logout/login tidak lagi stale view
 
 ## Cara Pakai

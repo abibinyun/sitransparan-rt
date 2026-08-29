@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { useTenantsQuery, useCreateTenantMutation, useUpdateTenantMutation, useDeleteTenantMutation } from '../services/tenant';
+import { useSwitchTenantMutation } from '../services/auth';
+import { useAuthStore } from '../store/useAuthStore';
 import type { Tenant } from '../types/auth';
 import { SimpleDialog } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { getTenantBaseDomain } from '../utils/tenant';
+import { getTenantBaseDomain, getTenantUrl } from '../utils/tenant';
+import { LogIn } from 'lucide-react';
 
 export const SuperAdminTenantsPage: React.FC = () => {
   const { data: tenants, isLoading, isError, refetch } = useTenantsQuery();
   const createMutation = useCreateTenantMutation();
   const updateMutation = useUpdateTenantMutation();
   const deleteMutation = useDeleteTenantMutation();
+  const switchTenantMutation = useSwitchTenantMutation();
+  const setAuth = useAuthStore((s) => s.setAuth);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
@@ -74,6 +79,18 @@ export const SuperAdminTenantsPage: React.FC = () => {
     }
   };
 
+  const handleEnterTenant = async (tenant: Tenant) => {
+    try {
+      const switched = await switchTenantMutation.mutateAsync(tenant.id);
+      const tenantsList = tenants || [];
+      const userWithRole = { ...switched.user, role: (switched.user.role || 'SUPER_ADMIN') as any, tenants: tenantsList };
+      setAuth(switched.token, userWithRole as any, tenant);
+      window.location.href = getTenantUrl(tenant.slug, '/admin');
+    } catch (e: any) {
+      alert(e?.response?.data?.error || 'Gagal masuk tenant');
+    }
+  };
+
   const handleDelete = (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus Tenant RT ini?')) {
       deleteMutation.mutate(id, {
@@ -124,6 +141,16 @@ export const SuperAdminTenantsPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-indigo-600">{t.slug}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{t.domain || `${t.slug}.${baseDomain}`}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEnterTenant(t)}
+                          disabled={switchTenantMutation.isPending}
+                          className="text-emerald-700 border-emerald-200 hover:bg-emerald-50 gap-1"
+                          title="Masuk sebagai superadmin ke tenant ini"
+                        >
+                          <LogIn className="h-3.5 w-3.5" /> Masuk
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"

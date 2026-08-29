@@ -28,8 +28,8 @@ test.describe('Role E2E: Super Admin (Platform Admin)', () => {
     await page.getByPlaceholder('e.g. RT 01 RW 05 Melati').fill(tenantName);
     await page.getByRole('button', { name: 'Simpan Tenant' }).click();
 
-    await expect(page.getByText(tenantName)).toBeVisible();
-    await expect(page.getByText(expectedDomain)).toBeVisible();
+    await expect(page.getByRole('cell', { name: tenantName })).toBeVisible();
+    await expect(page.getByRole('cell', { name: expectedDomain })).toBeVisible();
   });
 
   test('UC-SUP-02: SuperAdmin Can Access Users & Create User With Selected Tenant', async ({ page }) => {

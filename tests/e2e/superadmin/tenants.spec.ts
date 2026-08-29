@@ -26,8 +26,8 @@ test.describe('SuperAdmin Tenant Management & CRUD', () => {
     // Submit
     await page.getByRole('button', { name: 'Simpan Tenant' }).click();
 
-    // Verify tenant appears in table list
-    await expect(page.getByText(tenantName)).toBeVisible();
-    await expect(page.getByText(expectedDomain)).toBeVisible();
+    // Verify tenant appears in table list (scoped to table, not dropdown)
+    await expect(page.getByRole('cell', { name: tenantName })).toBeVisible();
+    await expect(page.getByRole('cell', { name: expectedDomain })).toBeVisible();
   });
 });

@@ -209,24 +209,48 @@ func (u *authUsecase) SwitchTenant(ctx context.Context, userID, tenantID uuid.UU
 	}
 
 	tus, err := u.tenantUserRepo.ListByUser(ctx, userID)
-	if err != nil || len(tus) == 0 {
+	if err != nil {
 		return "", nil, "", ErrUnauthorized
 	}
-	tus = activeTenantUsers(tus)
-	if len(tus) == 0 {
-		return "", nil, "", ErrUnauthorized
-	}
-
-	var selected *domain.TenantUser
-	for _, tu := range tus {
-		if tu.TenantID == tenantID {
-			selected = tu
+	active := activeTenantUsers(tus)
+	isSuperAdmin := false
+	for _, tu := range active {
+		if isSuperAdminRole(tu.RoleName) {
+			isSuperAdmin = true
 			break
 		}
 	}
-	if selected == nil {
-		// The user is not mapped to the requested tenant.
-		return "", nil, "", ErrUnauthorized
+	var selected *domain.TenantUser
+	if isSuperAdmin {
+		// Superadmin boleh masuk tenant mana pun yang aktif (support) — bypass mapping, tetap audit
+		for _, tu := range active {
+			if tu.TenantID == tenantID {
+				selected = tu
+				break
+			}
+		}
+		if selected == nil {
+			// Buat mapping virtual superadmin untuk tenant tujuan
+			selected = &domain.TenantUser{
+				UserID:   userID,
+				TenantID: tenantID,
+				RoleName: domain.RoleSuperAdmin,
+				Status:   "active",
+			}
+		}
+	} else {
+		if len(active) == 0 {
+			return "", nil, "", ErrUnauthorized
+		}
+		for _, tu := range active {
+			if tu.TenantID == tenantID {
+				selected = tu
+				break
+			}
+		}
+		if selected == nil {
+			return "", nil, "", ErrUnauthorized
+		}
 	}
 
 	// Ensure the tenant still exists and is active. Disabled tenants must not be

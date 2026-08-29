@@ -20,11 +20,16 @@ func isSuperAdminRole(role domain.RoleName) bool {
 }
 
 type UserHandler struct {
-	usecase usecase.UserUsecase
+	usecase    usecase.UserUsecase
+	baseDomain string
 }
 
 func NewUserHandler(usecase usecase.UserUsecase) *UserHandler {
 	return &UserHandler{usecase: usecase}
+}
+
+func NewUserHandlerWithDomain(usecase usecase.UserUsecase, baseDomain string) *UserHandler {
+	return &UserHandler{usecase: usecase, baseDomain: baseDomain}
 }
 
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler, adminMw func(http.Handler) http.Handler) {
@@ -44,12 +49,21 @@ func (h *UserHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Superadmin operates on the global user scope (tenant_id stays nil);
-	// tenant-scoped admins are locked to their own tenant from the trusted
-	// identity context, regardless of any tenant hints in the request.
 	tenantID := uuid.Nil
-	if tenant != nil && !isSuper {
-		tenantID = tenant.ID
+	if tenant != nil {
+		if !isSuper {
+			tenantID = tenant.ID
+		} else {
+			isTenantHost := false
+			if h.baseDomain != "" {
+				if _, matched := middleware.HostnameSlug(r.Host, h.baseDomain); matched {
+					isTenantHost = true
+				}
+			}
+			if isTenantHost {
+				tenantID = tenant.ID
+			}
+		}
 	}
 
 	path := strings.TrimPrefix(r.URL.Path, "/api/v1/users")
@@ -133,10 +147,26 @@ func (h *UserHandler) list(w http.ResponseWriter, r *http.Request, tenantID uuid
 	var total int64
 	var err error
 
+	isPlatformHost := true
+	if h.baseDomain != "" {
+		if _, matched := middleware.HostnameSlug(r.Host, h.baseDomain); matched {
+			isPlatformHost = false
+		} else if middleware.IsPlatformHost(r.Host, h.baseDomain) {
+			isPlatformHost = true
+		}
+	}
 	if isSuperAdminRole(role) {
-		users, total, err = h.usecase.ListAllUsers(r.Context(), limit, offset)
+		if isPlatformHost || tenantID == uuid.Nil {
+			users, total, err = h.usecase.ListAllUsers(r.Context(), limit, offset)
+		} else {
+			users, total, err = h.usecase.ListUsers(r.Context(), tenantID, limit, offset)
+		}
 	} else {
-		users, total, err = h.usecase.ListUsers(r.Context(), tenantID, limit, offset)
+		if tenantID == uuid.Nil {
+			users, total, err = h.usecase.ListAllUsers(r.Context(), limit, offset)
+		} else {
+			users, total, err = h.usecase.ListUsers(r.Context(), tenantID, limit, offset)
+		}
 	}
 
 	if err != nil {

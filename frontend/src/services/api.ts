@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
+import { queryClient } from '../lib/queryClient';
 
 const DEFAULT_API_BASE_URL = '/api/v1';
 
@@ -28,6 +29,10 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
+      window.location.href = '/login';
+    }
+    if (error.response?.status === 403 && String(error.response?.data?.error || '').includes('tenant')) {
+      queryClient.clear();
     }
     return Promise.reject(error);
   }
