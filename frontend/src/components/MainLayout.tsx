@@ -14,6 +14,7 @@ import {
   Menu,
   MessageSquareHeart,
   Shield,
+  ShieldCheck,
   Users,
   WalletCards,
   Vote,
@@ -45,6 +46,7 @@ const baseNavItems: NavItem[] = [
   { to: '/admin/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
   { to: '/admin/karang-taruna', label: 'Karang Taruna', icon: Flame },
   { to: '/admin/polls', label: 'Polling Warga', icon: Vote },
+  { to: '/admin/audit-logs', label: 'Audit Trail', icon: ShieldCheck, adminOnly: true },
   { to: '/admin/users', label: 'Manajemen Pengguna', icon: Users, adminOnly: true },
 ];
 

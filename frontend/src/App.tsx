@@ -24,6 +24,7 @@ const MeetingPage = lazy(() => import('./pages/MeetingPage').then(m => ({ defaul
 const UsersPage = lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })));
 const PollsPage = lazy(() => import('./pages/PollsPage').then(m => ({ default: m.PollsPage })));
 const KarangTarunaPage = lazy(() => import('./pages/KarangTarunaPage').then(m => ({ default: m.KarangTarunaPage })));
+const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
 
 import { getTenantSlugFromHost } from './utils/tenant';
 
@@ -88,6 +89,7 @@ export function App() {
                 <Route path="/admin/polls" element={<PollsPage />} />
                 <Route path="/admin/karang-taruna" element={<KarangTarunaPage />} />
                 <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RT_ADMIN']} />}>
+                  <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
                   <Route path="/admin/users" element={<UsersPage />} />
                 </Route>
                 <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']} />}>

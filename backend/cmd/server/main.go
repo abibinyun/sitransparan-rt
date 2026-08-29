@@ -99,6 +99,11 @@ func main() {
 	ktUC := usecase.NewKarangTarunaUsecase(ktRepo)
 	ktHandler := delivery.NewKarangTarunaHandler(ktUC, tenantRepo, cfg.TenantBaseDomain)
 
+	// Audit Logging Komprehensif (Zero Missed Action)
+	auditRepo := repository.NewAuditLogRepository(db)
+	auditUC := usecase.NewAuditLogUsecase(auditRepo)
+	auditHandler := delivery.NewAuditLogHandler(auditUC)
+
 	// Interaksi sosial Fase 3 (reaksi & polling) — budget rate-limit ketat
 	// selaras endpoint auth (anti-spam, konsep portal §7.3).
 	socialRepo := repository.NewSocialRepository(db)
@@ -111,6 +116,7 @@ func main() {
 	adminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin, domain.RoleAdminRT)
 	superAdminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin)
 	secHeadersMw := middleware.SecurityHeadersMiddleware()
+	auditMw := middleware.AuditMiddleware(auditUC)
 	// Per-client-IP token bucket: each source IP gets its own budget (default
 	// 1000 tokens, 100 req/s), so the UI's parallel page-load requests are fine
 	// and one abusive client can never 429 the whole API for everyone else.
@@ -170,6 +176,9 @@ func main() {
 	// Karang Taruna & Pemuda RT
 	ktHandler.RegisterRoutes(mux, tenantMw, authMw)
 
+	// Audit Logs (Zero Missed Action)
+	auditHandler.RegisterRoutes(mux, tenantMw, authMw, adminMw)
+
 	// Social interactions (reactions & polls) — strict rate budget
 	socialHandler.RegisterRoutes(mux, tenantMw, authMw, authRateLimitMw)
 
@@ -187,8 +196,9 @@ func main() {
 	mux.Handle("/api/v1/superadmin/tenants", authMw(superAdminMw(tenantMw(superAdminMux))))
 	mux.Handle("/api/v1/superadmin/tenants/", authMw(superAdminMw(tenantMw(superAdminMux))))
 
-	// Wrap root handler with security, CORS, and rate limiting middleware
+	// Wrap root handler with security, CORS, rate limiting, and audit middleware
 	var handler http.Handler = mux
+	handler = auditMw(handler)
 	handler = rateLimitMw(handler)
 	handler = secHeadersMw(handler)
 	handler = corsMw(handler)
