@@ -90,3 +90,5 @@
 
 ---
 *File ini adalah tracker tunggal. Jangan buat dokumen paralel — update di sini.*
+
+- **FEATURE 2026-08-29 Karang Taruna:** Migrasi 000021 (`karang_taruna_periods`, `karang_taruna_configs`, `karang_taruna_members`), backend CRUD + authz (Ketua/Admin RT), frontend `/admin/karang-taruna` + Tab Struktur/Periode/Konfigurasi, E2E test `karang-taruna.spec.ts` PASS.

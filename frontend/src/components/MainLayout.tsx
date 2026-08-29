@@ -7,6 +7,7 @@ import {
   ChevronRight,
   ClipboardList,
   FileText,
+  Flame,
   Home,
   LayoutDashboard,
   LogOut,
@@ -42,6 +43,7 @@ const baseNavItems: NavItem[] = [
   { to: '/admin/meetings', label: 'Notulen & Tindak Lanjut', icon: ClipboardList },
   { to: '/admin/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
   { to: '/admin/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
+  { to: '/admin/karang-taruna', label: 'Karang Taruna', icon: Flame },
   { to: '/admin/polls', label: 'Polling Warga', icon: Vote },
   { to: '/admin/users', label: 'Manajemen Pengguna', icon: Users, adminOnly: true },
 ];

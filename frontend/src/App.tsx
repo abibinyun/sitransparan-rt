@@ -23,6 +23,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ de
 const MeetingPage = lazy(() => import('./pages/MeetingPage').then(m => ({ default: m.MeetingPage })));
 const UsersPage = lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })));
 const PollsPage = lazy(() => import('./pages/PollsPage').then(m => ({ default: m.PollsPage })));
+const KarangTarunaPage = lazy(() => import('./pages/KarangTarunaPage').then(m => ({ default: m.KarangTarunaPage })));
 
 import { getTenantSlugFromHost } from './utils/tenant';
 
@@ -85,6 +86,7 @@ export function App() {
                 <Route path="/admin/aspirations" element={<AspirationsPage />} />
                 <Route path="/admin/announcements" element={<AnnouncementsPage />} />
                 <Route path="/admin/polls" element={<PollsPage />} />
+                <Route path="/admin/karang-taruna" element={<KarangTarunaPage />} />
                 <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RT_ADMIN']} />}>
                   <Route path="/admin/users" element={<UsersPage />} />
                 </Route>
@@ -102,6 +104,7 @@ export function App() {
                 <Route path="/aspirations" element={<Navigate to="/admin/aspirations" replace />} />
                 <Route path="/announcements" element={<Navigate to="/admin/announcements" replace />} />
                 <Route path="/polls" element={<Navigate to="/admin/polls" replace />} />
+                <Route path="/karang-taruna" element={<Navigate to="/admin/karang-taruna" replace />} />
                 <Route path="/users" element={<Navigate to="/admin/users" replace />} />
               </Route>
             </Route>

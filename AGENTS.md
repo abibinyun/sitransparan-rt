@@ -1392,7 +1392,7 @@ backend/                        Go API server
   internal/delivery/http/       handlers + middleware/ + openapi.yaml (embedded)
   internal/usecase/             business logic
   internal/repository/          PostgreSQL, schema-qualified queries (TenantTable)
-  migrations/                   000001–000020 raw SQL
+  migrations/                   000001–000021 raw SQL
   pkg/                          config, crypto (AES-256-GCM + HMAC), storage/minio
 frontend/
   src/pages/                    React.lazy code-split pages
@@ -1439,7 +1439,7 @@ tests/e2e/                      Playwright regression suite
 ## 46.4 Multi-Tenancy
 
 - Global tables (`tenants`, `users`, `roles`, `tenant_users`, `audit_logs`, `push_subscriptions`, `portal_events`) live in the
-  `public` schema. Tenant operational data lives in `tenant_<slug>` schemas (23+ tables:
+  `public` schema. Tenant operational data lives in `tenant_<slug>` schemas (26+ tables (including karang_taruna_periods, karang_taruna_configs, karang_taruna_members):
   residents, family_members, fee_categories, dues_payments, financial_transactions,
   events, event_budgets, event_participants, event_sponsors, event_roles, event_receipts,
   aspirations, community_needs, announcements, documents).
@@ -1457,6 +1457,7 @@ tests/e2e/                      Playwright regression suite
 
 | Area | Capabilities |
 |---|---|
+| Karang Taruna | Periode masa bakti (`active/archived/draft`), struktur pengurus inti & seksi bidang, konfigurasi dinamis (roles & sections JSONB), publik portal |
 | Auth & IAM | login, register, list user tenants, switch tenant (`GET /auth/me` wired), user CRUD (admin), tenant CRUD (superadmin) |
 | Demography | resident CRUD, family members, approve/reject, NIK encrypted (AES-256-GCM + HMAC lookup) |
 | Finance | **funds** (multi-kantong, `is_default`), fee categories, dues (record & verify, `status` filter), cash transactions (**append-only**), summary, CSV/PDF export via backend blob |

@@ -94,6 +94,11 @@ func main() {
 	meetingUC := usecase.NewMeetingUsecase(meetingRepo)
 	meetingHandler := delivery.NewMeetingHandler(meetingUC, tenantRepo, cfg.TenantBaseDomain)
 
+	// Karang Taruna & Organisasi Kepemudaan
+	ktRepo := repository.NewKarangTarunaRepository(db)
+	ktUC := usecase.NewKarangTarunaUsecase(ktRepo)
+	ktHandler := delivery.NewKarangTarunaHandler(ktUC, tenantRepo, cfg.TenantBaseDomain)
+
 	// Interaksi sosial Fase 3 (reaksi & polling) — budget rate-limit ketat
 	// selaras endpoint auth (anti-spam, konsep portal §7.3).
 	socialRepo := repository.NewSocialRepository(db)
@@ -161,6 +166,9 @@ func main() {
 
 	// Meeting & Action Items routes
 	meetingHandler.RegisterRoutes(mux, tenantMw, authMw)
+
+	// Karang Taruna & Pemuda RT
+	ktHandler.RegisterRoutes(mux, tenantMw, authMw)
 
 	// Social interactions (reactions & polls) — strict rate budget
 	socialHandler.RegisterRoutes(mux, tenantMw, authMw, authRateLimitMw)

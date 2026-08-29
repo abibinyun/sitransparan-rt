@@ -1586,6 +1586,97 @@ paths:
         '200':
           description: '{ reactions_given, votes_cast, total, level }'
 
+  # ---------------------------------------------- Karang Taruna
+  /api/v1/t/{slug}/karang-taruna:
+    get:
+      summary: Struktur organisasi pemuda publik aktif (PUBLIC)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: '{ period, members: [{ name, role, section, custom_title }] }'
+        '404':
+          description: Tenant tidak ditemukan
+
+  /api/v1/karang-taruna/periods:
+    get:
+      summary: List periode kepengurusan pemuda (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [draft, active, archived] } }
+      responses:
+        '200':
+          description: '{ data: KarangTarunaPeriod[] }'
+    post:
+      summary: Buat periode masa bakti baru (ADMIN)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '201':
+          description: Periode dibuat
+
+  /api/v1/karang-taruna/periods/active:
+    get:
+      summary: Ambil periode aktif saat ini (AUTH)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: KarangTarunaPeriod
+
+  /api/v1/karang-taruna/periods/{id}:
+    get:
+      summary: Detail periode (AUTH)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: KarangTarunaPeriod
+    put:
+      summary: Update periode (ADMIN)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Periode diupdate
+
+  /api/v1/karang-taruna/periods/{id}/config:
+    put:
+      summary: Update konfigurasi seksi dan peran kepengurusan (ADMIN / KETUA)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Konfigurasi disimpan
+
+  /api/v1/karang-taruna/members:
+    get:
+      summary: List anggota/pengurus periode (AUTH)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: period_id, in: query, schema: { type: string, format: uuid } }
+        - { name: section, in: query, schema: { type: string } }
+        - { name: role, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string, enum: [aktif, demisioner, nonaktif] } }
+      responses:
+        '200':
+          description: '{ data: KarangTarunaMember[] }'
+    post:
+      summary: Tetapkan pengurus/anggota baru (ADMIN / KETUA)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '201':
+          description: Anggota ditetapkan
+
+  /api/v1/karang-taruna/members/{id}:
+    put:
+      summary: Update jabatan/seksi/status anggota (ADMIN / KETUA)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Anggota diupdate
+    delete:
+      summary: Hapus anggota dari kepengurusan (ADMIN / KETUA)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Anggota dihapus
+
 components:
   securitySchemes:
     BearerAuth:
