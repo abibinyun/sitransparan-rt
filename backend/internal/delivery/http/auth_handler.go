@@ -264,6 +264,27 @@ func (h *AuthHandler) TenantMe(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tenant)
 }
 
+func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserIDFromContext(r.Context())
+	if userID == uuid.Nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	user, role, tenantID, err := h.authUsecase.GetMe(r.Context(), userID)
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	tenants, _ := h.authUsecase.GetUserTenants(r.Context(), userID)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"user": map[string]interface{}{
+			"id": user.ID, "name": user.Name, "email": user.Email, "phone": user.Phone, "role": role, "tenant_id": tenantID,
+		},
+		"role": role, "tenant_id": tenantID, "tenants": tenants,
+	})
+}
+
 type tenantRequest struct {
 	Name    string  `json:"name"`
 	Slug    string  `json:"slug"`

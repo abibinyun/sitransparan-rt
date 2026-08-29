@@ -22,6 +22,8 @@ export interface EventBudget {
   description: string;
   estimated_cost: number;
   actual_cost: number;
+  planned_amount?: number;
+  actual_amount?: number;
   created_at?: string;
   updated_at?: string;
 }

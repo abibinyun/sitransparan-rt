@@ -48,7 +48,7 @@ func (u *financialUsecase) ListFunds(ctx context.Context, tenantID uuid.UUID) ([
 		return nil, err
 	}
 	// Calculate balance per fund
-	txs, _, err := u.repo.ListFinancialTransactions(ctx, tenantID, "", 10000, 0)
+	txs, _, err := u.repo.ListFinancialTransactions(ctx, tenantID, "", 1000, 0)
 	if err == nil {
 		fundBalanceMap := make(map[uuid.UUID]float64)
 		for _, tx := range txs {
@@ -143,14 +143,17 @@ func (u *financialUsecase) VerifyDuesPayment(ctx context.Context, tenantID, id u
 	return payment, nil
 }
 
-func (u *financialUsecase) ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, limit, offset int) ([]*domain.DuesPayment, int64, error) {
+func (u *financialUsecase) ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, status string, limit, offset int) ([]*domain.DuesPayment, int64, error) {
 	if limit <= 0 {
 		limit = 10
 	}
 	if offset < 0 {
 		offset = 0
 	}
-	return u.repo.ListDuesPayments(ctx, tenantID, residentID, limit, offset)
+	if status != "" && status != "pending" && status != "verified" && status != "rejected" {
+		status = ""
+	}
+	return u.repo.ListDuesPayments(ctx, tenantID, residentID, status, limit, offset)
 }
 
 // Income/Expense Transaction CRUD
@@ -214,12 +217,12 @@ func (u *financialUsecase) ListFinancialTransactions(ctx context.Context, tenant
 }
 
 func (u *financialUsecase) GetFinancialSummary(ctx context.Context, tenantID uuid.UUID) (*domain.FinancialSummary, error) {
-	txs, _, err := u.repo.ListFinancialTransactions(ctx, tenantID, "", 10000, 0)
+	txs, _, err := u.repo.ListFinancialTransactions(ctx, tenantID, "", 1000, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	dues, _, err := u.repo.ListDuesPayments(ctx, tenantID, nil, 10000, 0)
+	dues, _, err := u.repo.ListDuesPayments(ctx, tenantID, nil, "", 1000, 0)
 	if err != nil {
 		return nil, err
 	}

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useLoginMutation, useRegisterMutation, useSwitchTenantMutation, fetchUserTenantsWithToken } from '../services/auth';
 import { useAuthStore } from '../store/useAuthStore';
 import { getTenantSlugFromHost, getTenantUrl, getPlatformUrl } from '../utils/tenant';
@@ -22,7 +21,6 @@ export const LoginPage: React.FC = () => {
   const [availableTenants, setAvailableTenants] = useState<Tenant[]>([]);
   const [pendingAuth, setPendingAuth] = useState<{ token: string; user: any } | null>(null);
 
-  const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const loginMutation = useLoginMutation();
   const registerMutation = useRegisterMutation();
@@ -81,7 +79,8 @@ export const LoginPage: React.FC = () => {
           window.location.href = getPlatformUrl('/admin/tenants');
           return;
         }
-        navigate('/admin/tenants');
+        // Hard reload to purge stale role/memo (fix mix-match superadmin↔tenant)
+        window.location.href = '/admin/tenants';
         return;
       }
 
@@ -90,7 +89,7 @@ export const LoginPage: React.FC = () => {
         return;
       }
 
-      navigate('/admin');
+      window.location.href = '/admin';
     } catch {
       // error surfaced via loginMutation.isError below
     }
@@ -145,7 +144,8 @@ export const LoginPage: React.FC = () => {
           window.location.href = getPlatformUrl('/admin/tenants');
           return;
         }
-        navigate('/admin/tenants');
+        // Hard reload to purge stale role/memo (fix mix-match superadmin↔tenant)
+        window.location.href = '/admin/tenants';
         return;
       }
 
@@ -154,7 +154,7 @@ export const LoginPage: React.FC = () => {
         return;
       }
 
-      navigate('/admin');
+      window.location.href = '/admin';
     } catch {
       // error surfaced via switchTenantMutation.isError below
     }

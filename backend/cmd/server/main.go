@@ -134,6 +134,7 @@ func main() {
 
 	// Authenticated routes
 	authMux := http.NewServeMux()
+	authMux.HandleFunc("GET /api/v1/auth/me", authHandler.Me)
 	authMux.HandleFunc("GET /api/v1/auth/tenants", authHandler.UserTenants)
 	authMux.HandleFunc("POST /api/v1/auth/switch-tenant", authHandler.SwitchTenant)
 

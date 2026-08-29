@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net/url"
 
 	"backend/internal/domain"
 	"github.com/google/uuid"
@@ -17,6 +18,19 @@ func NewAnnouncementDocUsecase(repo domain.AnnouncementDocRepository) domain.Ann
 	return &announcementDocUsecase{repo: repo}
 }
 
+func validateMediaURLs(urls []string) error {
+	if len(urls) > 10 {
+		return errors.New("media_urls exceeds 10 items")
+	}
+	for _, s := range urls {
+		u, err := url.Parse(s)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return errors.New("media_urls must be http/https URLs")
+		}
+	}
+	return nil
+}
+
 func (u *announcementDocUsecase) CreateAnnouncement(ctx context.Context, tenantID uuid.UUID, a *domain.Announcement) error {
 	if tenantID == uuid.Nil {
 		return errors.New("tenant_id is required")
@@ -26,6 +40,9 @@ func (u *announcementDocUsecase) CreateAnnouncement(ctx context.Context, tenantI
 	}
 	if a.Content == "" {
 		return errors.New("content is required")
+	}
+	if err := validateMediaURLs(a.MediaURLs); err != nil {
+		return err
 	}
 
 	a.TenantID = tenantID
@@ -64,6 +81,9 @@ func (u *announcementDocUsecase) UpdateAnnouncement(ctx context.Context, tenantI
 	}
 	if a.Content == "" {
 		return errors.New("content is required")
+	}
+	if err := validateMediaURLs(a.MediaURLs); err != nil {
+		return err
 	}
 
 	a.TenantID = tenantID
@@ -124,6 +144,20 @@ func (u *announcementDocUsecase) ListDocuments(ctx context.Context, tenantID uui
 		offset = 0
 	}
 	return u.repo.ListDocuments(ctx, tenantID, limit, offset)
+}
+
+func (u *announcementDocUsecase) UpdateDocument(ctx context.Context, tenantID uuid.UUID, doc *domain.Document) error {
+	if tenantID == uuid.Nil || doc.ID == uuid.Nil {
+		return errors.New("tenant_id and document id are required")
+	}
+	if doc.Title == "" {
+		return errors.New("title is required")
+	}
+	if doc.Category == "" {
+		return errors.New("category is required")
+	}
+	doc.TenantID = tenantID
+	return u.repo.UpdateDocument(ctx, doc)
 }
 
 func (u *announcementDocUsecase) DeleteDocument(ctx context.Context, tenantID, id uuid.UUID) error {

@@ -11,9 +11,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   event: EventItem | null;
+  onSaved?: () => void;
 }
 
-export const EventRSVPModal: React.FC<Props> = ({ isOpen, onClose, event }) => {
+export const EventRSVPModal: React.FC<Props> = ({ isOpen, onClose, event, onSaved }) => {
   const saveRSVP = useSaveEventRSVP();
   const { data: residentsRes } = useResidents();
 
@@ -23,11 +24,12 @@ export const EventRSVPModal: React.FC<Props> = ({ isOpen, onClose, event }) => {
 
   const [selectedResidentId, setSelectedResidentId] = useState('');
   const [status, setStatus] = useState<RSVPStatus>('attending');
+  const [saveError, setSaveError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedResidentId || !event) return;
-
+    setSaveError('');
     saveRSVP.mutate(
       {
         eventId: event.id,
@@ -40,7 +42,11 @@ export const EventRSVPModal: React.FC<Props> = ({ isOpen, onClose, event }) => {
         onSuccess: () => {
           setSelectedResidentId('');
           setStatus('attending');
+          onSaved?.();
           onClose();
+        },
+        onError: (err: any) => {
+          setSaveError(err?.response?.data?.error || err?.message || 'Gagal menyimpan RSVP');
         },
       }
     );
@@ -84,6 +90,7 @@ export const EventRSVPModal: React.FC<Props> = ({ isOpen, onClose, event }) => {
           </Select>
         </div>
 
+        {saveError && <p className="text-xs font-semibold text-rose-600">{saveError}</p>}
         <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
           <Button type="button" variant="outline" onClick={onClose}>
             Batal

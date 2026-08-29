@@ -10,7 +10,7 @@ import {
   Users,
   WalletCards,
 } from 'lucide-react';
-import { useDashboardMetrics } from '../services/dashboard';
+import { useDashboardMetrics, exportFinancialReport } from '../services/dashboard';
 import { useAuthStore } from '../store/useAuthStore';
 
 const formatRupiah = (val: number) =>
@@ -58,31 +58,31 @@ export const DashboardPage: React.FC = () => {
   const { user, activeTenant } = useAuthStore();
   const { data: metrics, isLoading } = useDashboardMetrics();
 
-  const exportCSV = () => {
-    if (!metrics) return;
-    const headers = ['Metrik', 'Nilai'];
-    const rows = [
-      ['Total Warga', metrics.totalResidents.toString()],
-      ['Pemasukan Kas', metrics.totalIncome.toString()],
-      ['Pengeluaran Kas', metrics.totalExpense.toString()],
-      ['Saldo Kas', metrics.balance.toString()],
-      ['Iuran Pending', metrics.pendingDues.toString()],
-    ];
+  const [exporting, setExporting] = React.useState<'csv' | 'pdf' | null>(null);
+  const [exportError, setExportError] = React.useState('');
 
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Laporan_Kas_RT_${activeTenant?.code || 'RT'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const exportCSV = async () => {
+    setExportError('');
+    setExporting('csv');
+    try {
+      await exportFinancialReport('csv');
+    } catch (e: any) {
+      setExportError(e?.response?.data?.error || e?.message || 'Gagal export CSV');
+    } finally {
+      setExporting(null);
+    }
   };
 
-  const exportPDF = () => {
-    window.print();
+  const exportPDF = async () => {
+    setExportError('');
+    setExporting('pdf');
+    try {
+      await exportFinancialReport('pdf');
+    } catch (e: any) {
+      setExportError(e?.response?.data?.error || e?.message || 'Gagal export PDF');
+    } finally {
+      setExporting(null);
+    }
   };
 
   if (isLoading) {
@@ -124,18 +124,21 @@ export const DashboardPage: React.FC = () => {
           <div className="flex flex-col gap-3 sm:flex-row lg:flex-col print:hidden">
             <button
               onClick={exportCSV}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              disabled={!!exporting}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
-              Export CSV
+              {exporting === 'csv' ? 'Mengunduh…' : 'Export CSV'}
             </button>
             <button
               onClick={exportPDF}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              disabled={!!exporting}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:opacity-50"
             >
               <FileDown className="h-4 w-4" />
-              Export PDF
+              {exporting === 'pdf' ? 'Mengunduh…' : 'Export PDF'}
             </button>
+            {exportError && <p className="text-xs font-semibold text-rose-200">{exportError}</p>}
           </div>
         </div>
       </section>

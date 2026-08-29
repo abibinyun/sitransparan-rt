@@ -36,13 +36,49 @@ func (u *eventUsecase) ListEvents(ctx context.Context, tenantID uuid.UUID, limit
 	if offset < 0 {
 		offset = 0
 	}
-	return u.repo.ListEvents(ctx, tenantID, limit, offset, status)
+	events, total, err := u.repo.ListEvents(ctx, tenantID, limit, offset, status)
+	if err != nil {
+		return nil, 0, err
+	}
+	for _, e := range events {
+		if budgets, err := u.repo.ListBudgetsByEventID(ctx, e.ID); err == nil && len(budgets) > 0 {
+			e.Budget = budgets[0]
+			if len(budgets) > 1 {
+				var est, act float64
+				var desc string
+				for i, b := range budgets {
+					est += b.EstimatedCost
+					act += b.ActualCost
+					if i == 0 {
+						desc = b.Description
+					}
+				}
+				e.Budget = &domain.EventBudget{EventID: e.ID, Description: desc, EstimatedCost: est, ActualCost: act, PlannedAmount: est, ActualAmount: act}
+			}
+		}
+	}
+	return events, total, nil
 }
 
 func (u *eventUsecase) GetEvent(ctx context.Context, tenantID, id uuid.UUID) (*domain.Event, error) {
 	event, err := u.repo.GetEventByID(ctx, tenantID, id)
 	if err != nil {
 		return nil, err
+	}
+	if budgets, err := u.repo.ListBudgetsByEventID(ctx, event.ID); err == nil && len(budgets) > 0 {
+		event.Budget = budgets[0]
+		if len(budgets) > 1 {
+			var est, act float64
+			var desc string
+			for i, b := range budgets {
+				est += b.EstimatedCost
+				act += b.ActualCost
+				if i == 0 {
+					desc = b.Description
+				}
+			}
+			event.Budget = &domain.EventBudget{EventID: event.ID, Description: desc, EstimatedCost: est, ActualCost: act, PlannedAmount: est, ActualAmount: act}
+		}
 	}
 	return event, nil
 }

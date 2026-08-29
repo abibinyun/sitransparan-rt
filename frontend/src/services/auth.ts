@@ -41,8 +41,8 @@ export const useProfileQuery = () => {
   return useQuery<User, Error>({
     queryKey: ['profile'],
     queryFn: async () => {
-      const res = await api.get<User>('/auth/me');
-      return res.data;
+      const res = await api.get<{ user: User }>('/auth/me');
+      return (res.data as any).user ?? res.data;
     },
   });
 };

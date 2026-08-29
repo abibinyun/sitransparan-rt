@@ -97,6 +97,14 @@ func (m *mockAnnouncementDocRepo) ListDocuments(ctx context.Context, tenantID uu
 	return list, int64(len(list)), nil
 }
 
+func (m *mockAnnouncementDocRepo) UpdateDocument(ctx context.Context, doc *domain.Document) error {
+	if doc.ID == uuid.Nil {
+		doc.ID = uuid.New()
+	}
+	m.documents[doc.ID] = doc
+	return nil
+}
+
 func (m *mockAnnouncementDocRepo) DeleteDocument(ctx context.Context, tenantID, id uuid.UUID) error {
 	d, ok := m.documents[id]
 	if !ok || d.TenantID != tenantID {

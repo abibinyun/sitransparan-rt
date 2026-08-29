@@ -42,6 +42,7 @@ type AnnouncementDocRepository interface {
 	CreateDocument(ctx context.Context, doc *Document) error
 	GetDocumentByID(ctx context.Context, tenantID, id uuid.UUID) (*Document, error)
 	ListDocuments(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*Document, int64, error)
+	UpdateDocument(ctx context.Context, doc *Document) error
 	DeleteDocument(ctx context.Context, tenantID, id uuid.UUID) error
 	UploadFile(ctx context.Context, filename string, content io.Reader, contentType string) (string, error)
 }
@@ -56,5 +57,6 @@ type AnnouncementDocUsecase interface {
 	CreateDocument(ctx context.Context, tenantID uuid.UUID, doc *Document, filename string, content io.Reader, contentType string) error
 	GetDocument(ctx context.Context, tenantID, id uuid.UUID) (*Document, error)
 	ListDocuments(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*Document, int64, error)
+	UpdateDocument(ctx context.Context, tenantID uuid.UUID, doc *Document) error
 	DeleteDocument(ctx context.Context, tenantID, id uuid.UUID) error
 }

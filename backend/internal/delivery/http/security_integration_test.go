@@ -86,6 +86,10 @@ func buildSecurityMux(db *sql.DB) http.Handler {
 	dashboardUC := usecase.NewDashboardUsecase(dashboardRepo)
 	dashboardHandler := delivery.NewDashboardHandler(dashboardUC)
 
+	socialRepo := repository.NewSocialRepository(db)
+	socialUC := usecase.NewSocialUsecase(socialRepo)
+	socialHandler := delivery.NewSocialHandler(socialUC, tenantRepo, "openrt.local")
+
 	userUC := usecase.NewUserUsecase(userRepo, tuRepo, roleRepo)
 	userHandler := delivery.NewUserHandler(userUC)
 
@@ -114,6 +118,7 @@ func buildSecurityMux(db *sql.DB) http.Handler {
 	aspirationNeedHandler.RegisterRoutes(mux, tenantMw, authMw)
 	announcementDocHandler.RegisterRoutes(mux, tenantMw, authMw)
 	dashboardHandler.RegisterRoutes(mux, tenantMw, authMw)
+	socialHandler.RegisterRoutes(mux, tenantMw, authMw, func(h http.Handler) http.Handler { return h })
 
 	superAdminMux := http.NewServeMux()
 	superAdminMux.HandleFunc("/api/v1/superadmin/tenants", authHandler.SuperAdminTenants)
@@ -523,6 +528,122 @@ func TestSecurity_PublicSanitization(t *testing.T) {
 	if strings.Contains(raw, spoofID) {
 		t.Errorf("public aspiration list leaked resident_id!")
 	}
+}
+
+// TestSecurity_SocialTenantIsolation proves reactions & polls are tenant-isolated
+// (per-schema tables). Admin A cannot see or vote on polls from tenant B, and
+// reactions do not leak across tenants.
+func TestSecurity_SocialTenantIsolation(t *testing.T) {
+  fx := setupSecurityFixture(t)
+
+  // Create announcement in tenant A as admin A (via announcement endpoint)
+  rec, parsed := doJSON(fx.handler, "POST", "/api/v1/announcements", fx.aToken, map[string]interface{}{
+    "title": "Ann for Social", "content": "hello", "target": "all",
+  }, nil)
+  if rec.Code != http.StatusCreated && rec.Code != http.StatusOK {
+    t.Fatalf("create announcement in A expected 201, got %d %s", rec.Code, rec.Body.String())
+  }
+  annID, _ := parsed["id"].(string)
+  if annID == "" {
+    if id2, ok := parsed["ID"].(string); ok {
+      annID = id2
+    }
+  }
+  if annID == "" {
+    // fallback: list announcements to get ID
+    rec2, p2 := doJSON(fx.handler, "GET", "/api/v1/announcements", fx.aToken, nil, nil)
+    if rec2.Code == http.StatusOK {
+      if data, ok := p2["data"].([]interface{}); ok && len(data) > 0 {
+        if m, ok := data[0].(map[string]interface{}); ok {
+          annID = fmt.Sprintf("%v", m["id"])
+        }
+      }
+    }
+  }
+  if annID == "" {
+    t.Fatal("failed to get announcement ID for social test")
+  }
+
+  // Admin A creates poll in tenant A
+  rec, parsed = doJSON(fx.handler, "POST", "/api/v1/polls", fx.aToken, map[string]interface{}{
+    "question": "Poll Iso " + uuid.New().String()[:6], "options": []string{"A", "B"},
+  }, nil)
+  if rec.Code != http.StatusCreated {
+    t.Fatalf("create poll in A expected 201, got %d %s", rec.Code, rec.Body.String())
+  }
+  pollID, _ := parsed["id"].(string)
+  if pollID == "" {
+    t.Fatalf("poll ID missing after create: %v", parsed)
+  }
+
+  // Admin A reacts to announcement (should succeed)
+  rec, _ = doJSON(fx.handler, "POST", "/api/v1/reactions", fx.aToken, map[string]interface{}{
+    "target_type": "announcement", "target_id": annID, "reaction": "like",
+  }, nil)
+  if rec.Code != http.StatusOK && rec.Code != http.StatusCreated {
+    t.Fatalf("A react expected 200/201, got %d %s", rec.Code, rec.Body.String())
+  }
+
+  // Admin A sees reaction summary (counts should include his like)
+  rec, parsed = doJSON(fx.handler, "GET", "/api/v1/reactions?target_type=announcement&target_id="+annID, fx.aToken, nil, nil)
+  if rec.Code != http.StatusOK {
+    t.Fatalf("A reaction summary expected 200, got %d", rec.Code)
+  }
+  if total, _ := parsed["total"].(float64); total < 1 {
+    t.Errorf("A reaction summary total should be >=1, got %v", parsed["total"])
+  }
+
+  // Admin B lists polls — should NOT see A's poll (tenant isolation)
+  rec, parsed = doJSON(fx.handler, "GET", "/api/v1/polls", fx.bToken, nil, nil)
+  if rec.Code != http.StatusOK {
+    t.Fatalf("B list polls expected 200, got %d", rec.Code)
+  }
+  if data, ok := parsed["data"]; ok {
+    if arr, ok := data.([]interface{}); ok {
+      for _, p := range arr {
+        if m, ok := p.(map[string]interface{}); ok {
+          if fmt.Sprintf("%v", m["id"]) == pollID {
+            t.Errorf("B's poll list leaked A's poll %s!", pollID)
+          }
+        }
+      }
+    }
+  }
+
+  // Admin B tries to vote on A's poll — should 404 (poll not in B's schema)
+  rec, _ = doJSON(fx.handler, "POST", "/api/v1/polls/"+pollID+"/vote", fx.bToken, map[string]interface{}{
+    "option_index": 0,
+  }, nil)
+  if rec.Code == http.StatusOK {
+    t.Errorf("B voting on A's poll should not succeed (expected 400/404), got 200")
+  }
+
+  // Admin B reaction to same announcement ID (same UUID but different tenant schema)
+  // should not affect A's summary — it creates a separate reaction in B's schema
+  rec, _ = doJSON(fx.handler, "POST", "/api/v1/reactions", fx.bToken, map[string]interface{}{
+    "target_type": "announcement", "target_id": annID, "reaction": "support",
+  }, nil)
+  // B's reaction should succeed (or 400 if announcement not found in B's tenant, but should not leak)
+  // Either way, A's summary should remain unchanged after B's action
+  rec, parsed = doJSON(fx.handler, "GET", "/api/v1/reactions?target_type=announcement&target_id="+annID, fx.aToken, nil, nil)
+  if rec.Code != http.StatusOK {
+    t.Fatalf("A summary after B's action expected 200, got %d", rec.Code)
+  }
+  // A's summary should still be like (not support), proving isolation
+  if mine, _ := parsed["mine"].(string); mine != "like" {
+    t.Errorf("A's mine reaction should still be 'like' after B's support in other tenant, got %q", mine)
+  }
+
+  // Public poll result for A's poll should be accessible via public endpoint with correct slug
+  rec, _ = doJSON(fx.handler, "GET", "/api/v1/t/"+fx.slugA+"/polls/"+pollID, "", nil, nil)
+  if rec.Code != http.StatusOK {
+    t.Errorf("public poll result for A's poll expected 200, got %d", rec.Code)
+  }
+  // Public poll for B's slug should 404 for same poll ID (different tenant)
+  rec, _ = doJSON(fx.handler, "GET", "/api/v1/t/"+fx.slugB+"/polls/"+pollID, "", nil, nil)
+  if rec.Code == http.StatusOK {
+    t.Errorf("public poll with B's slug should not expose A's poll")
+  }
 }
 
 // forgeToken signs a JWT with the given secret using arbitrary claims. It is

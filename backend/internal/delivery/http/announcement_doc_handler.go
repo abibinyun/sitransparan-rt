@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"backend/internal/delivery/http/middleware"
 	"backend/internal/domain"
@@ -208,10 +209,10 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 				return
 			}
-			// Fase 4: broadcast push ke warga tenant (async, tidak menggagalkan create)
 			if h.pushUC != nil {
 				go func(tID uuid.UUID, title string) {
-					broadcastCtx := context.Background()
+					broadcastCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+					defer cancel()
 					_ = h.pushUC.BroadcastTenant(broadcastCtx, tID, "Pengumuman Baru", title, "/public/announcements")
 				}(tenant.ID, req.Title)
 			}
@@ -395,6 +396,24 @@ func (h *AnnouncementDocHandler) handlePrivateDocuments(w http.ResponseWriter, r
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(item)
+		case http.MethodPut:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
+			var req domain.Document
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
+				return
+			}
+			req.ID = id
+			if err := h.usecase.UpdateDocument(r.Context(), tenant.ID, &req); err != nil {
+				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(req)
 		case http.MethodDelete:
 			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
 				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)

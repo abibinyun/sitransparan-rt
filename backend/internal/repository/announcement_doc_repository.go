@@ -290,6 +290,29 @@ func (r *announcementDocRepository) ListDocuments(ctx context.Context, tenantID 
 	return list, count, nil
 }
 
+func (r *announcementDocRepository) UpdateDocument(ctx context.Context, doc *domain.Document) error {
+	if r.db == nil {
+		return nil
+	}
+	doc.UpdatedAt = time.Now()
+	query := fmt.Sprintf(`
+		UPDATE %s
+		SET title = $1, category = $2, file_url = $3, updated_at = $4
+		WHERE id = $5 AND tenant_id = $6
+	`, TenantTable(ctx, "documents"))
+	res, err := r.db.ExecContext(ctx, query,
+		doc.Title, doc.Category, doc.FileURL, doc.UpdatedAt, doc.ID, doc.TenantID,
+	)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err == nil && rows == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (r *announcementDocRepository) DeleteDocument(ctx context.Context, tenantID, id uuid.UUID) error {
 	if r.db == nil {
 		return nil

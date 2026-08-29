@@ -137,6 +137,20 @@ func (m *mockAnnDocUsecase) ListDocuments(ctx context.Context, tenantID uuid.UUI
 	return list, int64(len(list)), nil
 }
 
+func (m *mockAnnDocUsecase) UpdateDocument(ctx context.Context, tenantID uuid.UUID, doc *domain.Document) error {
+	if doc.ID == uuid.Nil {
+		return repository.ErrNotFound
+	}
+	doc.TenantID = tenantID
+	for i, d := range m.documents {
+		if d.ID == doc.ID {
+			m.documents[i] = doc
+			return nil
+		}
+	}
+	return repository.ErrNotFound
+}
+
 func (m *mockAnnDocUsecase) DeleteDocument(ctx context.Context, tenantID, id uuid.UUID) error {
 	for i, d := range m.documents {
 		if d.ID == id && d.TenantID == tenantID {

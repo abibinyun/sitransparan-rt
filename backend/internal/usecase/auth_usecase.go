@@ -26,6 +26,7 @@ var (
 type AuthUsecase interface {
 	Login(ctx context.Context, email, password string, tenantID *uuid.UUID) (string, *domain.User, domain.RoleName, error)
 	Register(ctx context.Context, name, email, password string, phone *string) (*domain.User, error)
+	GetMe(ctx context.Context, userID uuid.UUID) (*domain.User, domain.RoleName, uuid.UUID, error)
 	GetUserTenants(ctx context.Context, userID uuid.UUID) ([]*domain.Tenant, error)
 	// SwitchTenant re-issues a JWT scoped to a tenant the user is explicitly
 	// mapped to. This is the only sanctioned way for a multi-tenant user to
@@ -258,6 +259,26 @@ func (u *authUsecase) SwitchTenant(ctx context.Context, userID, tenantID uuid.UU
 	}
 
 	return tokenString, user, selected.RoleName, nil
+}
+
+func (u *authUsecase) GetMe(ctx context.Context, userID uuid.UUID) (*domain.User, domain.RoleName, uuid.UUID, error) {
+	if userID == uuid.Nil {
+		return nil, "", uuid.Nil, ErrUnauthorized
+	}
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, "", uuid.Nil, ErrUnauthorized
+	}
+	tus, err := u.tenantUserRepo.ListByUser(ctx, userID)
+	if err != nil || len(tus) == 0 {
+		return user, domain.RoleResident, uuid.Nil, nil
+	}
+	tus = activeTenantUsers(tus)
+	if len(tus) == 0 {
+		return user, domain.RoleResident, uuid.Nil, nil
+	}
+	sel := tus[0]
+	return user, sel.RoleName, sel.TenantID, nil
 }
 
 func (u *authUsecase) GetUserTenants(ctx context.Context, userID uuid.UUID) ([]*domain.Tenant, error) {

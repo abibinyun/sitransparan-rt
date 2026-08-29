@@ -114,6 +114,10 @@ func (h *SocialHandler) handleReactions(w http.ResponseWriter, r *http.Request) 
 		writeSocialError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if req.TargetType == "" || req.Reaction == "" || req.TargetID == "" {
+		writeSocialError(w, http.StatusBadRequest, "target_type, target_id, and reaction are required")
+		return
+	}
 	targetID, err := uuid.Parse(req.TargetID)
 	if err != nil {
 		writeSocialError(w, http.StatusBadRequest, "invalid target_id")

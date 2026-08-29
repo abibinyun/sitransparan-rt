@@ -26,7 +26,7 @@ export function useReactionSummary(targetType: string, targetId: string) {
   return useQuery<ReactionSummary, Error>({
     queryKey: ['reactions', targetType, targetId],
     queryFn: async () => {
-      const res = await api.get<ReactionSummary>('/api/v1/reactions', {
+      const res = await api.get<ReactionSummary>('/reactions', {
         params: { target_type: targetType, target_id: targetId },
       });
       return res.data;
@@ -42,12 +42,12 @@ export function useReact(targetType: string, targetId: string) {
   return useMutation({
     mutationFn: async (reaction: ReactionType | null) => {
       if (reaction === null) {
-        await api.delete('/api/v1/reactions', {
+        await api.delete('/reactions', {
           params: { target_type: targetType, target_id: targetId },
         });
         return;
       }
-      const res = await api.post<ReactionSummary>('/api/v1/reactions', {
+      const res = await api.post<ReactionSummary>('/reactions', {
         target_type: targetType,
         target_id: targetId,
         reaction,
@@ -67,7 +67,7 @@ export function useOpenPolls() {
     queryKey: ['polls', slug],
     queryFn: async () => {
       try {
-        const res = await api.get<{ data: PublicPoll[] }>('/api/v1/polls');
+        const res = await api.get<{ data: PublicPoll[] }>('/polls');
         return res.data.data ?? [];
       } catch {
         return [];
@@ -83,8 +83,33 @@ export function useVotePoll() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ pollId, optionIndex }: { pollId: string; optionIndex: number }) => {
-      const res = await api.post<PublicPoll>(`/api/v1/polls/${pollId}/vote`, { option_index: optionIndex });
+      const res = await api.post<PublicPoll>(`/polls/${pollId}/vote`, { option_index: optionIndex });
       return res.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['polls'] });
+    },
+  });
+}
+
+export function useCreatePoll() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { question: string; options: string[] }) => {
+      const res = await api.post<PublicPoll>('/polls', payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['polls'] });
+    },
+  });
+}
+
+export function useClosePoll() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (pollId: string) => {
+      await api.delete(`/polls/${pollId}`);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['polls'] });

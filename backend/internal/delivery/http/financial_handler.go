@@ -360,8 +360,12 @@ func (h *FinancialHandler) listDues(w http.ResponseWriter, r *http.Request, tena
 			resID = &parsed
 		}
 	}
+	status := r.URL.Query().Get("status")
+	if status != "pending" && status != "verified" && status != "rejected" {
+		status = ""
+	}
 
-	dues, total, err := h.usecase.ListDuesPayments(r.Context(), tenantID, resID, limit, offset)
+	dues, total, err := h.usecase.ListDuesPayments(r.Context(), tenantID, resID, status, limit, offset)
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return

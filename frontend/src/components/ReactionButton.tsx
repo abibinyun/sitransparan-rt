@@ -20,7 +20,7 @@ interface ReactionButtonProps {
  */
 export const ReactionButton: React.FC<ReactionButtonProps> = ({ targetType, targetId }) => {
   const { user } = useAuthStore();
-  const { data: summary } = useReactionSummary(targetType, targetId);
+  const { data: summary, isError, error, refetch } = useReactionSummary(targetType, targetId);
   const react = useReact(targetType, targetId);
 
   const handle = (type: ReactionType) => {
@@ -28,9 +28,19 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({ targetType, targ
       window.location.href = '/login';
       return;
     }
-    // Klik ulang reaksi yang sama = tarik reaksi
-    react.mutate(summary?.mine === type ? null : type);
+    react.mutate(summary?.mine === type ? null : type, {
+      onError: () => refetch(),
+    });
   };
+
+  if (isError) {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] text-rose-500">
+        Gagal memuat reaksi: {(error as Error)?.message || 'coba lagi'}{' '}
+        <button onClick={() => refetch()} className="underline font-semibold">Muat ulang</button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-1.5" role="group" aria-label="Beri apresiasi">

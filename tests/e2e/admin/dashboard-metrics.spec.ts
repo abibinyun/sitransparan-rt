@@ -74,22 +74,24 @@ test.describe('Dashboard — metrik ringkasan & export laporan', () => {
 
     const fs = require('fs');
     const content = fs.readFileSync((await download.path())!, 'utf8');
-    expect(content).toContain('Metrik');
-    expect(content).toMatch(/Pemasukan/);
+    // Backend financial export: header ID,Tanggal,Tipe,Kategori,Jumlah,Deskripsi
+    expect(content).toContain('Tanggal');
+    expect(content).toMatch(/Tipe|Kategori/);
     expect(content.length).toBeGreaterThan(20);
   });
 
-  test('export PDF triggers the browser print flow (window.print)', async ({ page }) => {
+  test('export PDF triggers backend blob download (not window.print)', async ({ page }) => {
     await openDashboard(page);
 
-    await page.evaluate(() => {
-      (window as unknown as { __printCalled: boolean }).__printCalled = false;
-      window.print = () => {
-        (window as unknown as { __printCalled: boolean }).__printCalled = true;
-      };
-    });
-    await page.getByRole('button', { name: 'Export PDF' }).click();
-    const called = await page.evaluate(() => (window as unknown as { __printCalled: boolean }).__printCalled);
-    expect(called, 'Export PDF harus memicu window.print()').toBe(true);
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 15000 }),
+      page.getByRole('button', { name: 'Export PDF' }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/\.pdf$/i);
+    const fs = require('fs');
+    const path = await download.path();
+    expect(path).toBeTruthy();
+    const stat = fs.statSync(path!);
+    expect(stat.size).toBeGreaterThan(100);
   });
 });

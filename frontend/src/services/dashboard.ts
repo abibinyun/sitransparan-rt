@@ -2,6 +2,28 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 import { FinancialSummary, FinancialTransaction } from '../types/financial';
 
+export async function exportFinancialReport(format: 'csv' | 'pdf', params?: { start_date?: string; end_date?: string }): Promise<void> {
+  const res = await api.get('/dashboard/reports/financial/export', {
+    params: { format, ...params },
+    responseType: 'blob',
+  });
+  const blob = new Blob([res.data], { type: format === 'pdf' ? 'application/pdf' : 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const disposition = (res.headers as any)?.['content-disposition'] as string | undefined;
+  let filename = format === 'pdf' ? 'laporan_keuangan.pdf' : 'laporan_keuangan.csv';
+  if (disposition) {
+    const m = disposition.match(/filename="?([^"]+)"?/);
+    if (m) filename = m[1];
+  }
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export interface DashboardMetrics {
   totalResidents: number;
   totalIncome: number;
@@ -45,9 +67,11 @@ export function useDashboardMetrics() {
       }
 
       try {
-        const duesRes = await api.get<any[]>('/financial/dues', { params: { status: 'pending' } });
-        if (Array.isArray(duesRes.data)) {
-          pendingDues = duesRes.data.length;
+        const duesRes = await api.get<any>('/financial/dues', { params: { status: 'pending', limit: 1000 } });
+        const arr = Array.isArray(duesRes.data) ? duesRes.data : (Array.isArray(duesRes.data?.data) ? duesRes.data.data : []);
+        pendingDues = arr.filter((d: any) => d.status === 'pending' || !d.status).length;
+        if (typeof duesRes.data?.total === 'number' && arr.length === duesRes.data.total) {
+          pendingDues = typeof duesRes.data.total === 'number' ? duesRes.data.total : pendingDues;
         }
       } catch (e) {
         // Fallback

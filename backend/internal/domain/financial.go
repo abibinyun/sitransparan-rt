@@ -97,7 +97,7 @@ type FinancialRepository interface {
 	CreateDuesPayment(ctx context.Context, payment *DuesPayment) error
 	GetDuesPaymentByID(ctx context.Context, tenantID, id uuid.UUID) (*DuesPayment, error)
 	UpdateDuesPayment(ctx context.Context, payment *DuesPayment) error
-	ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, limit, offset int) ([]*DuesPayment, int64, error)
+	ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, status string, limit, offset int) ([]*DuesPayment, int64, error)
 
 	// FinancialTransaction
 	CreateFinancialTransaction(ctx context.Context, tx *FinancialTransaction) error
@@ -127,7 +127,7 @@ type FinancialUsecase interface {
 	// Record Dues Payment & Verify
 	RecordDuesPayment(ctx context.Context, tenantID uuid.UUID, payment *DuesPayment) error
 	VerifyDuesPayment(ctx context.Context, tenantID, id uuid.UUID, status string, verifierID uuid.UUID) (*DuesPayment, error)
-	ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, limit, offset int) ([]*DuesPayment, int64, error)
+	ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, status string, limit, offset int) ([]*DuesPayment, int64, error)
 
 	// Income/Expense Transaction Append-Only Ledger & Reversal
 	CreateFinancialTransaction(ctx context.Context, tenantID uuid.UUID, tx *FinancialTransaction, createdBy uuid.UUID) error

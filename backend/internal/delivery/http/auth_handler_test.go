@@ -29,6 +29,12 @@ func (m *mockAuthUsecase) SwitchTenant(ctx context.Context, userID, tenantID uui
 func (m *mockAuthUsecase) Register(ctx context.Context, name, email, password string, phone *string) (*domain.User, error) {
 	return m.user, nil
 }
+func (m *mockAuthUsecase) GetMe(ctx context.Context, userID uuid.UUID) (*domain.User, domain.RoleName, uuid.UUID, error) {
+	if m.user == nil {
+		m.user = &domain.User{ID: userID, Name: "Mock", Email: "mock@test.local"}
+	}
+	return m.user, domain.RoleResident, uuid.Nil, nil
+}
 func (m *mockAuthUsecase) GetUserTenants(ctx context.Context, userID uuid.UUID) ([]*domain.Tenant, error) {
 	return m.tenants, nil
 }

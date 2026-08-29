@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from './api';
 
 export interface PushConfig {
   enabled: boolean;
@@ -23,14 +23,13 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 
 export async function getPushConfig(): Promise<PushConfig | null> {
   try {
-    const res = await axios.get<PushConfig>('/api/v1/push/config');
+    const res = await api.get<PushConfig>('/push/config');
     return res.data;
   } catch {
     return null;
   }
 }
 
-/** Minta izin + daftarkan langganan push untuk user yang sedang login. */
 export async function enablePushNotifications(): Promise<{ ok: boolean; reason?: string }> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     return { ok: false, reason: 'Peramban tidak mendukung notifikasi.' };
@@ -56,7 +55,7 @@ export async function enablePushNotifications(): Promise<{ ok: boolean; reason?:
 
   const json = sub.toJSON();
   const keys = json.keys as { p256dh: string; auth: string };
-  await axios.post('/api/v1/push/subscribe', {
+  await api.post('/push/subscribe', {
     endpoint: sub.endpoint,
     keys_p256dh: keys.p256dh,
     keys_auth: keys.auth,
@@ -66,7 +65,7 @@ export async function enablePushNotifications(): Promise<{ ok: boolean; reason?:
 
 export async function getBadge(): Promise<ParticipationBadgeInfo | null> {
   try {
-    const res = await axios.get<ParticipationBadgeInfo>('/api/v1/social/badge');
+    const res = await api.get<ParticipationBadgeInfo>('/social/badge');
     return res.data;
   } catch {
     return null;

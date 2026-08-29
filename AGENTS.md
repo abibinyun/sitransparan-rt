@@ -1392,7 +1392,7 @@ backend/                        Go API server
   internal/delivery/http/       handlers + middleware/ + openapi.yaml (embedded)
   internal/usecase/             business logic
   internal/repository/          PostgreSQL, schema-qualified queries (TenantTable)
-  migrations/                   000001–000015 raw SQL
+  migrations/                   000001–000020 raw SQL
   pkg/                          config, crypto (AES-256-GCM + HMAC), storage/minio
 frontend/
   src/pages/                    React.lazy code-split pages
@@ -1438,8 +1438,8 @@ tests/e2e/                      Playwright regression suite
 
 ## 46.4 Multi-Tenancy
 
-- Global tables (`tenants`, `users`, `roles`, `tenant_users`, `audit_logs`) live in the
-  `public` schema. Tenant operational data lives in `tenant_<slug>` schemas (15 tables:
+- Global tables (`tenants`, `users`, `roles`, `tenant_users`, `audit_logs`, `push_subscriptions`, `portal_events`) live in the
+  `public` schema. Tenant operational data lives in `tenant_<slug>` schemas (23+ tables:
   residents, family_members, fee_categories, dues_payments, financial_transactions,
   events, event_budgets, event_participants, event_sponsors, event_roles, event_receipts,
   aspirations, community_needs, announcements, documents).
@@ -1457,22 +1457,22 @@ tests/e2e/                      Playwright regression suite
 
 | Area | Capabilities |
 |---|---|
-| Auth & IAM | login, register, list user tenants, switch tenant, user CRUD (admin), tenant CRUD (superadmin) |
+| Auth & IAM | login, register, list user tenants, switch tenant (`GET /auth/me` wired), user CRUD (admin), tenant CRUD (superadmin) |
 | Demography | resident CRUD, family members, approve/reject, NIK encrypted (AES-256-GCM + HMAC lookup) |
-| Finance | fee categories, dues (record & verify), cash transactions (**append-only** — PUT/DELETE → 405, corrections via reversing entries), summary, CSV/PDF export |
-| Events | event CRUD, RAB/budget, RSVP, committee roles, sponsors, donation receipts, transparency view |
+| Finance | **funds** (multi-kantong, `is_default`), fee categories, dues (record & verify, `status` filter), cash transactions (**append-only**), summary, CSV/PDF export via backend blob |
+| Events | event CRUD (budget `budget` on list), RAB/budget (RAB card visible + toast), RSVP (toast), committee roles, sponsors, donation receipts, transparency view |
 | Aspirations | submit (public anonymous & internal), status + response (admin), community needs CRUD |
-| Announcements & Documents | announcement CRUD, document create/delete (multipart or JSON) |
-| Dashboard | summary metrics, financial report export |
-| Public Portal | `/public/announcements`, `/public/aspirations`, `/public/events` — no login |
+| Announcements & Documents | announcement CRUD (with `media_urls` gallery), document CRUD (create/read/update/delete, PUT `/documents/{id}`) |
+| Dashboard | summary metrics, financial report export via `GET /dashboard/reports/financial/export?format=csv|pdf` (blob) |
+| Public Portal | `/kabar` (announcements), `/usulan` (aspirations), `/agenda` (events) + legacy `/public/*` redirects; `/api/v1/t/{slug}/...` + KPI `feed_view/share_opened` |
+| Social | reactions (`support/like/applause` 1-1) + polls (2–6 opsi) + `PollsPage` `/admin/polls` (create/close) + badge `Warga Baru → Utusan Warga` |
+| Meetings | CRUD, visibility `public/internal/confidential` enforced, attendees/decisions/action-items |
 | PWA | offline caching via Workbox + IndexedDB |
+| Push | Web Push `push_subscriptions` (VAPID) — `GET /push/config`, `POST /push/subscribe` via `api` auth |
 
 ## 46.6 Routes & API
 
-- **Frontend routes** (`frontend/src/App.tsx`): `/login`; public `/public/announcements`,
-  `/public/aspirations`, `/public/events`; protected `/`, `/residents`, `/financial`,
-  `/events`, `/aspirations`, `/announcements`; role-gated `/users` (`SUPER_ADMIN`|`RT_ADMIN`)
-  and `/superadmin/tenants` (`SUPER_ADMIN`).
+- **Frontend routes** (`frontend/src/App.tsx`): `/login`; public `/` (tenant→feed, platform→landing), `/kabar`, `/usulan`, `/agenda` (legacy `/public/*` redirects); protected `/admin`, `/admin/residents|financial|events|meetings|aspirations|announcements|polls` + `/admin/polls` (admin, 2–6 opsi), `/admin/users` (`SUPER_ADMIN`|`RT_ADMIN`) and `/admin/tenants` (`SUPER_ADMIN`) with legacy redirects (`/residents`→`/admin/residents` etc).
 - **Backend API**: base `/api/v1`; public endpoints (health, auth login/register, public
   tenant resources, swagger) vs authenticated (Bearer JWT) vs ADMIN vs SUPERADMIN.
   Full verified inventory: `docs/api.md` and `backend/internal/delivery/http/openapi.yaml`
@@ -1483,8 +1483,7 @@ tests/e2e/                      Playwright regression suite
 - Stack: `make up` (build, wait for DB, run migrations). Targets: `up`, `migrate`, `down`,
   `restart`, `logs`, `clean`.
 - Ports: frontend `3000`, backend `8081` (host) / `8080` (container), PostgreSQL `5432`,
-  MinIO `9000`/`9001` (console), Traefik `80`/`8080` (dashboard), Redis `6379`
-  (container only — Redis is NOT used by the backend).
+  MinIO `9000`/`9001` (console), Traefik `80`/`8080` (dashboard). **Redis removed** — in-memory per-IP rate-limit (was `6379`, not used).
 - Local wildcard subdomains (`*.openrt.local`) require `/etc/hosts` entries
   (e.g. `app.openrt.local`, `api.openrt.local`, `rt-003.openrt.local`).
 - `TENANT_BASE_DOMAIN` (backend) and `VITE_TENANT_BASE_DOMAIN` (frontend build arg,
@@ -1543,15 +1542,17 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
 
 ## 46.9 Known Issues & Limitations (report honestly if encountered)
 
-- **Frontend/backend API mismatches — FIXED in the E2E-coverage audit** (frontend calls now
-  match the backend routes; verified by 62/62 E2E):
-  - `PATCH /financial/dues/{id}/verify` → frontend now **POST** `/financial/dues/{id}/verify`
-  - `POST /financial/upload-proof` → frontend now `/financial/upload` (with `proof_url`)
-  - `PATCH /aspirations/{id}/status` → frontend now **PUT** `/aspirations/{id}`
-  - `/community-needs` → frontend now `/needs` (GET/POST/PUT)
-  - `/residents/{id}/family-members` → frontend now `/residents/{id}/family`
-  - `GET /auth/me` (frontend `useProfileQuery`) — **still no such route registered**, but the
-    hook is **dead code** (defined, never called by any component); low severity
+- **Frontend/backend API mismatches — FIXED** (verified `go vet` + `go test 104` + `vite build` + `tsc`):
+  - `PATCH /financial/dues/{id}/verify` → **POST** `/financial/dues/{id}/verify` + `status` filter (`pending/verified/rejected`) wired `domain→repo→handler` + dashboard `pendingDues` benar
+  - `POST /financial/upload-proof` → `/financial/upload` (with `proof_url`)
+  - `PATCH /aspirations/{id}/status` → **PUT** `/aspirations/{id}`
+  - `/community-needs` → `/needs` (GET/POST/PUT)
+  - `/residents/{id}/family-members` → `/residents/{id}/family`
+  - `GET /auth/me` — **WIRED 2026-08-28** (`AuthUsecase.GetMe` + `AuthHandler.Me` + `authMw(tenantMw(authMux))` + `useProfileQuery` fixed)
+  - `GET /reactions`/`/polls` double prefix `/api/v1/api/v1/...` → fix ke `/reactions`, `/polls`, `/polls/{id}/vote` (was 404)
+  - `POST /push/subscribe` `axios` tanpa `Authorization` → `api` (was 401)
+  - `PUT /documents/{id}` 405 → tambah `UpdateDocument` domain/repo/usecase/handler (was 405)
+  - `GET /t/resolve`, `GET /t/{slug}/events` (GET), `PUT /documents/{id}`, `status` filter docs, `funds` schema `target_amount→type`, `GET /events` `budget` — **fixed in `openapi.yaml`**
 - Financial transactions are **append-only**; PUT/DELETE return 405 by design.
 - **MinIO integrated (local dev, fixed after the stub era)**: `pkg/storage/minio` wraps
   minio-go; uploads persist real objects under a per-tenant key prefix
@@ -1573,14 +1574,11 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
     `?visibility=confidential` or direct ID. Now enforced server-side: non-admins are forced
     to `public` on the list, denied 403 on detail, and action items of non-public meetings
     are hidden from them.
-- **Known UX/limitations found during the audit (open work, by design for now):**
-  - Dashboard "Export PDF" only calls `window.print()`; "Export CSV" is generated
-    client-side from dashboard metrics — the backend endpoint
-    `/dashboard/reports/financial/export` exists but is **unused by the UI**.
-  - Event budget (RAB) saved via modal does not appear on the event card after reload —
-    the events list payload carries no budget data (modal prefill empty); persistence is
-    verifiable via `GET /events/{id}/budget`.
-  - RSVP and RAB modals close silently on success (no toast); success verified via API.
+- **FIXED 2026-08-28 (GAP B1/B2/B5):**
+  - Dashboard export — now uses backend blob `GET /dashboard/reports/financial/export?format=csv|pdf` (`dashboard.ts` `exportFinancialReport()` + loading/error) — no longer `window.print`/dummy CSV
+  - Event RAB — `GET /events` now embeds `budget` (usecase agregat `ListBudgetsByEventID`, card shows `RAB: {description} Estimasi/Realisasi`, modal prefills)
+  - RSVP/RAB toast — `EventsPage` `showToast` 3s + `EventBudget/RSVPModal` `onSaved`/`saveError` — no longer silent
+  - Push `BroadcastTenant` now `WithTimeout 5s` + `media_urls` validated `http/https` max 10
 
 ## 46.10 Documentation Map (canonical)
 

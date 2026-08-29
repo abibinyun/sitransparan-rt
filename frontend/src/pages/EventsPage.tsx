@@ -29,6 +29,11 @@ export const EventsPage: React.FC = () => {
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [isRSVPModalOpen, setIsRSVPModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [toast, setToast] = useState<string>('');
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  };
 
   // Form State
   const [title, setTitle] = useState('');
@@ -105,6 +110,11 @@ export const EventsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-semibold animate-in fade-in">
+          {toast}
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Daftar Kegiatan RT/RW</h1>
         <Button onClick={() => handleOpenForm()}>
@@ -160,6 +170,14 @@ export const EventsPage: React.FC = () => {
                 )}
                 {event.description && (
                   <p className="text-sm text-gray-600 line-clamp-2">{event.description}</p>
+                )}
+                {event.budget ? (
+                  <div className="mt-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs">
+                    <p className="font-semibold text-slate-700">RAB: {event.budget.description || 'Anggaran'}</p>
+                    <p className="text-slate-600 tabular-nums">Estimasi Rp {(event.budget.estimated_cost ?? 0).toLocaleString('id-ID')} · Realisasi Rp {(event.budget.actual_cost ?? 0).toLocaleString('id-ID')}</p>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[11px] text-slate-400">Belum ada RAB</p>
                 )}
               </div>
 
@@ -301,6 +319,7 @@ export const EventsPage: React.FC = () => {
           setSelectedEvent(null);
         }}
         event={selectedEvent}
+        onSaved={() => showToast('RAB berhasil disimpan')}
       />
 
       {/* Modal RSVP */}
@@ -311,6 +330,7 @@ export const EventsPage: React.FC = () => {
           setSelectedEvent(null);
         }}
         event={selectedEvent}
+        onSaved={() => showToast('RSVP berhasil disimpan')}
       />
     </div>
   );

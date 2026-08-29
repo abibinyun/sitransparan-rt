@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import {
   Bell,
   Building2,
@@ -15,6 +15,7 @@ import {
   Shield,
   Users,
   WalletCards,
+  Vote,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -38,6 +39,7 @@ const baseNavItems: NavItem[] = [
   { to: '/admin/meetings', label: 'Notulen & Tindak Lanjut', icon: ClipboardList },
   { to: '/admin/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
   { to: '/admin/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
+  { to: '/admin/polls', label: 'Polling Warga', icon: Vote },
   { to: '/admin/users', label: 'Manajemen Pengguna', icon: Users, adminOnly: true },
 ];
 
@@ -48,7 +50,6 @@ const publicNavItems: NavItem[] = [
 
 export const MainLayout: React.FC = () => {
   const { user, logout, activeTenant } = useAuthStore();
-  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = useMemo(() => {
@@ -79,7 +80,8 @@ export const MainLayout: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    // Hard reload to ensure no stale Zustand/memo survives across role switch
+    window.location.href = '/login';
   };
 
   const renderNavigation = () => (

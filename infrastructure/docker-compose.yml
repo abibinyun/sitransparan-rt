@@ -1,4 +1,5 @@
 services:
+  # redis: intentionally disabled — backend tidak pakai Redis (per-IP rate-limit in-memory). Aktifkan jika butuh shared bucket.
   traefik:
     # traefik:v3.6+ required: older tags (<= v3.5) bundle a docker client that
     # pins API 1.24, which fails against modern daemons (Docker 25+, min API
@@ -40,20 +41,6 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:alpine
-    container_name: transparansi_redis
-    restart: always
-    ports:
-      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   minio:
     image: minio/minio:latest
     container_name: transparansi_minio
@@ -85,8 +72,6 @@ services:
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       DB_NAME: ${POSTGRES_DB:-transparansi_rt}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -110,8 +95,6 @@ services:
       - "127.0.0.1:8081:8080"
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -151,5 +134,4 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
   minio_data:

@@ -142,11 +142,14 @@ func (m *mockFinancialUsecase) VerifyDuesPayment(ctx context.Context, tenantID, 
 	return p, nil
 }
 
-func (m *mockFinancialUsecase) ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, limit, offset int) ([]*domain.DuesPayment, int64, error) {
+func (m *mockFinancialUsecase) ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, status string, limit, offset int) ([]*domain.DuesPayment, int64, error) {
 	var res []*domain.DuesPayment
 	for _, p := range m.duesPayments {
 		if p.TenantID == tenantID {
 			if residentID != nil && p.ResidentID != *residentID {
+				continue
+			}
+			if status != "" && p.Status != status {
 				continue
 			}
 			res = append(res, p)

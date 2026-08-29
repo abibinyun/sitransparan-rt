@@ -9,11 +9,20 @@ import { useOpenPolls, useVotePoll } from '../services/social';
  */
 export const PollWidget: React.FC = () => {
   const { user } = useAuthStore();
-  const { data: polls, isLoading } = useOpenPolls();
+  const { data: polls, isLoading, isError, error, refetch } = useOpenPolls();
   const vote = useVotePoll();
+  const [voteError, setVoteError] = React.useState('');
 
   if (isLoading) {
     return <div className="h-32 animate-pulse rounded-xl bg-slate-100" aria-label="Memuat polling" />;
+  }
+  if (isError) {
+    return (
+      <section className="rounded-xl border border-rose-200 bg-rose-50 p-6">
+        <p className="text-xs text-rose-700">Gagal memuat polling: {(error as Error)?.message || 'coba lagi'}</p>
+        <button onClick={() => refetch()} className="mt-2 text-xs font-semibold underline text-rose-700">Muat ulang</button>
+      </section>
+    );
   }
   if (!polls || polls.length === 0) return null;
 
@@ -42,7 +51,8 @@ export const PollWidget: React.FC = () => {
                             window.location.href = '/login';
                             return;
                           }
-                          vote.mutate({ pollId: poll.id, optionIndex: i });
+                          setVoteError('');
+                          vote.mutate({ pollId: poll.id, optionIndex: i }, { onError: (e: any) => setVoteError(e?.response?.data?.error || e?.message || 'Gagal memberi suara') });
                         }}
                         disabled={vote.isPending || poll.status !== 'open'}
                         className={`w-full text-left rounded-lg border px-3 py-2 text-xs transition-colors ${
@@ -67,7 +77,8 @@ export const PollWidget: React.FC = () => {
                   );
                 })}
               </ul>
-              <p className="mt-2 text-[11px] text-slate-400">
+              {voteError && <p className="mt-2 text-[11px] text-rose-600">{voteError}</p>}
+              <p className="mt-1 text-[11px] text-slate-400">
                 {total} suara
                 {user ? (
                   poll.my_vote != null ? (

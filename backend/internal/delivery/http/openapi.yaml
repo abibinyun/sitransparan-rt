@@ -108,6 +108,27 @@ paths:
         '403':
           description: User tidak ter-mapping ke tenant tersebut
 
+  /api/v1/auth/me:
+    get:
+      summary: Profil user saat ini + role + tenant (AUTH)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: '{ user: { id, name, email, phone, role, tenant_id }, role, tenant_id, tenants }'
+        '401':
+          description: Unauthorized
+
+  /api/v1/t/resolve:
+    get:
+      summary: Resolve tenant dari host — untuk custom domain (PUBLIC)
+      parameters:
+        - { name: host, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: '{ slug, name }'
+        '404':
+          description: Tenant tidak ditemukan
+
   # ------------------------------------------------- Public tenant resources
   /api/v1/t/{slug}/info:
     get:
@@ -532,6 +553,7 @@ paths:
       security: [{ BearerAuth: [] }]
       parameters:
         - { name: resident_id, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string, enum: [pending, verified, rejected] } }
         - { name: limit, in: query, schema: { type: integer } }
         - { name: offset, in: query, schema: { type: integer } }
       responses:
@@ -654,14 +676,15 @@ paths:
   # ---------------------------------------------------------------- Events
   /api/v1/events:
     get:
-      summary: List kegiatan (AUTH)
+      summary: List kegiatan — termasuk budget ringkas per event (AUTH)
       security: [{ BearerAuth: [] }]
       parameters:
         - { name: limit, in: query, schema: { type: integer } }
         - { name: offset, in: query, schema: { type: integer } }
+        - { name: status, in: query, schema: { type: string, enum: [planned, ongoing, completed, cancelled] } }
       responses:
         '200':
-          description: '{ data: Event[], total }'
+          description: '{ data: Event[] (tiap Event + budget{description,estimated_cost,actual_cost}), total }'
     post:
       summary: Buat kegiatan (ADMIN)
       security: [{ BearerAuth: [] }]
@@ -1109,6 +1132,24 @@ paths:
       responses:
         '200':
           description: Document
+    put:
+      summary: Update dokumen — title/category/file_url (ADMIN)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                category: { type: string, enum: [financial_report, minutes, letter, other] }
+                file_url: { type: string }
+      responses:
+        '200':
+          description: Document diupdate
     delete:
       summary: Hapus dokumen (ADMIN)
       security: [{ BearerAuth: [] }]
@@ -1159,8 +1200,9 @@ paths:
               required: [name]
               properties:
                 name: { type: string }
+                type: { type: string, enum: [operational, social, youth, infrastructure, other] }
                 description: { type: string }
-                target_amount: { type: number }
+                is_default: { type: boolean }
       responses:
         '201':
           description: Kantong kas dibuat
@@ -1479,6 +1521,15 @@ paths:
           description: Tenant/polling tidak ditemukan
 
   /api/v1/t/{slug}/events:
+    get:
+      summary: List agenda mendatang untuk portal publik (PUBLIC, 20 terbaru, sorted)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: '{ data: [{ id, title, description, event_date, location, status }] }'
+        '404':
+          description: Tenant tidak ditemukan
     post:
       summary: Catat KPI portal — feed_view / share_opened (PUBLIC, rate-limited)
       parameters:

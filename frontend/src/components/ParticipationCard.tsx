@@ -13,9 +13,15 @@ export const ParticipationCard: React.FC = () => {
   const [pushState, setPushState] = useState<'idle' | 'enabling' | 'enabled' | 'unsupported'>('idle');
   const [note, setNote] = useState('');
 
+  const [badgeError, setBadgeError] = useState(false);
   useEffect(() => {
     if (!user) return;
-    getBadge().then(setBadge);
+    getBadge()
+      .then((b) => {
+        if (b) setBadge(b);
+        else setBadgeError(true);
+      })
+      .catch(() => setBadgeError(true));
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       setPushState('unsupported');
       return;
@@ -54,6 +60,8 @@ export const ParticipationCard: React.FC = () => {
             {badge.reactions_given} apresiasi · {badge.votes_cast} suara polling
           </p>
         </div>
+      ) : badgeError ? (
+        <p className="mt-3 text-xs text-rose-500">Gagal memuat badge. <button onClick={() => getBadge().then(setBadge).catch(()=>{})} className="underline font-semibold">Coba lagi</button></p>
       ) : (
         <p className="mt-3 text-xs text-slate-400">Memuat…</p>
       )}

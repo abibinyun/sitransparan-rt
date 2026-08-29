@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 )
@@ -17,21 +18,27 @@ var (
 	ErrCiphertextShort = errors.New("crypto: ciphertext too short")
 )
 
-// getDefaultKey returns 32-byte key from NIK_ENCRYPTION_KEY env or default fallback key
 func getDefaultKey() []byte {
 	keyStr := os.Getenv("NIK_ENCRYPTION_KEY")
-	if len(keyStr) == 32 {
+	if keyStr != "" {
+		if len(keyStr) != 32 {
+			panic(fmt.Sprintf("crypto: NIK_ENCRYPTION_KEY must be exactly 32 bytes (got %d) — refusing fallback key", len(keyStr)))
+		}
 		return []byte(keyStr)
 	}
-	// Fallback 32-byte default key for local/testing
+	if os.Getenv("GO_ENV") == "production" || os.Getenv("APP_ENV") == "production" {
+		panic("crypto: NIK_ENCRYPTION_KEY is required in production — refusing fallback key")
+	}
 	return []byte("sitransparan-nik-encrypt-key-32b")
 }
 
-// getDefaultHMACSecret returns secret from NIK_HMAC_SECRET env or default fallback
 func getDefaultHMACSecret() []byte {
 	secretStr := os.Getenv("NIK_HMAC_SECRET")
 	if secretStr != "" {
 		return []byte(secretStr)
+	}
+	if os.Getenv("GO_ENV") == "production" || os.Getenv("APP_ENV") == "production" {
+		panic("crypto: NIK_HMAC_SECRET is required in production")
 	}
 	return []byte("sitransparan-nik-hmac-secret-key")
 }

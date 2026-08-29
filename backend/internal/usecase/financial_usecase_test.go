@@ -153,11 +153,14 @@ func (m *mockFinancialRepo) UpdateDuesPayment(ctx context.Context, payment *doma
 	return nil
 }
 
-func (m *mockFinancialRepo) ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, limit, offset int) ([]*domain.DuesPayment, int64, error) {
+func (m *mockFinancialRepo) ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, status string, limit, offset int) ([]*domain.DuesPayment, int64, error) {
 	var res []*domain.DuesPayment
 	for _, p := range m.duesPayments {
 		if p.TenantID == tenantID {
 			if residentID != nil && p.ResidentID != *residentID {
+				continue
+			}
+			if status != "" && p.Status != status {
 				continue
 			}
 			res = append(res, p)
@@ -268,7 +271,7 @@ func TestFinancialUsecase(t *testing.T) {
 		t.Fatalf("VerifyDuesPayment failed: %v", err)
 	}
 
-	duesList, duesTotal, err := uc.ListDuesPayments(ctx, tenantID, &resID, 10, 0)
+	duesList, duesTotal, err := uc.ListDuesPayments(ctx, tenantID, &resID, "", 10, 0)
 	if err != nil || duesTotal != 1 || len(duesList) != 1 {
 		t.Fatalf("ListDuesPayments failed: %v", err)
 	}

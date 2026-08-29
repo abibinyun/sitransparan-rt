@@ -348,7 +348,7 @@ func (r *financialRepository) UpdateDuesPayment(ctx context.Context, payment *do
 	return err
 }
 
-func (r *financialRepository) ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, limit, offset int) ([]*domain.DuesPayment, int64, error) {
+func (r *financialRepository) ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, status string, limit, offset int) ([]*domain.DuesPayment, int64, error) {
 	duesTable := TenantTable(ctx, "dues_payments")
 	residentsTable := TenantTable(ctx, "residents")
 	feeCatsTable := TenantTable(ctx, "fee_categories")
@@ -362,31 +362,67 @@ func (r *financialRepository) ListDuesPayments(ctx context.Context, tenantID uui
 	var query string
 	var args []interface{}
 
+	whereStatus := ""
+	statusArgs := []interface{}{}
+	if status == "pending" || status == "verified" || status == "rejected" {
+		whereStatus = " AND d.status = $%d"
+		statusArgs = []interface{}{status}
+	}
+
 	if residentID != nil {
-		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND resident_id = $2`, duesTable)
-		if err := r.db.QueryRowContext(ctx, countQuery, tenantID, *residentID).Scan(&count); err != nil {
-			return nil, 0, err
-		}
-		query = fmt.Sprintf(`
+		if whereStatus != "" {
+			countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND resident_id = $2 AND status = $3`, duesTable)
+			if err := r.db.QueryRowContext(ctx, countQuery, tenantID, *residentID, status).Scan(&count); err != nil {
+				return nil, 0, err
+			}
+			query = fmt.Sprintf(`
+			SELECT %s
+			%s
+			WHERE d.tenant_id = $1 AND d.resident_id = $2 AND d.status = $3
+			ORDER BY d.created_at DESC LIMIT $4 OFFSET $5
+		`, selectCols, fromClause)
+			args = []interface{}{tenantID, *residentID, status, limit, offset}
+		} else {
+			countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND resident_id = $2`, duesTable)
+			if err := r.db.QueryRowContext(ctx, countQuery, tenantID, *residentID).Scan(&count); err != nil {
+				return nil, 0, err
+			}
+			query = fmt.Sprintf(`
 			SELECT %s
 			%s
 			WHERE d.tenant_id = $1 AND d.resident_id = $2
 			ORDER BY d.created_at DESC LIMIT $3 OFFSET $4
 		`, selectCols, fromClause)
-		args = []interface{}{tenantID, *residentID, limit, offset}
-	} else {
-		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, duesTable)
-		if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
-			return nil, 0, err
+			args = []interface{}{tenantID, *residentID, limit, offset}
 		}
-		query = fmt.Sprintf(`
+	} else {
+		if whereStatus != "" {
+			countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND status = $2`, duesTable)
+			if err := r.db.QueryRowContext(ctx, countQuery, tenantID, status).Scan(&count); err != nil {
+				return nil, 0, err
+			}
+			query = fmt.Sprintf(`
+			SELECT %s
+			%s
+			WHERE d.tenant_id = $1 AND d.status = $2
+			ORDER BY d.created_at DESC LIMIT $3 OFFSET $4
+		`, selectCols, fromClause)
+			args = []interface{}{tenantID, status, limit, offset}
+		} else {
+			countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, duesTable)
+			if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
+				return nil, 0, err
+			}
+			query = fmt.Sprintf(`
 			SELECT %s
 			%s
 			WHERE d.tenant_id = $1
 			ORDER BY d.created_at DESC LIMIT $2 OFFSET $3
 		`, selectCols, fromClause)
-		args = []interface{}{tenantID, limit, offset}
+			args = []interface{}{tenantID, limit, offset}
+		}
 	}
+	_ = statusArgs
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {

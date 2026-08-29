@@ -10,9 +10,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   event: EventItem | null;
+  onSaved?: () => void;
 }
 
-export const EventBudgetModal: React.FC<Props> = ({ isOpen, onClose, event }) => {
+export const EventBudgetModal: React.FC<Props> = ({ isOpen, onClose, event, onSaved }) => {
   const saveBudget = useSaveEventBudget();
   const [description, setDescription] = useState('');
   const [estimatedCost, setEstimatedCost] = useState<number | ''>('');
@@ -30,9 +31,11 @@ export const EventBudgetModal: React.FC<Props> = ({ isOpen, onClose, event }) =>
     }
   }, [event]);
 
+  const [saveError, setSaveError] = React.useState('');
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!event) return;
+    setSaveError('');
     const payload: Partial<EventBudget> = {
       description,
       estimated_cost: Number(estimatedCost) || 0,
@@ -43,7 +46,11 @@ export const EventBudgetModal: React.FC<Props> = ({ isOpen, onClose, event }) =>
       { eventId: event.id, payload },
       {
         onSuccess: () => {
+          onSaved?.();
           onClose();
+        },
+        onError: (err: any) => {
+          setSaveError(err?.response?.data?.error || err?.message || 'Gagal menyimpan anggaran');
         },
       }
     );
@@ -116,6 +123,7 @@ export const EventBudgetModal: React.FC<Props> = ({ isOpen, onClose, event }) =>
           </div>
         </div>
 
+        {saveError && <p className="text-xs font-semibold text-rose-600">{saveError}</p>}
         <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
           <Button type="button" variant="outline" onClick={onClose}>
             Batal
