@@ -1598,6 +1598,68 @@ paths:
         '404':
           description: Tenant tidak ditemukan
 
+  /api/v1/t/{slug}/waste-bank/categories:
+    get:
+      summary: Katalog harga & kategori bank sampah publik (PUBLIC)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: '{ data: WasteCategory[] }'
+
+  /api/v1/t/{slug}/waste-bank/summary:
+    get:
+      summary: Ringkasan transparansi bank sampah publik (PUBLIC)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: WasteBankSummary
+
+  /api/v1/waste-bank/categories:
+    get:
+      summary: List kategori sampah (AUTH)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: '{ data: WasteCategory[] }'
+    post:
+      summary: Buat kategori sampah & persentase bagi hasil (ADMIN)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '201':
+          description: Created
+
+  /api/v1/waste-bank/deposits:
+    get:
+      summary: List riwayat setoran sampah warga (AUTH)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: '{ data: WasteDeposit[], total: number }'
+    post:
+      summary: Catat setoran sampah per KK & hitung bagi hasil (AUTH/ADMIN)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '201':
+          description: Created
+
+  /api/v1/waste-bank/summary:
+    get:
+      summary: Ringkasan metrik bank sampah tenant (AUTH)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: WasteBankSummary
+
+  /api/v1/waste-bank/households:
+    get:
+      summary: Rekapitulasi tabungan & bobot sampah per KK (AUTH)
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: '{ data: HouseholdWasteAccumulation[], total: number }'
+
   /api/v1/karang-taruna/periods:
     get:
       summary: List periode kepengurusan pemuda (AUTH)

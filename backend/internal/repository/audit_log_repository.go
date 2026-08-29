@@ -120,15 +120,15 @@ func (r *auditLogRepository) List(ctx context.Context, filter domain.AuditLogFil
 		LIMIT $%d OFFSET $%d
 	`, whereSQL, argIdx, argIdx+1)
 
-	args = append(args, limit, offset)
+	listArgs := append(append([]interface{}{}, args...), limit, offset)
 
-	rows, err := r.db.QueryContext(ctx, listQuery, args...)
+	rows, err := r.db.QueryContext(ctx, listQuery, listArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close()
 
-	var logs []domain.AuditLog
+	logs := make([]domain.AuditLog, 0)
 	for rows.Next() {
 		var l domain.AuditLog
 		var payloadRaw []byte

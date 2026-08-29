@@ -12,11 +12,20 @@ export interface PublicMeeting {
   status: string;
 }
 
+export interface PublicFundSummary {
+  id: string;
+  name: string;
+  type: string;
+  is_default: boolean;
+  balance: number;
+}
+
 export interface PublicFinancialSummary {
   current_balance: number;
   monthly_income: number;
   monthly_expense: number;
   spending_breakdown: Array<{ category: string; amount: number }>;
+  funds?: PublicFundSummary[];
 }
 
 export function usePublicMeetings() {

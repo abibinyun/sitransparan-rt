@@ -7,13 +7,35 @@ import {
   MessageSquareHeart,
   ArrowRight,
   Lock,
-  Search
+  Search,
+  Bell,
+  BellRing,
+  Check
 } from 'lucide-react';
 import { useTenantsQuery } from '../services/tenant';
+import { enablePushNotifications } from '../services/push';
+import { getTenantUrl, getTenantBaseDomain } from '../utils/tenant';
 
 export const PlatformLandingPage: React.FC = () => {
   const { data: tenants } = useTenantsQuery();
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [pushStatus, setPushStatus] = React.useState<'idle' | 'loading' | 'enabled' | 'error'>('idle');
+  const [pushMsg, setPushMsg] = React.useState('');
+
+  const handleEnablePush = async () => {
+    setPushStatus('loading');
+    setPushMsg('');
+    const res = await enablePushNotifications();
+    if (res.ok) {
+      setPushStatus('enabled');
+      setPushMsg('Notifikasi warga aktif!');
+      setTimeout(() => setPushMsg(''), 4000);
+    } else {
+      setPushStatus('error');
+      setPushMsg(res.reason || 'Gagal mengaktifkan notifikasi');
+      setTimeout(() => setPushMsg(''), 4000);
+    }
+  };
 
   const filteredTenants = (tenants || []).filter(
     (t) =>
@@ -36,16 +58,51 @@ export const PlatformLandingPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={handleEnablePush}
+              disabled={pushStatus === 'loading' || pushStatus === 'enabled'}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-colors ${
+                pushStatus === 'enabled'
+                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                  : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700 text-slate-200'
+              }`}
+            >
+              {pushStatus === 'enabled' ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-400" /> <span className="hidden sm:inline">Notif</span> Aktif
+                </>
+              ) : pushStatus === 'loading' ? (
+                <>
+                  <BellRing className="w-4 h-4 animate-spin text-emerald-400" /> <span className="hidden sm:inline">Mengaktifkan...</span>
+                </>
+              ) : (
+                <>
+                  <Bell className="w-4 h-4 text-emerald-400" /> <span>Notifikasi</span>
+                </>
+              )}
+            </button>
+
             <Link
               to="/login"
               className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-lg transition-colors shadow-lg shadow-emerald-500/20"
             >
-              Masuk Platform <ArrowRight className="w-4 h-4" />
+              Masuk <span className="hidden sm:inline">Platform</span> <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
       </header>
+      {pushMsg && (
+        <div
+          role="alert"
+          className={`px-4 py-2 text-center text-xs font-semibold ${
+            pushStatus === 'enabled' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+          }`}
+        >
+          {pushMsg}
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-16 pb-20 md:pt-24 md:pb-28 border-b border-slate-800 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950">
@@ -144,7 +201,7 @@ export const PlatformLandingPage: React.FC = () => {
               filteredTenants.map((t) => (
                 <a
                   key={t.id}
-                  href={`http://${t.slug}.openrt.local:3000`}
+                  href={getTenantUrl(t.slug, '/')}
                   className="group bg-slate-950 border border-slate-800 hover:border-emerald-500/50 p-5 rounded-2xl transition-all hover:shadow-lg hover:shadow-emerald-950/20 flex flex-col justify-between"
                 >
                   <div>
@@ -157,7 +214,7 @@ export const PlatformLandingPage: React.FC = () => {
                       </span>
                     </div>
                     <h3 className="font-bold text-white group-hover:text-emerald-400 transition-colors">{t.name}</h3>
-                    <p className="text-xs text-slate-400 mt-1 font-mono">{t.slug}.openrt.local</p>
+                    <p className="text-xs text-slate-400 mt-1 font-mono">{t.slug}.{getTenantBaseDomain()}</p>
                   </div>
                   <div className="mt-4 pt-3 border-t border-slate-900 flex items-center justify-between text-xs text-slate-400 group-hover:text-white">
                     <span>Buka Portal</span>

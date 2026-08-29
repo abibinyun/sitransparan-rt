@@ -27,13 +27,17 @@ func quoteSchema(schema string) string {
 
 func (r *pushRepository) Upsert(ctx context.Context, sub *domain.PushSubscription) error {
 	query := `
-		INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, user_agent)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO push_subscriptions (user_id, tenant_id, endpoint, p256dh, auth, user_agent)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (endpoint) DO UPDATE
-		SET user_id = EXCLUDED.user_id, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth, user_agent = EXCLUDED.user_agent
+		SET user_id = COALESCE(EXCLUDED.user_id, push_subscriptions.user_id),
+		    tenant_id = COALESCE(EXCLUDED.tenant_id, push_subscriptions.tenant_id),
+		    p256dh = EXCLUDED.p256dh,
+		    auth = EXCLUDED.auth,
+		    user_agent = EXCLUDED.user_agent
 		RETURNING id, created_at
 	`
-	return r.db.QueryRowContext(ctx, query, sub.UserID, sub.Endpoint, sub.P256DH, sub.Auth, sub.UserAgent).
+	return r.db.QueryRowContext(ctx, query, sub.UserID, sub.TenantID, sub.Endpoint, sub.P256DH, sub.Auth, sub.UserAgent).
 		Scan(&sub.ID, &sub.CreatedAt)
 }
 
@@ -54,16 +58,16 @@ func (r *pushRepository) DeleteByEndpoint(ctx context.Context, endpoint string) 
 }
 
 func (r *pushRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]*domain.PushSubscription, error) {
-	return r.list(ctx, `SELECT id, user_id, endpoint, p256dh, auth, COALESCE(user_agent, ''), created_at FROM push_subscriptions WHERE user_id = $1`, userID)
+	return r.list(ctx, `SELECT id, user_id, tenant_id, endpoint, p256dh, auth, COALESCE(user_agent, ''), created_at FROM push_subscriptions WHERE user_id = $1`, userID)
 }
 
-// ListByTenant mengembalikan langganan semua user yang ter-mapping aktif
-// ke tenant tertentu (broadcast pengumuman).
+// ListByTenant mengembalikan langganan semua user terdaftar aktif di tenant dan warga publik yang berlangganan pada tenant tersebut.
 func (r *pushRepository) ListByTenant(ctx context.Context, tenantID uuid.UUID) ([]*domain.PushSubscription, error) {
 	query := `
-		SELECT ps.id, ps.user_id, ps.endpoint, ps.p256dh, ps.auth, COALESCE(ps.user_agent, ''), ps.created_at
+		SELECT DISTINCT ps.id, ps.user_id, ps.tenant_id, ps.endpoint, ps.p256dh, ps.auth, COALESCE(ps.user_agent, ''), ps.created_at
 		FROM push_subscriptions ps
-		JOIN tenant_users tu ON tu.user_id = ps.user_id AND tu.tenant_id = $1 AND tu.status = 'active'
+		LEFT JOIN tenant_users tu ON tu.user_id = ps.user_id AND tu.tenant_id = $1 AND tu.status = 'active'
+		WHERE tu.user_id IS NOT NULL OR ps.tenant_id = $1
 	`
 	return r.list(ctx, query, tenantID)
 }
@@ -78,8 +82,17 @@ func (r *pushRepository) list(ctx context.Context, query string, args ...interfa
 	var out []*domain.PushSubscription
 	for rows.Next() {
 		s := &domain.PushSubscription{}
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Endpoint, &s.P256DH, &s.Auth, &s.UserAgent, &s.CreatedAt); err != nil {
+		var uid, tid sql.NullString
+		if err := rows.Scan(&s.ID, &uid, &tid, &s.Endpoint, &s.P256DH, &s.Auth, &s.UserAgent, &s.CreatedAt); err != nil {
 			return nil, err
+		}
+		if uid.Valid {
+			u, _ := uuid.Parse(uid.String)
+			s.UserID = &u
+		}
+		if tid.Valid {
+			t, _ := uuid.Parse(tid.String)
+			s.TenantID = &t
 		}
 		out = append(out, s)
 	}

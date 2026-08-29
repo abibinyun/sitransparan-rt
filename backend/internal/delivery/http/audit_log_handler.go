@@ -26,10 +26,14 @@ func (h *AuditLogHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role, _ := r.Context().Value(middleware.RoleContextKey).(string)
+	role := middleware.GetRoleFromContext(r.Context())
+	isSuper := role == domain.RoleSuperAdmin || string(role) == "super_admin"
 	var tenantIDVal uuid.UUID
-	if t, ok := r.Context().Value(middleware.TenantContextKey).(*domain.Tenant); ok && t != nil {
+	if t := middleware.GetTenantFromContext(r.Context()); t != nil {
 		tenantIDVal = t.ID
+	}
+	if tenantIDVal == uuid.Nil {
+		tenantIDVal = middleware.GetTenantIDFromClaims(r.Context())
 	}
 
 	query := r.URL.Query()
@@ -44,7 +48,7 @@ func (h *AuditLogHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// SuperAdmin can filter any tenant or view all; Admin RT is strictly scoped to own tenant
-	if role == "superadmin" {
+	if isSuper {
 		if tStr := query.Get("tenant_id"); tStr != "" {
 			if tUUID, err := uuid.Parse(tStr); err == nil {
 				filter.TenantID = &tUUID
@@ -91,9 +95,7 @@ func (h *AuditLogHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuditLogHandler) RegisterRoutes(mux *http.ServeMux, tenantMw, authMw, adminMw func(http.Handler) http.Handler) {
-	auditMux := http.NewServeMux()
-	auditMux.HandleFunc("GET /api/v1/admin/audit-logs", h.List)
-
-	mux.Handle("GET /api/v1/admin/audit-logs", authMw(tenantMw(adminMw(auditMux))))
+	protected := authMw(adminMw(tenantMw(http.HandlerFunc(h.List))))
+	mux.Handle("/api/v1/admin/audit-logs", protected)
 }
 

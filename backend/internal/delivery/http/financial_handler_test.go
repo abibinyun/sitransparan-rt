@@ -207,10 +207,12 @@ func (m *mockFinancialUsecase) GetFinancialSummary(ctx context.Context, tenantID
 			}
 		}
 	}
+	funds, _ := m.ListFunds(ctx, tenantID)
 	return &domain.FinancialSummary{
 		CurrentBalance: income - expense,
 		MonthlyIncome:  income,
 		MonthlyExpense: expense,
+		Funds:          funds,
 	}, nil
 }
 
@@ -354,12 +356,12 @@ func TestFinancialHandler_PublicTenantSummary(t *testing.T) {
 		t.Fatalf("expected 200 OK, got %d: %s", w.Code, w.Body.String())
 	}
 	body := w.Body.String()
-	for _, key := range []string{"current_balance", "monthly_income", "monthly_expense", "spending_breakdown"} {
+	for _, key := range []string{"current_balance", "monthly_income", "monthly_expense", "spending_breakdown", "funds"} {
 		if !strings.Contains(body, key) {
 			t.Errorf("public summary missing aggregate field %q", key)
 		}
 	}
-	for _, leaked := range []string{"proof_url", "resident_id", `"funds"`, "period_month"} {
+	for _, leaked := range []string{"proof_url", "resident_id", "period_month"} {
 		if strings.Contains(body, leaked) {
 			t.Errorf("public summary leaked sensitive field %q", leaked)
 		}

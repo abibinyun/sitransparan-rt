@@ -7,15 +7,16 @@ import (
 	"github.com/google/uuid"
 )
 
-// PushSubscription menyimpan langganan Web Push satu perangkat per user.
+// PushSubscription menyimpan langganan Web Push satu perangkat per user atau warga publik.
 type PushSubscription struct {
-	ID        uuid.UUID `json:"id"`
-	UserID    uuid.UUID `json:"user_id"`
-	Endpoint  string    `json:"endpoint"`
-	P256DH    string    `json:"p256dh"`
-	Auth      string    `json:"auth"`
-	UserAgent string    `json:"user_agent,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        uuid.UUID  `json:"id"`
+	UserID    *uuid.UUID `json:"user_id,omitempty"`
+	TenantID  *uuid.UUID `json:"tenant_id,omitempty"`
+	Endpoint  string     `json:"endpoint"`
+	P256DH    string     `json:"p256dh"`
+	Auth      string     `json:"auth"`
+	UserAgent string     `json:"user_agent,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
 }
 
 // ParticipationBadge: gamifikasi partisipasi warga (Fase 4).

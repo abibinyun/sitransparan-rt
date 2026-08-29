@@ -567,13 +567,22 @@ func (h *FinancialHandler) handleSummary(w http.ResponseWriter, r *http.Request)
 	_ = json.NewEncoder(w).Encode(summary)
 }
 
+type publicFundView struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Type      string    `json:"type"`
+	IsDefault bool      `json:"is_default"`
+	Balance   float64   `json:"balance"`
+}
+
 // publicFinancialSummaryView is the anonymous-safe projection of the kas
-// summary: aggregates only — never payer rows, funds metadata, or notes.
+// summary: aggregates only — never individual payer rows or notes.
 type publicFinancialSummaryView struct {
 	CurrentBalance    float64                    `json:"current_balance"`
 	MonthlyIncome     float64                    `json:"monthly_income"`
 	MonthlyExpense    float64                    `json:"monthly_expense"`
 	SpendingBreakdown []domain.CategoryBreakdown `json:"spending_breakdown"`
+	Funds             []publicFundView           `json:"funds"`
 }
 
 // handlePublicTenantSummary serves GET /api/v1/t/{slug}/financial-summary for
@@ -605,6 +614,17 @@ func (h *FinancialHandler) handlePublicTenantSummary(w http.ResponseWriter, r *h
 		breakdown = []domain.CategoryBreakdown{}
 	}
 
+	publicFunds := make([]publicFundView, 0, len(summary.Funds))
+	for _, f := range summary.Funds {
+		publicFunds = append(publicFunds, publicFundView{
+			ID:        f.ID,
+			Name:      f.Name,
+			Type:      f.Type,
+			IsDefault: f.IsDefault,
+			Balance:   f.Balance,
+		})
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(publicFinancialSummaryView{
@@ -612,6 +632,7 @@ func (h *FinancialHandler) handlePublicTenantSummary(w http.ResponseWriter, r *h
 		MonthlyIncome:     summary.MonthlyIncome,
 		MonthlyExpense:    summary.MonthlyExpense,
 		SpendingBreakdown: breakdown,
+		Funds:             publicFunds,
 	})
 }
 

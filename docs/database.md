@@ -187,6 +187,15 @@ Database: PostgreSQL 16, nama default `transparansi_rt`.
 | 000016_create_funds | `public.funds` + `tenant_*.funds` + `financial_transactions.fund_id`; seed 3 funds default + backfill |
 | 000017_create_meetings | `meetings`, `meeting_attendees`, `meeting_decisions`, `meeting_action_items` per tenant |
 | 000018_create_reactions_polls | `reactions`, `polls`, `poll_votes` per tenant (+ index) |
+| 000019_create_push_subscriptions | `push_subscriptions` di public schema (Web Push) |
+| 000020_alter_announcements_media_urls | `media_urls JSONB` pada announcements |
+| 000021_create_karang_taruna | `karang_taruna_periods`, `karang_taruna_configs`, `karang_taruna_members` |
+| 000022_create_house_tokens | `house_tokens` (1 Rumah = 1 Token QR Access) |
+| 000023_enhance_audit_logs | `audit_logs` (ip_address, user_agent, metadata, status, target_table, record_id) |
+| 000024_create_portal_events | KPI tracking portal views & shares |
+| 000025_add_fund_categories | Kategori multi-kantong kas |
+| 000026_ensure_tenant_default_funds | 4 kantong kas standar: `operational`, `youth`, `social`, `infrastructure` |
+| 000027_create_waste_bank | `waste_categories`, `waste_deposits`, `waste_deposit_items` (Bank Sampah) |
 | 000019_announcement_media | `announcements.media_urls JSONB` + `portal_events` (KPI) |
 | 000020_push_subscriptions | `push_subscriptions` (public) |
 

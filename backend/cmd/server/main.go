@@ -104,6 +104,16 @@ func main() {
 	auditUC := usecase.NewAuditLogUsecase(auditRepo)
 	auditHandler := delivery.NewAuditLogHandler(auditUC)
 
+	// Bank Sampah (Setoran per KK & Bagi Hasil Karang Taruna)
+	wasteBankRepo := repository.NewWasteBankRepository(db)
+	wasteBankUC := usecase.NewWasteBankUsecase(wasteBankRepo, auditRepo)
+	wasteBankHandler := delivery.NewWasteBankHandler(wasteBankUC, tenantRepo, cfg.TenantBaseDomain)
+
+	// House QR Access (1 Rumah = 1 Token)
+	houseRepo := repository.NewHouseRepository(db)
+	houseUC := usecase.NewHouseUsecase(houseRepo, tenantRepo, residentRepo, jwtSecret, jwtDuration)
+	houseHandler := delivery.NewHouseHandler(houseUC)
+
 	// Interaksi sosial Fase 3 (reaksi & polling) — budget rate-limit ketat
 	// selaras endpoint auth (anti-spam, konsep portal §7.3).
 	socialRepo := repository.NewSocialRepository(db)
@@ -176,14 +186,20 @@ func main() {
 	// Karang Taruna & Pemuda RT
 	ktHandler.RegisterRoutes(mux, tenantMw, authMw)
 
+	// Bank Sampah RT (Program Karang Taruna & Warga)
+	wasteBankHandler.RegisterRoutes(mux, tenantMw, authMw)
+
 	// Audit Logs (Zero Missed Action)
 	auditHandler.RegisterRoutes(mux, tenantMw, authMw, adminMw)
+
+	// House QR Access (1 Rumah = 1 Token)
+	houseHandler.RegisterRoutes(mux, tenantMw, authMw, adminMw)
 
 	// Social interactions (reactions & polls) — strict rate budget
 	socialHandler.RegisterRoutes(mux, tenantMw, authMw, authRateLimitMw)
 
 	// Web Push & badge partisipasi (Fase 4)
-	pushHandler.RegisterRoutes(mux, authMw)
+	pushHandler.RegisterRoutes(mux, authMw, tenantMw)
 
 	// SuperAdmin routes
 	superAdminMux := http.NewServeMux()
@@ -198,10 +214,10 @@ func main() {
 
 	// Wrap root handler with security, CORS, rate limiting, and audit middleware
 	var handler http.Handler = mux
-	handler = auditMw(handler)
 	handler = rateLimitMw(handler)
 	handler = secHeadersMw(handler)
 	handler = corsMw(handler)
+	handler = auditMw(handler)
 
 	log.Printf("Server starting on port %s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, handler); err != nil {

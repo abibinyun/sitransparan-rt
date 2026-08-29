@@ -5,15 +5,21 @@ import {
   FileText,
   MessageSquareHeart,
   CalendarDays,
+  Flame,
+  Recycle,
   LogIn,
   UserPlus,
   ShieldCheck,
+  Bell,
+  BellRing,
   Menu,
-  X
+  X,
+  Check
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { usePublicTenantQuery } from '../services/public_tenant';
 import { usePublicFinancialSummary, formatRupiah } from '../services/public_transparency';
+import { enablePushNotifications } from '../services/push';
 import { PublicBottomNav } from './PublicBottomNav';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 
@@ -21,6 +27,8 @@ const NAV_ITEMS = [
   { to: '/', label: 'Pengumuman & Dokumen', icon: FileText, end: true },
   { to: '/usulan', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
   { to: '/agenda', label: 'Agenda & Kegiatan', icon: CalendarDays },
+  { to: '/karang-taruna', label: 'Karang Taruna', icon: Flame },
+  { to: '/bank-sampah', label: 'Bank Sampah', icon: Recycle },
 ];
 
 export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
@@ -30,8 +38,25 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
   const isAuthenticated = Boolean(user);
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [pushStatus, setPushStatus] = React.useState<'idle' | 'loading' | 'enabled' | 'error'>('idle');
+  const [pushMsg, setPushMsg] = React.useState('');
 
   const tenantName = tenantInfo?.name || 'Portal RT';
+
+  const handleEnablePush = async () => {
+    setPushStatus('loading');
+    setPushMsg('');
+    const res = await enablePushNotifications();
+    if (res.ok) {
+      setPushStatus('enabled');
+      setPushMsg('Notifikasi berhasil diaktifkan!');
+      setTimeout(() => setPushMsg(''), 4000);
+    } else {
+      setPushStatus('error');
+      setPushMsg(res.reason || 'Gagal mengaktifkan notifikasi');
+      setTimeout(() => setPushMsg(''), 4000);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
@@ -92,41 +117,69 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
             </nav>
 
             {/* Actions */}
-            <div className="hidden sm:flex items-center gap-2">
-              {isAuthenticated ? (
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg"
-                >
-                  <Building2 className="w-4 h-4" /> Dashboard Pengurus
-                </button>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100"
-                  >
-                    <LogIn className="w-4 h-4" /> Masuk Warga
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg"
-                  >
-                    <UserPlus className="w-4 h-4" /> Daftar
-                  </Link>
-                </>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="flex md:hidden">
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-label={mobileMenuOpen ? 'Tutup menu' : 'Buka menu'}
-                className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+                type="button"
+                onClick={handleEnablePush}
+                disabled={pushStatus === 'loading' || pushStatus === 'enabled'}
+                title="Aktifkan Notifikasi Warga"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-lg text-xs font-semibold border transition-all ${
+                  pushStatus === 'enabled'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 cursor-default'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-sm'
+                }`}
               >
-                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                {pushStatus === 'enabled' ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-600" /> <span className="hidden sm:inline">Notif</span> Aktif
+                  </>
+                ) : pushStatus === 'loading' ? (
+                  <>
+                    <BellRing className="w-4 h-4 animate-spin text-emerald-600" /> <span className="hidden sm:inline">Mengaktifkan...</span>
+                  </>
+                ) : (
+                  <>
+                    <Bell className="w-4 h-4 text-emerald-600" /> <span>Notifikasi</span>
+                  </>
+                )}
               </button>
+
+              <div className="hidden sm:flex items-center gap-2">
+                {isAuthenticated ? (
+                  <button
+                    onClick={() => navigate('/admin')}
+                    className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg"
+                  >
+                    <Building2 className="w-4 h-4" /> Dashboard Pengurus
+                  </button>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100"
+                    >
+                      <LogIn className="w-4 h-4" /> Masuk Warga
+                    </Link>
+                    <Link
+                      to="/login"
+                      className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg"
+                    >
+                      <UserPlus className="w-4 h-4" /> Daftar
+                    </Link>
+                  </>
+                )}
+              </div>
+
+              {/* Mobile menu button */}
+              <div className="flex md:hidden">
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  aria-label={mobileMenuOpen ? 'Tutup menu' : 'Buka menu'}
+                  className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+                >
+                  {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -149,7 +202,28 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
                 <Icon className="w-4 h-4" /> {label}
               </NavLink>
             ))}
-            <div className="pt-2 border-t border-slate-100">
+            <div className="pt-2 border-t border-slate-100 space-y-2">
+              <button
+                type="button"
+                onClick={handleEnablePush}
+                disabled={pushStatus === 'loading' || pushStatus === 'enabled'}
+                className="w-full flex items-center justify-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 font-semibold text-sm py-2.5 rounded-lg"
+              >
+                {pushStatus === 'enabled' ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-600" /> Notifikasi Aktif
+                  </>
+                ) : pushStatus === 'loading' ? (
+                  <>
+                    <BellRing className="w-4 h-4 animate-spin text-emerald-600" /> Mengaktifkan...
+                  </>
+                ) : (
+                  <>
+                    <Bell className="w-4 h-4 text-slate-600" /> Aktifkan Notifikasi Warga
+                  </>
+                )}
+              </button>
+
               <Link
                 to={isAuthenticated ? '/admin' : '/login'}
                 onClick={() => setMobileMenuOpen(false)}
@@ -161,6 +235,20 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
           </div>
         )}
       </header>
+
+      {/* Toast Feedback */}
+      {pushMsg && (
+        <div
+          role="alert"
+          className={`px-4 py-2 text-center text-xs font-semibold ${
+            pushStatus === 'enabled'
+              ? 'bg-emerald-600 text-white'
+              : 'bg-rose-600 text-white'
+          }`}
+        >
+          {pushMsg}
+        </div>
+      )}
 
       {/* Main Content Area — ruang untuk BottomNav di ponsel */}
       <main className="flex-1 pb-20 md:pb-0">

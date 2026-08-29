@@ -236,10 +236,11 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 		);`,
 		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.funds (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-			name VARCHAR(100) NOT NULL,
-			category VARCHAR(50) NOT NULL DEFAULT 'operasional',
+			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+			name VARCHAR(255) NOT NULL,
+			type VARCHAR(50) NOT NULL DEFAULT 'operational',
 			description TEXT,
-			is_active BOOLEAN NOT NULL DEFAULT true,
+			is_default BOOLEAN NOT NULL DEFAULT FALSE,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);`,
@@ -338,6 +339,30 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 		 WHERE NOT EXISTS (SELECT 1 FROM `+pq.QuoteIdentifier(schemaName)+`.fee_categories WHERE name = $5)`, tenantID, "Iuran Warga", 50000, "monthly", "Iuran Warga"); err != nil {
 		return err
 	}
+
+	fundsSeeds := []struct {
+		name        string
+		fundType    string
+		description string
+		isDefault   bool
+	}{
+		{"Kas Utama RT", "operational", "Kas operasional umum RT", true},
+		{"Kas Karang Taruna", "youth", "Kas pemuda dan kegiatan 17-an", false},
+		{"Dana Sosial & Kematian", "social", "Dana santunan warga sakit / duka", false},
+		{"Kas Sarana & Pembangunan", "infrastructure", "Dana perbaikan jalan, pos satpam & sarpras", false},
+	}
+
+	for _, fs := range fundsSeeds {
+		if _, err := db.ExecContext(ctx,
+			`INSERT INTO `+pq.QuoteIdentifier(schemaName)+`.funds (tenant_id, name, type, description, is_default)
+			 SELECT $1, $2, $3, $4, $5
+			 WHERE NOT EXISTS (SELECT 1 FROM `+pq.QuoteIdentifier(schemaName)+`.funds WHERE name = $2 AND tenant_id = $1)`,
+			tenantID, fs.name, fs.fundType, fs.description, fs.isDefault,
+		); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

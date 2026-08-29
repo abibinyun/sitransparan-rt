@@ -24,6 +24,9 @@ const MeetingPage = lazy(() => import('./pages/MeetingPage').then(m => ({ defaul
 const UsersPage = lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })));
 const PollsPage = lazy(() => import('./pages/PollsPage').then(m => ({ default: m.PollsPage })));
 const KarangTarunaPage = lazy(() => import('./pages/KarangTarunaPage').then(m => ({ default: m.KarangTarunaPage })));
+const PublicKarangTarunaPage = lazy(() => import('./pages/PublicKarangTarunaPage').then(m => ({ default: m.PublicKarangTarunaPage })));
+const WasteBankPage = lazy(() => import('./pages/WasteBankPage').then(m => ({ default: m.WasteBankPage })));
+const PublicWasteBankPage = lazy(() => import('./pages/PublicWasteBankPage').then(m => ({ default: m.PublicWasteBankPage })));
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
 
 import { getTenantSlugFromHost } from './utils/tenant';
@@ -69,11 +72,17 @@ export function App() {
               <Route path="/kabar" element={<PublicAnnouncementsPage />} />
               <Route path="/usulan" element={<PublicAspirationsPage />} />
               <Route path="/agenda" element={<PublicEventsPage />} />
+              <Route path="/karang-taruna" element={<PublicKarangTarunaPage />} />
+              <Route path="/pemuda" element={<Navigate to="/karang-taruna" replace />} />
+              <Route path="/bank-sampah" element={<PublicWasteBankPage />} />
+              <Route path="/sampah" element={<Navigate to="/bank-sampah" replace />} />
 
               {/* Backward compatibility redirects for legacy /public/* paths */}
               <Route path="/public/announcements" element={<Navigate to="/" replace />} />
               <Route path="/public/aspirations" element={<Navigate to="/usulan" replace />} />
               <Route path="/public/events" element={<Navigate to="/agenda" replace />} />
+              <Route path="/public/karang-taruna" element={<Navigate to="/karang-taruna" replace />} />
+              <Route path="/public/bank-sampah" element={<Navigate to="/bank-sampah" replace />} />
             </Route>
 
             {/* Protected Internal Routes (/admin namespace) */}
@@ -88,6 +97,7 @@ export function App() {
                 <Route path="/admin/announcements" element={<AnnouncementsPage />} />
                 <Route path="/admin/polls" element={<PollsPage />} />
                 <Route path="/admin/karang-taruna" element={<KarangTarunaPage />} />
+                <Route path="/admin/waste-bank" element={<WasteBankPage />} />
                 <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RT_ADMIN']} />}>
                   <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
                   <Route path="/admin/users" element={<UsersPage />} />
@@ -107,6 +117,8 @@ export function App() {
                 <Route path="/announcements" element={<Navigate to="/admin/announcements" replace />} />
                 <Route path="/polls" element={<Navigate to="/admin/polls" replace />} />
                 <Route path="/karang-taruna" element={<Navigate to="/admin/karang-taruna" replace />} />
+                <Route path="/waste-bank" element={<Navigate to="/admin/waste-bank" replace />} />
+                <Route path="/bank-sampah" element={<Navigate to="/admin/waste-bank" replace />} />
                 <Route path="/users" element={<Navigate to="/admin/users" replace />} />
               </Route>
             </Route>

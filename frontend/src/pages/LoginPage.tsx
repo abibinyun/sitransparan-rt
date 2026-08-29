@@ -9,6 +9,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
 import { Building2, KeyRound, Mail, User, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
+import { PublicBottomNav } from '../components/PublicBottomNav';
 
 export const LoginPage: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -161,7 +162,7 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 pb-20 md:pb-4">
       <Card className="w-full max-w-md shadow-xl border-slate-200/80">
         <CardHeader className="text-center space-y-2 pb-4">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
@@ -363,6 +364,7 @@ export const LoginPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      <PublicBottomNav />
     </div>
   );
 };

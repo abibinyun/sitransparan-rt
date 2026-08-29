@@ -28,18 +28,14 @@ func (h *PushHandler) handleConfig(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleSubscribe: simpan langganan — identitas dari JWT.
+// handleSubscribe: simpan langganan — mendukung user ber-JWT maupun warga publik.
 func (h *PushHandler) handleSubscribe(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
-		writeSocialError(w, http.StatusUnauthorized, "login diperlukan")
-		return
-	}
 	if r.Method != http.MethodPost {
 		writeSocialError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 	var req struct {
+		TenantSlug string `json:"tenant_slug"`
 		Endpoint   string `json:"endpoint"`
 		P256DH     string `json:"keys_p256dh"`
 		Auth       string `json:"keys_auth"`
@@ -48,8 +44,22 @@ func (h *PushHandler) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 		writeSocialError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+
+	userID := middleware.GetUserIDFromContext(r.Context())
+	var uIDPtr *uuid.UUID
+	if userID != uuid.Nil {
+		uIDPtr = &userID
+	}
+
+	var tIDPtr *uuid.UUID
+	tenantCtx := middleware.GetTenantFromContext(r.Context())
+	if tenantCtx != nil && tenantCtx.ID != uuid.Nil {
+		tIDPtr = &tenantCtx.ID
+	}
+
 	sub := &domain.PushSubscription{
-		UserID:    userID,
+		UserID:    uIDPtr,
+		TenantID:  tIDPtr,
 		Endpoint:  req.Endpoint,
 		P256DH:    req.P256DH,
 		Auth:      req.Auth,
@@ -64,11 +74,6 @@ func (h *PushHandler) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 
 // handleUnsubscribe: hapus langganan milik sendiri.
 func (h *PushHandler) handleUnsubscribe(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
-		writeSocialError(w, http.StatusUnauthorized, "login diperlukan")
-		return
-	}
 	var req struct {
 		Endpoint string `json:"endpoint"`
 	}
@@ -76,9 +81,15 @@ func (h *PushHandler) handleUnsubscribe(w http.ResponseWriter, r *http.Request) 
 		writeSocialError(w, http.StatusBadRequest, "endpoint is required")
 		return
 	}
-	if err := h.usecase.Unsubscribe(r.Context(), req.Endpoint, userID); err != nil {
-		writeSocialError(w, http.StatusNotFound, "subscription not found")
-		return
+	userID := middleware.GetUserIDFromContext(r.Context())
+	if userID != uuid.Nil {
+		if err := h.usecase.Unsubscribe(r.Context(), req.Endpoint, userID); err != nil {
+			// fallback hapus by endpoint
+			_ = h.usecase.Unsubscribe(r.Context(), req.Endpoint, uuid.Nil)
+		}
+	} else {
+		// Public unsubscribe
+		_ = h.usecase.Unsubscribe(r.Context(), req.Endpoint, uuid.Nil)
 	}
 	writeSocialJSON(w, http.StatusOK, map[string]string{"message": "unsubscribed"})
 }
@@ -98,9 +109,9 @@ func (h *PushHandler) handleBadge(w http.ResponseWriter, r *http.Request) {
 	writeSocialJSON(w, http.StatusOK, badge)
 }
 
-func (h *PushHandler) RegisterRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler) {
+func (h *PushHandler) RegisterRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler, tenantMw func(http.Handler) http.Handler) {
 	mux.HandleFunc("GET /api/v1/push/config", h.handleConfig)
-	mux.Handle("POST /api/v1/push/subscribe", authMw(http.HandlerFunc(h.handleSubscribe)))
-	mux.Handle("POST /api/v1/push/unsubscribe", authMw(http.HandlerFunc(h.handleUnsubscribe)))
+	mux.Handle("POST /api/v1/push/subscribe", tenantMw(http.HandlerFunc(h.handleSubscribe)))
+	mux.Handle("POST /api/v1/push/unsubscribe", tenantMw(http.HandlerFunc(h.handleUnsubscribe)))
 	mux.Handle("GET /api/v1/social/badge", authMw(http.HandlerFunc(h.handleBadge)))
 }

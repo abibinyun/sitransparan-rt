@@ -213,7 +213,7 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 				go func(tID uuid.UUID, title string) {
 					broadcastCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 					defer cancel()
-					_ = h.pushUC.BroadcastTenant(broadcastCtx, tID, "Pengumuman Baru", title, "/public/announcements")
+					_ = h.pushUC.BroadcastTenant(broadcastCtx, tID, "Pengumuman Baru", title, "/kabar")
 				}(tenant.ID, req.Title)
 			}
 			w.Header().Set("Content-Type", "application/json")

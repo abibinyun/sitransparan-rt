@@ -8,6 +8,7 @@ import { ReactionButton } from '../components/ReactionButton';
 import { PollWidget } from '../components/PollWidget';
 import { MediaCarousel } from '../components/MediaCarousel';
 import { ParticipationCard } from '../components/ParticipationCard';
+import { enablePushNotifications } from '../services/push';
 import axios from 'axios';
 import { getTenantSlugOrFallback } from '../utils/tenant';
 import {
@@ -20,7 +21,10 @@ import {
   FileCheck,
   ArrowUpRight,
   Share2,
-  Users
+  Users,
+  Bell,
+  BellRing,
+  Check
 } from 'lucide-react';
 
 export const PublicAnnouncementsPage: React.FC = () => {
@@ -31,6 +35,23 @@ export const PublicAnnouncementsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [shareTarget, setShareTarget] = useState<ShareableAnnouncement | null>(null);
+  const [pushStatus, setPushStatus] = useState<'idle' | 'loading' | 'enabled' | 'error'>('idle');
+  const [pushMsg, setPushMsg] = useState('');
+
+  const handleEnablePush = async () => {
+    setPushStatus('loading');
+    setPushMsg('');
+    const res = await enablePushNotifications();
+    if (res.ok) {
+      setPushStatus('enabled');
+      setPushMsg('Notifikasi warga aktif!');
+      setTimeout(() => setPushMsg(''), 4000);
+    } else {
+      setPushStatus('error');
+      setPushMsg(res.reason || 'Gagal mengaktifkan notifikasi');
+      setTimeout(() => setPushMsg(''), 4000);
+    }
+  };
 
   // KPI §4: catat feed_view sekali per kunjungan halaman
   React.useEffect(() => {
@@ -90,6 +111,48 @@ export const PublicAnnouncementsPage: React.FC = () => {
           Di ponsel, kas & musyawarah tampil lebih dulu. */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <aside className="space-y-6 lg:order-2" aria-label="Ringkasan transparansi">
+          {/* Card Notifikasi Langsung untuk Warga */}
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 space-y-3 shadow-sm">
+            <div className="flex items-center gap-2.5 text-emerald-950 font-bold text-sm">
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+                <Bell className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="block leading-tight">Kabar Warga Real-time</span>
+                <span className="text-[11px] font-normal text-emerald-700">Dapatkan edaran &amp; kas langsung di ponsel</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleEnablePush}
+              disabled={pushStatus === 'loading' || pushStatus === 'enabled'}
+              className={`w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                pushStatus === 'enabled'
+                  ? 'bg-emerald-600 text-white cursor-default'
+                  : 'bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm'
+              }`}
+            >
+              {pushStatus === 'enabled' ? (
+                <>
+                  <Check className="w-4 h-4" /> Notifikasi Aktif
+                </>
+              ) : pushStatus === 'loading' ? (
+                <>
+                  <BellRing className="w-4 h-4 animate-spin" /> Mengaktifkan...
+                </>
+              ) : (
+                <>
+                  <Bell className="w-4 h-4" /> Aktifkan Notifikasi
+                </>
+              )}
+            </button>
+            {pushMsg && (
+              <p className={`text-[11px] text-center font-medium ${pushStatus === 'enabled' ? 'text-emerald-800' : 'text-rose-600'}`}>
+                {pushMsg}
+              </p>
+            )}
+          </div>
+
           <KasSummaryWidget />
           <ParticipationCard />
           <PollWidget />

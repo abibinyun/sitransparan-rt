@@ -60,6 +60,26 @@ func (u *financialUsecase) ListFunds(ctx context.Context, tenantID uuid.UUID) ([
 				}
 			}
 		}
+
+		// Also add verified dues into default fund if not explicitly assigned
+		dues, _, duesErr := u.repo.ListDuesPayments(ctx, tenantID, nil, "verified", 1000, 0)
+		if duesErr == nil {
+			var defaultFundID uuid.UUID
+			for _, f := range funds {
+				if f.IsDefault {
+					defaultFundID = f.ID
+					break
+				}
+			}
+			if defaultFundID != uuid.Nil {
+				for _, d := range dues {
+					if d.Status == "verified" {
+						fundBalanceMap[defaultFundID] += d.Amount
+					}
+				}
+			}
+		}
+
 		for _, f := range funds {
 			f.Balance = fundBalanceMap[f.ID]
 		}

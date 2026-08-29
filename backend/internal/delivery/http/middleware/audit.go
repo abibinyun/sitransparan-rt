@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
 	"backend/internal/domain"
@@ -45,6 +46,27 @@ func AuditMiddleware(auditUC domain.AuditLogUsecase) func(http.Handler) http.Han
 				return
 			}
 
+			// Pre-parse Authorization header if available
+			var preTenantID, preUserID *uuid.UUID
+			authHeader := r.Header.Get("Authorization")
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+				mapClaims := jwt.MapClaims{}
+				token, _, err := new(jwt.Parser).ParseUnverified(tokenStr, mapClaims)
+				if err == nil && token != nil {
+					if tStr, ok := mapClaims["tenant_id"].(string); ok && tStr != "" {
+						if tUUID, err := uuid.Parse(tStr); err == nil && tUUID != uuid.Nil {
+							preTenantID = &tUUID
+						}
+					}
+					if uStr, ok := mapClaims["user_id"].(string); ok && uStr != "" {
+						if uUUID, err := uuid.Parse(uStr); err == nil && uUUID != uuid.Nil {
+							preUserID = &uUUID
+						}
+					}
+				}
+			}
+
 			start := time.Now()
 			rec := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
 
@@ -52,13 +74,21 @@ func AuditMiddleware(auditUC domain.AuditLogUsecase) func(http.Handler) http.Han
 
 			// Capture context after request has been processed (user/tenant attached)
 			var tenantID *uuid.UUID
-			if t, ok := r.Context().Value(TenantContextKey).(*domain.Tenant); ok && t != nil && t.ID != uuid.Nil {
+			if t := GetTenantFromContext(r.Context()); t != nil && t.ID != uuid.Nil {
 				tenantID = &t.ID
+			} else if tid := GetTenantIDFromClaims(r.Context()); tid != uuid.Nil {
+				tenantID = &tid
+			} else {
+				tenantID = preTenantID
 			}
 
 			var userID *uuid.UUID
-			if uid, ok := r.Context().Value(UserContextKey).(uuid.UUID); ok && uid != uuid.Nil {
+			if uid := GetUserIDFromContext(r.Context()); uid != uuid.Nil {
 				userID = &uid
+			} else if claims := GetJWTClaims(r.Context()); claims != nil && claims.UserID != uuid.Nil {
+				userID = &claims.UserID
+			} else {
+				userID = preUserID
 			}
 
 			ip := r.Header.Get("X-Forwarded-For")
@@ -82,6 +112,17 @@ func AuditMiddleware(auditUC domain.AuditLogUsecase) func(http.Handler) http.Han
 			action := r.Method + " " + path
 			resource := inferResource(path)
 
+			// Copy pointer values safely for async goroutine
+			var asyncTenantID, asyncUserID *uuid.UUID
+			if tenantID != nil {
+				val := *tenantID
+				asyncTenantID = &val
+			}
+			if userID != nil {
+				val := *userID
+				asyncUserID = &val
+			}
+
 			// Asynchronous dispatch to avoid adding request latency
 			go func(tID, uID *uuid.UUID, act, res, clientIP, uAgent, st string, code int, dur time.Duration) {
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -101,7 +142,7 @@ func AuditMiddleware(auditUC domain.AuditLogUsecase) func(http.Handler) http.Han
 					},
 					CreatedAt: time.Now(),
 				})
-			}(tenantID, userID, action, resource, ip, userAgent, status, rec.statusCode, time.Since(start))
+			}(asyncTenantID, asyncUserID, action, resource, ip, userAgent, status, rec.statusCode, time.Since(start))
 		})
 	}
 }
@@ -111,8 +152,5 @@ func inferResource(path string) string {
 	if len(parts) >= 3 && parts[0] == "api" && parts[1] == "v1" {
 		return parts[2]
 	}
-	if len(parts) > 0 {
-		return parts[0]
-	}
-	return "unknown"
+	return "system"
 }
