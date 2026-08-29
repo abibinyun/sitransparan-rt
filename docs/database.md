@@ -1,6 +1,6 @@
 # Database — Sitransparan RT/RW
 
-Dokumen ini berdasarkan migrasi SQL aktual di `backend/migrations/` (000001–000020) dan DDL provisi schema tenant di `backend/internal/repository/postgres_repos.go`.
+Dokumen ini berdasarkan migrasi SQL aktual di `backend/migrations/` (000001–000027) dan DDL provisi schema tenant di `backend/internal/repository/postgres_repos.go`.
 
 Database: PostgreSQL 16, nama default `transparansi_rt`.
 
@@ -9,7 +9,7 @@ Database: PostgreSQL 16, nama default `transparansi_rt`.
 - **Schema `public`** — data global/platform: `tenants`, `users`, `roles`, `tenant_users`, `audit_logs`, `portal_events`, `push_subscriptions`.
 - **Schema `tenant_<slug>`** — data operasional per tenant (slug `-` diganti `_`, misal `tenant_sitransparan_rt`). Dibuat otomatis saat tenant dibuat (`CreateTenantSchema`) dan dihapus (`DROP SCHEMA ... CASCADE`) saat tenant dihapus.
 - Semua query runtime tenant menggunakan nama tabel schema-qualified `tenant_<slug>.<table>` (helper `TenantTable`).
-- Migrasi 000002–000009 mendefinisikan DDL tabel di schema default (public) — tabel ini juga menjadi **sumber seed** yang disalin ke schema tenant oleh `000012_backfill_tenant_schemas` (idempotent). `000016–000020` menambah funds/meetings/reactions/polls/media/push.
+- Migrasi 000002–000009 mendefinisikan DDL tabel di schema default (public) — tabel ini juga menjadi **sumber seed** yang disalin ke schema tenant oleh `000012_backfill_tenant_schemas` (idempotent). `000016–000027` menambah funds/meetings/reactions/polls/media/push/houses/waste_bank.
 
 ## 2. Schema Public
 
@@ -85,7 +85,9 @@ Database: PostgreSQL 16, nama default `transparansi_rt`.
 | created_at | TIMESTAMPTZ | |
 | idx | | `idx_push_subscriptions_user (user_id)` |
 
-## 3. Schema Tenant (`tenant_<slug>`) — 23+ tabel
+## 3. Schema Tenant (`tenant_<slug>`) — 27+ tabel
+
+Termasuk tabel inti tata kelola, transparansi kas, rapat warga, Karang Taruna (`karang_taruna_periods`, `karang_taruna_configs`, `karang_taruna_members`), Master Rumah (`houses`, `house_residents`, `house_qr_tokens`), dan Bank Sampah (`waste_categories`, `waste_deposits`, `waste_deposit_items`).
 
 ### residents
 | Kolom | Tipe | Keterangan |

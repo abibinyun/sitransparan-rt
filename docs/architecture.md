@@ -15,7 +15,9 @@ Dokumen ini menggambarkan arsitektur **aktual** project berdasarkan source code,
 - Kegiatan & RAB (budget ter-embed di list), RSVP, panitia, sponsor, kuitansi, transparansi.
 - Notulen rapat (meetings + attendees + decisions + action_items, visibilitas `public|internal|confidential` enforced server-side).
 - Aspirasi & kebutuhan lingkungan, pengumuman (`media_urls` galeri) & dokumen (`PUT /documents/{id}`).
-- Portal transparansi publik tanpa login (`/kabar`, `/usulan`, `/agenda`; legacy `/public/*` redirect).
+- Karang Taruna: periode masa bakti (`active/archived/draft`), pengurus inti & seksi bidang, publikasi struktur.
+- Bank Sampah: katalog kategori harga & bagi hasil warga-pemuda, pencatatan setoran per KK, buku tabungan KK, alokasi kas Karang Taruna.
+- Portal transparansi publik tanpa login (`/kabar`, `/usulan`, `/agenda`, `/karang-taruna`, `/bank-sampah`; legacy `/public/*` redirect).
 - Sosial: reaksi `support|like|applause` + polling 2–6 opsi + badge partisipasi.
 - PWA + Web Push VAPID (graceful disable jika keys kosong).
 
@@ -24,7 +26,7 @@ Dokumen ini menggambarkan arsitektur **aktual** project berdasarkan source code,
 | Layer | Teknologi |
 |---|---|
 | Backend | Go 1.25 (standard library `net/http` — method-pattern `ServeMux`), Clean Architecture (delivery → usecase → repository → domain) |
-| Database | PostgreSQL 16, schema-per-tenant, 20 migrasi (000001–000020), 23+ tabel tenant |
+| Database | PostgreSQL 16, schema-per-tenant, 27 migrasi (000001–000027), 26+ tabel tenant |
 | Storage | MinIO (S3-compatible) — bucket `sitransparan-files`, prefix per-tenant `tenant_<slug>/<category>/`, `MINIO_PUBLIC_URL` untuk URL host-reachable; fallback `/uploads/...` jika storage nil |
 | Frontend | React 18, TypeScript, Vite, TailwindCSS, Shadcn-style UI primitives, TanStack Query v5, Zustand, React Router v6 |
 | PWA | `vite-plugin-pwa` (injectManifest) + Workbox service worker + IndexedDB offline cache |

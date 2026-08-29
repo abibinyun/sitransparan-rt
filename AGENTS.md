@@ -1439,14 +1439,16 @@ tests/e2e/                      Playwright regression suite
 ## 46.4 Multi-Tenancy
 
 - Global tables (`tenants`, `users`, `roles`, `tenant_users`, `audit_logs`, `push_subscriptions`, `portal_events`) live in the
-  `public` schema. Tenant operational data lives in `tenant_<slug>` schemas (26+ tables (including karang_taruna_periods, karang_taruna_configs, karang_taruna_members):
+  `public` schema. Tenant operational data lives in `tenant_<slug>` schemas (27+ tables:
   residents, family_members, fee_categories, dues_payments, financial_transactions,
-  events, event_budgets, event_participants, event_sponsors, event_roles, event_receipts,
-  aspirations, community_needs, announcements, documents).
+  funds, events, event_budgets, event_participants, event_sponsors, event_roles, event_receipts,
+  aspirations, community_needs, announcements, documents, meetings, meeting_attendees, meeting_decisions,
+  meeting_action_items, reactions, polls, poll_options, poll_votes, karang_taruna_periods, karang_taruna_configs,
+  karang_taruna_members, houses, house_residents, house_qr_tokens, waste_categories, waste_deposits, waste_deposit_items).
 - Creating a tenant auto-provisions its schema; deleting a tenant drops it
   (`DROP SCHEMA ... CASCADE`).
 - Public portal endpoints resolve the tenant from the **slug in the path**
-  (`/api/v1/t/{slug}/info|announcements|documents|aspirations|needs`) and reject
+  (`/api/v1/t/{slug}/info|announcements|documents|aspirations|needs|karang-taruna|waste-bank/summary|waste-bank/categories`) and reject
   `inactive` tenants (404). Hostname consistency is enforced: if the hostname is a tenant
   subdomain, the path slug must equal the hostname slug (else 404). The frontend derives
   the slug from the hostname (`getTenantSlugFromHost`, env-driven base domain, fallback
@@ -1457,15 +1459,16 @@ tests/e2e/                      Playwright regression suite
 
 | Area | Capabilities |
 |---|---|
+| Bank Sampah | Master kategori & harga sampah dinamis, bagi hasil otomatis warga-pemuda, pencatatan setoran per KK terintegrasi data penduduk, buku tabungan KK, portal publik |
 | Karang Taruna | Periode masa bakti (`active/archived/draft`), struktur pengurus inti & seksi bidang, konfigurasi dinamis (roles & sections JSONB), publik portal |
 | Auth & IAM | login, register, list user tenants, switch tenant (`GET /auth/me` wired), user CRUD (admin), tenant CRUD (superadmin) |
-| Demography | resident CRUD, family members, approve/reject, NIK encrypted (AES-256-GCM + HMAC lookup) |
+| Demography | resident CRUD, family members, approve/reject, NIK encrypted (AES-256-GCM + HMAC lookup), master data rumah (`houses` & QR token) |
 | Finance | **funds** (multi-kantong, `is_default`), fee categories, dues (record & verify, `status` filter), cash transactions (**append-only**), summary, CSV/PDF export via backend blob |
 | Events | event CRUD (budget `budget` on list), RAB/budget (RAB card visible + toast), RSVP (toast), committee roles, sponsors, donation receipts, transparency view |
 | Aspirations | submit (public anonymous & internal), status + response (admin), community needs CRUD |
 | Announcements & Documents | announcement CRUD (with `media_urls` gallery), document CRUD (create/read/update/delete, PUT `/documents/{id}`) |
 | Dashboard | summary metrics, financial report export via `GET /dashboard/reports/financial/export?format=csv|pdf` (blob) |
-| Public Portal | `/kabar` (announcements), `/usulan` (aspirations), `/agenda` (events) + legacy `/public/*` redirects; `/api/v1/t/{slug}/...` + KPI `feed_view/share_opened` |
+| Public Portal | `/kabar` (announcements), `/usulan` (aspirations), `/agenda` (events), `/karang-taruna`, `/bank-sampah` + legacy `/public/*` redirects; `/api/v1/t/{slug}/...` + KPI `feed_view/share_opened` |
 | Social | reactions (`support/like/applause` 1-1) + polls (2–6 opsi) + `PollsPage` `/admin/polls` (create/close) + badge `Warga Baru → Utusan Warga` |
 | Meetings | CRUD, visibility `public/internal/confidential` enforced, attendees/decisions/action-items |
 | PWA | offline caching via Workbox + IndexedDB |
