@@ -15,6 +15,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { usePublicTenantQuery } from '../services/public_tenant';
 import { usePublicFinancialSummary, formatRupiah } from '../services/public_transparency';
 import { PublicBottomNav } from './PublicBottomNav';
+import { PWAInstallPrompt } from './PWAInstallPrompt';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Pengumuman & Dokumen', icon: FileText, end: true },
@@ -186,6 +187,7 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
       </footer>
 
       <PublicBottomNav />
+      <PWAInstallPrompt />
     </div>
   );
 };

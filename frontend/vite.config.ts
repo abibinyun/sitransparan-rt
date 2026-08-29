@@ -11,13 +11,29 @@ export default defineConfig({
       filename: 'sw.ts',
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.ico', 'pwa-icon.svg'],
       manifest: {
-        name: 'Platform RT App',
-        short_name: 'PlatformRT',
-        description: 'Platform RT PWA Application',
-        theme_color: '#ffffff',
-        icons: []
+        name: 'SiTransparan RT/RW',
+        short_name: 'SiTransparan',
+        description: 'Aplikasi Transparansi, Layanan Warga, dan Kas Rukun Tetangga',
+        theme_color: '#2563eb',
+        background_color: '#ffffff',
+        display: 'standalone',
+        orientation: 'portrait-primary',
+        icons: [
+          {
+            src: '/pwa-icon.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'any'
+          },
+          {
+            src: '/pwa-icon.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'maskable'
+          }
+        ]
       },
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}']
