@@ -46,9 +46,9 @@ export const ParticipationCard: React.FC = () => {
   };
 
   return (
-    <section aria-label="Partisipasi Warga" className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-700">
-        <Award className="h-4 w-4 text-emerald-700" /> Partisipasi Warga
+    <section aria-label="Partisipasi Warga" className="civic-card p-5 sm:p-6 space-y-3">
+      <h2 className="flex items-center gap-2 text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-800">
+        <Award className="h-4 w-4 text-emerald-600" /> Partisipasi Warga
       </h2>
 
       {user ? (

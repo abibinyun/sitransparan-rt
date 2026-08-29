@@ -27,10 +27,15 @@ export const PollWidget: React.FC = () => {
   if (!polls || polls.length === 0) return null;
 
   return (
-    <section aria-label="Polling warga" className="rounded-xl border border-slate-200 bg-white p-6">
-      <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-500">
-        <BarChart3 className="h-4 w-4 text-emerald-700" /> Polling Warga
-      </h2>
+    <section aria-label="Polling warga" className="civic-card p-5 sm:p-6 space-y-4">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h2 className="flex items-center gap-2 text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-800">
+          <BarChart3 className="h-4 w-4 text-emerald-600" /> Jajak Pendapat / Polling Warga
+        </h2>
+        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+          1 Warga 1 Suara
+        </span>
+      </div>
       <div className="mt-4 space-y-5">
         {polls.map((poll) => {
           const votes = poll.votes ?? [];
