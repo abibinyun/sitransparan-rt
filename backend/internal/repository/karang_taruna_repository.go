@@ -209,13 +209,13 @@ func (r *karangTarunaRepository) AddMember(ctx context.Context, m *domain.Karang
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, period_id, resident_id, role, section, custom_title, phone_override, status, joined_at, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO %s (id, period_id, resident_id, role, section, custom_title, phone_override, photo_url, status, joined_at, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		ON CONFLICT (period_id, resident_id) DO UPDATE
 		SET role = EXCLUDED.role, section = EXCLUDED.section, custom_title = EXCLUDED.custom_title,
-		    phone_override = EXCLUDED.phone_override, status = EXCLUDED.status, updated_at = NOW()
+		    phone_override = EXCLUDED.phone_override, photo_url = EXCLUDED.photo_url, status = EXCLUDED.status, updated_at = NOW()
 	`, TenantTable(ctx, "karang_taruna_members"))
-	_, err := r.db.ExecContext(ctx, query, m.ID, m.PeriodID, m.ResidentID, m.Role, m.Section, m.CustomTitle, m.PhoneOverride, m.Status, m.JoinedAt, m.CreatedAt, m.UpdatedAt)
+	_, err := r.db.ExecContext(ctx, query, m.ID, m.PeriodID, m.ResidentID, m.Role, m.Section, m.CustomTitle, m.PhoneOverride, m.PhotoURL, m.Status, m.JoinedAt, m.CreatedAt, m.UpdatedAt)
 	return err
 }
 
@@ -223,7 +223,7 @@ func (r *karangTarunaRepository) GetMemberByID(ctx context.Context, tenantID, id
 	mTable := TenantTable(ctx, "karang_taruna_members")
 	rTable := TenantTable(ctx, "residents")
 	query := fmt.Sprintf(`
-		SELECT m.id, m.period_id, m.resident_id, m.role, m.section, m.custom_title, m.phone_override, m.status, m.joined_at, m.created_at, m.updated_at,
+		SELECT m.id, m.period_id, m.resident_id, m.role, m.section, m.custom_title, m.phone_override, m.photo_url, m.status, m.joined_at, m.created_at, m.updated_at,
 		       r.full_name, COALESCE(r.nik, ''), r.phone
 		FROM %s m
 		JOIN %s r ON r.id = m.resident_id
@@ -231,7 +231,7 @@ func (r *karangTarunaRepository) GetMemberByID(ctx context.Context, tenantID, id
 	`, mTable, rTable)
 	m := &domain.KarangTarunaMember{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&m.ID, &m.PeriodID, &m.ResidentID, &m.Role, &m.Section, &m.CustomTitle, &m.PhoneOverride, &m.Status, &m.JoinedAt, &m.CreatedAt, &m.UpdatedAt,
+		&m.ID, &m.PeriodID, &m.ResidentID, &m.Role, &m.Section, &m.CustomTitle, &m.PhoneOverride, &m.PhotoURL, &m.Status, &m.JoinedAt, &m.CreatedAt, &m.UpdatedAt,
 		&m.ResidentName, &m.ResidentNIK, &m.Phone,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -265,7 +265,7 @@ func (r *karangTarunaRepository) ListMembers(ctx context.Context, tenantID, peri
 	}
 
 	query := fmt.Sprintf(`
-		SELECT m.id, m.period_id, m.resident_id, m.role, m.section, m.custom_title, m.phone_override, m.status, m.joined_at, m.created_at, m.updated_at,
+		SELECT m.id, m.period_id, m.resident_id, m.role, m.section, m.custom_title, m.phone_override, m.photo_url, m.status, m.joined_at, m.created_at, m.updated_at,
 		       r.full_name, COALESCE(r.nik, ''), r.phone
 		FROM %s m
 		JOIN %s r ON r.id = m.resident_id
@@ -292,7 +292,7 @@ func (r *karangTarunaRepository) ListMembers(ctx context.Context, tenantID, peri
 	for rows.Next() {
 		m := &domain.KarangTarunaMember{}
 		if err := rows.Scan(
-			&m.ID, &m.PeriodID, &m.ResidentID, &m.Role, &m.Section, &m.CustomTitle, &m.PhoneOverride, &m.Status, &m.JoinedAt, &m.CreatedAt, &m.UpdatedAt,
+			&m.ID, &m.PeriodID, &m.ResidentID, &m.Role, &m.Section, &m.CustomTitle, &m.PhoneOverride, &m.PhotoURL, &m.Status, &m.JoinedAt, &m.CreatedAt, &m.UpdatedAt,
 			&m.ResidentName, &m.ResidentNIK, &m.Phone,
 		); err != nil {
 			return nil, err
@@ -306,10 +306,10 @@ func (r *karangTarunaRepository) UpdateMember(ctx context.Context, m *domain.Kar
 	m.UpdatedAt = time.Now()
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET role = $1, section = $2, custom_title = $3, phone_override = $4, status = $5, updated_at = $6
-		WHERE id = $7 AND period_id = $8
+		SET role = $1, section = $2, custom_title = $3, phone_override = $4, photo_url = $5, status = $6, updated_at = $7
+		WHERE id = $8 AND period_id = $9
 	`, TenantTable(ctx, "karang_taruna_members"))
-	res, err := r.db.ExecContext(ctx, query, m.Role, m.Section, m.CustomTitle, m.PhoneOverride, m.Status, m.UpdatedAt, m.ID, m.PeriodID)
+	res, err := r.db.ExecContext(ctx, query, m.Role, m.Section, m.CustomTitle, m.PhoneOverride, m.PhotoURL, m.Status, m.UpdatedAt, m.ID, m.PeriodID)
 	if err != nil {
 		return err
 	}

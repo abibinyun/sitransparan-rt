@@ -39,6 +39,7 @@ type KarangTarunaMember struct {
 	Section       *string   `json:"section,omitempty"`
 	CustomTitle   *string   `json:"custom_title,omitempty"`
 	PhoneOverride *string   `json:"phone_override,omitempty"`
+	PhotoURL      *string   `json:"photo_url,omitempty"`
 	Status        string    `json:"status"` // aktif, demisioner, nonaktif
 	JoinedAt      time.Time `json:"joined_at"`
 	CreatedAt     time.Time `json:"created_at"`

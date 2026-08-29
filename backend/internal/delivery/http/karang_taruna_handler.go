@@ -67,6 +67,7 @@ func (h *KarangTarunaHandler) handlePublicStructure(w http.ResponseWriter, r *ht
 		Role        string  `json:"role"`
 		Section     *string `json:"section,omitempty"`
 		CustomTitle *string `json:"custom_title,omitempty"`
+		PhotoURL    *string `json:"photo_url,omitempty"`
 	}
 	var pubList []publicMemberView
 	for _, m := range members {
@@ -75,6 +76,7 @@ func (h *KarangTarunaHandler) handlePublicStructure(w http.ResponseWriter, r *ht
 			Role:        m.Role,
 			Section:     m.Section,
 			CustomTitle: m.CustomTitle,
+			PhotoURL:    m.PhotoURL,
 		})
 	}
 
@@ -287,6 +289,7 @@ func (h *KarangTarunaHandler) handleProtected(w http.ResponseWriter, r *http.Req
 					Section       string `json:"section"`
 					CustomTitle   string `json:"custom_title"`
 					PhoneOverride string `json:"phone_override"`
+					PhotoURL      string `json:"photo_url"`
 					Status        string `json:"status"`
 				}
 				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -306,6 +309,7 @@ func (h *KarangTarunaHandler) handleProtected(w http.ResponseWriter, r *http.Req
 					Section:       &req.Section,
 					CustomTitle:   &req.CustomTitle,
 					PhoneOverride: &req.PhoneOverride,
+					PhotoURL:      &req.PhotoURL,
 					Status:        req.Status,
 				}
 				if err := h.usecase.AddMember(r.Context(), tenant.ID, member); err != nil {
@@ -339,6 +343,7 @@ func (h *KarangTarunaHandler) handleProtected(w http.ResponseWriter, r *http.Req
 					Section       string `json:"section"`
 					CustomTitle   string `json:"custom_title"`
 					PhoneOverride string `json:"phone_override"`
+					PhotoURL      string `json:"photo_url"`
 					Status        string `json:"status"`
 				}
 				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -353,6 +358,7 @@ func (h *KarangTarunaHandler) handleProtected(w http.ResponseWriter, r *http.Req
 					Section:       &req.Section,
 					CustomTitle:   &req.CustomTitle,
 					PhoneOverride: &req.PhoneOverride,
+					PhotoURL:      &req.PhotoURL,
 					Status:        req.Status,
 				}
 				if err := h.usecase.UpdateMember(r.Context(), tenant.ID, member); err != nil {
