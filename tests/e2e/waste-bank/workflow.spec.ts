@@ -14,7 +14,7 @@ test.describe('Bank Sampah & Karang Taruna Workflow', () => {
     await page.goto('http://localhost:3000/bank-sampah');
     await expect(page).toHaveURL(/.*bank-sampah/);
     await expect(page.getByText('Bank Sampah Warga & Pemuda')).toBeVisible();
-    await expect(page.getByText('Program Lingkungan Berkelanjutan')).toBeVisible();
+    await expect(page.getByText('Gerakan Ekonomi Sirkular & Lingkungan')).toBeVisible();
   });
 
   test('Admin RT can access Bank Sampah dashboard, view categories, and see tabs', async ({ page }) => {

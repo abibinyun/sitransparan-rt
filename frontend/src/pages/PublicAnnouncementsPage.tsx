@@ -19,9 +19,7 @@ import {
   Calendar,
   AlertCircle,
   FileCheck,
-  ArrowUpRight,
   Share2,
-  Users,
   Bell,
   BellRing,
   Check
@@ -36,24 +34,18 @@ export const PublicAnnouncementsPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [shareTarget, setShareTarget] = useState<ShareableAnnouncement | null>(null);
   const [pushStatus, setPushStatus] = useState<'idle' | 'loading' | 'enabled' | 'error'>('idle');
-  const [pushMsg, setPushMsg] = useState('');
 
   const handleEnablePush = async () => {
     setPushStatus('loading');
-    setPushMsg('');
     const res = await enablePushNotifications();
     if (res.ok) {
       setPushStatus('enabled');
-      setPushMsg('Notifikasi warga aktif!');
-      setTimeout(() => setPushMsg(''), 4000);
     } else {
       setPushStatus('error');
-      setPushMsg(res.reason || 'Gagal mengaktifkan notifikasi');
-      setTimeout(() => setPushMsg(''), 4000);
     }
   };
 
-  // KPI §4: catat feed_view sekali per kunjungan halaman
+  // KPI: catat feed_view sekali per kunjungan halaman
   React.useEffect(() => {
     axios.post(`/api/v1/t/${getTenantSlugOrFallback()}/events`, { event_type: 'feed_view' }).catch(() => {});
   }, []);
@@ -68,69 +60,70 @@ export const PublicAnnouncementsPage: React.FC = () => {
   const announcements = announcementsData?.data || [];
   const documents = documentsData?.data || [];
 
-  const filteredAnnouncements = announcements.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.content.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredAnnouncements = announcements.filter((item) => {
+    const matchesSearch =
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.content.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          doc.category.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredDocuments = documents.filter((doc) => {
+    const matchesSearch =
+      doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.category.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCat = selectedCategory === 'ALL' || doc.category === selectedCategory;
     return matchesSearch && matchesCat;
   });
 
   return (
     <div className="pb-16">
-      {/* Kepala halaman: left-aligned, solid, tanpa gradien */}
-      <section className="bg-slate-900 text-white px-4 sm:px-6 py-10">
+      {/* Hero Section Civic */}
+      <section className="bg-slate-900 text-white px-4 sm:px-6 py-10 sm:py-14 border-b border-slate-800">
         <div className="max-w-6xl mx-auto space-y-5">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
-            Pengumuman &amp; Dokumen Transparansi
+          <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-3 py-1 rounded-full">
+            <Megaphone className="w-3.5 h-3.5" /> Saluran Komunikasi Resmi
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+            Kabar Warga &amp; Dokumen Transparansi
           </h1>
-          <p className="max-w-2xl text-sm text-slate-300 leading-relaxed">
-            Edaran resmi pengurus, keputusan musyawarah, dan laporan kas — terbuka untuk
-            seluruh warga. Ditagih langsung dari sistem, tanpa perantara.
+          <p className="max-w-2xl text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+            Edaran resmi pengurus {tenantName}, arsip notula musyawarah, dan keterbukaan kas lingkungan tanpa perantara.
           </p>
+
+          {/* Search bar */}
           <div className="relative max-w-xl">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" aria-hidden />
+            <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" aria-hidden />
             <input
               type="text"
-              placeholder="Cari pengumuman atau dokumen..."
+              placeholder="Cari kabar, edaran, atau berkas RT..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Cari pengumuman atau dokumen"
-              className="w-full bg-white text-slate-900 placeholder-slate-400 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm"
+              aria-label="Cari kabar atau berkas RT"
+              className="w-full bg-white text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             />
           </div>
         </div>
       </section>
 
-      {/* Konten: feed di kiri, ringkasan kas & musyawarah di rel kanan (desktop).
-          Di ponsel, kas & musyawarah tampil lebih dulu. */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {/* Grid Konten: Feed Utama di Kiri, Kas & Partisipasi di Rel Kanan */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+        {/* Sidebar Kanan (Desktop) / Atas (Mobile) */}
         <aside className="space-y-6 lg:order-2" aria-label="Ringkasan transparansi">
-          {/* Card Notifikasi Langsung untuk Warga */}
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 space-y-3 shadow-sm">
-            <div className="flex items-center gap-2.5 text-emerald-950 font-bold text-sm">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
-                <Bell className="w-4 h-4" />
+          {/* Card Notifikasi Langsung */}
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 space-y-3 shadow-xs">
+            <div className="flex items-center gap-3 text-emerald-950 font-bold text-sm">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+                <Bell className="w-5 h-5" />
               </div>
               <div>
-                <span className="block leading-tight">Kabar Warga Real-time</span>
-                <span className="text-[11px] font-normal text-emerald-700">Dapatkan edaran &amp; kas langsung di ponsel</span>
+                <h3 className="leading-snug">Notifikasi Pengumuman</h3>
+                <p className="text-[11px] font-normal text-emerald-800">Dapatkan broadcast langsung di HP Anda</p>
               </div>
             </div>
             <button
-              type="button"
               onClick={handleEnablePush}
               disabled={pushStatus === 'loading' || pushStatus === 'enabled'}
-              className={`w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                pushStatus === 'enabled'
-                  ? 'bg-emerald-600 text-white cursor-default'
-                  : 'bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm'
-              }`}
+              className="w-full inline-flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all shadow-xs"
             >
               {pushStatus === 'enabled' ? (
                 <>
@@ -138,191 +131,196 @@ export const PublicAnnouncementsPage: React.FC = () => {
                 </>
               ) : pushStatus === 'loading' ? (
                 <>
-                  <BellRing className="w-4 h-4 animate-spin" /> Mengaktifkan...
+                  <BellRing className="w-4 h-4 animate-spin" /> Mendaftarkan...
                 </>
               ) : (
                 <>
-                  <Bell className="w-4 h-4" /> Aktifkan Notifikasi
+                  <Bell className="w-4 h-4" /> Aktifkan di Perangkat Ini
                 </>
               )}
             </button>
-            {pushMsg && (
-              <p className={`text-[11px] text-center font-medium ${pushStatus === 'enabled' ? 'text-emerald-800' : 'text-rose-600'}`}>
-                {pushMsg}
-              </p>
-            )}
           </div>
 
+          {/* Widget Kas Lingkungan Terbuka */}
           <KasSummaryWidget />
+
+          {/* Widget Partisipasi & Lencana Warga */}
           <ParticipationCard />
-          <PollWidget />
+
+          {/* Widget Notula Musyawarah */}
           <MeetingDecisionsWidget />
         </aside>
 
-        <div className="space-y-12 lg:order-1 min-w-0">
-          {/* Timeline pengumuman — satu kolom, bobot mengikuti isi */}
-          <section aria-label="Pengumuman" className="space-y-5">
-            <div className="flex items-baseline justify-between gap-4 border-b border-slate-200 pb-3">
-              <h2 className="flex items-center gap-2 text-lg font-extrabold text-slate-900">
-                <Megaphone className="w-5 h-5 text-emerald-700" /> Pengumuman Pengurus
-              </h2>
+        {/* Feed Utama: Pengumuman & Dokumen */}
+        <div className="space-y-10 min-w-0 lg:order-1">
+          {/* Widget Polling Terbuka Warga */}
+          <PollWidget />
+
+          {/* Section Pengumuman Terbaru */}
+          <section className="space-y-5" aria-label="Daftar Pengumuman">
+            <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
+                <h2 className="text-lg font-extrabold text-slate-900">Kabar &amp; Edaran Pengurus</h2>
+              </div>
               <span className="text-xs font-semibold text-slate-500 tabular-nums">
-                {filteredAnnouncements.length} tulisan
+                {filteredAnnouncements.length} edaran
               </span>
             </div>
 
             {loadingAnnouncements ? (
               <div className="space-y-4">
-                {[1, 2].map((n) => (
-                  <div key={n} className="h-36 animate-pulse rounded-xl bg-slate-100" />
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-44 rounded-2xl bg-slate-100 animate-pulse" />
                 ))}
               </div>
-            ) : filteredAnnouncements.length ? (
-              <div className="space-y-4">
-                {filteredAnnouncements.map((item) => {
-                  const official = item.target === 'all';
-                  return (
-                    <article
-                      key={item.id}
-                      className={`bg-white rounded-xl border p-5 sm:p-6 space-y-3 ${
-                        official ? 'border-slate-200 border-l-4 border-l-emerald-700' : 'border-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        {official ? (
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-800">
-                            <Megaphone className="w-3.5 h-3.5" /> Pengumuman Resmi
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                            <Users className="w-3.5 h-3.5" /> Khusus Warga
-                          </span>
-                        )}
-                        <span className="text-xs text-slate-400 tabular-nums">
-                          {new Date(item.created_at).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                          })}
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-900 leading-snug">{item.title}</h3>
-                      <p className="text-sm text-slate-600 whitespace-pre-line leading-relaxed line-clamp-4">
-                        {item.content}
-                      </p>
-
-                      {item.media_urls && item.media_urls.length > 0 && (
-                        <MediaCarousel urls={item.media_urls} alt={item.title} />
-                      )}
-
-                      {item.attachment_url && (
-                        <div className="pt-1">
-                          <a
-                            href={item.attachment_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg"
-                          >
-                            <Download className="w-3.5 h-3.5" /> Unduh Lampiran
-                          </a>
-                        </div>
-                      )}
-
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <ReactionButton targetType="announcement" targetId={item.id} />
-                        <button
-                          onClick={() => openShare(item)}
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg"
-                        >
-                          <Share2 className="w-3.5 h-3.5" /> Bagikan ke WhatsApp
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
+            ) : filteredAnnouncements.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center space-y-2 bg-white">
+                <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" />
+                <p className="font-bold text-sm text-slate-700">Belum Ada Pengumuman</p>
+                <p className="text-xs text-slate-500">Kabar terbaru dari pengurus RT akan muncul di sini.</p>
               </div>
             ) : (
-              <div className="border border-dashed border-slate-300 rounded-xl p-10 text-center space-y-2">
-                <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" />
-                <h4 className="text-sm font-bold text-slate-700">Belum Ada Pengumuman</h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Pengumuman dari pengurus RT akan tampil di sini.
-                </p>
+              <div className="space-y-5">
+                {filteredAnnouncements.map((item) => (
+                  <article
+                    key={item.id}
+                    className="civic-card p-5 sm:p-6 space-y-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-100">
+                          <Megaphone className="w-3 h-3 text-emerald-600" /> {item.target === 'residents_only' ? 'Warga RT' : 'Umum'}
+                        </span>
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                          {item.title}
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => openShare(item)}
+                        className="p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                        aria-label="Bagikan Pengumuman ke WhatsApp"
+                        title="Buat Kartu Share WhatsApp"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Konten teks */}
+                    <div className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                      {item.content}
+                    </div>
+
+                    {/* Media galeri foto lampiran jika ada */}
+                    {item.media_urls && item.media_urls.length > 0 && (
+                      <div className="pt-2">
+                        <MediaCarousel urls={item.media_urls} alt={item.title} />
+                      </div>
+                    )}
+
+                    {/* Footer kartu: Tanggal & Reaksi Sosial Warga */}
+                    <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <span className="text-slate-400 flex items-center gap-1.5 font-medium">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {new Date(item.created_at).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </span>
+
+                      {/* Reaksi Gotong Royong Warga */}
+                      <ReactionButton targetType="announcement" targetId={item.id} />
+                    </div>
+                  </article>
+                ))}
               </div>
             )}
           </section>
 
-          {/* Arsip dokumen */}
-          <section aria-label="Arsip dokumen" className="space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
-              <h2 className="flex items-center gap-2 text-lg font-extrabold text-slate-900">
-                <FileCheck className="w-5 h-5 text-emerald-700" /> Arsip Dokumen
-              </h2>
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-                {['ALL', 'Keuangan', 'Notulen', 'Peraturan'].map((cat) => (
+          {/* Section Dokumen & Notula Transparansi */}
+          <section className="space-y-5 pt-6 border-t border-slate-200/80" aria-label="Dokumen Publik">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <FileCheck className="w-5 h-5 text-emerald-700" />
+                <h2 className="text-lg font-extrabold text-slate-900">Arsip &amp; Dokumen Warga</h2>
+              </div>
+
+              {/* Filter Kategori Dokumen */}
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 max-w-full">
+                {['ALL', 'financial_report', 'minutes', 'letter', 'other'].map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
                       selectedCategory === cat
-                        ? 'bg-slate-900 text-white border-slate-900'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    {cat === 'ALL' ? 'Semua' : cat}
+                    {cat === 'ALL' ? 'Semua Berkas' : cat.replace('_', ' ').toUpperCase()}
                   </button>
                 ))}
               </div>
             </div>
 
             {loadingDocuments ? (
-              <div className="h-24 animate-pulse rounded-xl bg-slate-100" />
-            ) : filteredDocuments.length ? (
-              <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
-                {filteredDocuments.map((doc) => (
-                  <li key={doc.id} className="flex items-center justify-between gap-4 px-5 py-4">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">
-                          {doc.category || 'Dokumen'}
-                        </span>
-                        <span className="text-[11px] text-slate-400 tabular-nums">
-                          {new Date(doc.created_at).toLocaleDateString('id-ID')}
-                        </span>
-                      </div>
-                      <h4 className="mt-1 text-sm font-bold text-slate-900 leading-snug">{doc.title}</h4>
-                    </div>
-                    <a
-                      href={doc.file_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`Buka dokumen ${doc.title}`}
-                      className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-lg"
-                    >
-                      <FileText className="w-4 h-4" /> Buka <ArrowUpRight className="w-3.5 h-3.5" />
-                    </a>
-                  </li>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-28 rounded-2xl bg-slate-100 animate-pulse" />
                 ))}
-              </ul>
+              </div>
+            ) : filteredDocuments.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center bg-white space-y-1">
+                <FileText className="w-7 h-7 text-slate-400 mx-auto" />
+                <p className="font-bold text-xs text-slate-700">Tidak ada dokumen pada kategori ini</p>
+              </div>
             ) : (
-              <div className="border border-dashed border-slate-300 rounded-xl p-10 text-center space-y-2">
-                <Calendar className="w-8 h-8 text-slate-400 mx-auto" />
-                <h4 className="text-sm font-bold text-slate-700">Belum Ada Dokumen</h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Dokumen transparansi dari pengurus RT akan tersedia di sini.
-                </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {filteredDocuments.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="civic-card p-4 sm:p-5 flex flex-col justify-between hover:shadow-sm transition-all"
+                  >
+                    <div className="space-y-2">
+                      <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-bold uppercase tracking-wider">
+                        {doc.category.replace('_', ' ')}
+                      </span>
+                      <h4 className="font-bold text-sm text-slate-900 leading-snug line-clamp-2">
+                        {doc.title}
+                      </h4>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        {new Date(doc.created_at).toLocaleDateString('id-ID')}
+                      </span>
+                      <a
+                        href={doc.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200/60"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Unduh Dokumen
+                      </a>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </section>
         </div>
       </div>
 
-      <ShareCardModal
-        isOpen={shareTarget !== null}
-        onClose={() => setShareTarget(null)}
-        announcement={shareTarget}
-        tenantName={tenantName}
-      />
+      {/* Modal Share Generator WhatsApp */}
+      {shareTarget && (
+        <ShareCardModal
+          announcement={shareTarget}
+          tenantName={tenantName}
+          isOpen={Boolean(shareTarget)}
+          onClose={() => setShareTarget(null)}
+        />
+      )}
     </div>
   );
 };

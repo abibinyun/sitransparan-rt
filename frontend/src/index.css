@@ -11,44 +11,35 @@
 @layer base {
   :root {
     color-scheme: light;
-    /* Identitas produk: Plus Jakarta Sans — buatan desainer Indonesia.
-       Inter tetap sebagai fallback sistem. */
     font-family: 'Plus Jakarta Sans', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
     background: #f8fafc;
   }
 
   body {
-    @apply min-h-screen bg-slate-50 text-slate-900 antialiased;
+    @apply min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-950;
   }
 
-  ::selection {
-    @apply bg-emerald-100 text-emerald-950;
-  }
-
-  /* Motion mengkomunikasikan state, bukan dekorasi:
-     fokus = ring jelas, bukan elemen "terangkat". */
   input,
   select,
   textarea {
-    @apply transition duration-150 ease-out;
+    @apply transition-colors duration-150 ease-out;
   }
 
   input:focus,
   select:focus,
   textarea:focus {
-    @apply outline-none ring-2 ring-emerald-500/30;
+    @apply outline-none ring-2 ring-emerald-500/20 border-emerald-500;
   }
 
   button,
   a {
-    @apply transition duration-150 ease-out;
+    @apply transition-all duration-150 ease-out;
   }
 
   button:disabled {
-    @apply cursor-not-allowed saturate-50;
+    @apply cursor-not-allowed opacity-50 saturate-50;
   }
 
-  /* Angka keuangan harus lurus kolomnya */
   .tabular, table td {
     font-variant-numeric: tabular-nums;
   }
@@ -58,103 +49,42 @@
   }
 
   th {
-    @apply whitespace-nowrap font-bold tracking-[0.08em] text-slate-500;
+    @apply whitespace-nowrap font-bold tracking-[0.05em] text-slate-500 uppercase text-xs;
   }
 
   td {
     @apply align-middle;
   }
 
-  /* Form controls: flat, border jelas, tanpa bayangan dekoratif */
+  /* Form controls: clean border & modern radius */
   input[class*="border"],
   select[class*="border"],
   textarea[class*="border"] {
-    @apply rounded-lg border-slate-300 bg-white placeholder:text-slate-400 hover:border-slate-400;
+    @apply rounded-xl border-slate-200 bg-white placeholder:text-slate-400 hover:border-slate-300;
   }
 
   label {
-    @apply text-slate-700;
-  }
-
-  /* Tombol gradient (warisan slop) menjadi solid — warna primer halaman
-     tetap dipertahankan, hanya gradien & glow yang dibuang. */
-  button[class*="bg-indigo-600"],
-  button[class*="bg-blue-600"] {
-    @apply bg-indigo-600 shadow-none hover:bg-indigo-700;
-  }
-
-  button[class*="bg-emerald-600"],
-  button[class*="bg-green-600"] {
-    @apply bg-emerald-700 shadow-none hover:bg-emerald-800;
-  }
-
-  /* Badges & alerts: makna semantik dipertahankan */
-  span[class*="rounded-full"] {
-    @apply ring-1 ring-inset;
-  }
-
-  .bg-green-100,
-  .bg-emerald-100 {
-    @apply bg-emerald-50 text-emerald-700 ring-emerald-200;
-  }
-
-  .bg-red-100 {
-    @apply bg-rose-50 text-rose-700 ring-rose-200;
-  }
-
-  .bg-yellow-100 {
-    @apply bg-amber-50 text-amber-700 ring-amber-200;
-  }
-
-  .bg-gray-100 {
-    @apply bg-slate-100 text-slate-700 ring-slate-200;
-  }
-
-  /* Scrollbar netral */
-  .overflow-x-auto {
-    @apply rounded-lg;
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
-  }
-
-  .overflow-x-auto::-webkit-scrollbar {
-    height: 8px;
-  }
-
-  .overflow-x-auto::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-slate-300;
-  }
-
-  @media (max-width: 640px) {
-    .px-6 {
-      padding-left: 1rem;
-      padding-right: 1rem;
-    }
-
-    th,
-    td {
-      @apply text-xs;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
+    @apply text-slate-700 font-medium;
   }
 }
 
-@layer utilities {
-  .animate-ui-fade {
-    animation: ui-fade 150ms ease-out both;
-  }
+/* Civic custom components & badges */
+.civic-card {
+  @apply bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all duration-200;
 }
 
-@keyframes ui-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.civic-badge {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold;
+}
+
+.civic-gradient-hero {
+  background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

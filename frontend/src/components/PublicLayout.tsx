@@ -8,13 +8,13 @@ import {
   Flame,
   Recycle,
   LogIn,
-  UserPlus,
   ShieldCheck,
   Bell,
-  BellRing,
   Menu,
   X,
-  Check
+  Check,
+  Landmark,
+  User
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { usePublicTenantQuery } from '../services/public_tenant';
@@ -24,9 +24,9 @@ import { PublicBottomNav } from './PublicBottomNav';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Pengumuman & Dokumen', icon: FileText, end: true },
+  { to: '/', label: 'Kabar & Dokumen', icon: FileText, end: true },
   { to: '/usulan', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
-  { to: '/agenda', label: 'Agenda & Kegiatan', icon: CalendarDays },
+  { to: '/agenda', label: 'Agenda Warga', icon: CalendarDays },
   { to: '/karang-taruna', label: 'Karang Taruna', icon: Flame },
   { to: '/bank-sampah', label: 'Bank Sampah', icon: Recycle },
 ];
@@ -49,7 +49,7 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
     const res = await enablePushNotifications();
     if (res.ok) {
       setPushStatus('enabled');
-      setPushMsg('Notifikasi berhasil diaktifkan!');
+      setPushMsg('Notifikasi warga aktif!');
       setTimeout(() => setPushMsg(''), 4000);
     } else {
       setPushStatus('error');
@@ -59,43 +59,68 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
-      {/* Strip status: identitas + satu angka nyata (bukan deretan statistik palsu) */}
-      <div className="bg-slate-900 text-slate-300 text-xs py-2 px-4">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-950 pb-16 md:pb-0">
+      {/* Top Banner Transparansi Kas & Status RT */}
+      <div className="bg-slate-950 text-slate-300 text-xs py-2.5 px-4 border-b border-slate-850">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
-          <span className="flex items-center gap-2 font-medium truncate">
-            <span className="inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[11px] shrink-0">
-              <ShieldCheck className="w-3.5 h-3.5" /> Terbuka
+          <div className="flex items-center gap-2 font-medium truncate">
+            <span className="inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0">
+              <ShieldCheck className="w-3.5 h-3.5" /> Portal Terbuka
             </span>
-            <span className="truncate">Portal Transparansi {tenantName}</span>
-          </span>
-          {kas && (
-            <span className="shrink-0 tabular-nums">
-              Saldo kas: <strong className="text-white font-semibold">{formatRupiah(kas.current_balance)}</strong>
+            <span className="truncate font-semibold text-slate-200">
+              {tenantName}
             </span>
-          )}
+          </div>
+
+          <div className="flex items-center gap-4 shrink-0 text-xs">
+            {kas && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 tabular-nums">
+                <Landmark className="w-3.5 h-3.5 text-emerald-400" />
+                Saldo Kas Kasbon/Iuran: <strong className="text-white font-bold">{formatRupiah(kas.current_balance)}</strong>
+              </span>
+            )}
+            <button
+              onClick={handleEnablePush}
+              disabled={pushStatus === 'loading' || pushStatus === 'enabled'}
+              className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-bold"
+            >
+              {pushStatus === 'enabled' ? (
+                <>
+                  <Check className="w-3 h-3 text-emerald-400" /> Notif Aktif
+                </>
+              ) : (
+                <>
+                  <Bell className="w-3 h-3" /> Bunyikan Notif
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
+      {/* Header Utama Desktop & Mobile */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center text-white overflow-hidden">
+          <div className="flex items-center justify-between h-16 sm:h-18">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white overflow-hidden shadow-sm group-hover:bg-slate-800 transition-colors">
                 {tenantInfo?.logo_url ? (
                   <img src={tenantInfo.logo_url} alt={tenantName} className="w-full h-full object-cover" />
                 ) : (
-                  <Building2 className="w-5 h-5" />
+                  <Building2 className="w-5 h-5 text-emerald-400" />
                 )}
               </div>
               <div>
-                <span className="font-extrabold text-lg text-slate-900 tracking-tight block leading-tight uppercase">{tenantName}</span>
-                <span className="text-[11px] font-semibold text-emerald-700 tracking-wider uppercase block">Portal Transparansi Warga</span>
+                <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight block leading-tight">
+                  {tenantName}
+                </span>
+                <span className="text-[10px] sm:text-[11px] font-bold text-emerald-700 tracking-wider uppercase block">
+                  Transparansi &amp; Partisipasi Warga
+                </span>
               </div>
             </Link>
 
-            {/* Desktop nav */}
+            {/* Desktop Navigation Pills */}
             <nav className="hidden md:flex items-center gap-1">
               {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
                 <NavLink
@@ -103,10 +128,10 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
                   to={to}
                   end={end}
                   className={({ isActive }) =>
-                    `flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold border ${
+                    `flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                       isActive
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        : 'bg-white text-slate-600 border-transparent hover:text-slate-900 hover:border-slate-200'
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                     }`
                   }
                 >
@@ -116,77 +141,41 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
               ))}
             </nav>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleEnablePush}
-                disabled={pushStatus === 'loading' || pushStatus === 'enabled'}
-                title="Aktifkan Notifikasi Warga"
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-lg text-xs font-semibold border transition-all ${
-                  pushStatus === 'enabled'
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 cursor-default'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-sm'
-                }`}
-              >
-                {pushStatus === 'enabled' ? (
-                  <>
-                    <Check className="w-4 h-4 text-emerald-600" /> <span className="hidden sm:inline">Notif</span> Aktif
-                  </>
-                ) : pushStatus === 'loading' ? (
-                  <>
-                    <BellRing className="w-4 h-4 animate-spin text-emerald-600" /> <span className="hidden sm:inline">Mengaktifkan...</span>
-                  </>
-                ) : (
-                  <>
-                    <Bell className="w-4 h-4 text-emerald-600" /> <span>Notifikasi</span>
-                  </>
-                )}
-              </button>
-
-              <div className="hidden sm:flex items-center gap-2">
-                {isAuthenticated ? (
-                  <button
-                    onClick={() => navigate('/admin')}
-                    className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg"
-                  >
-                    <Building2 className="w-4 h-4" /> Dashboard Pengurus
-                  </button>
-                ) : (
-                  <>
-                    <Link
-                      to="/login"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100"
-                    >
-                      <LogIn className="w-4 h-4" /> Masuk Warga
-                    </Link>
-                    <Link
-                      to="/login"
-                      className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg"
-                    >
-                      <UserPlus className="w-4 h-4" /> Daftar
-                    </Link>
-                  </>
-                )}
-              </div>
-
-              {/* Mobile menu button */}
-              <div className="flex md:hidden">
+            {/* Aksi Akun Pengurus / Login */}
+            <div className="hidden md:flex items-center gap-2">
+              {isAuthenticated ? (
                 <button
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  aria-label={mobileMenuOpen ? 'Tutup menu' : 'Buka menu'}
-                  className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+                  onClick={() => navigate('/admin')}
+                  className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-xs"
                 >
-                  {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                  <User className="w-4 h-4 text-emerald-400" /> Panel Internal
                 </button>
-              </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-xs"
+                >
+                  <LogIn className="w-4 h-4 text-emerald-400" /> Masuk Pengurus
+                </Link>
+              )}
+            </div>
+
+            {/* Mobile Menu Trigger */}
+            <div className="flex md:hidden items-center gap-2">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-xl border border-slate-200 text-slate-700 bg-white"
+                aria-label="Buka Menu"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile drawer (di luar BottomNav: untuk konten panjang seperti login) */}
+        {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1">
+          <div className="md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1 shadow-lg">
             {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}
@@ -194,88 +183,71 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
                 end={end}
                 onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold ${
-                    isActive ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700 hover:bg-slate-100'
+                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold ${
+                    isActive ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700 hover:bg-slate-50'
                   }`
                 }
               >
-                <Icon className="w-4 h-4" /> {label}
+                <Icon className="w-4 h-4 text-emerald-600" />
+                {label}
               </NavLink>
             ))}
-            <div className="pt-2 border-t border-slate-100 space-y-2">
-              <button
-                type="button"
-                onClick={handleEnablePush}
-                disabled={pushStatus === 'loading' || pushStatus === 'enabled'}
-                className="w-full flex items-center justify-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 font-semibold text-sm py-2.5 rounded-lg"
-              >
-                {pushStatus === 'enabled' ? (
-                  <>
-                    <Check className="w-4 h-4 text-emerald-600" /> Notifikasi Aktif
-                  </>
-                ) : pushStatus === 'loading' ? (
-                  <>
-                    <BellRing className="w-4 h-4 animate-spin text-emerald-600" /> Mengaktifkan...
-                  </>
-                ) : (
-                  <>
-                    <Bell className="w-4 h-4 text-slate-600" /> Aktifkan Notifikasi Warga
-                  </>
-                )}
-              </button>
-
-              <Link
-                to={isAuthenticated ? '/admin' : '/login'}
-                onClick={() => setMobileMenuOpen(false)}
-                className="block w-full text-center bg-slate-900 text-white font-semibold text-sm py-2.5 rounded-lg"
-              >
-                {isAuthenticated ? 'Buka Dashboard Internal' : 'Masuk / Daftar Akun'}
-              </Link>
+            <div className="pt-2 border-t border-slate-100">
+              {isAuthenticated ? (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate('/admin');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-xs py-2.5 rounded-xl"
+                >
+                  <User className="w-4 h-4 text-emerald-400" /> Masuk Panel Internal
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-xs py-2.5 rounded-xl"
+                >
+                  <LogIn className="w-4 h-4 text-emerald-400" /> Masuk Pengurus RT
+                </Link>
+              )}
             </div>
           </div>
         )}
       </header>
 
-      {/* Toast Feedback */}
       {pushMsg && (
         <div
           role="alert"
           className={`px-4 py-2 text-center text-xs font-semibold ${
-            pushStatus === 'enabled'
-              ? 'bg-emerald-600 text-white'
-              : 'bg-rose-600 text-white'
+            pushStatus === 'enabled' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
           }`}
         >
           {pushMsg}
         </div>
       )}
 
-      {/* Main Content Area — ruang untuk BottomNav di ponsel */}
-      <main className="flex-1 pb-20 md:pb-0">
+      {/* Main Container */}
+      <main className="flex-1">
         {children || <Outlet />}
       </main>
 
-      {/* Footer — tanpa alamat/email fiktif */}
-      <footer className="bg-slate-900 text-slate-400 text-xs py-8 border-t border-slate-800">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-white font-bold text-sm">
-              <Building2 className="w-4 h-4 text-emerald-400" /> {tenantName.toUpperCase()}
-            </div>
-            <ul className="flex flex-wrap gap-x-6 gap-y-2">
-              <li><Link to="/" className="hover:text-white">Pengumuman &amp; Kas</Link></li>
-              <li><Link to="/usulan" className="hover:text-white">Usulan Warga</Link></li>
-              <li><Link to="/agenda" className="hover:text-white">Agenda</Link></li>
-            </ul>
-          </div>
-          <div className="pt-6 mt-6 border-t border-slate-800 text-slate-500">
-            © {new Date().getFullYear()} {tenantName}. Sistem transparansi lingkungan warga.
-          </div>
+      {/* PWA Prompt & Mobile Bottom Navigation */}
+      <PWAInstallPrompt />
+      <PublicBottomNav />
+
+      {/* Footer Minimalist */}
+      <footer className="border-t border-slate-200/80 bg-white py-8 text-center text-xs text-slate-500">
+        <div className="max-w-6xl mx-auto px-4 space-y-2">
+          <p className="font-semibold text-slate-700">
+            {tenantName} — Portal Transparansi &amp; Administrasi Mandiri
+          </p>
+          <p className="text-[11px] text-slate-400">
+            Didukung oleh platform terbuka SiTransparan RT/RW. Data dapat diaudit langsung oleh seluruh warga.
+          </p>
         </div>
       </footer>
-
-      <PublicBottomNav />
-      <PWAInstallPrompt />
     </div>
   );
 };

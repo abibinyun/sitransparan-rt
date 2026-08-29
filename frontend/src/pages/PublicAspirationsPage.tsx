@@ -10,12 +10,16 @@ import {
   AlertTriangle,
   Lightbulb,
   Building,
-  XCircle
+  XCircle,
+  Search,
+  Lock,
+  Check
 } from 'lucide-react';
 
 export const PublicAspirationsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'aspirations' | 'needs'>('aspirations');
   const [showFormModal, setShowFormModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: aspirationsData, isLoading: loadingAspirations } = usePublicAspirations();
   const { data: needsData, isLoading: loadingNeeds } = usePublicCommunityNeeds();
@@ -28,188 +32,254 @@ export const PublicAspirationsPage: React.FC = () => {
   const getCategoryBadge = (cat: string) => {
     switch (cat) {
       case 'suggestion':
-        return <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-0.5 rounded-lg text-xs font-bold"><Lightbulb className="w-3 h-3 text-blue-500" /> Usulan</span>;
+        return (
+          <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-800 border border-blue-200/80 px-2.5 py-1 rounded-lg text-xs font-bold">
+            <Lightbulb className="w-3.5 h-3.5 text-blue-600" /> Usulan / Gagasan
+          </span>
+        );
       case 'complaint':
-        return <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-100 px-2.5 py-0.5 rounded-lg text-xs font-bold"><AlertTriangle className="w-3 h-3 text-rose-500" /> Keluhan</span>;
+        return (
+          <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-800 border border-rose-200/80 px-2.5 py-1 rounded-lg text-xs font-bold">
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Laporan Keluhan
+          </span>
+        );
       default:
-        return <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-lg text-xs font-bold">{cat}</span>;
+        return (
+          <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+            {cat}
+          </span>
+        );
     }
   };
 
   const getAspirationStatusBadge = (status: string) => {
     switch (status) {
       case 'submitted':
-        return <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-lg text-xs font-bold"><Clock className="w-3 h-3 text-slate-500" /> Terkirim</span>;
+        return (
+          <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+            <Clock className="w-3.5 h-3.5 text-slate-500" /> Terkirim
+          </span>
+        );
       case 'under_review':
-        return <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-lg text-xs font-bold"><Clock className="w-3 h-3 text-amber-500" /> Ditinjau Pengurus</span>;
+        return (
+          <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+            <Clock className="w-3.5 h-3.5 text-amber-600" /> Ditinjau Pengurus
+          </span>
+        );
       case 'resolved':
-        return <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-lg text-xs font-bold"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Selesai / Ditindaklanjuti</span>;
+        return (
+          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Selesai / Ditindaklanjuti
+          </span>
+        );
       case 'rejected':
-        return <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-lg text-xs font-bold"><XCircle className="w-3 h-3 text-rose-500" /> Ditolak</span>;
+        return (
+          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+            <XCircle className="w-3.5 h-3.5 text-rose-600" /> Belum Relevan
+          </span>
+        );
       default:
-        return <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-lg text-xs font-bold">{status}</span>;
+        return (
+          <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+            {status}
+          </span>
+        );
     }
   };
 
+  const aspirations = aspirationsData?.data || [];
+  const needs = needsData?.data || [];
+
+  const filteredAspirations = aspirations.filter(
+    (a) =>
+      a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a.content || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="space-y-10 pb-16">
-      {/* Kepala halaman: solid, left-aligned */}
-      <section className="bg-slate-900 text-white px-4 sm:px-6 py-10">
-        <div className="max-w-6xl mx-auto space-y-5">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
-              Aspirasi &amp; Kebutuhan Lingkungan
+    <div className="pb-16 space-y-8">
+      {/* Hero Section */}
+      <section className="bg-slate-900 text-white px-4 sm:px-6 py-10 sm:py-14 border-b border-slate-800">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-3 max-w-2xl">
+            <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-3 py-1 rounded-full">
+              <MessageSquareHeart className="w-3.5 h-3.5" /> Ruang Dengar Warga
+            </div>
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+              Aspirasi &amp; Usulan Kebutuhan RT
             </h1>
-            <p className="mt-3 max-w-2xl text-sm text-slate-300 leading-relaxed">
-              Sampaikan gagasan, usulan fasilitas, maupun keluhan lingkungan. Semua masukan
-              diproses dan statusnya dapat dipantau warga.
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+              Suarakan gagasan perbaikan lingkungan, usulan fasilitas bersama, atau aduan masalah warga. Setiap suara dipantau langsung oleh pengurus.
             </p>
           </div>
+
           <button
             onClick={() => setShowFormModal(true)}
-            className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm px-5 py-2.5 rounded-lg"
+            className="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95 shrink-0"
           >
-            <PlusCircle className="w-5 h-5" /> Sampaikan Aspirasi
+            <PlusCircle className="w-5 h-5" /> Sampaikan Aspirasi Baru
           </button>
         </div>
       </section>
 
       {/* Main Container */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-        {/* Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-200">
-          <button
-            onClick={() => setActiveTab('aspirations')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 -mb-px ${
-              activeTab === 'aspirations'
-                ? 'text-emerald-800 border-emerald-700'
-                : 'text-slate-500 border-transparent hover:text-slate-800'
-            }`}
-          >
-            <MessageSquareHeart className="w-4 h-4" /> Aspirasi Warga
-          </button>
-          <button
-            onClick={() => setActiveTab('needs')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 -mb-px ${
-              activeTab === 'needs'
-                ? 'text-emerald-800 border-emerald-700'
-                : 'text-slate-500 border-transparent hover:text-slate-800'
-            }`}
-          >
-            <Building className="w-4 h-4" /> Kebutuhan RT
-          </button>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
+        {/* Tab & Search Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('aspirations')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all ${
+                activeTab === 'aspirations'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <MessageSquareHeart className="w-4 h-4 text-emerald-400" /> Aspirasi Warga ({aspirations.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('needs')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all ${
+                activeTab === 'needs'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <Building className="w-4 h-4 text-amber-400" /> Kebutuhan Lingkungan ({needs.length})
+            </button>
+          </div>
+
+          {activeTab === 'aspirations' && (
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <input
+                type="text"
+                placeholder="Cari aspirasi..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white text-xs sm:text-sm pl-9 pr-3 py-2 border border-slate-200 rounded-xl"
+              />
+            </div>
+          )}
         </div>
 
-        {/* Tab 1: Aspirasi Warga */}
+        {/* Tab Content: Aspirasi */}
         {activeTab === 'aspirations' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-              <div>
-                <h2 className="text-xl font-extrabold text-slate-900">Daftar Aspirasi Publik</h2>
-                <p className="text-xs text-slate-500 mt-1">Transparansi masukan dan status tindak lanjut pengurus RT</p>
-              </div>
-            </div>
-
+          <div className="space-y-4">
             {loadingAspirations ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[1, 2].map((n) => (
-                  <div key={n} className="h-44 bg-slate-100 animate-pulse rounded-2xl border border-slate-200" />
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-32 rounded-2xl bg-slate-100 animate-pulse" />
                 ))}
               </div>
-            ) : aspirationsData?.data?.length ? (
+            ) : filteredAspirations.length === 0 ? (
+              <div className="civic-card p-10 text-center space-y-2">
+                <MessageSquareHeart className="w-8 h-8 text-slate-400 mx-auto" />
+                <p className="font-bold text-sm text-slate-700">Belum Ada Aspirasi</p>
+                <p className="text-xs text-slate-500">Jadilah warga pertama yang menyampaikan usulan konstruktif.</p>
+              </div>
+            ) : (
               <div className="space-y-4">
-                {aspirationsData.data.map((asp) => (
-                  <article
-                    key={asp.id}
-                    className="bg-white rounded-xl border border-slate-200 p-5 sm:p-6 space-y-3"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        {getCategoryBadge(asp.category)}
-                        {getAspirationStatusBadge(asp.status)}
+                {filteredAspirations.map((item) => (
+                  <article key={item.id} className="civic-card p-5 sm:p-6 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {getCategoryBadge(item.category)}
+                        {item.is_anonymous && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                            <Lock className="w-3 h-3" /> Anonim
+                          </span>
+                        )}
                       </div>
-                      <h3 className="text-base font-bold text-slate-900 leading-snug">{asp.title}</h3>
-                      <p className="text-xs sm:text-sm text-slate-600 whitespace-pre-line leading-relaxed">
-                        {asp.content}
+                      {getAspirationStatusBadge(item.status)}
+                    </div>
+
+                    <div>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                        {item.title}
+                      </h3>
+                      <p className="mt-2 text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                        {item.content}
                       </p>
                     </div>
 
-                    {/* Feedback / Admin Response */}
-                    {asp.response && (
-                      <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3.5 space-y-1">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 block">
-                          Tanggapan Resmi Pengurus
-                        </span>
-                        <p className="text-xs text-emerald-950 font-medium leading-relaxed">{asp.response}</p>
+                    {/* Respon Pengurus RT jika ada */}
+                    {item.response && (
+                      <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-4 space-y-1">
+                        <p className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                          <Check className="w-4 h-4 text-emerald-600" /> Tindak Lanjut Pengurus RT
+                        </p>
+                        <p className="text-xs text-emerald-900 leading-relaxed">
+                          {item.response}
+                        </p>
                       </div>
                     )}
 
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-                      <span>{asp.is_anonymous ? 'Warga (Anonim)' : 'Warga RT'}</span>
-                      <span className="tabular-nums">{new Date(asp.created_at).toLocaleDateString('id-ID')}</span>
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                      <span>{item.is_anonymous ? 'Warga Lingkungan (Anonim)' : 'Warga RT'}</span>
+                      <span>{new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                     </div>
                   </article>
                 ))}
-              </div>
-            ) : (
-              <div className="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-10 text-center space-y-3">
-                <MessageSquareHeart className="w-10 h-10 text-slate-400 mx-auto" />
-                <h4 className="text-sm font-bold text-slate-700">Belum Ada Aspirasi Publik</h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Jadilah yang pertama menyampaikan ide atau keluhan untuk kebaikan lingkungan bersama.
-                </p>
               </div>
             )}
           </div>
         )}
 
-        {/* Tab 2: Kebutuhan Lingkungan */}
+        {/* Tab Content: Kebutuhan RT */}
         {activeTab === 'needs' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-              <div>
-                <h2 className="text-xl font-extrabold text-slate-900">Program Kebutuhan & Fasilitas RT</h2>
-                <p className="text-xs text-slate-500 mt-1">Pengadaan inventaris dan perbaikan sarana warga</p>
-              </div>
-            </div>
-
+          <div className="space-y-4">
             {loadingNeeds ? (
-              <div className="h-44 bg-slate-100 animate-pulse rounded-2xl border border-slate-200" />
-            ) : needsData?.data?.length ? (
-              <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
-                {needsData.data.map((need) => (
-                  <li key={need.id} className="px-5 py-4 space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-100">
-                        {need.status === 'completed' ? 'Selesai Terpenuhi' : 'Program Aktif'}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-700 tabular-nums">
-                        Estimasi Rp {need.estimated_cost?.toLocaleString('id-ID') || '0'}
+              <div className="space-y-4">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-32 rounded-2xl bg-slate-100 animate-pulse" />
+                ))}
+              </div>
+            ) : needs.length === 0 ? (
+              <div className="civic-card p-10 text-center space-y-2">
+                <Building className="w-8 h-8 text-slate-400 mx-auto" />
+                <p className="font-bold text-sm text-slate-700">Belum Ada Daftar Kebutuhan Sarpras</p>
+                <p className="text-xs text-slate-500">Kebutuhan infrastruktur lingkungan yang direncanakan akan muncul di sini.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {needs.map((item) => (
+                  <div key={item.id} className="civic-card p-5 space-y-3 flex flex-col justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                          Sarana &amp; Prasarana
+                        </span>
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                          {item.status}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-base text-slate-900 leading-snug">{item.title}</h4>
+                      {item.description && (
+                        <p className="text-xs text-slate-600 leading-relaxed">{item.description}</p>
+                      )}
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-medium">Estimasi Biaya:</span>
+                      <span className="font-extrabold text-slate-900">
+                        {item.estimated_cost ? `Rp ${item.estimated_cost.toLocaleString('id-ID')}` : 'Dihitung dalam RAB'}
                       </span>
                     </div>
-                    <h3 className="text-sm font-bold text-slate-900 leading-snug">{need.title}</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">{need.description}</p>
-                  </li>
+                  </div>
                 ))}
-              </ul>
-            ) : (
-              <div className="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-10 text-center space-y-3">
-                <Building className="w-10 h-10 text-slate-400 mx-auto" />
-                <h4 className="text-sm font-bold text-slate-700">Belum Ada Program Kebutuhan</h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Daftar pengadaan inventaris atau fasilitas lingkungan akan ditampilkan secara transparan di sini.
-                </p>
               </div>
             )}
           </div>
         )}
       </div>
 
+      {/* Modal Form Aspirasi */}
       {showFormModal && (
         <AspirationFormModal
+          isOpen={showFormModal}
           onClose={() => setShowFormModal(false)}
           onSubmit={handleSubmitAspiration}
-          isLoading={submitAspirationMutation.isPending}
         />
       )}
     </div>
