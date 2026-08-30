@@ -60,6 +60,28 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
     await page.getByRole('button', { name: 'Kirim Aspirasi & Usulan Warga' }).click();
     await expect(page).toHaveURL('/usulan');
     await expect(page.getByText('Daftar Aspirasi Publik')).toBeVisible({ timeout: 10000 });
+
+    // 10. Login kembali sebagai Admin RT untuk menguji Edit & Hapus Rumah
+    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await page.goto('/admin/houses');
+    await expect(page.getByText(blockNo)).toBeVisible({ timeout: 10000 });
+
+    // 11. Edit data rumah
+    const houseRow = page.locator('tr', { hasText: blockNo });
+    await houseRow.getByTitle('Edit Rumah').click();
+    await expect(page.getByText('Edit Data Rumah')).toBeVisible();
+
+    const updatedAddress = 'Jl. Anggrek No. 99 RT 03';
+    await page.getByPlaceholder('Contoh: Jl. Melati Raya RT 05').fill(updatedAddress);
+    await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
+
+    // Verifikasi alamat terupdate di tabel
+    await expect(page.getByText(updatedAddress)).toBeVisible({ timeout: 10000 });
+
+    // 12. Hapus data rumah
+    page.on('dialog', (dialog) => dialog.accept());
+    await page.locator('tr', { hasText: blockNo }).getByTitle('Hapus Rumah').click();
+    await expect(page.getByText(blockNo)).not.toBeVisible({ timeout: 10000 });
   });
 });
 

@@ -49,5 +49,7 @@ type HouseUsecase interface {
 	ClaimAccessToken(ctx context.Context, tenantSlug, token string) (*HouseAccessClaimResponse, error)
 	ListHouses(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]House, int, error)
 	CreateHouse(ctx context.Context, tenantID uuid.UUID, house *House) (*House, error)
+	UpdateHouse(ctx context.Context, tenantID uuid.UUID, house *House) (*House, error)
+	DeleteHouse(ctx context.Context, tenantID, houseID uuid.UUID) error
 	RegenerateToken(ctx context.Context, tenantID, houseID uuid.UUID) (*House, error)
 }

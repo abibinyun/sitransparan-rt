@@ -8,6 +8,7 @@ import {
   HouseholdAccumulation 
 } from '../services/wasteBank';
 import { useResidents } from '../services/resident';
+import { useHouses } from '../services/house';
 import { 
   Recycle, 
   Plus, 
@@ -19,6 +20,7 @@ import {
   Edit2,
   Trash2,
   UserCheck,
+  Home,
 } from 'lucide-react';
 import { formatRupiah } from '../services/public_transparency';
 
@@ -459,7 +461,7 @@ export const WasteBankPage: React.FC = () => {
   );
 };
 
-// Sub-component: Modal Catat Setoran Terhubung ke Master Penduduk Warga
+// Sub-component: Modal Catat Setoran Terhubung ke Master Penduduk Warga & Rumah
 const DepositModal: React.FC<{
   categories: WasteCategory[];
   onClose: () => void;
@@ -470,16 +472,39 @@ const DepositModal: React.FC<{
   const [rtNumber, setRtNumber] = useState('');
   const [houseNumber, setHouseNumber] = useState('');
   const [selectedResidentId, setSelectedResidentId] = useState('');
+  const [selectedHouseId, setSelectedHouseId] = useState('');
   const [items, setItems] = useState<{ category_id: string; quantity: number }[]>([
     { category_id: categories[0]?.id || '', quantity: 1 }
   ]);
 
-  // Load master data residents
+  // Load master data residents & houses
   const { data: residentsData, isLoading: isResidentsLoading } = useResidents({
+    limit: 100,
+  });
+  const { data: housesData, isLoading: isHousesLoading } = useHouses({
     limit: 100,
   });
 
   const residentsList = residentsData?.data || [];
+  const housesList = housesData?.data || [];
+
+  const handleSelectHouse = (houseId: string) => {
+    setSelectedHouseId(houseId);
+    if (!houseId) return;
+    const foundHouse = housesList.find(h => h.id === houseId);
+    if (foundHouse) {
+      setHouseNumber(foundHouse.block_number);
+      if (foundHouse.head_resident) {
+        setSelectedResidentId(foundHouse.head_resident.id);
+        setFamilyHeadName(foundHouse.head_resident.full_name || '');
+        setKkNumber(foundHouse.head_resident.kk_number || '');
+        if (foundHouse.head_resident.rt_rw) {
+          const parts = foundHouse.head_resident.rt_rw.split('/');
+          setRtNumber(parts[0]?.replace(/\D/g, '') || '');
+        }
+      }
+    }
+  };
 
   const handleSelectResident = (residentId: string) => {
     setSelectedResidentId(residentId);
@@ -495,7 +520,9 @@ const DepositModal: React.FC<{
         const parts = found.rt_rw.split('/');
         setRtNumber(parts[0]?.replace(/\D/g, '') || '');
       }
-      setHouseNumber(found.address || '');
+      if (!houseNumber) {
+        setHouseNumber(found.address || '');
+      }
     }
   };
 
@@ -537,16 +564,40 @@ const DepositModal: React.FC<{
         <h2 className="text-lg font-bold text-slate-800 mb-4">Catat Setoran Bank Sampah</h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Integrasi Pilihan Rumah (Stiker QR) */}
+          <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-2">
+            <label className="block text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+              <Home className="w-4 h-4 text-emerald-600" />
+              Pilih dari Data Rumah / Stiker QR (Otomatis Isi)
+            </label>
+            <select
+              value={selectedHouseId}
+              onChange={(e) => handleSelectHouse(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20"
+            >
+              <option value="">-- Pilih Rumah / Blok Warga --</option>
+              {isHousesLoading ? (
+                <option disabled>Memuat master rumah...</option>
+              ) : (
+                housesList.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.block_number} {h.head_resident ? `- KK: ${h.head_resident.full_name}` : ''} {h.address ? `(${h.address})` : ''}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
           {/* Integrasi Master Data Warga */}
-          <div className="p-3.5 bg-emerald-50/70 border border-emerald-100 rounded-xl space-y-2">
-            <label className="block text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <UserCheck className="w-4 h-4 text-emerald-600" />
-              Pilih dari Master Data Penduduk (Opsional / Otomatis)
+              Pilih dari Master Data Penduduk (Opsional)
             </label>
             <select
               value={selectedResidentId}
               onChange={(e) => handleSelectResident(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20"
             >
               <option value="">-- Isi Manual atau Pilih Warga Terdaftar --</option>
               {isResidentsLoading ? (

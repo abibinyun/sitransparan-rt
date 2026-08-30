@@ -105,6 +105,84 @@ func (h *HouseHandler) CreateAdmin(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(house)
 }
 
+// UpdateAdmin memperbarui informasi rumah
+func (h *HouseHandler) UpdateAdmin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	tenant := middleware.GetTenantFromContext(r.Context())
+	if tenant == nil {
+		http.Error(w, `{"error":"tenant context missing"}`, http.StatusBadRequest)
+		return
+	}
+
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/admin/houses/")
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) == 0 || parts[0] == "" {
+		http.Error(w, `{"error":"invalid house id"}`, http.StatusBadRequest)
+		return
+	}
+
+	houseID, err := uuid.Parse(parts[0])
+	if err != nil {
+		http.Error(w, `{"error":"invalid house id"}`, http.StatusBadRequest)
+		return
+	}
+
+	var req domain.House
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"payload tidak valid"}`, http.StatusBadRequest)
+		return
+	}
+	req.ID = houseID
+
+	house, err := h.houseUC.UpdateHouse(r.Context(), tenant.ID, &req)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(house)
+}
+
+// DeleteAdmin menghapus data rumah
+func (h *HouseHandler) DeleteAdmin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	tenant := middleware.GetTenantFromContext(r.Context())
+	if tenant == nil {
+		http.Error(w, `{"error":"tenant context missing"}`, http.StatusBadRequest)
+		return
+	}
+
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/admin/houses/")
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) == 0 || parts[0] == "" {
+		http.Error(w, `{"error":"invalid house id"}`, http.StatusBadRequest)
+		return
+	}
+
+	houseID, err := uuid.Parse(parts[0])
+	if err != nil {
+		http.Error(w, `{"error":"invalid house id"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.houseUC.DeleteHouse(r.Context(), tenant.ID, houseID); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "rumah berhasil dihapus"})
+}
+
 // RegenerateTokenAdmin me-reset token akses rumah
 func (h *HouseHandler) RegenerateTokenAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -160,6 +238,16 @@ func (h *HouseHandler) RegisterRoutes(mux *http.ServeMux, tenantMw, authMw, admi
 
 		if strings.HasSuffix(r.URL.Path, "/regenerate-token") {
 			h.RegenerateTokenAdmin(w, r)
+			return
+		}
+
+		if r.Method == http.MethodPut {
+			h.UpdateAdmin(w, r)
+			return
+		}
+
+		if r.Method == http.MethodDelete {
+			h.DeleteAdmin(w, r)
 			return
 		}
 

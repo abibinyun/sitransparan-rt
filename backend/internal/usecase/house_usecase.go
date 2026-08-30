@@ -69,6 +69,7 @@ func (u *houseUsecase) ClaimAccessToken(ctx context.Context, tenantSlug, token s
 
 	// Generate JWT scoped to house and tenant
 	claims := jwt.MapClaims{
+		"user_id":   house.ID.String(),
 		"tenant_id": tenant.ID.String(),
 		"house_id":  house.ID.String(),
 		"role":      "resident",
@@ -125,6 +126,34 @@ func (u *houseUsecase) CreateHouse(ctx context.Context, tenantID uuid.UUID, hous
 		return nil, err
 	}
 	return house, nil
+}
+
+func (u *houseUsecase) UpdateHouse(ctx context.Context, tenantID uuid.UUID, house *domain.House) (*domain.House, error) {
+	if house.BlockNumber == "" {
+		return nil, errors.New("nomor blok / rumah wajib diisi")
+	}
+	existing, err := u.houseRepo.GetByID(ctx, tenantID, house.ID)
+	if err != nil || existing == nil {
+		return nil, errors.New("data rumah tidak ditemukan")
+	}
+	if house.AccessToken == "" {
+		house.AccessToken = existing.AccessToken
+	}
+	if house.TokenStatus == "" {
+		house.TokenStatus = existing.TokenStatus
+	}
+	if err := u.houseRepo.Update(ctx, tenantID, house); err != nil {
+		return nil, err
+	}
+	return house, nil
+}
+
+func (u *houseUsecase) DeleteHouse(ctx context.Context, tenantID, houseID uuid.UUID) error {
+	existing, err := u.houseRepo.GetByID(ctx, tenantID, houseID)
+	if err != nil || existing == nil {
+		return errors.New("data rumah tidak ditemukan")
+	}
+	return u.houseRepo.Delete(ctx, tenantID, houseID)
 }
 
 func (u *houseUsecase) RegenerateToken(ctx context.Context, tenantID, houseID uuid.UUID) (*domain.House, error) {

@@ -58,6 +58,32 @@ export function useCreateHouse() {
   });
 }
 
+export function useUpdateHouse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: CreateHousePayload & { id: string }) => {
+      const res = await api.put<House>(`/admin/houses/${id}`, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-houses'] });
+    },
+  });
+}
+
+export function useDeleteHouse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (houseId: string) => {
+      const res = await api.delete<{ message: string }>(`/admin/houses/${houseId}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-houses'] });
+    },
+  });
+}
+
 export function useRegenerateHouseToken() {
   const queryClient = useQueryClient();
   return useMutation({

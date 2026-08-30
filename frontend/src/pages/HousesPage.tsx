@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { useHouses, useCreateHouse, useRegenerateHouseToken, House } from '../services/house';
+import { 
+  useHouses, 
+  useCreateHouse, 
+  useUpdateHouse, 
+  useDeleteHouse, 
+  useRegenerateHouseToken, 
+  House 
+} from '../services/house';
 import { useResidents } from '../services/resident';
 import { useAuthStore } from '../store/useAuthStore';
 import { getTenantUrl } from '../utils/tenant';
@@ -18,12 +25,15 @@ import {
   ExternalLink,
   CheckCircle2,
   Copy,
+  Edit2,
+  Trash2,
 } from 'lucide-react';
 
 export const HousesPage: React.FC = () => {
   const { activeTenant } = useAuthStore();
   const [search, setSearch] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingHouse, setEditingHouse] = useState<House | null>(null);
   const [isPrintStickerModalOpen, setIsPrintStickerModalOpen] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
@@ -35,6 +45,8 @@ export const HousesPage: React.FC = () => {
   const { data, isLoading } = useHouses({ limit: 100 });
   const { data: residentsData } = useResidents({ limit: 100 });
   const createMutation = useCreateHouse();
+  const updateMutation = useUpdateHouse();
+  const deleteMutation = useDeleteHouse();
   const regenerateMutation = useRegenerateHouseToken();
 
   const houses = data?.data || [];
@@ -49,20 +61,53 @@ export const HousesPage: React.FC = () => {
     return matchBlock || matchAddress || matchHead;
   });
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const openCreateModal = () => {
+    setEditingHouse(null);
+    setBlockNumber('');
+    setAddress('');
+    setHeadResidentId('');
+    setIsCreateModalOpen(true);
+  };
+
+  const openEditModal = (house: House) => {
+    setEditingHouse(house);
+    setBlockNumber(house.block_number);
+    setAddress(house.address || '');
+    setHeadResidentId(house.head_resident_id || '');
+    setIsCreateModalOpen(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!blockNumber.trim()) return;
 
-    await createMutation.mutateAsync({
-      block_number: blockNumber.trim(),
-      address: address.trim() || undefined,
-      head_resident_id: headResidentId || undefined,
-    });
+    if (editingHouse) {
+      await updateMutation.mutateAsync({
+        id: editingHouse.id,
+        block_number: blockNumber.trim(),
+        address: address.trim() || undefined,
+        head_resident_id: headResidentId || undefined,
+      });
+    } else {
+      await createMutation.mutateAsync({
+        block_number: blockNumber.trim(),
+        address: address.trim() || undefined,
+        head_resident_id: headResidentId || undefined,
+      });
+    }
 
     setBlockNumber('');
     setAddress('');
     setHeadResidentId('');
+    setEditingHouse(null);
     setIsCreateModalOpen(false);
+  };
+
+  const handleDelete = async (house: House) => {
+    if (!window.confirm(`Hapus data rumah Blok/No "${house.block_number}"? Data token dan histori QR akan terhapus.`)) {
+      return;
+    }
+    await deleteMutation.mutateAsync(house.id);
   };
 
   const handleRegenerate = async (house: House) => {
@@ -111,7 +156,7 @@ export const HousesPage: React.FC = () => {
             Cetak Lembar Stiker
           </Button>
           <Button
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={openCreateModal}
             className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
@@ -224,13 +269,13 @@ export const HousesPage: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1">
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => copyClaimUrl(house.access_token)}
                             title="Salin Tautan Akses Warga"
-                            className="text-slate-600 hover:text-emerald-600 text-xs"
+                            className="text-slate-600 hover:text-emerald-600 text-xs p-2 h-8"
                           >
                             {copiedToken === house.access_token ? (
                               <span className="text-emerald-600 font-bold flex items-center gap-1">
@@ -244,7 +289,7 @@ export const HousesPage: React.FC = () => {
                             href={claimUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center p-2 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                            className="inline-flex items-center justify-center p-2 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 h-8 w-8"
                             title="Uji Langsung Akses Warga"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -252,12 +297,31 @@ export const HousesPage: React.FC = () => {
                           <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => openEditModal(house)}
+                            title="Edit Rumah"
+                            className="text-slate-500 hover:text-indigo-600 p-2 h-8 w-8"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => handleRegenerate(house)}
                             disabled={regenerateMutation.isPending}
                             title="Generate Ulang Token (Reset QR)"
-                            className="text-slate-500 hover:text-rose-600"
+                            className="text-slate-500 hover:text-amber-600 p-2 h-8 w-8"
                           >
                             <RefreshCw className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDelete(house)}
+                            disabled={deleteMutation.isPending}
+                            title="Hapus Rumah"
+                            className="text-slate-500 hover:text-rose-600 p-2 h-8 w-8"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </TableCell>
@@ -270,24 +334,27 @@ export const HousesPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Modal Tambah Rumah */}
+      {/* Modal Tambah / Edit Rumah */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Home className="w-5 h-5 text-emerald-600" />
-                Daftarkan Rumah Baru
+                {editingHouse ? 'Edit Data Rumah' : 'Daftarkan Rumah Baru'}
               </h2>
               <button
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  setEditingHouse(null);
+                }}
                 className="text-slate-400 hover:text-slate-600 text-lg font-bold"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Nomor Blok / Rumah <span className="text-rose-500">*</span>
@@ -333,16 +400,23 @@ export const HousesPage: React.FC = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsCreateModalOpen(false)}
+                  onClick={() => {
+                    setIsCreateModalOpen(false);
+                    setEditingHouse(null);
+                  }}
                 >
                   Batal
                 </Button>
                 <Button
                   type="submit"
-                  disabled={createMutation.isPending}
+                  disabled={createMutation.isPending || updateMutation.isPending}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
-                  {createMutation.isPending ? 'Menyimpan...' : 'Simpan & Buat QR'}
+                  {createMutation.isPending || updateMutation.isPending 
+                    ? 'Menyimpan...' 
+                    : editingHouse 
+                    ? 'Simpan Perubahan' 
+                    : 'Simpan & Buat QR'}
                 </Button>
               </div>
             </form>

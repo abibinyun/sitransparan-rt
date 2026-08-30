@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Resident, CreateResidentPayload } from '../types/resident';
 import { useCreateResident, useUpdateResident, useUploadResidentDoc } from '../services/resident';
+import { useHouses } from '../services/house';
 import { dateOnlyToISO } from '../utils/date';
 import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
-import { UploadCloud, FileText } from 'lucide-react';
+import { UploadCloud, FileText, Home } from 'lucide-react';
 
 interface ResidentModalProps {
   isOpen: boolean;
@@ -65,7 +66,23 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
     }
   }, [resident, isOpen]);
 
+  const { data: housesData } = useHouses({ limit: 100 });
+  const housesList = housesData?.data || [];
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSelectHouse = (houseId: string) => {
+    if (!houseId) return;
+    const foundHouse = housesList.find(h => h.id === houseId);
+    if (foundHouse) {
+      const fullAddress = foundHouse.address 
+        ? `${foundHouse.block_number}, ${foundHouse.address}` 
+        : foundHouse.block_number;
+      setFormData((prev) => ({
+        ...prev,
+        address: fullAddress,
+      }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,6 +184,26 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
               onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
             />
           </div>
+        </div>
+
+        {/* Selector Rumah / Blok Warga */}
+        <div className="p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl space-y-1.5">
+          <Label htmlFor="house_select" className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+            <Home className="w-4 h-4 text-emerald-600" />
+            Tautkan ke Data Rumah / Blok (Otomatis Isi Alamat)
+          </Label>
+          <select
+            id="house_select"
+            onChange={(e) => handleSelectHouse(e.target.value)}
+            className="w-full rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none"
+          >
+            <option value="">-- Pilih Rumah / Blok Terdaftar --</option>
+            {housesList.map((h) => (
+              <option key={h.id} value={h.id}>
+                {h.block_number} {h.address ? `- ${h.address}` : ''}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
