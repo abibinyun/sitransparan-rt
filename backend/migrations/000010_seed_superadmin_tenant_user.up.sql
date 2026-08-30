@@ -7,7 +7,7 @@ SELECT
     r.id,
     'active'
 FROM tenants t
-JOIN users u ON u.email = 'admin@gmail.com'
+JOIN users u ON u.email = 'abi@gmail.com'
 JOIN roles r ON r.name = 'superadmin'
 WHERE t.slug = 'sitransparan-rt'
 ON CONFLICT (tenant_id, user_id) DO NOTHING;

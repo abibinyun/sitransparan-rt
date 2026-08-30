@@ -4,7 +4,7 @@ test.describe('User Management E2E', () => {
   test.beforeEach(async ({ page }) => {
     // Login as SuperAdmin
     await page.goto('/login');
-    await page.getByLabel('Email').fill('superadmin@platform.local');
+    await page.getByLabel('Email').fill('abi@gmail.com');
     await page.getByLabel('Kata Sandi').fill('admin123');
     await page.getByRole('button', { name: 'Masuk Akun' }).click();
 

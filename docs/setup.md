@@ -124,8 +124,7 @@ Tenant baru: buat via SuperAdmin (`/admin/tenants` atau API) → schema `tenant_
 
 | Role | Email | Password |
 |---|---|---|
-| Super Admin (platform) | `superadmin@platform.local` | `admin123` |
-| Super Admin (legacy) | `admin@gmail.com` | `admin123` |
+| Super Admin | `abi@gmail.com` | `admin123` |
 | Admin RT default (tenant `sitransparan-rt`) | `admin@sitransparan.rt` | `password123` |
 | Resident | daftar mandiri lewat `/login` (register tanpa tenant; mapping via `/admin/users`) | — |
 

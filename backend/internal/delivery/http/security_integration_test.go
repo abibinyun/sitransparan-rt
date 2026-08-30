@@ -195,9 +195,9 @@ func setupSecurityFixture(t *testing.T) *securityFixture {
 	fx.slugA = "sec-a-" + suffix
 	fx.slugB = "sec-b-" + suffix
 
-	// Superadmin login (role comes from DB mapping; superadmin@platform.local is
+	// Superadmin login (role comes from DB mapping; abi@gmail.com is
 	// seeded in migrations).
-	saToken, saUser := loginToken(handler, "admin@gmail.com", "admin123")
+	saToken, saUser := loginToken(handler, "abi@gmail.com", "admin123")
 	fx.saToken = saToken
 	if role, _ := saUser["role"].(string); role != "superadmin" {
 		t.Fatalf("expected superadmin role, got %q", role)
@@ -485,7 +485,7 @@ func TestSecurity_SuperadminAccountProtection(t *testing.T) {
 	}
 
 	// admin_A cannot delete a superadmin account inside its own tenant.
-	// The seeded superadmin (admin@gmail.com) is mapped to sitransparan-rt, not
+	// The seeded superadmin (abi@gmail.com) is mapped to sitransparan-rt, not
 	// to our fixture tenant, so instead verify role change to superadmin is
 	// blocked for the resident (already covered). Here: admin_A cannot delete
 	// admin_B because admin_B is not a member of tenant A.

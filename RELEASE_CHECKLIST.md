@@ -62,6 +62,6 @@ Data kas RT dan data warga bersifat kritis. Siapkan script backup otomatis berka
 ## 6. Password Akun Default
 
 Ganti segera kata sandi default setelah database terpasang:
-- `superadmin@platform.local` (default: `admin123`)
+- `abi@gmail.com` (default: `admin123`)
 - `admin@sitransparan.rt` (default: `password123`)
 - Buat akun pengurus RT sesuai SK/struktur RT melalui menu Manajemen Pengguna (`/users`).

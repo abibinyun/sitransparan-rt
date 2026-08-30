@@ -70,7 +70,7 @@ npx playwright test --config=playwright.headless.config.ts   # headless (CI)
 ```
 
 - `baseURL`: `http://localhost:3000`
-- Credentials: `superadmin@platform.local`/`admin123`, `admin@sitransparan.rt`/`password123`
+- Credentials: `abi@gmail.com`/`admin123`, `admin@sitransparan.rt`/`password123`
 - Laporan: jalankan ulang untuk hasil terkini (tidak always valid dari git history).
 
 ## 4. Manual Testing

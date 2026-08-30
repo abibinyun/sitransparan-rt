@@ -1500,8 +1500,7 @@ tests/e2e/                      Playwright regression suite
 
 | Role | Email | Password |
 |---|---|---|
-| Super Admin | `superadmin@platform.local` | `admin123` |
-| Super Admin (legacy) | `admin@gmail.com` | `admin123` |
+| Super Admin | `abi@gmail.com` | `admin123` |
 | Admin RT (tenant `sitransparan-rt`) | `admin@sitransparan.rt` | `password123` |
 | Resident | self-register at `/login`, then admin assigns tenant via `/users` | — |
 

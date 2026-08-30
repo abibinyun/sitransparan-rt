@@ -32,8 +32,7 @@ Akun default (seed, verifikasi bcrypt di migrasi):
 
 | Role | Email | Password |
 |---|---|---|
-| Super Admin | `superadmin@platform.local` | `admin123` |
-| Super Admin (legacy) | `admin@gmail.com` | `admin123` |
+| Super Admin | `abi@gmail.com` | `admin123` |
 | Admin RT (tenant `sitransparan-rt`) | `admin@sitransparan.rt` | `password123` |
 | Resident | daftar mandiri di `/login` (register tanpa tenant, lalu admin assign via `/admin/users`) | — |
 
