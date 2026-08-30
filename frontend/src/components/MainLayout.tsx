@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   MessageSquareHeart,
+  QrCode,
   Recycle,
   Shield,
   ShieldCheck,
@@ -40,6 +41,7 @@ type NavItem = {
 const baseNavItems: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/residents', label: 'Data Warga', icon: Users, adminOnly: true },
+  { to: '/admin/houses', label: 'Stiker QR Rumah', icon: QrCode, adminOnly: true },
   { to: '/admin/financial', label: 'Keuangan', icon: WalletCards },
   { to: '/admin/events', label: 'Kegiatan & Budget', icon: CalendarDays },
   { to: '/admin/meetings', label: 'Notulen & Tindak Lanjut', icon: ClipboardList },
