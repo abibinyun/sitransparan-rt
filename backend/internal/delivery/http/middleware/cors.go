@@ -30,11 +30,20 @@ func originAllowed(origin, baseDomain string) bool {
 	case "localhost", "127.0.0.1", "::1":
 		return true
 	}
-	base := strings.ToLower(strings.TrimSpace(strings.TrimSuffix(baseDomain, ".")))
-	if base == "" {
-		return false
+	for _, base := range splitBaseDomains(baseDomain) {
+		if host == base || strings.HasSuffix(host, "."+base) {
+			return true
+		}
 	}
-	return host == base || strings.HasSuffix(host, "."+base)
+	// Auto-allow tunnel / valid tenant hosts on second-level ccTLDs
+	parts := strings.Split(host, ".")
+	if len(parts) >= 2 {
+		lastTwo := strings.Join(parts[len(parts)-2:], ".")
+		if secondLevelTLDs[lastTwo] && (len(parts) == 3 || len(parts) == 4) {
+			return true
+		}
+	}
+	return false
 }
 
 // CORSMiddleware configures CORS headers for cross-origin requests. The only

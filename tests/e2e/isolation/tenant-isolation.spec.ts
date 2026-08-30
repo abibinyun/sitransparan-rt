@@ -5,7 +5,7 @@ const RT003 = 'http://rt-003.openrt.local';
 const RT004 = 'http://rt-004.openrt.local';
 
 async function ensureTenant(page: Page, name: string, slug: string) {
-  await page.goto('/superadmin/tenants');
+  await page.goto('/admin/tenants');
   const existing = page.locator('table').filter({ hasText: slug });
   if ((await existing.count()) > 0) return;
   await page.getByRole('button', { name: '+ Pendaftaran RT Baru' }).click();
@@ -22,7 +22,7 @@ async function createUserForTenant(
   role: 'admin_rt' | 'resident',
   slugPart: string
 ) {
-  await page.goto('/users');
+  await page.goto('/admin/users');
   await page.getByRole('button', { name: 'Tambah Pengguna' }).click();
   await page.fill('#name', name);
   await page.fill('#email', email);
@@ -43,7 +43,7 @@ async function createResidentAt(page: Page, name: string, nik: string) {
   await page.fill('#full_name', name);
   await page.check('#is_head_of_family');
   await page.getByRole('button', { name: 'Simpan Data' }).click();
-  await expect(page.locator('table')).toContainText(name);
+  await expect(page.getByText(name)).toBeVisible();
 }
 
 test.describe('Tenant isolation through real tenant hostnames', () => {
@@ -77,7 +77,8 @@ test.describe('Tenant isolation through real tenant hostnames', () => {
     await expect(page.getByText(aAnnouncement)).toBeVisible();
 
     // --- Tenant B works on the rt-004 hostname ---
-    const pageB = await page.context().newPage();
+    const contextB = await page.context().browser()!.newContext();
+    const pageB = await contextB.newPage();
     await login(pageB, bEmail, pw, RT004);
 
     // B's resident list must NOT contain A's resident (B may have an empty
@@ -112,6 +113,6 @@ test.describe('Tenant isolation through real tenant hostnames', () => {
     });
     expect(allowed.status()).toBe(200);
 
-    await pageB.close();
+    await contextB.close();
   });
 });

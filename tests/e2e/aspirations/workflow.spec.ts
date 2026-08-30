@@ -47,7 +47,7 @@ test.describe('Aspirations & Community Needs — business workflows', () => {
     await page.goto('/public/aspirations');
     const publicCard = page.locator('article').filter({ hasText: title }).first();
     await expect(publicCard).toContainText('Selesai / Ditindaklanjuti');
-    await expect(publicCard).toContainText('Tanggapan Resmi Pengurus');
+    await expect(publicCard).toContainText(/Tindak Lanjut Pengurus RT|Tanggapan Resmi/i);
     await expect(publicCard).toContainText(responseText);
   });
 

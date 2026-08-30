@@ -106,7 +106,7 @@ export const PublicAspirationsPage: React.FC = () => {
               <MessageSquareHeart className="w-3.5 h-3.5" /> Ruang Dengar Warga
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-              Aspirasi &amp; Usulan Kebutuhan RT
+              Aspirasi &amp; Kebutuhan Lingkungan RT
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
               Suarakan gagasan perbaikan lingkungan, usulan fasilitas bersama, atau aduan masalah warga. Setiap suara dipantau langsung oleh pengurus.
@@ -165,7 +165,8 @@ export const PublicAspirationsPage: React.FC = () => {
 
         {/* Tab Content: Aspirasi */}
         {activeTab === 'aspirations' && (
-          <div className="space-y-4">
+          <div className="space-y-4" aria-label="Daftar Aspirasi Publik">
+            <h2 className="sr-only">Daftar Aspirasi Publik</h2>
             {loadingAspirations ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (

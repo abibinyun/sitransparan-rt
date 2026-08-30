@@ -17,6 +17,7 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [authError, setAuthError] = useState('');
   const [registerSuccess, setRegisterSuccess] = useState('');
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [availableTenants, setAvailableTenants] = useState<Tenant[]>([]);
@@ -36,6 +37,7 @@ export const LoginPage: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError('');
     try {
       const data = await loginMutation.mutateAsync({ email, password });
 
@@ -91,8 +93,12 @@ export const LoginPage: React.FC = () => {
       }
 
       window.location.href = '/admin';
-    } catch {
-      // error surfaced via loginMutation.isError below
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.error ||
+        err?.message ||
+        'Invalid email or password';
+      setAuthError(msg);
     }
   };
 
@@ -211,13 +217,14 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
 
-          {(loginMutation.isError || registerMutation.isError) && (
+          {(authError || loginMutation.isError || registerMutation.isError) && (
             <div className="flex items-center space-x-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>
-                {(loginMutation.error as any)?.response?.data?.error ||
+                {authError ||
+                  (loginMutation.error as any)?.response?.data?.error ||
                   (registerMutation.error as any)?.response?.data?.error ||
-                  'Terjadi kesalahan saat otentikasi.'}
+                  'Invalid email or password'}
               </span>
             </div>
           )}

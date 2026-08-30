@@ -54,6 +54,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[SuperAdminTenants] handleSave called', { name, slug, domain, editingTenant });
     if (!name || !slug) return;
 
     if (editingTenant) {
@@ -64,6 +65,10 @@ export const SuperAdminTenantsPage: React.FC = () => {
             setIsModalOpen(false);
             refetch();
           },
+          onError: (err: any) => {
+            console.error('Update tenant error:', err);
+            alert(err?.response?.data?.error || err?.message || 'Gagal memperbarui tenant');
+          },
         }
       );
     } else {
@@ -73,6 +78,10 @@ export const SuperAdminTenantsPage: React.FC = () => {
           onSuccess: () => {
             setIsModalOpen(false);
             refetch();
+          },
+          onError: (err: any) => {
+            console.error('Create tenant error data:', err?.response?.data);
+            alert(err?.response?.data?.error || err?.message || 'Gagal membuat tenant');
           },
         }
       );
@@ -189,11 +198,12 @@ export const SuperAdminTenantsPage: React.FC = () => {
         title={editingTenant ? 'Edit Tenant RT' : 'Pendaftaran RT Baru'}
         description={editingTenant ? 'Perbarui informasi tenant RT' : 'Daftarkan tenant RT baru ke dalam sistem'}
       >
-        <form onSubmit={handleSave} className="space-y-4 pt-2">
+        <form id="tenant-form" onSubmit={handleSave} data-testid="tenant-form" className="space-y-4 pt-2">
           <div>
             <label htmlFor="tenant-name" className="block text-sm font-medium text-gray-700">Nama RT</label>
             <Input
               id="tenant-name"
+              data-testid="tenant-name-input"
               type="text"
               required
               placeholder="e.g. RT 01 RW 05 Melati"
@@ -206,6 +216,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
             <label htmlFor="tenant-slug" className="block text-sm font-medium text-gray-700">Slug (ID URL / Header)</label>
             <Input
               id="tenant-slug"
+              data-testid="tenant-slug-input"
               type="text"
               required
               placeholder="e.g. rt-01-rw-05"
@@ -218,6 +229,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
             <label htmlFor="tenant-domain" className="block text-sm font-medium text-gray-700">Custom Domain (Opsional)</label>
             <Input
               id="tenant-domain"
+              data-testid="tenant-domain-input"
               type="text"
               placeholder={slug ? `${slug}.${baseDomain} (Default Subdomain)` : 'e.g. rt01.perumahan.com'}
               value={domain}
@@ -234,6 +246,8 @@ export const SuperAdminTenantsPage: React.FC = () => {
             </Button>
             <Button
               type="submit"
+              form="tenant-form"
+              data-testid="save-tenant-btn"
               disabled={createMutation.isPending || updateMutation.isPending}
               className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >

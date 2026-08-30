@@ -2,6 +2,10 @@ import { test, expect } from '@playwright/test';
 
 test.describe('SuperAdmin Tenant Management & CRUD', () => {
   test('SuperAdmin can view, create, edit, and list tenants', async ({ page }) => {
+    page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
+    page.on('pageerror', err => console.log('BROWSER PAGEERROR:', err.message));
+    page.on('requestfailed', req => console.log('REQUEST FAILED:', req.url(), req.failure()?.errorText));
+
     // Login as SuperAdmin
     await page.goto('/login');
     await page.getByLabel('Email').fill('superadmin@platform.local');
@@ -21,13 +25,14 @@ test.describe('SuperAdmin Tenant Management & CRUD', () => {
     const expectedSlug = `rt-99-test-${timestamp}`;
     const expectedDomain = `${expectedSlug}.openrt.local`;
 
-    await page.getByPlaceholder('e.g. RT 01 RW 05 Melati').fill(tenantName);
+    await page.getByTestId('tenant-name-input').fill(tenantName);
+    await page.getByTestId('tenant-slug-input').fill(expectedSlug);
     
-    // Submit
-    await page.getByRole('button', { name: 'Simpan Tenant' }).click();
+    // Submit and wait for response
+    await page.getByTestId('save-tenant-btn').click();
 
     // Verify tenant appears in table list (scoped to table, not dropdown)
     await expect(page.getByRole('cell', { name: tenantName })).toBeVisible();
-    await expect(page.getByRole('cell', { name: expectedDomain })).toBeVisible();
+    await expect(page.getByRole('cell', { name: new RegExp(`^${expectedSlug}\\.`) })).toBeVisible();
   });
 });

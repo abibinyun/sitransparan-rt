@@ -39,7 +39,7 @@ export const PublicEventsPage: React.FC = () => {
             <CalendarDays className="w-3.5 h-3.5" /> Kalender Gotong Royong
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-            Agenda &amp; Kegiatan Lingkungan
+            Jadwal &amp; Agenda Kegiatan Lingkungan
           </h1>
           <p className="max-w-2xl text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
             Jadwal kerja bakti, posyandu balita/lansia, musyawarah warga, dan turnamen olahraga pemuda. Hadir dan berpartisipasilah!

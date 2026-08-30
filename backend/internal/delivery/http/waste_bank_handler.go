@@ -166,6 +166,10 @@ func (h *WasteBankHandler) handleCategoriesCRUD(w http.ResponseWriter, r *http.R
 			return
 		}
 		if r.Method == http.MethodPost {
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+				return
+			}
 			var cat domain.WasteCategory
 			if err := json.NewDecoder(r.Body).Decode(&cat); err != nil {
 				http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
@@ -203,6 +207,10 @@ func (h *WasteBankHandler) handleCategoriesCRUD(w http.ResponseWriter, r *http.R
 	}
 
 	if r.Method == http.MethodPut {
+		if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+			http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+			return
+		}
 		var cat domain.WasteCategory
 		if err := json.NewDecoder(r.Body).Decode(&cat); err != nil {
 			http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
@@ -220,6 +228,10 @@ func (h *WasteBankHandler) handleCategoriesCRUD(w http.ResponseWriter, r *http.R
 	}
 
 	if r.Method == http.MethodDelete {
+		if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+			http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+			return
+		}
 		if err := h.usecase.DeleteCategory(r.Context(), tenantID, id); err != nil {
 			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 			return
@@ -251,6 +263,10 @@ func (h *WasteBankHandler) handleDepositsCRUD(w http.ResponseWriter, r *http.Req
 			return
 		}
 		if r.Method == http.MethodPost {
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+				return
+			}
 			var d domain.WasteDeposit
 			if err := json.NewDecoder(r.Body).Decode(&d); err != nil {
 				http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
@@ -276,7 +292,8 @@ func (h *WasteBankHandler) handleDepositsCRUD(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	id, err := uuid.Parse(subpath)
+	cleanSubpath := strings.TrimSuffix(subpath, "/status")
+	id, err := uuid.Parse(cleanSubpath)
 	if err != nil {
 		http.Error(w, `{"error":"invalid deposit id"}`, http.StatusBadRequest)
 		return
@@ -294,6 +311,10 @@ func (h *WasteBankHandler) handleDepositsCRUD(w http.ResponseWriter, r *http.Req
 	}
 
 	if r.Method == http.MethodPatch || r.Method == http.MethodPut {
+		if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+			http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+			return
+		}
 		var body struct {
 			Status string `json:"status"`
 		}

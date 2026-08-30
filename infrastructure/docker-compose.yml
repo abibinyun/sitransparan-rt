@@ -103,7 +103,7 @@ services:
       # Traefik v3 HostRegexp uses plain anchored regexes (the v2 {name:regex}
       # template syntax matches nothing in v3). The regex is anchored so a
       # suffix-trick host like rt-003.openrt.local.attacker.com never matches.
-      - 'traefik.http.routers.backend.rule=Host(`api.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`localhost`) || HostRegexp(`^api\.[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`)'
+      - 'traefik.http.routers.backend.rule=Host(`api.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`localhost`) || HostRegexp(`^api\.[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`) || Host(`api.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+\.iscube\.web\.id$`)'
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
     healthcheck:
@@ -128,7 +128,7 @@ services:
       - backend
     labels:
       - "traefik.enable=true"
-      - 'traefik.http.routers.frontend.rule=Host(`app.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`${TENANT_BASE_DOMAIN:-openrt.local}`) || HostRegexp(`^[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`)'
+      - 'traefik.http.routers.frontend.rule=Host(`app.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`${TENANT_BASE_DOMAIN:-openrt.local}`) || HostRegexp(`^[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`) || Host(`app.iscube.web.id`) || Host(`iscube.web.id`) || HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`)'
       - "traefik.http.routers.frontend.entrypoints=web"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
 

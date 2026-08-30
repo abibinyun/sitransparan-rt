@@ -111,7 +111,7 @@ func (h *PushHandler) handleBadge(w http.ResponseWriter, r *http.Request) {
 
 func (h *PushHandler) RegisterRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler, tenantMw func(http.Handler) http.Handler) {
 	mux.HandleFunc("GET /api/v1/push/config", h.handleConfig)
-	mux.Handle("POST /api/v1/push/subscribe", tenantMw(http.HandlerFunc(h.handleSubscribe)))
-	mux.Handle("POST /api/v1/push/unsubscribe", tenantMw(http.HandlerFunc(h.handleUnsubscribe)))
+	mux.Handle("POST /api/v1/push/subscribe", authMw(tenantMw(http.HandlerFunc(h.handleSubscribe))))
+	mux.Handle("POST /api/v1/push/unsubscribe", authMw(tenantMw(http.HandlerFunc(h.handleUnsubscribe))))
 	mux.Handle("GET /api/v1/social/badge", authMw(http.HandlerFunc(h.handleBadge)))
 }

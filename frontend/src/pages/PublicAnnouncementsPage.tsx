@@ -84,7 +84,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
             <Megaphone className="w-3.5 h-3.5" /> Saluran Komunikasi Resmi
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-            Kabar Warga &amp; Dokumen Transparansi
+            Pengumuman &amp; Dokumen Transparansi Warga
           </h1>
           <p className="max-w-2xl text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
             Edaran resmi pengurus {tenantName}, arsip notula musyawarah, dan keterbukaan kas lingkungan tanpa perantara.
@@ -199,7 +199,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
                       <button
                         onClick={() => openShare(item)}
                         className="p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
-                        aria-label="Bagikan Pengumuman ke WhatsApp"
+                        aria-label="Bagikan ke WhatsApp"
                         title="Buat Kartu Share WhatsApp"
                       >
                         <Share2 className="w-4 h-4" />

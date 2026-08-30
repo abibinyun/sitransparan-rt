@@ -65,15 +65,22 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
     }
   }, [resident, isOpen]);
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...formData, birth_date: dateOnlyToISO(formData.birth_date) };
-    if (resident) {
-      await updateMutation.mutateAsync({ id: resident.id, payload });
-    } else {
-      await createMutation.mutateAsync(payload);
+    setSubmitError(null);
+    try {
+      const payload = { ...formData, birth_date: dateOnlyToISO(formData.birth_date) };
+      if (resident) {
+        await updateMutation.mutateAsync({ id: resident.id, payload });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
+      onClose();
+    } catch (err: any) {
+      setSubmitError(err.response?.data?.error || err.message || 'Gagal menyimpan data warga');
     }
-    onClose();
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -87,6 +94,11 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
       className="max-w-2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {submitError && (
+          <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
+            {submitError}
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="nik">NIK</Label>

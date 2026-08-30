@@ -1,6 +1,10 @@
 const DEFAULT_BASE_DOMAIN = 'openrt.local';
 const DEFAULT_TENANT_SLUG = 'sitransparan-rt';
 const PLATFORM_SUBDOMAINS = new Set(['app', 'api', 'www', 'admin', 'auth', 'mail']);
+const SECOND_LEVEL_TLDS = new Set([
+  'web.id', 'co.id', 'ac.id', 'or.id', 'go.id', 'sch.id', 'mil.id', 'biz.id', 'my.id',
+  'co.uk', 'org.uk', 'me.uk', 'com.au', 'net.au', 'org.au', 'co.jp', 'ne.jp'
+]);
 
 // The parent domain under which every tenant gets its own subdomain
 // (<slug>.<baseDomain>). Dynamically derives root base domain from current window.location.hostname
@@ -9,15 +13,21 @@ export function getTenantBaseDomain(): string {
   if (typeof window !== 'undefined' && window.location?.hostname) {
     const host = window.location.hostname.toLowerCase();
     if (host && host !== 'localhost' && host !== '127.0.0.1' && host !== '::1') {
-      const envDomain = import.meta.env.VITE_TENANT_BASE_DOMAIN as string | undefined;
-      if (envDomain && host.endsWith(envDomain.toLowerCase())) {
-        return envDomain.toLowerCase();
+      const envDomain = (import.meta.env.VITE_TENANT_BASE_DOMAIN as string | undefined)?.toLowerCase();
+      if (envDomain && (host === envDomain || host.endsWith('.' + envDomain))) {
+        return envDomain;
       }
       const parts = host.split('.');
-      if (parts.length >= 3) {
-        // e.g. rt-003.iscube.web.id -> iscube.web.id
-        // e.g. rt-003.openrt.local -> openrt.local
-        return parts.slice(1).join('.');
+      if (parts.length >= 2) {
+        const lastTwo = parts.slice(-2).join('.');
+        if (SECOND_LEVEL_TLDS.has(lastTwo)) {
+          // e.g. rt-003.iscube.web.id -> iscube.web.id (3 parts)
+          // e.g. iscube.web.id -> iscube.web.id (3 parts)
+          return parts.length >= 3 ? parts.slice(-3).join('.') : host;
+        }
+        // e.g. rt-003.openrt.local -> openrt.local (2 parts)
+        // e.g. openrt.local -> openrt.local (2 parts)
+        return parts.slice(-2).join('.');
       }
       return host;
     }
@@ -40,14 +50,6 @@ export function getTenantSlugFromHost(): string | null {
     if (!sub || PLATFORM_SUBDOMAINS.has(sub)) return null;
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(sub)) return null;
     return sub;
-  }
-  // Foreign / custom hostname: jika memiliki prefix subdomain (contoh: rt-003.iscube.web.id)
-  const parts = host.split('.');
-  if (parts.length >= 3) {
-    const candidate = parts[0];
-    if (!PLATFORM_SUBDOMAINS.has(candidate) && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(candidate)) {
-      return candidate;
-    }
   }
   // Foreign host: check session cache
   return sessionStorage.getItem(`${CUSTOM_DOMAIN_CACHE_KEY}:${host}`) || null;

@@ -38,6 +38,56 @@ func NormalizeHost(host string) string {
 	return host
 }
 
+var secondLevelTLDs = map[string]bool{
+	"web.id": true,
+	"co.id":  true,
+	"ac.id":  true,
+	"or.id":  true,
+	"go.id":  true,
+	"sch.id": true,
+	"mil.id": true,
+	"biz.id": true,
+	"my.id":  true,
+	"co.uk":  true,
+	"org.uk": true,
+	"me.uk":  true,
+	"com.au": true,
+	"net.au": true,
+	"org.au": true,
+	"co.jp":  true,
+	"ne.jp":  true,
+}
+
+// splitBaseDomains parses a comma- or whitespace-separated list of base domains.
+// It also ensures default/standard domains (openrt.local, iscube.web.id) are checked.
+func splitBaseDomains(raw string) []string {
+	var result []string
+	seen := make(map[string]bool)
+
+	add := func(val string) {
+		norm := strings.ToLower(strings.TrimSpace(strings.TrimSuffix(val, ".")))
+		if norm != "" && !seen[norm] {
+			seen[norm] = true
+			result = append(result, norm)
+		}
+	}
+
+	if raw != "" {
+		parts := strings.FieldsFunc(raw, func(r rune) bool {
+			return r == ',' || r == ';' || r == ' ' || r == '\t'
+		})
+		for _, p := range parts {
+			add(p)
+		}
+	}
+
+	// Always ensure known environment or dev base domain is in the list
+	add("openrt.local")
+	add("iscube.web.id")
+
+	return result
+}
+
 // HostnameSlug returns the tenant slug encoded in the hostname when the host is a
 // tenant subdomain of baseDomain (e.g. host "rt-003.openrt.local" with baseDomain
 // "openrt.local" -> ("rt-003", true)).
@@ -49,25 +99,28 @@ func NormalizeHost(host string) string {
 // are NOT base-domain subdomains and therefore never yield a tenant slug).
 func HostnameSlug(host, baseDomain string) (string, bool) {
 	host = NormalizeHost(host)
-	baseDomain = strings.ToLower(strings.TrimSpace(strings.TrimSuffix(baseDomain, ".")))
-	if host == "" || baseDomain == "" {
+	if host == "" {
 		return "", false
 	}
-	if host == baseDomain {
-		return "", false
+
+	for _, base := range splitBaseDomains(baseDomain) {
+		if host == base {
+			continue
+		}
+		suffix := "." + base
+		if strings.HasSuffix(host, suffix) {
+			sub := strings.TrimSuffix(host, suffix)
+			if sub == "" || reservedSubdomains[sub] {
+				return "", false
+			}
+			if isValidTenantSlug(sub) {
+				return sub, true
+			}
+			return "", false
+		}
 	}
-	suffix := "." + baseDomain
-	if !strings.HasSuffix(host, suffix) {
-		return "", false
-	}
-	sub := strings.TrimSuffix(host, suffix)
-	if sub == "" || reservedSubdomains[sub] {
-		return "", false
-	}
-	if !isValidTenantSlug(sub) {
-		return "", false
-	}
-	return sub, true
+
+	return "", false
 }
 
 // isValidTenantSlug validates a subdomain-derived tenant slug: lowercase
@@ -94,17 +147,22 @@ func isValidTenantSlug(slug string) bool {
 // these hosts the backend derives the tenant from the JWT only.
 func IsPlatformHost(host, baseDomain string) bool {
 	host = NormalizeHost(host)
-	baseDomain = strings.ToLower(strings.TrimSpace(strings.TrimSuffix(baseDomain, ".")))
 	switch host {
-	case "", "localhost", "127.0.0.1", "::1", baseDomain:
+	case "", "localhost", "127.0.0.1", "::1":
 		return true
 	}
-	// Reserved subdomains of the base domain (app.openrt.local, api.openrt.local).
-	if baseDomain != "" && strings.HasSuffix(host, "."+baseDomain) {
-		sub := strings.TrimSuffix(host, "."+baseDomain)
-		if reservedSubdomains[sub] {
+	for _, base := range splitBaseDomains(baseDomain) {
+		if host == base {
 			return true
 		}
+		// Reserved subdomains of the base domain (app.openrt.local, api.openrt.local).
+		if strings.HasSuffix(host, "."+base) {
+			sub := strings.TrimSuffix(host, "."+base)
+			if reservedSubdomains[sub] {
+				return true
+			}
+		}
 	}
+
 	return false
 }

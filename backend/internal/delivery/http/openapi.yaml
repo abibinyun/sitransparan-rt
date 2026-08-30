@@ -1616,6 +1616,15 @@ paths:
         '200':
           description: WasteBankSummary
 
+  /api/v1/t/{slug}/waste-bank/households:
+    get:
+      summary: Peringkat tabungan sampah rumah tangga (PUBLIC)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: '{ data: HouseholdAccumulation[], total: number }'
+
   /api/v1/waste-bank/categories:
     get:
       summary: List kategori sampah (AUTH)

@@ -55,12 +55,19 @@ export const FinancialPage: React.FC = () => {
   const deleteFeeCat = useDeleteFeeCategory();
   const createFund = useCreateFund();
   const deleteFund = useDeleteFund();
+  const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const showFeedback = (type: 'success' | 'error', text: string) => {
+    setFeedbackMsg({ type, text });
+    setTimeout(() => setFeedbackMsg(null), 4000);
+  };
 
   const handleVerify = async (id: string, status: 'verified' | 'rejected') => {
     try {
       await verifyDues.mutateAsync({ id, status });
-    } catch (err) {
-      console.error('Failed to update verification status', err);
+      showFeedback('success', `Status iuran berhasil diubah.`);
+    } catch (err: any) {
+      showFeedback('error', err?.response?.data?.error || 'Gagal memperbarui status verifikasi.');
     }
   };
 
@@ -79,8 +86,9 @@ export const FinancialPage: React.FC = () => {
       setCatAmount(0);
       setCatPeriod('monthly');
       setCatDesc('');
-    } catch (err) {
-      console.error('Failed to create fee category', err);
+      showFeedback('success', 'Kategori iuran berhasil ditambahkan.');
+    } catch (err: any) {
+      showFeedback('error', err?.response?.data?.error || 'Gagal membuat kategori iuran.');
     }
   };
 
@@ -88,8 +96,9 @@ export const FinancialPage: React.FC = () => {
     if (confirm('Hapus kategori iuran ini?')) {
       try {
         await deleteFeeCat.mutateAsync(id);
-      } catch (err) {
-        console.error('Failed to delete fee category', err);
+        showFeedback('success', 'Kategori iuran berhasil dihapus.');
+      } catch (err: any) {
+        showFeedback('error', err?.response?.data?.error || 'Gagal menghapus kategori iuran.');
       }
     }
   };
@@ -107,8 +116,9 @@ export const FinancialPage: React.FC = () => {
       setFundName('');
       setFundType('operational');
       setFundDesc('');
-    } catch (err) {
-      console.error('Failed to create fund', err);
+      showFeedback('success', 'Kantong kas berhasil ditambahkan.');
+    } catch (err: any) {
+      showFeedback('error', err?.response?.data?.error || 'Gagal membuat kantong kas.');
     }
   };
 
@@ -120,14 +130,26 @@ export const FinancialPage: React.FC = () => {
     if (confirm('Hapus kantong kas ini?')) {
       try {
         await deleteFund.mutateAsync(id);
-      } catch (err) {
-        console.error('Failed to delete fund', err);
+        showFeedback('success', 'Kantong kas berhasil dihapus.');
+      } catch (err: any) {
+        showFeedback('error', err?.response?.data?.error || 'Gagal menghapus kantong kas.');
       }
     }
   };
 
   return (
     <div className="space-y-6">
+      {feedbackMsg && (
+        <div
+          className={`p-4 rounded-xl text-xs sm:text-sm font-bold border ${
+            feedbackMsg.type === 'success'
+              ? 'bg-emerald-50 text-emerald-950 border-emerald-200'
+              : 'bg-rose-50 text-rose-950 border-rose-200'
+          }`}
+        >
+          {feedbackMsg.text}
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

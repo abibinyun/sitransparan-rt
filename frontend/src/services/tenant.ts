@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
 import type { Tenant } from '../types/auth';
 
@@ -37,27 +37,39 @@ export const useTenantsQuery = (options?: { enabled?: boolean }) => {
 };
 
 export const useCreateTenantMutation = () => {
+  const queryClient = useQueryClient();
   return useMutation<Tenant, Error, CreateTenantPayload>({
     mutationFn: async (payload) => {
       const res = await api.post<Tenant>('/superadmin/tenants', payload);
       return res.data;
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+    },
   });
 };
 
 export const useUpdateTenantMutation = () => {
+  const queryClient = useQueryClient();
   return useMutation<Tenant, Error, UpdateTenantPayload>({
     mutationFn: async ({ id, ...payload }) => {
       const res = await api.put<Tenant>(`/superadmin/tenants/${id}`, payload);
       return res.data;
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+    },
   });
 };
 
 export const useDeleteTenantMutation = () => {
+  const queryClient = useQueryClient();
   return useMutation<void, Error, string>({
     mutationFn: async (tenantId) => {
       await api.delete(`/superadmin/tenants/${tenantId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
     },
   });
 };

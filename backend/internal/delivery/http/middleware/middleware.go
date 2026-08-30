@@ -37,6 +37,9 @@ func GetRoleFromContext(ctx context.Context) domain.RoleName {
 	if r, ok := ctx.Value(RoleContextKey).(domain.RoleName); ok {
 		return r
 	}
+	if s, ok := ctx.Value(RoleContextKey).(string); ok {
+		return domain.RoleName(s)
+	}
 	return ""
 }
 

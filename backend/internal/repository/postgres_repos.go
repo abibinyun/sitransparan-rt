@@ -335,8 +335,8 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 	// Idempotent: never duplicate the default category on re-provisioning.
 	if _, err := db.ExecContext(ctx,
 		`INSERT INTO `+pq.QuoteIdentifier(schemaName)+`.fee_categories (tenant_id, name, amount, period)
-		 SELECT $1, $2, $3, $4
-		 WHERE NOT EXISTS (SELECT 1 FROM `+pq.QuoteIdentifier(schemaName)+`.fee_categories WHERE name = $5)`, tenantID, "Iuran Warga", 50000, "monthly", "Iuran Warga"); err != nil {
+		 SELECT $1::uuid, $2::text, $3::numeric, $4::text
+		 WHERE NOT EXISTS (SELECT 1 FROM `+pq.QuoteIdentifier(schemaName)+`.fee_categories WHERE name = $2::text)`, tenantID, "Iuran Warga", 50000.0, "monthly"); err != nil {
 		return err
 	}
 
@@ -355,8 +355,8 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 	for _, fs := range fundsSeeds {
 		if _, err := db.ExecContext(ctx,
 			`INSERT INTO `+pq.QuoteIdentifier(schemaName)+`.funds (tenant_id, name, type, description, is_default)
-			 SELECT $1, $2, $3, $4, $5
-			 WHERE NOT EXISTS (SELECT 1 FROM `+pq.QuoteIdentifier(schemaName)+`.funds WHERE name = $2 AND tenant_id = $1)`,
+			 SELECT $1::uuid, $2::text, $3::text, $4::text, $5::boolean
+			 WHERE NOT EXISTS (SELECT 1 FROM `+pq.QuoteIdentifier(schemaName)+`.funds WHERE name = $2::text AND tenant_id = $1::uuid)`,
 			tenantID, fs.name, fs.fundType, fs.description, fs.isDefault,
 		); err != nil {
 			return err
