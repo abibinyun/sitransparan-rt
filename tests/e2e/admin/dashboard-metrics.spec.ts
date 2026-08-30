@@ -74,8 +74,9 @@ test.describe('Dashboard — metrik ringkasan & export laporan', () => {
 
     const fs = require('fs');
     const content = fs.readFileSync((await download.path())!, 'utf8');
-    // Backend financial export: header ID,Tanggal,Tipe,Kategori,Jumlah,Deskripsi
+    // Backend financial export: header ID,Tanggal,Tipe,Kategori,Kantong Kas,Jumlah,Deskripsi
     expect(content).toContain('Tanggal');
+    expect(content).toContain('Kantong Kas');
     expect(content).toMatch(/Tipe|Kategori/);
     expect(content.length).toBeGreaterThan(20);
   });
@@ -92,6 +93,6 @@ test.describe('Dashboard — metrik ringkasan & export laporan', () => {
     const path = await download.path();
     expect(path).toBeTruthy();
     const stat = fs.statSync(path!);
-    expect(stat.size).toBeGreaterThan(100);
+    expect(stat.size).toBeGreaterThan(500);
   });
 });

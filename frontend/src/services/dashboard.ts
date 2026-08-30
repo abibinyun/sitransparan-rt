@@ -46,47 +46,45 @@ export function useDashboardMetrics() {
       let pendingDues = 0;
       let transactions: FinancialTransaction[] = [];
 
-      try {
-        const sumRes = await api.get<FinancialSummary>('/financial/summary');
-        summary = sumRes.data;
-      } catch (e) {
-        // Fallback if summary endpoint errs
+      const [sumRes, resRes, duesRes, txRes] = await Promise.allSettled([
+        api.get<FinancialSummary>('/financial/summary'),
+        api.get<any>('/residents'),
+        api.get<any>('/financial/dues', { params: { status: 'pending', limit: 1000 } }),
+        api.get<FinancialTransaction[]>('/financial/transactions'),
+      ]);
+
+      if (sumRes.status === 'fulfilled') {
+        summary = sumRes.value.data;
       }
 
-      try {
-        const resRes = await api.get<any>('/residents');
-        if (Array.isArray(resRes.data)) {
-          totalResidents = resRes.data.length;
-        } else if (resRes.data?.data && Array.isArray(resRes.data.data)) {
-          totalResidents = resRes.data.data.length;
-        } else if (typeof resRes.data?.total === 'number') {
-          totalResidents = resRes.data.total;
+      if (resRes.status === 'fulfilled') {
+        const val = resRes.value.data;
+        if (Array.isArray(val)) {
+          totalResidents = val.length;
+        } else if (val?.data && Array.isArray(val.data)) {
+          totalResidents = val.data.length;
+        } else if (typeof val?.total === 'number') {
+          totalResidents = val.total;
         }
-      } catch (e) {
-        // Fallback
       }
 
-      try {
-        const duesRes = await api.get<any>('/financial/dues', { params: { status: 'pending', limit: 1000 } });
-        const arr = Array.isArray(duesRes.data) ? duesRes.data : (Array.isArray(duesRes.data?.data) ? duesRes.data.data : []);
+      if (duesRes.status === 'fulfilled') {
+        const dVal = duesRes.value.data;
+        const arr = Array.isArray(dVal) ? dVal : (Array.isArray(dVal?.data) ? dVal.data : []);
         pendingDues = arr.filter((d: any) => d.status === 'pending' || !d.status).length;
-        if (typeof duesRes.data?.total === 'number' && arr.length === duesRes.data.total) {
-          pendingDues = typeof duesRes.data.total === 'number' ? duesRes.data.total : pendingDues;
+        if (typeof dVal?.total === 'number' && arr.length === dVal.total) {
+          pendingDues = typeof dVal.total === 'number' ? dVal.total : pendingDues;
         }
-      } catch (e) {
-        // Fallback
       }
 
-      try {
-        const txRes = await api.get<FinancialTransaction[]>('/financial/transactions');
-        if (Array.isArray(txRes.data)) {
-          transactions = txRes.data;
+      if (txRes.status === 'fulfilled') {
+        const tVal = txRes.value.data;
+        if (Array.isArray(tVal)) {
+          transactions = tVal;
         }
-      } catch (e) {
-        // Fallback
       }
 
-      // Group monthly trend from transactions
+      // Group monthly trend from transactions (real data only)
       const trendMap: Record<string, { income: number; expense: number }> = {};
       transactions.forEach((tx) => {
         const date = new Date(tx.transaction_date || tx.created_at);
@@ -109,23 +107,13 @@ export function useDashboardMetrics() {
         expense: val.expense,
       }));
 
-      // Default dummy trend data if empty for nice visual
-      const finalTrend =
-        monthlyTrend.length > 0
-          ? monthlyTrend
-          : [
-              { month: 'Jan', income: summary.monthly_income * 0.2, expense: summary.monthly_expense * 0.15 },
-              { month: 'Feb', income: summary.monthly_income * 0.3, expense: summary.monthly_expense * 0.25 },
-              { month: 'Mar', income: summary.monthly_income * 0.5, expense: summary.monthly_expense * 0.6 },
-            ];
-
       return {
         totalResidents,
         totalIncome: summary.monthly_income,
         totalExpense: summary.monthly_expense,
         balance: summary.current_balance,
         pendingDues,
-        monthlyTrend: finalTrend,
+        monthlyTrend,
       } as DashboardMetrics;
     },
   });

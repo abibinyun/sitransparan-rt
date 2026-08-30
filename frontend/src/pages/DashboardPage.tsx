@@ -164,27 +164,35 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="space-y-5">
-            {metrics?.monthlyTrend.map((item, idx) => {
-              const incPct = Math.round((item.income / maxAmount) * 100);
-              const expPct = Math.round((item.expense / maxAmount) * 100);
+            {metrics?.monthlyTrend && metrics.monthlyTrend.length > 0 ? (
+              metrics.monthlyTrend.map((item, idx) => {
+                const incPct = Math.round((item.income / maxAmount) * 100);
+                const expPct = Math.round((item.expense / maxAmount) * 100);
 
-              return (
-                <div key={idx} className="group rounded-2xl border border-slate-100 p-3 transition hover:border-indigo-100 hover:bg-indigo-50/30">
-                  <div className="mb-2 flex flex-col gap-1 text-xs font-bold text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-sm text-slate-900">{item.month}</span>
-                    <span className="text-slate-500">Masuk {formatRupiah(item.income)} · Keluar {formatRupiah(item.expense)}</span>
-                  </div>
-                  <div className="grid gap-2">
-                    <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                      <div style={{ width: `${incPct}%` }} className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-500" title={`Pemasukan: ${formatRupiah(item.income)}`} />
+                return (
+                  <div key={idx} className="group rounded-2xl border border-slate-100 p-3 transition hover:border-indigo-100 hover:bg-indigo-50/30">
+                    <div className="mb-2 flex flex-col gap-1 text-xs font-bold text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="text-sm text-slate-900">{item.month}</span>
+                      <span className="text-slate-500">Masuk {formatRupiah(item.income)} · Keluar {formatRupiah(item.expense)}</span>
                     </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                      <div style={{ width: `${expPct}%` }} className="h-full rounded-full bg-gradient-to-r from-rose-400 to-orange-500 transition-all duration-500" title={`Pengeluaran: ${formatRupiah(item.expense)}`} />
+                    <div className="grid gap-2">
+                      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                        <div style={{ width: `${incPct}%` }} className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-500" title={`Pemasukan: ${formatRupiah(item.income)}`} />
+                      </div>
+                      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                        <div style={{ width: `${expPct}%` }} className="h-full rounded-full bg-gradient-to-r from-rose-400 to-orange-500 transition-all duration-500" title={`Pengeluaran: ${formatRupiah(item.expense)}`} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <PiggyBank className="h-10 w-10 text-slate-300 mb-2" />
+                <p className="text-sm font-semibold text-slate-500">Belum ada transaksi kas untuk ditampilkan.</p>
+                <p className="text-xs text-slate-400 mt-1">Transaksi yang dicatat akan muncul dalam visual perbandingan bulanan.</p>
+              </div>
+            )}
           </div>
         </div>
 

@@ -60,10 +60,12 @@ func TestDashboardUsecase_ExportFinancialReport_CSV(t *testing.T) {
 
 	tenantID := uuid.New()
 	desc := "Iuran bulanan"
+	fundName := "Kas Utama"
 	txs := []*domain.FinancialTransaction{
 		{
 			ID:              uuid.New(),
 			TenantID:        tenantID,
+			FundName:        &fundName,
 			Type:            "income",
 			Category:        "Iuran",
 			Amount:          50000,
@@ -81,6 +83,7 @@ func TestDashboardUsecase_ExportFinancialReport_CSV(t *testing.T) {
 	assert.Equal(t, "laporan_keuangan.csv", filename)
 	assert.Contains(t, string(data), "income")
 	assert.Contains(t, string(data), "50000.00")
+	assert.Contains(t, string(data), "Kas Utama")
 	repo.AssertExpectations(t)
 }
 

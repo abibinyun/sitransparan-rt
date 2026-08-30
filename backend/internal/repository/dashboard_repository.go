@@ -77,23 +77,26 @@ func (r *dashboardRepository) GetSummary(ctx context.Context, tenantID uuid.UUID
 }
 
 func (r *dashboardRepository) GetFinancialTransactionsForReport(ctx context.Context, tenantID uuid.UUID, startDate, endDate *time.Time) ([]*domain.FinancialTransaction, error) {
+	txTable := TenantTable(ctx, "financial_transactions")
+	fundsTable := TenantTable(ctx, "funds")
 	query := fmt.Sprintf(`
-		SELECT id, tenant_id, type, category, amount, transaction_date, description, proof_url, created_by, created_at, updated_at
-		FROM %s
-		WHERE tenant_id = $1
-	`, TenantTable(ctx, "financial_transactions"))
+		SELECT t.id, t.tenant_id, t.fund_id, COALESCE(f.name, ''), t.type, t.category, t.amount, t.transaction_date, t.description, t.proof_url, t.created_by, t.created_at, t.updated_at
+		FROM %s t
+		LEFT JOIN %s f ON f.id = t.fund_id
+		WHERE t.tenant_id = $1
+	`, txTable, fundsTable)
 	args := []interface{}{tenantID}
 
 	if startDate != nil {
 		args = append(args, *startDate)
-		query += fmt.Sprintf(" AND transaction_date >= $%d", len(args))
+		query += fmt.Sprintf(" AND t.transaction_date >= $%d", len(args))
 	}
 	if endDate != nil {
 		args = append(args, *endDate)
-		query += fmt.Sprintf(" AND transaction_date <= $%d", len(args))
+		query += fmt.Sprintf(" AND t.transaction_date <= $%d", len(args))
 	}
 
-	query += " ORDER BY transaction_date ASC"
+	query += " ORDER BY t.transaction_date ASC, t.created_at ASC"
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -104,9 +107,12 @@ func (r *dashboardRepository) GetFinancialTransactionsForReport(ctx context.Cont
 	var list []*domain.FinancialTransaction
 	for rows.Next() {
 		var tx domain.FinancialTransaction
+		var fundName string
 		if err := rows.Scan(
 			&tx.ID,
 			&tx.TenantID,
+			&tx.FundID,
+			&fundName,
 			&tx.Type,
 			&tx.Category,
 			&tx.Amount,
@@ -118,6 +124,9 @@ func (r *dashboardRepository) GetFinancialTransactionsForReport(ctx context.Cont
 			&tx.UpdatedAt,
 		); err != nil {
 			return nil, err
+		}
+		if fundName != "" {
+			tx.FundName = &fundName
 		}
 		list = append(list, &tx)
 	}
