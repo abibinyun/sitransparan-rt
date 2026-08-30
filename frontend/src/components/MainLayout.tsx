@@ -78,7 +78,6 @@ const baseNavItems: NavItem[] = [
 
 const publicNavItems: NavItem[] = [
   { to: '/', label: 'Portal Transparansi', icon: Bell, end: true },
-  { to: '/usulan', label: 'Usulan Warga', icon: MessageSquareHeart },
 ];
 
 const SuperAdminTenantSwitchCard: React.FC = () => {
