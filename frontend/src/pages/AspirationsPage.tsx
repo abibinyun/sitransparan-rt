@@ -21,6 +21,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
+import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
+import { FileText, MessageSquareHeart, Vote } from 'lucide-react';
 
 export const AspirationsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'aspirations' | 'needs'>('aspirations');
@@ -150,27 +152,30 @@ export const AspirationsPage: React.FC = () => {
     }
   };
 
+  const commTabs = [
+    { to: '/admin/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
+    { to: '/admin/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
+    { to: '/admin/polls', label: 'Polling Warga', icon: Vote },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Manajemen Aspirasi & Kebutuhan Lingkungan
-          </h1>
-          <p className="text-sm text-slate-500">
-            Kelola tanggapan aspirasi warga dan daftar kebutuhan lingkungan RT/RW
-          </p>
-        </div>
-        {activeTab === 'aspirations' ? (
-          <Button onClick={() => setShowAspirationModal(true)}>
-            + Tambah Aspirasi
-          </Button>
-        ) : (
-          <Button onClick={() => handleOpenNeedModal()}>
-            + Tambah Kebutuhan Lingkungan
-          </Button>
-        )}
-      </div>
+      <PageHeaderTabs
+        title="Komunikasi & Partisipasi Warga"
+        description="Pusat informasi resmi RT, publikasi berkas, penampungan usulan, dan polling suara warga."
+        tabs={commTabs}
+        actions={
+          activeTab === 'aspirations' ? (
+            <Button onClick={() => setShowAspirationModal(true)}>
+              + Tambah Aspirasi
+            </Button>
+          ) : (
+            <Button onClick={() => handleOpenNeedModal()}>
+              + Tambah Kebutuhan Lingkungan
+            </Button>
+          )
+        }
+      />
 
       {/* Tabs Switcher */}
       <div className="border-b border-slate-200">

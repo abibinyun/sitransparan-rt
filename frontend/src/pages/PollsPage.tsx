@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { BarChart3, Check, Plus, Trash2, X, Vote } from 'lucide-react';
+import { BarChart3, Check, Plus, Trash2, X, Vote, FileText, MessageSquareHeart } from 'lucide-react';
 import { useOpenPolls, useCreatePoll, useClosePoll } from '../services/social';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { SimpleDialog } from '../components/ui/dialog';
+import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 
 export const PollsPage: React.FC = () => {
   const { data: polls, isLoading, isError, error, refetch } = useOpenPolls();
@@ -53,19 +54,24 @@ export const PollsPage: React.FC = () => {
     );
   };
 
+  const commTabs = [
+    { to: '/admin/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
+    { to: '/admin/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
+    { to: '/admin/polls', label: 'Polling Warga', icon: Vote },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Vote className="h-6 w-6 text-emerald-600" /> Kelola Polling
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">Buat polling 2–6 opsi, tutup saat selesai. 1 warga 1 suara.</p>
-        </div>
-        <Button onClick={() => setIsCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Buat Polling
-        </Button>
-      </div>
+      <PageHeaderTabs
+        title="Komunikasi & Partisipasi Warga"
+        description="Pusat informasi resmi RT, publikasi berkas, penampungan usulan, dan polling suara warga."
+        tabs={commTabs}
+        actions={
+          <Button onClick={() => setIsCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Buat Polling
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <div className="p-6 text-center text-gray-500">Memuat polling...</div>

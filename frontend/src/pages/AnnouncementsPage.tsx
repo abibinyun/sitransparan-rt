@@ -12,6 +12,8 @@ import {
 import { AnnouncementModal } from '../components/AnnouncementModal';
 import { DocumentUploadModal } from '../components/DocumentUploadModal';
 import { Announcement, CreateAnnouncementPayload, Document, CreateDocumentPayload } from '../types/announcement_doc';
+import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
+import { FileText, MessageSquareHeart, Vote } from 'lucide-react';
 
 export const AnnouncementsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'announcements' | 'documents'>('announcements');
@@ -91,33 +93,38 @@ export const AnnouncementsPage: React.FC = () => {
     }
   };
 
+  const commTabs = [
+    { to: '/admin/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
+    { to: '/admin/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
+    { to: '/admin/polls', label: 'Polling Warga', icon: Vote },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Kelola Pengumuman & Dokumen RT/RW</h2>
-          <p className="text-sm text-gray-600">
-            Publikasikan pengumuman warga dan upload berkas/notulen resmi.
-          </p>
-        </div>
-        <div>
-          {activeTab === 'announcements' ? (
-            <button
-              onClick={handleOpenCreateAnnouncement}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-            >
-              + Tambah Pengumuman
-            </button>
-          ) : (
-            <button
-              onClick={handleOpenCreateDocument}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-            >
-              + Upload Dokumen
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeaderTabs
+        title="Komunikasi & Partisipasi Warga"
+        description="Pusat informasi resmi RT, publikasi berkas, penampungan usulan, dan polling suara warga."
+        tabs={commTabs}
+        actions={
+          <div>
+            {activeTab === 'announcements' ? (
+              <button
+                onClick={handleOpenCreateAnnouncement}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
+              >
+                + Tambah Pengumuman
+              </button>
+            ) : (
+              <button
+                onClick={handleOpenCreateDocument}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
+              >
+                + Upload Dokumen
+              </button>
+            )}
+          </div>
+        }
+      />
 
       {/* Tabs */}
       <div className="border-b border-gray-200">

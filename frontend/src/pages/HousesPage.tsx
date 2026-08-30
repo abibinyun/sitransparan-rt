@@ -15,6 +15,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import {
   QrCode,
   Home,
@@ -27,6 +28,7 @@ import {
   Copy,
   Edit2,
   Trash2,
+  Users,
 } from 'lucide-react';
 
 export const HousesPage: React.FC = () => {
@@ -133,37 +135,37 @@ export const HousesPage: React.FC = () => {
     window.print();
   };
 
+  const demographyTabs = [
+    { to: '/admin/residents', label: 'Data Warga & KK', icon: Users },
+    { to: '/admin/houses', label: 'Stiker QR Rumah (1 Rumah 1 Token)', icon: QrCode },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <QrCode className="w-7 h-7 text-emerald-600" />
-            Stiker QR Rumah Warga
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Mekanisme akses pintar <strong>1 Rumah = 1 Token</strong> untuk partisipasi warga tanpa sandi.
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="outline"
-            onClick={() => setIsPrintStickerModalOpen(true)}
-            className="flex items-center gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-          >
-            <Printer className="w-4 h-4" />
-            Cetak Lembar Stiker
-          </Button>
-          <Button
-            onClick={openCreateModal}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Tambah Rumah
-          </Button>
-        </div>
-      </div>
+      <PageHeaderTabs
+        title="Kependudukan & Wilayah"
+        description="Kelola data induk kependudukan warga, kartu keluarga, dan penomoran stiker rumah."
+        tabs={demographyTabs}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setIsPrintStickerModalOpen(true)}
+              className="flex items-center gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+            >
+              <Printer className="w-4 h-4" />
+              Cetak Lembar Stiker
+            </Button>
+            <Button
+              onClick={openCreateModal}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Tambah Rumah
+            </Button>
+          </>
+        }
+      />
 
       {/* Info Card */}
       <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 text-emerald-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

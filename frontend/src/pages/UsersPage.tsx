@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Phone, Mail } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Phone, Mail, Users, ShieldCheck } from 'lucide-react';
+import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
@@ -103,18 +104,24 @@ export const UsersPage: React.FC = () => {
     }
   };
 
+  const settingsTabs = [
+    { to: '/admin/users', label: 'Manajemen Pengguna & Akses', icon: Users },
+    { to: '/admin/audit-logs', label: 'Audit Trail & Rekam Jejak', icon: ShieldCheck },
+  ];
+
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Manajemen Pengguna</h1>
-          <p className="text-sm text-slate-500 mt-1">Kelola daftar pengguna, peranan, dan hak akses sistem.</p>
-        </div>
-        <Button onClick={handleOpenAdd} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
-          <Plus className="h-4 w-4" />
-          Tambah Pengguna
-        </Button>
-      </div>
+      <PageHeaderTabs
+        title="Pengaturan Akun & Keamanan"
+        description="Kelola hak akses pengurus RT, penetapan peran warga, serta rekam jejak aktivitas audit."
+        tabs={settingsTabs}
+        actions={
+          <Button onClick={handleOpenAdd} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+            <Plus className="h-4 w-4" />
+            Tambah Pengguna
+          </Button>
+        }
+      />
 
       <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="relative flex-1">

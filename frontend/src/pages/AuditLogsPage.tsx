@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { ShieldCheck, Search, RefreshCw, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Search, RefreshCw, AlertCircle, ArrowLeft, ArrowRight, Users } from 'lucide-react';
+import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 
 interface AuditLog {
   id: string;
@@ -46,23 +47,24 @@ export function AuditLogsPage() {
 
   const totalPages = Math.ceil((data?.total || 0) / limit);
 
+  const settingsTabs = [
+    { to: '/admin/users', label: 'Manajemen Pengguna & Akses', icon: Users },
+    { to: '/admin/audit-logs', label: 'Audit Trail & Rekam Jejak', icon: ShieldCheck },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <ShieldCheck className="h-6 w-6 text-primary" />
-            Audit Trail & Rekam Aktivitas
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Seluruh mutasi data, transaksi, login, dan aksi administratif terekam secara permanen (Zero Missed Action).
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-          Segarkan
-        </Button>
-      </div>
+      <PageHeaderTabs
+        title="Pengaturan Akun & Keamanan"
+        description="Kelola hak akses pengurus RT, penetapan peran warga, serta rekam jejak aktivitas audit."
+        tabs={settingsTabs}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+            Segarkan
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader className="pb-3">

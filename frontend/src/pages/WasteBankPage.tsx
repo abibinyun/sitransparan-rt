@@ -21,7 +21,9 @@ import {
   Trash2,
   UserCheck,
   Home,
+  Flame,
 } from 'lucide-react';
+import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { formatRupiah } from '../services/public_transparency';
 
 export const WasteBankPage: React.FC = () => {
@@ -76,24 +78,19 @@ export const WasteBankPage: React.FC = () => {
   const householdsList = householdsData?.data || [];
   const categoriesList = categories || [];
 
+  const empowermentTabs = [
+    { to: '/admin/karang-taruna', label: 'Karang Taruna & Pemuda', icon: Flame },
+    { to: '/admin/waste-bank', label: 'Bank Sampah Digital', icon: Recycle },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-              <Recycle className="w-6 h-6" />
-            </span>
-            <h1 className="text-2xl font-bold text-slate-800">Bank Sampah Digital</h1>
-          </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Program setoran pilah sampah per KK, bagi hasil saldo warga & kas operasional Karang Taruna
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          {activeTab === 'categories' ? (
+      <PageHeaderTabs
+        title="Unit Pemberdayaan & Inisiatif Lingkungan"
+        description="Kelola organisasi kepemudaan Karang Taruna dan program ekonomi sirkular Bank Sampah warga."
+        tabs={empowermentTabs}
+        actions={
+          activeTab === 'categories' ? (
             <button
               onClick={() => {
                 setEditingCategory(null);
@@ -112,9 +109,9 @@ export const WasteBankPage: React.FC = () => {
               <Plus className="w-4 h-4" />
               Catat Setoran Warga
             </button>
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

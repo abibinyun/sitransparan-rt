@@ -14,6 +14,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
+import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
+import { CalendarDays, ClipboardList, Plus } from 'lucide-react';
 
 export const EventsPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('');
@@ -108,6 +110,11 @@ export const EventsPage: React.FC = () => {
     }
   };
 
+  const eventTabs = [
+    { to: '/admin/events', label: 'Agenda Kegiatan & RAB', icon: CalendarDays },
+    { to: '/admin/meetings', label: 'Notulen & Musyawarah', icon: ClipboardList },
+  ];
+
   return (
     <div className="space-y-6">
       {toast && (
@@ -115,12 +122,17 @@ export const EventsPage: React.FC = () => {
           {toast}
         </div>
       )}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Daftar Kegiatan RT/RW</h1>
-        <Button onClick={() => handleOpenForm()}>
-          + Tambah Kegiatan
-        </Button>
-      </div>
+      <PageHeaderTabs
+        title="Kegiatan & Musyawarah RT"
+        description="Kelola agenda kepanitiaan, estimasi anggaran (RAB), RSVP warga, serta risalah musyawarah RT."
+        tabs={eventTabs}
+        actions={
+          <Button onClick={() => handleOpenForm()} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Tambah Kegiatan
+          </Button>
+        }
+      />
 
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-lg shadow-sm border flex items-center space-x-4">

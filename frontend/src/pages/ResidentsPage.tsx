@@ -9,7 +9,8 @@ import { Select } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent } from '../components/ui/card';
-import { Plus, Search, UserPlus, Trash2, Edit3, ChevronDown, ChevronUp, UserCheck, ShieldAlert } from 'lucide-react';
+import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
+import { Plus, Search, UserPlus, Trash2, Edit3, ChevronDown, ChevronUp, UserCheck, ShieldAlert, Users, QrCode } from 'lucide-react';
 
 export const ResidentsPage: React.FC = () => {
   const [search, setSearch] = useState('');
@@ -66,18 +67,24 @@ export const ResidentsPage: React.FC = () => {
     setExpandedKK(expandedKK === id ? null : id);
   };
 
+  const demographyTabs = [
+    { to: '/admin/residents', label: 'Data Warga & KK', icon: Users },
+    { to: '/admin/houses', label: 'Stiker QR Rumah (1 Rumah 1 Token)', icon: QrCode },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Manajemen Warga</h2>
-          <p className="text-sm text-slate-500">Kelola data warga dan anggota keluarga RT</p>
-        </div>
-        <Button onClick={handleCreate} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Tambah Warga
-        </Button>
-      </div>
+      <PageHeaderTabs
+        title="Kependudukan & Wilayah"
+        description="Kelola data induk kependudukan warga, kartu keluarga, dan penomoran stiker rumah."
+        tabs={demographyTabs}
+        actions={
+          <Button onClick={handleCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Tambah Warga
+          </Button>
+        }
+      />
 
       {/* Filters */}
       <Card>

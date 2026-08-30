@@ -1,25 +1,20 @@
 import React, { useMemo, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Bell,
   Building2,
   CalendarDays,
   ChevronRight,
-  ClipboardList,
-  FileText,
   Flame,
   Home,
   LayoutDashboard,
   LogOut,
   Menu,
   MessageSquareHeart,
-  QrCode,
-  Recycle,
   Shield,
   ShieldCheck,
   Users,
   WalletCards,
-  Vote,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -36,22 +31,49 @@ type NavItem = {
   icon: LucideIcon;
   end?: boolean;
   adminOnly?: boolean;
+  matchPrefixes?: string[];
 };
 
 const baseNavItems: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/admin/residents', label: 'Data Warga', icon: Users, adminOnly: true },
-  { to: '/admin/houses', label: 'Stiker QR Rumah', icon: QrCode, adminOnly: true },
-  { to: '/admin/financial', label: 'Keuangan', icon: WalletCards },
-  { to: '/admin/events', label: 'Kegiatan & Budget', icon: CalendarDays },
-  { to: '/admin/meetings', label: 'Notulen & Tindak Lanjut', icon: ClipboardList },
-  { to: '/admin/aspirations', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
-  { to: '/admin/announcements', label: 'Pengumuman & Dokumen', icon: FileText },
-  { to: '/admin/karang-taruna', label: 'Karang Taruna', icon: Flame },
-  { to: '/admin/waste-bank', label: 'Bank Sampah', icon: Recycle },
-  { to: '/admin/polls', label: 'Polling Warga', icon: Vote },
-  { to: '/admin/audit-logs', label: 'Audit Trail', icon: ShieldCheck, adminOnly: true },
-  { to: '/admin/users', label: 'Manajemen Pengguna', icon: Users, adminOnly: true },
+  { 
+    to: '/admin/residents', 
+    label: 'Kependudukan', 
+    icon: Users, 
+    adminOnly: true,
+    matchPrefixes: ['/admin/residents', '/admin/houses']
+  },
+  { 
+    to: '/admin/financial', 
+    label: 'Keuangan RT', 
+    icon: WalletCards,
+    matchPrefixes: ['/admin/financial']
+  },
+  { 
+    to: '/admin/events', 
+    label: 'Kegiatan & Rapat', 
+    icon: CalendarDays,
+    matchPrefixes: ['/admin/events', '/admin/meetings']
+  },
+  { 
+    to: '/admin/announcements', 
+    label: 'Komunikasi & Warga', 
+    icon: MessageSquareHeart,
+    matchPrefixes: ['/admin/announcements', '/admin/aspirations', '/admin/polls']
+  },
+  { 
+    to: '/admin/karang-taruna', 
+    label: 'Pemberdayaan RT', 
+    icon: Flame,
+    matchPrefixes: ['/admin/karang-taruna', '/admin/waste-bank']
+  },
+  { 
+    to: '/admin/users', 
+    label: 'Pengaturan & Akun', 
+    icon: ShieldCheck, 
+    adminOnly: true,
+    matchPrefixes: ['/admin/users', '/admin/audit-logs']
+  },
 ];
 
 const publicNavItems: NavItem[] = [
@@ -163,40 +185,46 @@ export const MainLayout: React.FC = () => {
     window.location.href = '/login';
   };
 
+  const location = useLocation();
+
   const renderNavigation = () => (
     <nav className="mt-8 space-y-1.5 px-3">
-      {navItems.map(({ to, label, icon: Icon, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          onClick={() => setSidebarOpen(false)}
-          className={({ isActive }) =>
-            [
-              'group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all duration-200',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
-              isActive
-                ? 'bg-white text-indigo-700 shadow-lg shadow-indigo-950/10 ring-1 ring-indigo-100'
-                : 'text-slate-400 hover:bg-white/10 hover:text-white',
-            ].join(' ')
-          }
-        >
-          {({ isActive }) => (
-            <>
-              <span
-                className={[
-                  'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
-                  isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-white/5 text-slate-300 group-hover:bg-white/10 group-hover:text-white',
-                ].join(' ')}
-              >
-                <Icon className="h-4.5 w-4.5" />
-              </span>
-              <span className="flex-1 truncate">{label}</span>
-              <ChevronRight className={['h-4 w-4 transition-transform', isActive ? 'translate-x-0 text-indigo-400' : '-translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-70'].join(' ')} />
-            </>
-          )}
-        </NavLink>
-      ))}
+      {navItems.map(({ to, label, icon: Icon, end, matchPrefixes }) => {
+        const isMatched = matchPrefixes
+          ? matchPrefixes.some((prefix) => location.pathname.startsWith(prefix))
+          : end
+          ? location.pathname === to
+          : location.pathname.startsWith(to);
+
+        return (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            onClick={() => setSidebarOpen(false)}
+            className={
+              [
+                'group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all duration-200',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
+                isMatched
+                  ? 'bg-white text-indigo-700 shadow-lg shadow-indigo-950/10 ring-1 ring-indigo-100'
+                  : 'text-slate-400 hover:bg-white/10 hover:text-white',
+              ].join(' ')
+            }
+          >
+            <span
+              className={[
+                'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
+                isMatched ? 'bg-indigo-50 text-indigo-600' : 'bg-white/5 text-slate-300 group-hover:bg-white/10 group-hover:text-white',
+              ].join(' ')}
+            >
+              <Icon className="h-4.5 w-4.5" />
+            </span>
+            <span className="flex-1 truncate">{label}</span>
+            <ChevronRight className={['h-4 w-4 transition-transform', isMatched ? 'translate-x-0 text-indigo-400' : '-translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-70'].join(' ')} />
+          </NavLink>
+        );
+      })}
     </nav>
   );
 

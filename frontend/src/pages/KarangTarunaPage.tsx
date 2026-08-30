@@ -9,7 +9,6 @@ import {
   Award,
   Phone,
   Layers,
-  Sparkles,
 } from 'lucide-react';
 import {
   useKTPeriods,
@@ -31,6 +30,8 @@ import { SimpleDialog } from '../components/ui/dialog';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { KarangTarunaPeriod, KarangTarunaMember } from '../types/karang_taruna';
+import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
+import { Flame, Recycle } from 'lucide-react';
 
 export const KarangTarunaPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'structure' | 'periods' | 'config'>('structure');
@@ -217,32 +218,32 @@ export const KarangTarunaPage: React.FC = () => {
     setSectionsList(sectionsList.filter((s) => s !== sec));
   };
 
+  const empowermentTabs = [
+    { to: '/admin/karang-taruna', label: 'Karang Taruna & Pemuda', icon: Flame },
+    { to: '/admin/waste-bank', label: 'Bank Sampah Digital', icon: Recycle },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-emerald-600" />
-            Karang Taruna & Kepemudaan RT
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Kelola periode masa bakti, struktur pengurus pemuda, dan seksi bidang kegiatan.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {activeTab === 'structure' && (
-            <Button onClick={() => handleOpenMemberModal()} className="gap-2 bg-emerald-700 hover:bg-emerald-800">
-              <Plus className="h-4 w-4" /> Tambah Pengurus
-            </Button>
-          )}
-          {activeTab === 'periods' && (
-            <Button onClick={() => handleOpenPeriodModal()} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
-              <Plus className="h-4 w-4" /> Periode Baru
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeaderTabs
+        title="Unit Pemberdayaan & Inisiatif Lingkungan"
+        description="Kelola organisasi kepemudaan Karang Taruna dan program ekonomi sirkular Bank Sampah warga."
+        tabs={empowermentTabs}
+        actions={
+          <div className="flex items-center gap-2">
+            {activeTab === 'structure' && (
+              <Button onClick={() => handleOpenMemberModal()} className="gap-2 bg-emerald-700 hover:bg-emerald-800">
+                <Plus className="h-4 w-4" /> Tambah Pengurus
+              </Button>
+            )}
+            {activeTab === 'periods' && (
+              <Button onClick={() => handleOpenPeriodModal()} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                <Plus className="h-4 w-4" /> Periode Baru
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {/* Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-2">

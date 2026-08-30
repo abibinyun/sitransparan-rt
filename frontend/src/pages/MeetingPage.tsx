@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
-  FileText,
   Calendar,
+  CalendarDays,
+  ClipboardList,
   MapPin,
   Plus,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   Users,
   CheckSquare,
 } from 'lucide-react';
+import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import {
   useMeetingsQuery,
   useCreateMeetingMutation,
@@ -179,39 +181,38 @@ export const MeetingPage: React.FC = () => {
 
   const selectedMeeting = meetings.find((m: Meeting) => m.id === selectedMeetingId) || (meetings.length > 0 ? meetings[0] : null);
 
+  const eventTabs = [
+    { to: '/admin/events', label: 'Agenda Kegiatan & RAB', icon: CalendarDays },
+    { to: '/admin/meetings', label: 'Notulen & Musyawarah', icon: ClipboardList },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-            <FileText className="w-7 h-7 text-indigo-600" />
-            Notulen Rapat & Tindak Lanjut
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Dokumentasi rapat warga, keputusan bersama, dan pelacakan tugas (*action items*) transparan.
-          </p>
-        </div>
-
-        {isAdmin && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsCreateActionOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition shadow-sm"
-            >
-              <CheckSquare className="w-4 h-4" />
-              + Tugas Baru
-            </button>
-            <button
-              onClick={() => setIsCreateMeetingOpen(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Catat Notulen Baru
-            </button>
-          </div>
-        )}
-      </div>
+      <PageHeaderTabs
+        title="Kegiatan & Musyawarah RT"
+        description="Kelola agenda kepanitiaan, estimasi anggaran (RAB), RSVP warga, serta risalah musyawarah RT."
+        tabs={eventTabs}
+        actions={
+          isAdmin ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsCreateActionOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition shadow-sm"
+              >
+                <CheckSquare className="w-4 h-4" />
+                + Tugas Baru
+              </button>
+              <button
+                onClick={() => setIsCreateMeetingOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Catat Notulen Baru
+              </button>
+            </div>
+          ) : undefined
+        }
+      />
 
       {/* Tabs Navigation */}
       <div className="flex border-b border-gray-200">
