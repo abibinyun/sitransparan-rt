@@ -8,7 +8,7 @@ test.describe('Public Transparency Portal', () => {
 
   test('Unauthenticated user can view public events', async ({ page }) => {
     await page.goto('/agenda');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Jadwal & Agenda/i);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Agenda Kegiatan/i);
   });
 
   test('Unauthenticated user can view public aspirations', async ({ page }) => {

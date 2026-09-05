@@ -672,6 +672,7 @@ export const FinancialPage: React.FC = () => {
       <div className="border-b border-gray-200 -mx-4 px-4 sm:mx-0 sm:px-0">
         <nav className="-mb-px flex space-x-6 sm:space-x-8 overflow-x-auto scrollbar-none touch-pan-x">
           <button
+            id="tab-dues"
             onClick={() => setActiveTab('dues')}
             className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
               activeTab === 'dues'
@@ -682,6 +683,7 @@ export const FinancialPage: React.FC = () => {
             Iuran Warga ({duesList.length})
           </button>
           <button
+            id="tab-transactions"
             onClick={() => setActiveTab('transactions')}
             className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
               activeTab === 'transactions'
@@ -692,6 +694,7 @@ export const FinancialPage: React.FC = () => {
             Transaksi Kas RT ({txList.length})
           </button>
           <button
+            id="tab-funds"
             onClick={() => setActiveTab('funds')}
             className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
               activeTab === 'funds'
@@ -702,6 +705,7 @@ export const FinancialPage: React.FC = () => {
             Kantong Kas ({fundList.length})
           </button>
           <button
+            id="tab-categories"
             onClick={() => setActiveTab('categories')}
             className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
               activeTab === 'categories'

@@ -20,10 +20,10 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
     await page.waitForLoadState('networkidle');
 
     // 3. Catat Iuran Warga baru: Rp 50.000
-    await page.getByRole('button', { name: /^Iuran Warga/ }).click();
+    await page.locator('#tab-dues').click();
 
-    // Click "+ Bayar / Catat Iuran"
-    await page.getByRole('button', { name: '+ Bayar / Catat Iuran' }).click();
+    // Click "+ Bayar / Catat Iuran" -> "Catat Iuran Warga"
+    await page.getByRole('button', { name: /Catat Iuran Warga/ }).click();
     await expect(page.getByRole('heading', { name: 'Catat / Bayar Iuran Warga' })).toBeVisible();
 
     // Pilih warga pertama yang ada
@@ -56,7 +56,7 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
     }
 
     // 5. Lakukan Penyaluran / Transfer dana iuran ke Kas RT via kartu Pos Iuran
-    await page.getByRole('button', { name: /Keluarkan \/ Salurkan Dana/i }).first().click();
+    await page.getByRole('button', { name: /Salurkan Dana/i }).first().click();
 
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByText('Salurkan / Keluarkan Dana Iuran')).toBeVisible();
@@ -91,14 +91,14 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
     await page.waitForTimeout(1000);
 
     // 6. Cek tab Transaksi Kas RT
-    await page.getByRole('button', { name: /^Transaksi Kas RT/ }).click();
+    await page.locator('#tab-transactions').click();
     await page.waitForTimeout(1000);
 
     // Pastikan ada transaksi masuk 'IURAN_PINDAH_KAS' sebesar Rp 30.000
     await expect(page.getByText(/IURAN_PINDAH_KAS/i).first()).toBeVisible();
 
     // 7. Cek tab Saldo & Kantong Kas untuk verifikasi angka-angka
-    await page.getByRole('button', { name: /^Kantong Kas/ }).click();
+    await page.locator('#tab-funds').click();
     await page.waitForTimeout(1000);
 
     // Saldo Kantong Kas tujuan harus bertambah Rp 30.000 (bukan 50.000, dan bukan 0)
@@ -106,7 +106,7 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
     expect(kasText).toContain('30.000');
 
     // 8. Cek kartu Pos Iuran di tab Iuran Warga: Sisa Saldo Bersih harus tepat Rp 20.000 (50.000 - 30.000)
-    await page.getByRole('button', { name: /^Iuran Warga/ }).click();
+    await page.locator('#tab-dues').click();
     await page.waitForTimeout(1000);
 
     const iuranPageText = await page.locator('body').textContent();
@@ -115,7 +115,7 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
     expect(iuranPageText).toContain('20.000');
 
     // 9. Lakukan Belanja Langsung dari sisa pos iuran (External Expense): Rp 10.000 via kartu Pos Iuran
-    await page.getByRole('button', { name: /Keluarkan \/ Salurkan Dana/i }).first().click();
+    await page.getByRole('button', { name: /Salurkan Dana/i }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
     // Pilih opsi belanja langsung
@@ -142,11 +142,11 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
     // 10. Verifikasi Total Dana Global:
     // Total Masuk Global: Rp 50.000 (dari iuran warga, transfer internal 30k tidak dihitung double)
     // Total Keluar Global: Rp 10.000 (belanja langsung eksternal)
-    // Total Dana Bersih Global: Rp 40.000 (30.000 di Kas RT + 10.000 sisa di Pos Iuran)
-    expect(afterExpenseText).toContain('Total Dana');
+    // Total Saldo Kas: Rp 40.000 (30.000 di Kas RT + 10.000 sisa di Pos Iuran)
+    expect(afterExpenseText).toContain('Total Saldo Kas');
     expect(afterExpenseText).toContain('40.000');
-    expect(afterExpenseText).toContain('Total Masuk');
+    expect(afterExpenseText).toContain('Arus Masuk (Income)');
     expect(afterExpenseText).toContain('50.000');
-    expect(afterExpenseText).toContain('Total Keluar');
+    expect(afterExpenseText).toContain('Arus Keluar (Expense)');
   });
 });

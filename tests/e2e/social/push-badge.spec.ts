@@ -12,12 +12,12 @@ test.describe('Fase 4 — Web Push & Badge Partisipasi', () => {
     expect(cfg.public_key.length).toBeGreaterThan(40);
   });
 
-  test('subscribe requires login and stores subscription; badge reflects participation', async ({ page, request }) => {
-    // Anonymous subscribe denied
+  test('subscribe accepts subscription; badge requires login and reflects participation', async ({ page, request }) => {
+    // Public web push subscription is supported since migration 000025
     const anon = await request.post(`${API}/api/v1/push/subscribe`, {
       data: { endpoint: 'https://fcm.googleapis.com/test-x', keys_p256dh: 'k', keys_auth: 'a' },
     });
-    expect(anon.status()).toBe(401);
+    expect(anon.status()).toBe(201);
 
     // Anonymous badge denied
     expect((await request.get(`${API}/api/v1/social/badge`)).status()).toBe(401);

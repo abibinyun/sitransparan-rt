@@ -6,15 +6,15 @@ async function loginAsAdmin(page: Page) {
 }
 
 async function readSaldo(page: Page): Promise<number> {
-  const card = page.locator('div.rounded-lg.border').filter({ hasText: 'Total Dana' });
+  const card = page.locator('div.relative.overflow-hidden').filter({ hasText: 'Total Saldo Kas' });
   await expect(card).toBeVisible();
-  return parseRp(await card.locator('p.mt-2').innerText());
+  return parseRp(await card.locator('span.text-2xl').innerText());
 }
 
 async function readIncome(page: Page): Promise<number> {
-  const card = page.locator('div.rounded-lg').filter({ hasText: 'Total Masuk (Income)' });
+  const card = page.locator('div.relative.overflow-hidden').filter({ hasText: 'Arus Masuk (Income)' });
   await expect(card).toBeVisible();
-  return parseRp(await card.locator('p.mt-2').innerText());
+  return parseRp(await card.locator('span.text-2xl').innerText());
 }
 
 async function createResident(page: Page, name: string, nik: string) {
@@ -43,7 +43,7 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     const saldoBefore = await readSaldo(page);
 
     // Ensure at least one fee category exists (seeded with Iuran Sampah or create Iuran Warga)
-    await page.getByRole('button', { name: /^Master Kategori Iuran/ }).click();
+    await page.locator('#tab-categories').click();
     const hasExistingCategory = (await page.locator('table').locator('tr').count()) > 1;
     let selectedCategoryName = 'Iuran Sampah';
     if (!hasExistingCategory) {
@@ -60,10 +60,10 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
         selectedCategoryName = firstRowText.trim();
       }
     }
-    await page.getByRole('button', { name: /^Iuran Warga/ }).click();
+    await page.locator('#tab-dues').click();
 
     // Record the dues payment
-    await page.getByRole('button', { name: '+ Bayar / Catat Iuran' }).click();
+    await page.getByRole('button', { name: /Catat Iuran Warga/ }).click();
     await expect(page.getByRole('heading', { name: 'Catat / Bayar Iuran Warga' })).toBeVisible();
 
     const residentOpt = page.locator('#duesResident option').filter({ hasText: residentName }).first();
@@ -95,7 +95,8 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
 
     // Persistence after reload
     await page.reload();
-    await page.getByRole('button', { name: /^Riwayat Transaksi/ }).click();
+    await page.locator('#tab-dues').click();
+    await page.getByRole('button', { name: /Iuran Masuk/i }).click();
     await expect(page.locator('tr', { hasText: residentName })).toContainText('verified');
     expect(await readSaldo(page)).toBe(saldoAfter);
   });
@@ -106,18 +107,18 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     const incomeBefore = await readIncome(page);
 
     // Income transaction
-    await page.getByRole('button', { name: '+ Transaksi Kas RT' }).click();
+    await page.getByRole('button', { name: 'Transaksi Kas RT', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Catat Transaksi Kas RT' })).toBeVisible();
     await page.selectOption('#txCategory', 'IURAN_WARGA');
     await page.fill('#txAmount', '100000');
     await page.fill('#txDesc', `TX IN E2E ${Date.now()}`);
     await page.getByRole('button', { name: 'Simpan Transaksi' }).click();
-    await page.getByRole('button', { name: /^Transaksi Kas RT/ }).click();
+    await page.locator('#tab-transactions').click();
     await expect(page.locator('table')).toContainText('IURAN_WARGA');
     await expect(page.locator('table')).toContainText('+ Rp 100.000');
 
     // Expense transaction
-    await page.getByRole('button', { name: '+ Transaksi Kas RT' }).click();
+    await page.getByRole('button', { name: 'Transaksi Kas RT', exact: true }).click();
     await page.getByRole('button', { name: 'Pengeluaran (Expense)' }).click();
     await page.selectOption('#txCategory', 'OPERASIONAL_RT');
     await page.fill('#txAmount', '40000');
@@ -137,7 +138,7 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     const fundName = `Kas Karang Taruna ${ts}`;
 
     // Open Add Fund Modal
-    await page.getByRole('button', { name: '+ Kantong Kas Baru' }).click();
+    await page.getByRole('button', { name: /Kantong Kas Baru/ }).click();
     await expect(page.getByRole('heading', { name: 'Tambah Kantong Kas Baru' })).toBeVisible();
     await page.fill('#fundName', fundName);
     await page.selectOption('#fundType', 'youth');
@@ -145,25 +146,28 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     await page.getByRole('button', { name: 'Simpan Kantong Kas' }).click();
 
     // Verify fund tab shows the new fund
-    await page.getByRole('button', { name: /^Kantong Kas/ }).click();
+    await page.locator('#tab-funds').click();
     await expect(page.locator('table')).toContainText(fundName);
 
     // Record income transaction assigned to this new fund
-    await page.getByRole('button', { name: '+ Transaksi Kas RT' }).click();
-    await page.selectOption('#txFund', { label: fundName });
+    await page.getByRole('button', { name: 'Transaksi Kas RT', exact: true }).click();
+    const fundOpt = page.locator('#txFund option').filter({ hasText: fundName }).first();
+    await fundOpt.waitFor({ state: 'attached' });
+    const fundValue = await fundOpt.getAttribute('value');
+    await page.selectOption('#txFund', fundValue!);
     await page.selectOption('#txCategory', 'DONASI');
     await page.fill('#txAmount', '75000');
     await page.getByRole('button', { name: 'Simpan Transaksi' }).click();
 
     // Verify transaction row displays the assigned fund name
-    await page.getByRole('button', { name: /^Transaksi Kas RT/ }).click();
+    await page.locator('#tab-transactions').click();
     await expect(page.locator('table')).toContainText(fundName);
     await expect(page.locator('table')).toContainText('+ Rp 75.000');
   });
 
   test('financial transactions are append-only — no edit/delete actions in the UI', async ({ page }) => {
     await page.goto('/financial');
-    await page.getByRole('button', { name: /^Transaksi Kas RT/ }).click();
+    await page.locator('#tab-transactions').click();
 
     // The transactions table never offers edit/delete buttons
     const txButtons = page.locator('table').getByRole('button');

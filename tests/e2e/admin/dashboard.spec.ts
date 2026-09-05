@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { login, ADMIN_EMAIL, ADMIN_PASSWORD } from '../helpers';
 
 test.describe('Admin Dashboard Operations', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
-    await page.getByLabel('Email').fill('abi@gmail.com');
-    await page.getByLabel('Kata Sandi').fill('admin123');
-    await page.getByRole('button', { name: 'Masuk Akun' }).click();
-    await page.waitForURL((url) => url.pathname !== '/login', { timeout: 10000 });
+    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   });
 
   test('Admin RT can view resident page', async ({ page }) => {
