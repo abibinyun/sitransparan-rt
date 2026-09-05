@@ -23,6 +23,21 @@ export const LoginPage: React.FC = () => {
   const hostTenantSlug = getTenantSlugFromHost();
   const { data: tenantInfo, isLoading: isTenantLoading, isError: isTenantError } = usePublicTenantQuery();
 
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [registerSuccess, setRegisterSuccess] = useState('');
+  const [selectedTenantId, setSelectedTenantId] = useState<string>('');
+  const [availableTenants, setAvailableTenants] = useState<Tenant[]>([]);
+  const [pendingAuth, setPendingAuth] = useState<{ token: string; user: any } | null>(null);
+
+  const loginMutation = useLoginMutation();
+  const registerMutation = useRegisterMutation();
+  const switchTenantMutation = useSwitchTenantMutation();
+
   useEffect(() => {
     if (token && user) {
       if (returnTo) {
@@ -50,21 +65,6 @@ export const LoginPage: React.FC = () => {
       return <TenantNotFoundPage />;
     }
   }
-
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [authError, setAuthError] = useState('');
-  const [registerSuccess, setRegisterSuccess] = useState('');
-  const [selectedTenantId, setSelectedTenantId] = useState<string>('');
-  const [availableTenants, setAvailableTenants] = useState<Tenant[]>([]);
-  const [pendingAuth, setPendingAuth] = useState<{ token: string; user: any } | null>(null);
-
-  const loginMutation = useLoginMutation();
-  const registerMutation = useRegisterMutation();
-  const switchTenantMutation = useSwitchTenantMutation();
 
   const switchMode = (nextMode: 'login' | 'register') => {
     setMode(nextMode);

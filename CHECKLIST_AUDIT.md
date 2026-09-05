@@ -69,13 +69,20 @@ Format pengisian:
     1. Menambahkan properti `externalHref` pada `NavItem` di `frontend/src/components/MainLayout.tsx`.
     2. Memperbaiki tombol "← Kembali Platform": kini me-render elemen anchor (`<a>`) dengan absolute cross-origin URL dari `getPlatformUrl('/admin/tenants')` (bukan internal React Router `<NavLink>` yang tertahan di subdomain).
     3. Memperketat UI Modal Pembuatan User (`UserModal.tsx`): dropdown role `Super Admin` hanya ditampilkan jika pembuat akun adalah `isSuperAdmin`, sinkron dengan validasi role escalation guard di backend (`onlySuperAdminCanGrant`). 
-- [ ] **2.4 Register Warga Baru**
+- [x] **2.4 Register Warga Baru (Dilewati sesuai preferensi)**
   - Form: Register warga via `/login` mode register.
-  - Verifikasi: Validasi password mismatch, input nama, email, no HP, berhasil register dan menunggu aktivasi/assign tenant.
-  - Temuan / Feedback: 
-- [ ] **2.5 Logout**
+  - Verifikasi: Dinonaktifkan dari pendaftaran mandiri publik (akun warga dibuat/dikelola terpusat oleh Pengurus RT & Superadmin).
+  - Temuan / Feedback: Form register publik telah disembunyikan dari UI `/login`.
+
+- [x] **2.5 Logout**
   - Verifikasi: Sesi terhapus bersih dari Zustand & localStorage, redirect kembali ke login atau public portal.
   - Temuan / Feedback: 
+  Sebelumnya setelah logout pada subdomain tenant, aplikasi redirect ke `/login` namun tertahan pada blank/skeleton screen hingga membuka root `/` terlebih dahulu.
+  - **Perbaikan Teknis Dilakukan:**
+    1. Memperbaiki aturan React Hooks di `LoginPage.tsx`: memindahkan inisialisasi state dan mutations ke level teratas sebelum conditional return (menghilangkan pelanggaran *Rules of Hooks* yang memicu blank screen).
+    2. Menghapus cookie ganda di `store/useAuthStore.ts`: fungsi `deleteCookie` kini menghapus cookie baik yang ber-domain parent (`.${domain}`) maupun host-only cookie.
+    3. Mengecualikan rute navigasi `/login` dari Service Worker caching di `sw.ts` (`denylist: [/^\/login/]`) sehingga browser tidak menyajikan HTML/state usang yang tertahan.
+    4. Menambahkan automated regression test di Playwright (`tests/e2e/auth/login.spec.ts`) yang memverifikasi flow logout pada subdomain tenant kembali bersih ke form login. 
 
 ---
 

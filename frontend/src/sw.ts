@@ -10,7 +10,7 @@ declare const self: ServiceWorkerGlobalScope;
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST || []);
 
-// Cache HTML navigation with NetworkFirst
+// Cache HTML navigation with NetworkFirst, except /login to prevent stale session redirects
 const navigationRoute = new NavigationRoute(
   new NetworkFirst({
     cacheName: 'pages-cache',
@@ -19,7 +19,10 @@ const navigationRoute = new NavigationRoute(
         statuses: [0, 200],
       }),
     ],
-  })
+  }),
+  {
+    denylist: [/^\/login/],
+  }
 );
 registerRoute(navigationRoute);
 

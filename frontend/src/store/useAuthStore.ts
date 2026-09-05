@@ -25,7 +25,10 @@ const deleteCookie = (name: string) => {
     const domain = getTenantBaseDomain();
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const domainPart = isLocalhost ? '' : `; Domain=.${domain}`;
+    // Hapus dengan domain spesifik (jika diset dengan domain)
     document.cookie = `${name}=; Path=/; Max-Age=0${domainPart}; SameSite=Lax`;
+    // Hapus juga tanpa domain (host-only cookie)
+    document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax`;
   } catch {}
 };
 
