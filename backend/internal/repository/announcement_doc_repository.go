@@ -98,7 +98,7 @@ func (r *announcementDocRepository) GetAnnouncementByID(ctx context.Context, ten
 	query := fmt.Sprintf(`
 		SELECT `+announcementCols+`
 		FROM %s
-		WHERE id = $1 AND tenant_id = $2
+		WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
 	`, TenantTable(ctx, "announcements"))
 	a, err := scanAnnouncement(r.db.QueryRowContext(ctx, query, id, tenantID).Scan)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -122,27 +122,27 @@ func (r *announcementDocRepository) ListAnnouncements(ctx context.Context, tenan
 	var args []interface{}
 
 	if targetFilter != nil && *targetFilter != "" {
-		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND target = $2`, annTable)
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND target = $2 AND deleted_at IS NULL`, annTable)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID, *targetFilter).Scan(&count); err != nil {
 			return nil, 0, err
 		}
 		query = fmt.Sprintf(`
 			SELECT ` + announcementCols + `
 			FROM %s
-			WHERE tenant_id = $1 AND target = $2
+			WHERE tenant_id = $1 AND target = $2 AND deleted_at IS NULL
 			ORDER BY created_at DESC
 			LIMIT $3 OFFSET $4
 		`, annTable)
 		args = []interface{}{tenantID, *targetFilter, limit, offset}
 	} else {
-		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, annTable)
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND deleted_at IS NULL`, annTable)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 			return nil, 0, err
 		}
 		query = fmt.Sprintf(`
 			SELECT ` + announcementCols + `
 			FROM %s
-			WHERE tenant_id = $1
+			WHERE tenant_id = $1 AND deleted_at IS NULL
 			ORDER BY created_at DESC
 			LIMIT $2 OFFSET $3
 		`, annTable)
@@ -176,7 +176,7 @@ func (r *announcementDocRepository) UpdateAnnouncement(ctx context.Context, a *d
 	query := fmt.Sprintf(`
 		UPDATE %s
 		SET title = $1, content = $2, attachment_url = $3, media_urls = $4, target = $5, updated_at = $6
-		WHERE id = $7 AND tenant_id = $8
+		WHERE id = $7 AND tenant_id = $8 AND deleted_at IS NULL
 	`, TenantTable(ctx, "announcements"))
 	res, err := r.db.ExecContext(ctx, query,
 		a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), a.Target, a.UpdatedAt, a.ID, a.TenantID,
@@ -238,7 +238,7 @@ func (r *announcementDocRepository) GetDocumentByID(ctx context.Context, tenantI
 	query := fmt.Sprintf(`
 		SELECT id, tenant_id, title, category, file_url, uploaded_by, created_at, updated_at
 		FROM %s
-		WHERE id = $1 AND tenant_id = $2
+		WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
 	`, TenantTable(ctx, "documents"))
 	doc := &domain.Document{}
 	err := r.db.QueryRowContext(ctx, query, id, tenantID).Scan(
@@ -260,7 +260,7 @@ func (r *announcementDocRepository) ListDocuments(ctx context.Context, tenantID 
 
 	docTable := TenantTable(ctx, "documents")
 	var count int64
-	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, docTable)
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND deleted_at IS NULL`, docTable)
 	if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 		return nil, 0, err
 	}
@@ -268,7 +268,7 @@ func (r *announcementDocRepository) ListDocuments(ctx context.Context, tenantID 
 	query := fmt.Sprintf(`
 		SELECT id, tenant_id, title, category, file_url, uploaded_by, created_at, updated_at
 		FROM %s
-		WHERE tenant_id = $1
+		WHERE tenant_id = $1 AND deleted_at IS NULL
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
 	`, docTable)
@@ -298,7 +298,7 @@ func (r *announcementDocRepository) UpdateDocument(ctx context.Context, doc *dom
 	query := fmt.Sprintf(`
 		UPDATE %s
 		SET title = $1, category = $2, file_url = $3, updated_at = $4
-		WHERE id = $5 AND tenant_id = $6
+		WHERE id = $5 AND tenant_id = $6 AND deleted_at IS NULL
 	`, TenantTable(ctx, "documents"))
 	res, err := r.db.ExecContext(ctx, query,
 		doc.Title, doc.Category, doc.FileURL, doc.UpdatedAt, doc.ID, doc.TenantID,
