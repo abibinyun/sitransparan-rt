@@ -67,6 +67,8 @@ export interface PublicEvent {
   event_date?: string;
   location: string;
   status: string;
+  attachment_url?: string;
+  report_url?: string;
   estimated_cost?: number;
   actual_cost?: number;
 }

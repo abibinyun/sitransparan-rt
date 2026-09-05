@@ -27,6 +27,13 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { Meeting, MeetingActionItem, MeetingAttendee, MeetingDecision, CreateActionItemDTO } from '../types/meeting';
 
+const MEETING_STATUS_LABEL: Record<string, string> = {
+  scheduled: 'Akan Datang',
+  ongoing: 'Sedang Berlangsung',
+  completed: 'Selesai',
+  cancelled: 'Dibatalkan',
+};
+
 export const MeetingPage: React.FC = () => {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin_rt' || user?.role === 'superadmin';
@@ -88,10 +95,13 @@ export const MeetingPage: React.FC = () => {
 
   const handleOpenCreateMeeting = () => {
     setEditingMeeting(null);
+    const d = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const dt = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     setMeetingForm({
       title: '',
       agenda: '',
-      meeting_date: new Date().toISOString().slice(0, 16),
+      meeting_date: dt,
       location: 'Balai Pertemuan Warga',
       meeting_type: 'regular',
       visibility: 'internal',
@@ -103,7 +113,16 @@ export const MeetingPage: React.FC = () => {
 
   const handleOpenEditMeeting = (m: Meeting) => {
     setEditingMeeting(m);
-    const dt = m.meeting_date ? new Date(m.meeting_date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16);
+    let dt = '';
+    if (m.meeting_date) {
+      const d = new Date(m.meeting_date);
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      dt = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } else {
+      const d = new Date();
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      dt = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
     setMeetingForm({
       title: m.title || '',
       agenda: m.agenda || '',
@@ -135,26 +154,32 @@ export const MeetingPage: React.FC = () => {
   const handleCreateMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const parsedDate = new Date(meetingForm.meeting_date);
+      const isoDate = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+
       if (editingMeeting) {
         await updateMeetingMutation.mutateAsync({
           id: editingMeeting.id,
           dto: {
             ...meetingForm,
-            meeting_date: new Date(meetingForm.meeting_date).toISOString(),
+            meeting_date: isoDate,
           },
         });
       } else {
         await createMeetingMutation.mutateAsync({
           ...meetingForm,
-          meeting_date: new Date(meetingForm.meeting_date).toISOString(),
+          meeting_date: isoDate,
         });
       }
       setIsCreateMeetingOpen(false);
       setEditingMeeting(null);
+      const d = new Date();
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const dt = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
       setMeetingForm({
         title: '',
         agenda: '',
-        meeting_date: new Date().toISOString().slice(0, 16),
+        meeting_date: dt,
         location: 'Balai Pertemuan Warga',
         meeting_type: 'regular',
         visibility: 'internal',
@@ -330,18 +355,21 @@ export const MeetingPage: React.FC = () => {
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold text-gray-900 text-sm">{m.title}</h3>
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
                         m.status === 'completed'
-                          ? 'bg-emerald-100 text-emerald-800'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                           : m.status === 'ongoing'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                          : 'bg-blue-100 text-blue-800 border border-blue-200'
                       }`}
                     >
-                      {m.status}
+                      {MEETING_STATUS_LABEL[m.status] || m.status}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">{m.agenda}</p>
+                  <div className="text-xs text-gray-600 mt-1.5 line-clamp-2">
+                    <span className="font-semibold text-gray-500">Agenda: </span>
+                    {m.agenda}
+                  </div>
                   <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5" />
@@ -398,12 +426,12 @@ export const MeetingPage: React.FC = () => {
                     )}
                   </div>
                   <div className="flex flex-wrap gap-4 mt-2 text-xs text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4 text-gray-400" />
+                    <span className="flex items-center gap-1 font-medium text-slate-700">
+                      <Calendar className="w-4 h-4 text-indigo-600" />
                       {new Date(selectedMeeting.meeting_date).toLocaleString('id-ID', {
                         dateStyle: 'full',
                         timeStyle: 'short',
-                      })}
+                      })} WIB
                     </span>
                     <span className="flex items-center gap-1">
                       <MapPin className="w-4 h-4 text-gray-400" />

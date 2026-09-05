@@ -37,14 +37,16 @@ func (h *EventHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Han
 
 // publicEventView adalah proyeksi aman agenda untuk portal anonim.
 type publicEventView struct {
-	ID            uuid.UUID `json:"id"`
-	Title         string    `json:"title"`
-	Description   string    `json:"description"`
+	ID            uuid.UUID  `json:"id"`
+	Title         string     `json:"title"`
+	Description   string     `json:"description"`
 	EventDate     *time.Time `json:"event_date,omitempty"`
-	Location      string    `json:"location"`
-	Status        string    `json:"status"`
-	EstimatedCost float64   `json:"estimated_cost,omitempty"`
-	ActualCost    float64   `json:"actual_cost,omitempty"`
+	Location      string     `json:"location"`
+	Status        string     `json:"status"`
+	AttachmentURL string     `json:"attachment_url,omitempty"`
+	ReportURL     string     `json:"report_url,omitempty"`
+	EstimatedCost float64    `json:"estimated_cost,omitempty"`
+	ActualCost    float64    `json:"actual_cost,omitempty"`
 }
 
 // handlePublicTenantEvents menyajikan seluruh timeline agenda warga (urut tanggal/terbaru).
@@ -83,6 +85,13 @@ func (h *EventHandler) handlePublicTenantEvents(w http.ResponseWriter, r *http.R
 			est = e.Budget.EstimatedCost
 			act = e.Budget.ActualCost
 		}
+		var attach, rep string
+		if e.AttachmentURL != nil {
+			attach = *e.AttachmentURL
+		}
+		if e.ReportURL != nil {
+			rep = *e.ReportURL
+		}
 		view = append(view, publicEventView{
 			ID:            e.ID,
 			Title:         e.Title,
@@ -90,6 +99,8 @@ func (h *EventHandler) handlePublicTenantEvents(w http.ResponseWriter, r *http.R
 			EventDate:     e.EventDate,
 			Location:      loc,
 			Status:        e.Status,
+			AttachmentURL: attach,
+			ReportURL:     rep,
 			EstimatedCost: est,
 			ActualCost:    act,
 		})

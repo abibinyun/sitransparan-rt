@@ -34,8 +34,8 @@ func (r *eventRepository) CreateEvent(ctx context.Context, event *domain.Event) 
 		event.Status = "planned"
 	}
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, tenant_id, title, description, event_date, location, status, created_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+		INSERT INTO %s (id, tenant_id, title, description, event_date, location, status, attachment_url, report_url, created_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`, TenantTable(ctx, "events"))
 	return r.db.QueryRowContext(ctx, query,
@@ -46,15 +46,17 @@ func (r *eventRepository) CreateEvent(ctx context.Context, event *domain.Event) 
 		event.EventDate,
 		event.Location,
 		event.Status,
+		event.AttachmentURL,
+		event.ReportURL,
 		event.CreatedBy,
 	).Scan(&event.CreatedAt, &event.UpdatedAt)
 }
 
 func (r *eventRepository) GetEventByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.Event, error) {
 	query := fmt.Sprintf(`
-		SELECT id, tenant_id, title, description, event_date, location, status, created_by, created_at, updated_at
+		SELECT id, tenant_id, title, description, event_date, location, status, attachment_url, report_url, created_by, created_at, updated_at
 		FROM %s
-		WHERE tenant_id = $1 AND id = $2
+		WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL
 	`, TenantTable(ctx, "events"))
 	var e domain.Event
 	err := r.db.QueryRowContext(ctx, query, tenantID, id).Scan(
@@ -65,6 +67,8 @@ func (r *eventRepository) GetEventByID(ctx context.Context, tenantID, id uuid.UU
 		&e.EventDate,
 		&e.Location,
 		&e.Status,
+		&e.AttachmentURL,
+		&e.ReportURL,
 		&e.CreatedBy,
 		&e.CreatedAt,
 		&e.UpdatedAt,
@@ -81,8 +85,8 @@ func (r *eventRepository) GetEventByID(ctx context.Context, tenantID, id uuid.UU
 func (r *eventRepository) UpdateEvent(ctx context.Context, event *domain.Event) error {
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET title = $1, description = $2, event_date = $3, location = $4, status = $5, updated_at = NOW()
-		WHERE tenant_id = $6 AND id = $7
+		SET title = $1, description = $2, event_date = $3, location = $4, status = $5, attachment_url = $6, report_url = $7, updated_at = NOW()
+		WHERE tenant_id = $8 AND id = $9 AND deleted_at IS NULL
 		RETURNING updated_at
 	`, TenantTable(ctx, "events"))
 	err := r.db.QueryRowContext(ctx, query,
@@ -91,6 +95,8 @@ func (r *eventRepository) UpdateEvent(ctx context.Context, event *domain.Event) 
 		event.EventDate,
 		event.Location,
 		event.Status,
+		event.AttachmentURL,
+		event.ReportURL,
 		event.TenantID,
 		event.ID,
 	).Scan(&event.UpdatedAt)
@@ -134,17 +140,17 @@ func (r *eventRepository) ListEvents(ctx context.Context, tenantID uuid.UUID, li
 	var args []interface{}
 	if status != "" {
 		query = fmt.Sprintf(`
-		SELECT id, tenant_id, title, description, event_date, location, status, created_by, created_at, updated_at
+		SELECT id, tenant_id, title, description, event_date, location, status, attachment_url, report_url, created_by, created_at, updated_at
 		FROM %s
-		WHERE tenant_id = $1 AND status = $2
+		WHERE tenant_id = $1 AND status = $2 AND deleted_at IS NULL
 		ORDER BY created_at DESC LIMIT $3 OFFSET $4
 	`, eventsTable)
 		args = append(args, tenantID, status, limit, offset)
 	} else {
 		query = fmt.Sprintf(`
-		SELECT id, tenant_id, title, description, event_date, location, status, created_by, created_at, updated_at
+		SELECT id, tenant_id, title, description, event_date, location, status, attachment_url, report_url, created_by, created_at, updated_at
 		FROM %s
-		WHERE tenant_id = $1
+		WHERE tenant_id = $1 AND deleted_at IS NULL
 		ORDER BY created_at DESC LIMIT $2 OFFSET $3
 	`, eventsTable)
 		args = append(args, tenantID, limit, offset)
@@ -166,6 +172,8 @@ func (r *eventRepository) ListEvents(ctx context.Context, tenantID uuid.UUID, li
 			&e.EventDate,
 			&e.Location,
 			&e.Status,
+			&e.AttachmentURL,
+			&e.ReportURL,
 			&e.CreatedBy,
 			&e.CreatedAt,
 			&e.UpdatedAt,

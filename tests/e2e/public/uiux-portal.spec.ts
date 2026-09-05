@@ -20,10 +20,11 @@ test.describe('Public Portal UI/UX & Brand Identity Verification', () => {
     await expect(page.getByText(/Aspirasi Warga/i).first()).toBeVisible();
   });
 
-  test('Public Events page displays calendar timeline and RSVP button', async ({ page }) => {
+  test('Public Events page displays calendar timeline and stats', async ({ page }) => {
     await page.goto('/agenda');
-    await expect(page.locator('h1')).toContainText('Agenda Kegiatan Lingkungan');
-    await expect(page.getByRole('heading', { name: 'Daftar Agenda Mendatang' })).toBeVisible();
+    await expect(page.locator('h1')).toContainText('Agenda Kegiatan & Program Warga');
+    await expect(page.getByText('Informasi terbuka seluruh agenda lingkungan RT/RW')).toBeVisible();
+    await expect(page.getByText('Total Agenda')).toBeVisible();
   });
 
   test('Public Karang Taruna page loads structure banner', async ({ page }) => {

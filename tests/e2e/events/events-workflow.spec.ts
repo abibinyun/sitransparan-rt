@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { login, ADMIN_EMAIL, ADMIN_PASSWORD } from '../helpers';
 
-test.describe('Events — full business workflow (CRUD + RAB + RSVP)', () => {
+test.describe('Events — full business workflow (CRUD + RAB + Filter)', () => {
   const ts = Date.now();
   const eventTitle = `Kerja Bakti E2E ${ts}`;
 
-  test('admin creates an event, records a RAB budget item, and RSVPs a resident', async ({ page, request }) => {
+  test('admin creates an event, records a RAB budget item, and deletes the event', async ({ page, request }) => {
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
     await page.goto('/events');
     await expect(page.getByRole('heading', { name: 'Daftar Kegiatan RT/RW' })).toBeVisible();

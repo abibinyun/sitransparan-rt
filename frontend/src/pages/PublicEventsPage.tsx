@@ -8,7 +8,9 @@ import {
   CalendarCheck,
   Sparkles,
   Search,
-  Filter
+  Filter,
+  FileText,
+  ExternalLink
 } from 'lucide-react';
 import { usePublicEvents, formatRupiah } from '../services/public_transparency';
 
@@ -349,6 +351,36 @@ export const PublicEventsPage: React.FC = () => {
                             </span>
                           )}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Lampiran Dokumen: Proposal & LPJ / Laporan Pertanggungjawaban */}
+                    {(evt.attachment_url || evt.report_url) && (
+                      <div className="flex flex-wrap items-center gap-2 pt-2 text-xs">
+                        {evt.attachment_url && (
+                          <a
+                            href={evt.attachment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-medium transition-colors"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Unduh Proposal / Tor</span>
+                            <ExternalLink className="w-3 h-3 opacity-60" />
+                          </a>
+                        )}
+                        {evt.report_url && (
+                          <a
+                            href={evt.report_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-medium transition-colors"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Laporan Pertanggungjawaban (LPJ)</span>
+                            <ExternalLink className="w-3 h-3 opacity-60" />
+                          </a>
+                        )}
                       </div>
                     )}
                   </article>

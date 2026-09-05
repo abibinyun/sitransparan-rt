@@ -1464,7 +1464,7 @@ tests/e2e/                      Playwright regression suite
 | Auth & IAM | login, register, list user tenants, switch tenant (`GET /auth/me` wired), user CRUD (admin), tenant CRUD (superadmin) |
 | Demography | resident CRUD, family members, approve/reject, NIK encrypted (AES-256-GCM + HMAC lookup), master data rumah (`houses` & QR token) |
 | Finance | **funds** (multi-kantong, `is_default`), fee categories, dues (record & verify, `status` filter), cash transactions (**append-only**), summary, CSV/PDF export via backend blob |
-| Events | event CRUD (budget `budget` on list), RAB/budget (RAB card visible + toast), RSVP (toast), committee roles, sponsors, donation receipts, transparency view |
+| Events | event CRUD (budget `budget` on list), RAB/budget (RAB card visible + toast), attachments/reports (proposal & LPJ), committee roles, sponsors, donation receipts, timeline transparency view |
 | Aspirations | submit (public anonymous & internal), status + response (admin), community needs CRUD |
 | Announcements & Documents | announcement CRUD (with `media_urls` gallery), document CRUD (create/read/update/delete, PUT `/documents/{id}`) |
 | Dashboard | summary metrics, financial report export via `GET /dashboard/reports/financial/export?format=csv|pdf` (blob) |
@@ -1528,7 +1528,7 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
   `announcements/` (termasuk `announcements-crud`: CRUD penuh + sinkronisasi portal
   publik + penyembunyian `residents_only` dari anonim), `aspirations/` (termasuk
   `workflow.spec.ts`), `events/` (termasuk `events-workflow`: create → RAB persist via
-  API → RSVP → delete; filter status terverifikasi end-to-end), `meetings/`
+  API → delete; filter status terverifikasi end-to-end), `meetings/`
   (termasuk `meetings-authz`: warga ditolak tulis, `visibility=confidential`
   ditegakkan server-side, isolasi lintas-hostname), `roles/{admin_rt,resident,
   superadmin,public,negative-authz}.spec.ts`, `superadmin/`, `users/`, **plus suite
@@ -1585,8 +1585,9 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
   - Vite HMR WebSocket: dev port configured to 443 for TLS reverse proxy/tunnel compatibility.
 - **FIXED 2026-08-28 (GAP B1/B2/B5):**
   - Dashboard export — now uses backend blob `GET /dashboard/reports/financial/export?format=csv|pdf` (`dashboard.ts` `exportFinancialReport()` + loading/error) — no longer `window.print`/dummy CSV
+  - Event attachments — proposal (`attachment_url`) dan LPJ (`report_url`) didukung di schema, admin card, form modal, dan public timeline
   - Event RAB — `GET /events` now embeds `budget` (usecase agregat `ListBudgetsByEventID`, card shows `RAB: {description} Estimasi/Realisasi`, modal prefills)
-  - RSVP/RAB toast — `EventsPage` `showToast` 3s + `EventBudget/RSVPModal` `onSaved`/`saveError` — no longer silent
+  - RAB toast — `EventsPage` `showToast` 3s + `EventBudgetModal` `onSaved`/`saveError` — no longer silent
   - Push `BroadcastTenant` now `WithTimeout 5s` + `media_urls` validated `http/https` max 10
 
 ## 46.10 Documentation Map (canonical)

@@ -46,7 +46,7 @@ func (r *meetingRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 	query := fmt.Sprintf(`
 		SELECT id, title, agenda, meeting_date, location, meeting_type, visibility, status, notes, created_by, created_at, updated_at
 		FROM %s
-		WHERE id = $1
+		WHERE id = $1 AND deleted_at IS NULL
 	`, table)
 
 	var m domain.Meeting
@@ -75,7 +75,7 @@ func (r *meetingRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 	attTable := TenantTable(ctx, "meeting_attendees")
 	attQuery := fmt.Sprintf(`
 		SELECT id, meeting_id, resident_id, name, role_or_title, attended, notes, created_at
-		FROM %s WHERE meeting_id = $1 ORDER BY created_at ASC
+		FROM %s WHERE meeting_id = $1 AND deleted_at IS NULL ORDER BY created_at ASC
 	`, attTable)
 	attRows, err := r.db.QueryContext(ctx, attQuery, id)
 	if err == nil {
@@ -92,7 +92,7 @@ func (r *meetingRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 	decTable := TenantTable(ctx, "meeting_decisions")
 	decQuery := fmt.Sprintf(`
 		SELECT id, meeting_id, decision_text, category, created_at
-		FROM %s WHERE meeting_id = $1 ORDER BY created_at ASC
+		FROM %s WHERE meeting_id = $1 AND deleted_at IS NULL ORDER BY created_at ASC
 	`, decTable)
 	decRows, err := r.db.QueryContext(ctx, decQuery, id)
 	if err == nil {
@@ -109,7 +109,7 @@ func (r *meetingRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 	actTable := TenantTable(ctx, "meeting_action_items")
 	actQuery := fmt.Sprintf(`
 		SELECT id, meeting_id, task, assignee_name, assignee_resident_id, due_date::text, status, notes, created_at, updated_at
-		FROM %s WHERE meeting_id = $1 ORDER BY created_at ASC
+		FROM %s WHERE meeting_id = $1 AND deleted_at IS NULL ORDER BY created_at ASC
 	`, actTable)
 	actRows, err := r.db.QueryContext(ctx, actQuery, id)
 	if err == nil {
@@ -133,13 +133,13 @@ func (r *meetingRepository) List(ctx context.Context, visibility string) ([]doma
 	if visibility != "" {
 		query = fmt.Sprintf(`
 			SELECT id, title, agenda, meeting_date, location, meeting_type, visibility, status, notes, created_by, created_at, updated_at
-			FROM %s WHERE visibility = $1 ORDER BY meeting_date DESC
+			FROM %s WHERE visibility = $1 AND deleted_at IS NULL ORDER BY meeting_date DESC
 		`, table)
 		args = append(args, visibility)
 	} else {
 		query = fmt.Sprintf(`
 			SELECT id, title, agenda, meeting_date, location, meeting_type, visibility, status, notes, created_by, created_at, updated_at
-			FROM %s ORDER BY meeting_date DESC
+			FROM %s WHERE deleted_at IS NULL ORDER BY meeting_date DESC
 		`, table)
 	}
 

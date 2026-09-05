@@ -68,6 +68,21 @@ export function useDeleteEvent() {
   });
 }
 
+export function useUploadEventFile() {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post<{ proof_url: string }>('/financial/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return res.data.proof_url;
+    },
+  });
+}
+
 export function useSaveEventBudget() {
   const queryClient = useQueryClient();
   return useMutation({

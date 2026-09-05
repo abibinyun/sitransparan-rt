@@ -9,6 +9,8 @@ export interface EventItem {
   event_date?: string;
   location?: string;
   status: EventStatus;
+  attachment_url?: string;
+  report_url?: string;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -43,6 +45,8 @@ export interface CreateEventPayload {
   event_date?: string;
   location?: string;
   status?: EventStatus;
+  attachment_url?: string;
+  report_url?: string;
 }
 
 export interface UpdateEventPayload {
@@ -51,6 +55,8 @@ export interface UpdateEventPayload {
   event_date?: string;
   location?: string;
   status?: EventStatus;
+  attachment_url?: string;
+  report_url?: string;
 }
 
 export interface EventFilter {

@@ -9,17 +9,19 @@ import (
 )
 
 type Event struct {
-	ID          uuid.UUID    `json:"id"`
-	TenantID    uuid.UUID    `json:"tenant_id"`
-	Title       string       `json:"title"`
-	Description *string      `json:"description,omitempty"`
-	EventDate   *time.Time   `json:"event_date,omitempty"`
-	Location    *string      `json:"location,omitempty"`
-	Status      string       `json:"status"` // 'planned', 'ongoing', 'completed', 'cancelled'
-	Budget      *EventBudget `json:"budget,omitempty"`
-	CreatedBy   *uuid.UUID   `json:"created_by,omitempty"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at"`
+	ID            uuid.UUID    `json:"id"`
+	TenantID      uuid.UUID    `json:"tenant_id"`
+	Title         string       `json:"title"`
+	Description   *string      `json:"description,omitempty"`
+	EventDate     *time.Time   `json:"event_date,omitempty"`
+	Location      *string      `json:"location,omitempty"`
+	Status        string       `json:"status"` // 'planned', 'ongoing', 'completed', 'cancelled'
+	Budget        *EventBudget `json:"budget,omitempty"`
+	AttachmentURL *string      `json:"attachment_url,omitempty"`
+	ReportURL     *string      `json:"report_url,omitempty"`
+	CreatedBy     *uuid.UUID   `json:"created_by,omitempty"`
+	CreatedAt     time.Time    `json:"created_at"`
+	UpdatedAt     time.Time    `json:"updated_at"`
 }
 
 type EventBudget struct {

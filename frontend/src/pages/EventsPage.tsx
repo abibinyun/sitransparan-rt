@@ -4,6 +4,7 @@ import {
   useCreateEvent,
   useUpdateEvent,
   useDeleteEvent,
+  useUploadEventFile,
 } from '../services/event';
 import { EventItem, EventStatus, CreateEventPayload } from '../types/event';
 import { EventBudgetModal } from '../components/EventBudgetModal';
@@ -14,7 +15,7 @@ import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
-import { CalendarDays, ClipboardList, Plus } from 'lucide-react';
+import { CalendarDays, ClipboardList, Plus, FileText, ExternalLink } from 'lucide-react';
 
 export const EventsPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('');
@@ -23,6 +24,7 @@ export const EventsPage: React.FC = () => {
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
   const deleteEvent = useDeleteEvent();
+  const uploadFile = useUploadEventFile();
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
@@ -41,6 +43,10 @@ export const EventsPage: React.FC = () => {
   const [eventDate, setEventDate] = useState('');
   const [location, setLocation] = useState('');
   const [status, setStatus] = useState<EventStatus>('planned');
+  const [attachmentUrl, setAttachmentUrl] = useState('');
+  const [reportUrl, setReportUrl] = useState('');
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const [isUploadingReport, setIsUploadingReport] = useState(false);
 
   const events = data?.data || [];
 
@@ -49,9 +55,17 @@ export const EventsPage: React.FC = () => {
       setEditingEvent(event);
       setTitle(event.title);
       setDescription(event.description || '');
-      setEventDate(event.event_date ? new Date(event.event_date).toISOString().slice(0, 16) : '');
+      if (event.event_date) {
+        const d = new Date(event.event_date);
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        setEventDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+      } else {
+        setEventDate('');
+      }
       setLocation(event.location || '');
       setStatus(event.status);
+      setAttachmentUrl(event.attachment_url || '');
+      setReportUrl(event.report_url || '');
     } else {
       setEditingEvent(null);
       setTitle('');
@@ -59,8 +73,31 @@ export const EventsPage: React.FC = () => {
       setEventDate('');
       setLocation('');
       setStatus('planned');
+      setAttachmentUrl('');
+      setReportUrl('');
     }
     setIsFormModalOpen(true);
+  };
+
+  const handleFileUpload = async (file: File, target: 'attachment' | 'report') => {
+    try {
+      if (target === 'attachment') setIsUploadingAttachment(true);
+      else setIsUploadingReport(true);
+
+      const url = await uploadFile.mutateAsync(file);
+      if (target === 'attachment') {
+        setAttachmentUrl(url);
+        showToast('Proposal / TOR berhasil diunggah');
+      } else {
+        setReportUrl(url);
+        showToast('Laporan Pertanggungjawaban (LPJ) berhasil diunggah');
+      }
+    } catch (err: any) {
+      alert('Gagal mengunggah file: ' + (err.response?.data?.error || err.message));
+    } finally {
+      if (target === 'attachment') setIsUploadingAttachment(false);
+      else setIsUploadingReport(false);
+    }
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -71,18 +108,26 @@ export const EventsPage: React.FC = () => {
       event_date: eventDate ? new Date(eventDate).toISOString() : undefined,
       location: location || undefined,
       status,
+      attachment_url: attachmentUrl || undefined,
+      report_url: reportUrl || undefined,
     };
 
     if (editingEvent) {
       updateEvent.mutate(
         { id: editingEvent.id, payload },
         {
-          onSuccess: () => setIsFormModalOpen(false),
+          onSuccess: () => {
+            setIsFormModalOpen(false);
+            showToast('Kegiatan berhasil diperbarui');
+          },
         }
       );
     } else {
       createEvent.mutate(payload, {
-        onSuccess: () => setIsFormModalOpen(false),
+        onSuccess: () => {
+          setIsFormModalOpen(false);
+          showToast('Kegiatan berhasil ditambahkan');
+        },
       });
     }
   };
@@ -189,6 +234,35 @@ export const EventsPage: React.FC = () => {
                 ) : (
                   <p className="mt-2 text-[11px] text-slate-400">Belum ada RAB</p>
                 )}
+
+                {(event.attachment_url || event.report_url) && (
+                  <div className="mt-2 space-y-1 text-xs">
+                    {event.attachment_url && (
+                      <a
+                        href={event.attachment_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span className="truncate">Proposal / TOR</span>
+                        <ExternalLink className="w-3 h-3 opacity-60 ml-auto shrink-0" />
+                      </a>
+                    )}
+                    {event.report_url && (
+                      <a
+                        href={event.report_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-emerald-700 hover:text-emerald-900 font-medium"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span className="truncate">LPJ / Pertanggungjawaban</span>
+                        <ExternalLink className="w-3 h-3 opacity-60 ml-auto shrink-0" />
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 border-t space-y-2">
@@ -288,6 +362,72 @@ export const EventsPage: React.FC = () => {
               <option value="completed">Selesai (Completed)</option>
               <option value="cancelled">Dibatalkan (Cancelled)</option>
             </Select>
+          </div>
+
+          {/* Lampiran Proposal / TOR */}
+          <div className="space-y-2 border-t pt-3">
+            <Label className="text-xs font-semibold text-slate-700">Proposal / TOR (PDF / Gambar maks 5MB)</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,.webp"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload(file, 'attachment');
+                }}
+                disabled={isUploadingAttachment}
+                className="text-xs"
+              />
+              {isUploadingAttachment && <span className="text-xs text-blue-600 animate-pulse">Mengunggah...</span>}
+            </div>
+            {attachmentUrl && (
+              <div className="flex items-center gap-2 text-xs text-emerald-700">
+                <FileText className="w-3.5 h-3.5" />
+                <a href={attachmentUrl} target="_blank" rel="noreferrer" className="underline truncate max-w-xs">
+                  Proposal terlampir
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setAttachmentUrl('')}
+                  className="text-red-500 hover:text-red-700 ml-auto"
+                >
+                  Hapus
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Lampiran LPJ / Laporan Pertanggungjawaban */}
+          <div className="space-y-2 border-t pt-3">
+            <Label className="text-xs font-semibold text-slate-700">Laporan Pertanggungjawaban (LPJ)</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,.webp"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload(file, 'report');
+                }}
+                disabled={isUploadingReport}
+                className="text-xs"
+              />
+              {isUploadingReport && <span className="text-xs text-blue-600 animate-pulse">Mengunggah...</span>}
+            </div>
+            {reportUrl && (
+              <div className="flex items-center gap-2 text-xs text-emerald-700">
+                <FileText className="w-3.5 h-3.5" />
+                <a href={reportUrl} target="_blank" rel="noreferrer" className="underline truncate max-w-xs">
+                  LPJ terlampir
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setReportUrl('')}
+                  className="text-red-500 hover:text-red-700 ml-auto"
+                >
+                  Hapus
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
