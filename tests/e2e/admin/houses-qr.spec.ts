@@ -57,10 +57,27 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
     await expect(page.getByText(blockNo)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Buka Portal Transparansi' })).toBeVisible();
 
-    // 9. Klik menuju portal usulan warga
+    // Verifikasi sesi auth di localStorage memiliki user asli (bukan house ID semata)
+    const claimedAuth = await page.evaluate(() => {
+      const userStr = localStorage.getItem('auth_user');
+      return userStr ? JSON.parse(userStr) : null;
+    });
+    expect(claimedAuth).toBeDefined();
+    expect(claimedAuth.email).toContain('@warga.local');
+    expect(claimedAuth.role).toBe('resident');
+
+    // 9. Klik menuju portal usulan warga dan kirim aspirasi menggunakan identitas real user terverifikasi
     await page.getByRole('button', { name: 'Kirim Aspirasi & Usulan Warga' }).click();
     await expect(page).toHaveURL('/usulan');
     await expect(page.getByText('Daftar Aspirasi Publik')).toBeVisible({ timeout: 10000 });
+
+    // Coba kirim usulan warga
+    await page.getByRole('button', { name: 'Sampaikan Aspirasi Baru' }).click();
+    await expect(page.getByText('Kirim Aspirasi / Usulan / Keluhan')).toBeVisible();
+    await page.getByPlaceholder('Judul aspirasi...').fill(`Perbaikan Selokan ${blockNo}`);
+    await page.getByPlaceholder('Jelaskan aspirasi atau keluhan Anda...').fill(`Mohon bantuan perbaikan selokan di depan ${blockNo}`);
+    await page.getByRole('button', { name: 'Kirim Aspirasi' }).click();
+    await expect(page.getByText(`Perbaikan Selokan ${blockNo}`)).toBeVisible({ timeout: 10000 });
 
     // 10. Login kembali sebagai Admin RT untuk menguji Edit & Hapus Rumah
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);

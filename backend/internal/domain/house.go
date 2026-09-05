@@ -21,6 +21,7 @@ type House struct {
 	Address        *string          `json:"address,omitempty"`
 	HeadResidentID *uuid.UUID       `json:"head_resident_id,omitempty"`
 	HeadResident   *Resident        `json:"head_resident,omitempty"`
+	UserID         *uuid.UUID       `json:"user_id,omitempty"`
 	AccessToken    string           `json:"access_token"`
 	TokenStatus    HouseTokenStatus `json:"token_status"`
 	PinCode        string           `json:"pin_code"`
@@ -30,11 +31,12 @@ type House struct {
 }
 
 type HouseAccessClaimResponse struct {
-	Token        string   `json:"token"`
-	House        House    `json:"house"`
-	TenantSlug   string   `json:"tenant_slug"`
-	TenantName   string   `json:"tenant_name"`
+	Token        string    `json:"token"`
+	House        House     `json:"house"`
+	TenantSlug   string    `json:"tenant_slug"`
+	TenantName   string    `json:"tenant_name"`
 	HeadResident *Resident `json:"head_resident,omitempty"`
+	User         *User     `json:"user,omitempty"`
 }
 
 type HouseRepository interface {

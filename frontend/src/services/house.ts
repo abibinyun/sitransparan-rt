@@ -8,6 +8,7 @@ export interface House {
   address?: string;
   head_resident_id?: string;
   head_resident?: Resident;
+  user_id?: string;
   access_token: string;
   token_status: 'active' | 'revoked' | 'suspended';
   pin_code?: string;
@@ -33,6 +34,12 @@ export interface ClaimHouseTokenResponse {
   tenant_slug: string;
   tenant_name: string;
   head_resident?: Resident;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role?: string;
+  };
 }
 
 export function useHouses(params?: { limit?: number; offset?: number }) {

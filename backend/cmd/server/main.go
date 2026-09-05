@@ -111,7 +111,7 @@ func main() {
 
 	// House QR Access (1 Rumah = 1 Token)
 	houseRepo := repository.NewHouseRepository(db)
-	houseUC := usecase.NewHouseUsecase(houseRepo, tenantRepo, residentRepo, jwtSecret, jwtDuration)
+	houseUC := usecase.NewHouseUsecase(houseRepo, tenantRepo, residentRepo, userRepo, tuRepo, roleRepo, jwtSecret, jwtDuration)
 	houseHandler := delivery.NewHouseHandler(houseUC)
 
 	// Interaksi sosial Fase 3 (reaksi & polling) — budget rate-limit ketat

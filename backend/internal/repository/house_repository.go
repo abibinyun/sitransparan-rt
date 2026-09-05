@@ -50,13 +50,13 @@ func (r *houseRepository) Create(ctx context.Context, tenantID uuid.UUID, h *dom
 
 	query := fmt.Sprintf(`
 		INSERT INTO %s.houses (
-			id, block_number, address, head_resident_id, access_token, token_status, pin_code, token_version, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			id, block_number, address, head_resident_id, user_id, access_token, token_status, pin_code, token_version, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`, schema)
 
 	_, err = r.db.ExecContext(
 		ctx, query,
-		h.ID, h.BlockNumber, h.Address, h.HeadResidentID, h.AccessToken, h.TokenStatus, h.PinCode, h.TokenVersion, h.CreatedAt, h.UpdatedAt,
+		h.ID, h.BlockNumber, h.Address, h.HeadResidentID, h.UserID, h.AccessToken, h.TokenStatus, h.PinCode, h.TokenVersion, h.CreatedAt, h.UpdatedAt,
 	)
 	return err
 }
@@ -68,16 +68,17 @@ func (r *houseRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID) (
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, block_number, address, head_resident_id, access_token, token_status, COALESCE(pin_code, ''), COALESCE(token_version, 1), created_at, updated_at
+		SELECT id, block_number, address, head_resident_id, user_id, access_token, token_status, COALESCE(pin_code, ''), COALESCE(token_version, 1), created_at, updated_at
 		FROM %s.houses
 		WHERE id = $1 AND deleted_at IS NULL
 	`, schema)
 
 	var h domain.House
 	var headID sql.NullString
+	var userID sql.NullString
 	var addr sql.NullString
 	err = r.db.QueryRowContext(ctx, query, id).Scan(
-		&h.ID, &h.BlockNumber, &addr, &headID, &h.AccessToken, &h.TokenStatus, &h.PinCode, &h.TokenVersion, &h.CreatedAt, &h.UpdatedAt,
+		&h.ID, &h.BlockNumber, &addr, &headID, &userID, &h.AccessToken, &h.TokenStatus, &h.PinCode, &h.TokenVersion, &h.CreatedAt, &h.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -88,6 +89,10 @@ func (r *houseRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID) (
 	if headID.Valid {
 		u, _ := uuid.Parse(headID.String)
 		h.HeadResidentID = &u
+	}
+	if userID.Valid {
+		u, _ := uuid.Parse(userID.String)
+		h.UserID = &u
 	}
 	return &h, nil
 }
@@ -99,16 +104,17 @@ func (r *houseRepository) GetByToken(ctx context.Context, tenantID uuid.UUID, to
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, block_number, address, head_resident_id, access_token, token_status, COALESCE(pin_code, ''), COALESCE(token_version, 1), created_at, updated_at
+		SELECT id, block_number, address, head_resident_id, user_id, access_token, token_status, COALESCE(pin_code, ''), COALESCE(token_version, 1), created_at, updated_at
 		FROM %s.houses
 		WHERE access_token = $1 AND token_status = 'active' AND deleted_at IS NULL
 	`, schema)
 
 	var h domain.House
 	var headID sql.NullString
+	var userID sql.NullString
 	var addr sql.NullString
 	err = r.db.QueryRowContext(ctx, query, token).Scan(
-		&h.ID, &h.BlockNumber, &addr, &headID, &h.AccessToken, &h.TokenStatus, &h.PinCode, &h.TokenVersion, &h.CreatedAt, &h.UpdatedAt,
+		&h.ID, &h.BlockNumber, &addr, &headID, &userID, &h.AccessToken, &h.TokenStatus, &h.PinCode, &h.TokenVersion, &h.CreatedAt, &h.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -119,6 +125,10 @@ func (r *houseRepository) GetByToken(ctx context.Context, tenantID uuid.UUID, to
 	if headID.Valid {
 		u, _ := uuid.Parse(headID.String)
 		h.HeadResidentID = &u
+	}
+	if userID.Valid {
+		u, _ := uuid.Parse(userID.String)
+		h.UserID = &u
 	}
 	return &h, nil
 }
@@ -143,7 +153,7 @@ func (r *houseRepository) List(ctx context.Context, tenantID uuid.UUID, limit, o
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, block_number, address, head_resident_id, access_token, token_status, COALESCE(pin_code, ''), COALESCE(token_version, 1), created_at, updated_at
+		SELECT id, block_number, address, head_resident_id, user_id, access_token, token_status, COALESCE(pin_code, ''), COALESCE(token_version, 1), created_at, updated_at
 		FROM %s.houses
 		WHERE deleted_at IS NULL
 		ORDER BY block_number ASC
@@ -160,9 +170,10 @@ func (r *houseRepository) List(ctx context.Context, tenantID uuid.UUID, limit, o
 	for rows.Next() {
 		var h domain.House
 		var headID sql.NullString
+		var userID sql.NullString
 		var addr sql.NullString
 		err := rows.Scan(
-			&h.ID, &h.BlockNumber, &addr, &headID, &h.AccessToken, &h.TokenStatus, &h.PinCode, &h.TokenVersion, &h.CreatedAt, &h.UpdatedAt,
+			&h.ID, &h.BlockNumber, &addr, &headID, &userID, &h.AccessToken, &h.TokenStatus, &h.PinCode, &h.TokenVersion, &h.CreatedAt, &h.UpdatedAt,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -173,6 +184,10 @@ func (r *houseRepository) List(ctx context.Context, tenantID uuid.UUID, limit, o
 		if headID.Valid {
 			u, _ := uuid.Parse(headID.String)
 			h.HeadResidentID = &u
+		}
+		if userID.Valid {
+			u, _ := uuid.Parse(userID.String)
+			h.UserID = &u
 		}
 		houses = append(houses, h)
 	}
@@ -189,11 +204,11 @@ func (r *houseRepository) Update(ctx context.Context, tenantID uuid.UUID, h *dom
 	h.UpdatedAt = time.Now()
 	query := fmt.Sprintf(`
 		UPDATE %s.houses
-		SET block_number = $1, address = $2, head_resident_id = $3, token_status = $4, pin_code = $5, updated_at = $6
-		WHERE id = $7 AND deleted_at IS NULL
+		SET block_number = $1, address = $2, head_resident_id = $3, user_id = $4, token_status = $5, pin_code = $6, updated_at = $7
+		WHERE id = $8 AND deleted_at IS NULL
 	`, schema)
 
-	_, err = r.db.ExecContext(ctx, query, h.BlockNumber, h.Address, h.HeadResidentID, h.TokenStatus, h.PinCode, h.UpdatedAt, h.ID)
+	_, err = r.db.ExecContext(ctx, query, h.BlockNumber, h.Address, h.HeadResidentID, h.UserID, h.TokenStatus, h.PinCode, h.UpdatedAt, h.ID)
 	return err
 }
 

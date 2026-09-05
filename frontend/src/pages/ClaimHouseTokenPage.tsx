@@ -67,13 +67,20 @@ export const ClaimHouseTokenPage: React.FC = () => {
 
     claimHouseToken(slug, token)
       .then((res) => {
-        // Simpan sesi autentikasi warga dari QR
-        const userObj = {
-          id: res.house.id,
-          email: `${res.house.block_number.toLowerCase().replace(/[^a-z0-9]/g, '')}@warga.local`,
-          name: res.head_resident?.full_name || `Warga ${res.house.block_number}`,
-          role: 'resident',
-        };
+        // Simpan sesi autentikasi warga dari QR dengan real user akun
+        const userObj = res.user
+          ? {
+              id: res.user.id,
+              email: res.user.email,
+              name: res.user.name,
+              role: res.user.role || 'resident',
+            }
+          : {
+              id: res.house.id,
+              email: `${res.house.block_number.toLowerCase().replace(/[^a-z0-9]/g, '')}@warga.local`,
+              name: res.head_resident?.full_name || `Warga ${res.house.block_number}`,
+              role: 'resident',
+            };
         const tenantObj = {
           id: res.house.id, // placeholder id
           name: res.tenant_name,

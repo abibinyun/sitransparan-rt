@@ -322,6 +322,37 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 			ADD COLUMN IF NOT EXISTS media_urls JSONB NOT NULL DEFAULT '[]'::jsonb;`,
 		`ALTER TABLE ` + pq.QuoteIdentifier(schemaName) + `.announcements
 			ADD COLUMN IF NOT EXISTS file_urls JSONB NOT NULL DEFAULT '[]'::jsonb;`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.houses (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			block_number VARCHAR(50) NOT NULL,
+			address TEXT,
+			head_resident_id UUID REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.residents(id) ON DELETE SET NULL,
+			user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
+			access_token VARCHAR(64) UNIQUE NOT NULL,
+			token_status VARCHAR(20) NOT NULL DEFAULT 'active',
+			pin_code VARCHAR(10),
+			token_version INT NOT NULL DEFAULT 1,
+			deleted_at TIMESTAMPTZ,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.house_residents (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			house_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.houses(id) ON DELETE CASCADE,
+			resident_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.residents(id) ON DELETE CASCADE,
+			role_in_family VARCHAR(50),
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			UNIQUE(house_id, resident_id)
+		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.house_qr_tokens (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			house_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.houses(id) ON DELETE CASCADE,
+			token VARCHAR(64) UNIQUE NOT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'active',
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
 	}
 
 	for _, ddl := range tablesDDL {
