@@ -79,14 +79,16 @@ test.describe('Profile & Resident Dashboard', () => {
     await page.goto('/admin');
     await expect(page.getByRole('heading', { name: /Selamat Datang,/i })).toBeVisible({ timeout: 10000 });
 
-    // 4. Verifikasi modul-modul dashboard personal warga
+    // 4. Verifikasi modul-modul dashboard personal warga (data orang lain TIDAK bocor)
     const main = page.getByRole('main');
     await expect(main.getByText(/Portal Mandiri Warga RT/i)).toBeVisible();
     await expect(main.getByText(/Status Iuran KK/i)).toBeVisible();
     await expect(main.getByText(/Tabungan Sampah/i)).toBeVisible();
     await expect(main.getByText(/Usulan Saya/i)).toBeVisible();
-    await expect(main.getByRole('heading', { name: 'Riwayat Iuran Keluarga' })).toBeVisible();
-    await expect(main.getByRole('heading', { name: 'Usulan & Aduan Saya' })).toBeVisible();
+
+    // Pastikan jika warga belum ditautkan KK/iuran, tidak membocorkan iuran orang lain
+    await expect(main.getByText(/Belum ada riwayat pembayaran iuran yang tercatat/i)).toBeVisible();
+    await expect(main.getByText(/Anda belum mengajukan usulan atau aduan lingkungan/i)).toBeVisible();
 
     // 5. Verifikasi sidebar navigasi khusus resident (berbeda dengan Admin RT)
     await expect(page.getByRole('link', { name: 'Dashboard Warga' })).toBeVisible();

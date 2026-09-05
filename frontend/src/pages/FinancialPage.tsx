@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useAuthStore } from '../store/useAuthStore';
+import { useMyHouseQuery } from '../services/house';
 import {
   useFinancialSummary,
   useDuesPayments,
@@ -100,8 +102,28 @@ export const FinancialPage: React.FC = () => {
   const { data: rawCats, isLoading: isCatsLoading } = useFeeCategories();
   const { data: rawFunds, isLoading: isFundsLoading } = useFunds();
   const { data: rawResidents, isLoading: isResidentsLoading } = useResidents({ limit: 100 });
+  const { user } = useAuthStore();
+  const { data: houseData } = useMyHouseQuery();
+  const isResident = String(user?.role || '').toLowerCase() === 'resident';
+  const head = houseData?.head_resident;
 
-  const duesList: any[] = Array.isArray(rawDues) ? rawDues : (rawDues as any)?.data || [];
+  // Jika pengguna adalah resident, batasi duesList hanya milik dirinya / kepala keluarga KK-nya
+  const rawDuesList: any[] = Array.isArray(rawDues) ? rawDues : (rawDues as any)?.data || [];
+  const duesList: any[] = React.useMemo(() => {
+    if (!isResident) return rawDuesList;
+    const validResidentIds = [head?.id, (user as any)?.resident_id].filter(Boolean);
+    const validNames = [user?.name?.trim().toLowerCase(), head?.full_name?.trim().toLowerCase()].filter(Boolean);
+    if (validResidentIds.length === 0 && validNames.length === 0) return [];
+    return rawDuesList.filter((d: any) => {
+      if (d.resident_id && validResidentIds.includes(d.resident_id)) return true;
+      if (d.resident_name) {
+        const dName = d.resident_name.trim().toLowerCase();
+        return validNames.some((n) => n && (dName === n || dName.includes(n)));
+      }
+      return false;
+    });
+  }, [rawDuesList, isResident, user, head]);
+
   const txList: any[] = Array.isArray(rawTx) ? rawTx : (rawTx as any)?.data || [];
   const catList: any[] = Array.isArray(rawCats) ? rawCats : (rawCats as any)?.data || [];
   const fundList: any[] = Array.isArray(rawFunds) ? rawFunds : (rawFunds as any)?.data || [];
@@ -471,46 +493,52 @@ export const FinancialPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            onClick={() => setIsDuesModalOpen(true)}
-            className="h-9 gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs font-medium text-xs"
-          >
-            <Coins className="h-3.5 w-3.5" />
-            Catat Iuran Warga
-          </Button>
-          <Button
-            onClick={() => setIsTxModalOpen(true)}
-            className="h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-medium text-xs"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Transaksi Kas RT
-          </Button>
-          <Button
-            onClick={() => setIsFundModalOpen(true)}
-            variant="outline"
-            className="h-9 gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-xs"
-          >
-            <Wallet className="h-3.5 w-3.5 text-slate-500" />
-            Kantong Kas Baru
-          </Button>
-          <Button
-            onClick={async () => {
-              if (window.confirm('Apakah Anda yakin ingin mengosongkan seluruh data iuran dan transaksi kas untuk testing? Tindakan ini tidak dapat dibatalkan.')) {
-                try {
-                  await resetFinancialData.mutateAsync();
-                  showFeedback('success', 'Seluruh data transaksi dan iuran berhasil direset ke Rp 0.');
-                } catch (err: any) {
-                  showFeedback('error', err?.response?.data?.error || 'Gagal mereset data keuangan.');
+          {!isResident && (
+            <>
+              <Button
+                onClick={() => setIsDuesModalOpen(true)}
+                className="h-9 gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs font-medium text-xs"
+              >
+                <Coins className="h-3.5 w-3.5" />
+                Catat Iuran Warga
+              </Button>
+              <Button
+                onClick={() => setIsTxModalOpen(true)}
+                className="h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-medium text-xs"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Transaksi Kas RT
+              </Button>
+              <Button
+                onClick={() => setIsFundModalOpen(true)}
+                variant="outline"
+                className="h-9 gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-xs"
+              >
+                <Wallet className="h-3.5 w-3.5 text-slate-500" />
+                Kantong Kas Baru
+              </Button>
+            </>
+          )}
+          {!isResident && (
+            <Button
+              onClick={async () => {
+                if (window.confirm('Apakah Anda yakin ingin mengosongkan seluruh data iuran dan transaksi kas untuk testing? Tindakan ini tidak dapat dibatalkan.')) {
+                  try {
+                    await resetFinancialData.mutateAsync();
+                    showFeedback('success', 'Seluruh data transaksi dan iuran berhasil direset ke Rp 0.');
+                  } catch (err: any) {
+                    showFeedback('error', err?.response?.data?.error || 'Gagal mereset data keuangan.');
+                  }
                 }
-              }
-            }}
-            variant="ghost"
-            disabled={resetFinancialData.isPending}
-            className="h-9 px-2.5 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-            title="Reset data transaksi & iuran (Testing only)"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </Button>
+              }}
+              variant="ghost"
+              disabled={resetFinancialData.isPending}
+              className="h-9 px-2.5 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+              title="Reset data transaksi & iuran (Testing only)"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -974,7 +1002,7 @@ export const FinancialPage: React.FC = () => {
                             )}
                           </td>
                           <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium space-x-2">
-                            {item.status === 'pending' && (
+                            {item.status === 'pending' && !isResident && (
                               <>
                                 <button
                                   onClick={() => handleVerify(item.id, 'verified')}
@@ -1959,7 +1987,7 @@ export const FinancialPage: React.FC = () => {
                           <span className="font-bold text-slate-900 text-xs">
                             Rp {Number(item.amount).toLocaleString('id-ID')}
                           </span>
-                          {item.status === 'pending' && (
+                          {item.status === 'pending' && !isResident && (
                             <div className="flex gap-2 justify-end mt-1">
                               <button
                                 onClick={() => handleVerify(item.id, 'verified')}

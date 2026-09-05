@@ -7,6 +7,8 @@ import {
   useUpdateCommunityNeed,
   useSubmitAspiration,
 } from '../services/aspiration_need';
+import { useAuthStore } from '../store/useAuthStore';
+import { useMyHouseQuery } from '../services/house';
 import { AspirationFormModal } from '../components/AspirationFormModal';
 import {
   Aspiration,
@@ -45,6 +47,23 @@ export const AspirationsPage: React.FC = () => {
 
   const { data: aspirationsData, isLoading: loadingAspirations } = useAspirations();
   const { data: needsData, isLoading: loadingNeeds } = useCommunityNeeds();
+  const { user } = useAuthStore();
+  const { data: houseData } = useMyHouseQuery();
+  const isResident = String(user?.role || '').toLowerCase() === 'resident';
+  const head = houseData?.head_resident;
+
+  // Filter aspirasi jika peran adalah warga (resident): hanya tampilkan usulan milik warga ini sendiri
+  const rawAspirations: Aspiration[] = aspirationsData?.data || [];
+  const aspirations = React.useMemo(() => {
+    if (!isResident) return rawAspirations;
+    const validNames = [user?.name?.trim().toLowerCase(), head?.full_name?.trim().toLowerCase()].filter(Boolean);
+    if (validNames.length === 0) return [];
+    return rawAspirations.filter((a) => {
+      if (a.is_anonymous) return false;
+      const author = a.author_name?.trim().toLowerCase();
+      return validNames.some((n) => n && (author === n || author?.includes(n)));
+    });
+  }, [rawAspirations, isResident, user, head]);
 
   const submitAspirationMutation = useSubmitAspiration();
   const updateAspirationStatusMutation = useUpdateAspirationStatus();
@@ -122,7 +141,6 @@ export const AspirationsPage: React.FC = () => {
     setShowNeedModal(false);
   };
 
-  const aspirations = aspirationsData?.data || [];
   const communityNeeds = needsData?.data || [];
 
   const getAspirationStatusBadge = (st: AspirationStatus) => {
@@ -164,19 +182,19 @@ export const AspirationsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeaderTabs
-        title="Manajemen Aspirasi & Kebutuhan Lingkungan"
-        description="Pusat informasi resmi RT, publikasi berkas, penampungan usulan, dan polling suara warga."
+        title={isResident ? 'Aspirasi & Usulan Saya' : 'Manajemen Aspirasi & Kebutuhan Lingkungan'}
+        description={isResident ? 'Pantau tindak lanjut pengurus RT atas aspirasi yang Anda ajukan.' : 'Pusat informasi resmi RT, publikasi berkas, penampungan usulan, dan polling suara warga.'}
         tabs={commTabs}
         actions={
           activeTab === 'aspirations' ? (
             <Button onClick={() => setShowAspirationModal(true)}>
               + Tambah Aspirasi
             </Button>
-          ) : (
+          ) : !isResident ? (
             <Button onClick={() => handleOpenNeedModal()}>
               + Tambah Kebutuhan Lingkungan
             </Button>
-          )
+          ) : null
         }
       />
 
@@ -231,13 +249,15 @@ export const AspirationsPage: React.FC = () => {
                       </div>
                       <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpenResponseModal(item)}
-                    >
-                      Tanggapi
-                    </Button>
+                    {!isResident && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenResponseModal(item)}
+                      >
+                        Tanggapi
+                      </Button>
+                    )}
                   </div>
                   <p className="text-sm text-slate-600">{item.content || (item as any).description || ''}</p>
                   {item.response && (

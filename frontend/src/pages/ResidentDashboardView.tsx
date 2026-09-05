@@ -36,28 +36,45 @@ export const ResidentDashboardView: React.FC = () => {
   const house = houseData?.house;
   const head = houseData?.head_resident;
 
-  // Filter dues payments khusus resident ini atau kepala keluarga jika ada
+  // Filter dues payments KHUSUS resident / KK warga ini.
+  // Jika warga belum ditautkan ke data KK/resident, KOSONGKAN ([]), jangan pernah bocorkan data orang lain!
   const duesList: DuesPayment[] = duesData?.data || [];
   const myDues = React.useMemo(() => {
-    if (!head?.id) return duesList;
-    return duesList.filter((d: DuesPayment) => d.resident_id === head.id);
-  }, [duesList, head]);
+    const validResidentIds = [head?.id, (user as any)?.resident_id].filter(Boolean);
+    const validNames = [user?.name?.trim().toLowerCase(), head?.full_name?.trim().toLowerCase()].filter(Boolean);
+    
+    // Jika tidak ada data identitas resident/KK tertaut, jangan tampilkan data iuran sembarang orang
+    if (validResidentIds.length === 0 && validNames.length === 0) return [];
+
+    return duesList.filter((d: DuesPayment) => {
+      if (d.resident_id && validResidentIds.includes(d.resident_id)) return true;
+      if (d.resident_name) {
+        const dName = d.resident_name.trim().toLowerCase();
+        return validNames.some((n) => n && (dName === n || dName.includes(n)));
+      }
+      return false;
+    });
+  }, [duesList, head, user]);
 
   const pendingDues = myDues.filter((d: DuesPayment) => d.status === 'pending' || !d.status);
   const paidDues = myDues.filter((d: DuesPayment) => d.status === 'verified');
   const totalPaidAmount = paidDues.reduce((acc: number, curr: DuesPayment) => acc + (curr.amount || 0), 0);
 
-  // Filter aspirasi saya (berdasarkan author_name yang cocok dengan user.name atau head.full_name)
+  // Filter aspirasi milik warga ini (berdasarkan author_name yang cocok dengan user.name atau head.full_name)
+  // Jangan fallback ke semua data orang lain
   const allAspirations = aspirationsData?.data || [];
   const myAspirations = React.useMemo(() => {
-    const names = [user?.name?.toLowerCase(), head?.full_name?.toLowerCase()].filter(Boolean);
+    const validNames = [user?.name?.trim().toLowerCase(), head?.full_name?.trim().toLowerCase()].filter(Boolean);
+    if (validNames.length === 0) return [];
+
     return allAspirations.filter((a) => {
-      const author = a.author_name?.toLowerCase();
-      return names.some((n) => n && author && (author.includes(n) || n.includes(author)));
+      if (a.is_anonymous) return false;
+      const author = a.author_name?.trim().toLowerCase();
+      return validNames.some((n) => n && (author === n || author?.includes(n)));
     });
   }, [allAspirations, user, head]);
 
-  // Tabungan bank sampah KK milik warga ini
+  // Tabungan bank sampah KK milik warga ini saja
   const myWaste = React.useMemo(() => {
     const list: HouseholdAccumulation[] = wasteData?.data || [];
     if (!house?.block_number && !head?.full_name) return null;
