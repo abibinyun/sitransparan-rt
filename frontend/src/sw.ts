@@ -14,6 +14,7 @@ precacheAndRoute(self.__WB_MANIFEST || []);
 const navigationRoute = new NavigationRoute(
   new NetworkFirst({
     cacheName: 'pages-cache',
+    networkTimeoutSeconds: 2,
     plugins: [
       new CacheableResponsePlugin({
         statuses: [0, 200],
@@ -31,14 +32,14 @@ registerRoute(
   ({ url }) => url.pathname.startsWith('/api/') || url.pathname.includes('/public/'),
   new NetworkFirst({
     cacheName: 'api-cache',
-    networkTimeoutSeconds: 3,
+    networkTimeoutSeconds: 2,
     plugins: [
       new CacheableResponsePlugin({
         statuses: [0, 200],
       }),
       new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: 24 * 60 * 60, // 24 hours
+        maxEntries: 50,
+        maxAgeSeconds: 10 * 60, // 10 menit cadangan offline, jangan 24 jam
       }),
     ],
   })

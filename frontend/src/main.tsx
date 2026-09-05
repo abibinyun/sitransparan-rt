@@ -5,10 +5,11 @@ import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
 // Register Service Worker for PWA installability & offline caching
-registerSW({
+const updateSW = registerSW({
   immediate: true,
   onNeedRefresh() {
-    console.log('New content available, refresh to update.');
+    // Segera aktifkan versi baru tanpa menahan tampilan lama di cache
+    updateSW(true);
   },
   onOfflineReady() {
     console.log('App ready to work offline.');
