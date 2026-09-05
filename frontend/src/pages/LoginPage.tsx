@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLoginMutation, useRegisterMutation, useSwitchTenantMutation, fetchUserTenantsWithToken } from '../services/auth';
 import { useAuthStore } from '../store/useAuthStore';
 import { getTenantSlugFromHost, getTenantUrl, getPlatformUrl } from '../utils/tenant';
@@ -10,8 +11,46 @@ import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
 import { Building2, KeyRound, Mail, User, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
 import { PublicBottomNav } from '../components/PublicBottomNav';
+import { usePublicTenantQuery } from '../services/public_tenant';
+import { TenantNotFoundPage } from '../components/TenantNotFoundPage';
 
 export const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+  const { setAuth, token, user } = useAuthStore();
+
+  const hostTenantSlug = getTenantSlugFromHost();
+  const { data: tenantInfo, isLoading: isTenantLoading, isError: isTenantError } = usePublicTenantQuery();
+
+  useEffect(() => {
+    if (token && user) {
+      if (returnTo) {
+        navigate(returnTo, { replace: true });
+      } else {
+        const isSuperAdmin =
+          user.role === 'SUPER_ADMIN' ||
+          (user.role as string) === 'superadmin' ||
+          (user.role as string) === 'super_admin';
+        navigate(isSuperAdmin ? '/admin/tenants' : '/admin', { replace: true });
+      }
+    }
+  }, [token, user, navigate, returnTo]);
+
+  // Jika user mengakses halaman login pada subdomain tenant
+  if (hostTenantSlug) {
+    if (isTenantLoading) {
+      return (
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500"></div>
+        </div>
+      );
+    }
+    if (isTenantError || !tenantInfo) {
+      return <TenantNotFoundPage />;
+    }
+  }
+
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +62,6 @@ export const LoginPage: React.FC = () => {
   const [availableTenants, setAvailableTenants] = useState<Tenant[]>([]);
   const [pendingAuth, setPendingAuth] = useState<{ token: string; user: any } | null>(null);
 
-  const setAuth = useAuthStore((state) => state.setAuth);
   const loginMutation = useLoginMutation();
   const registerMutation = useRegisterMutation();
   const switchTenantMutation = useSwitchTenantMutation();
@@ -61,7 +99,12 @@ export const LoginPage: React.FC = () => {
       const hostTenantSlug = getTenantSlugFromHost();
       const hostTenant = hostTenantSlug ? tenants.find((t) => t.slug === hostTenantSlug) : undefined;
 
-      if (tenants.length > 1) {
+      const isSuperAdmin =
+        userWithRole.role === 'SUPER_ADMIN' ||
+        (userWithRole.role as string) === 'superadmin' ||
+        (userWithRole.role as string) === 'super_admin';
+
+      if (tenants.length > 1 && !isSuperAdmin) {
         setPendingAuth({ token: data.token, user: userWithRole });
         setAvailableTenants(tenants);
         setSelectedTenantId(hostTenant ? hostTenant.id : tenants[0].id);
@@ -70,16 +113,12 @@ export const LoginPage: React.FC = () => {
 
       const initialTenant = hostTenant || tenants[0] || null;
       setAuth(data.token, userWithRole, initialTenant);
-      const isSuperAdmin =
-        userWithRole.role === 'SUPER_ADMIN' ||
-        (userWithRole.role as string) === 'superadmin' ||
-        (userWithRole.role as string) === 'super_admin';
 
       // Only cross-origin redirect if host is truly different and not running on generic localhost
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       if (isSuperAdmin) {
         if (hostTenantSlug && !isLocalhost) {
-          window.location.href = getPlatformUrl('/admin/tenants');
+          window.location.href = getPlatformUrl(`/admin/tenants?token=${encodeURIComponent(data.token)}`);
           return;
         }
         // Hard reload to purge stale role/memo (fix mix-match superadmin↔tenant)
@@ -88,7 +127,7 @@ export const LoginPage: React.FC = () => {
       }
 
       if (initialTenant && initialTenant.slug !== hostTenantSlug && !isLocalhost) {
-        window.location.href = getTenantUrl(initialTenant.slug, '/admin');
+        window.location.href = getTenantUrl(initialTenant.slug, `/admin?token=${encodeURIComponent(data.token)}`);
         return;
       }
 
@@ -187,7 +226,8 @@ export const LoginPage: React.FC = () => {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {!pendingAuth && (
+          {/* Mode Switcher: sembunyikan pendaftaran mandiri warga (akun dibuat pengurus RT) */}
+          {false && !pendingAuth && (
             <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-1 text-sm font-medium">
               <button
                 type="button"

@@ -206,6 +206,9 @@ func (h *UserHandler) create(w http.ResponseWriter, r *http.Request, tenantID uu
 	if isSuperAdminRole(callerRole) && req.TenantID != nil && *req.TenantID != uuid.Nil {
 		targetTenantID = *req.TenantID
 	}
+	if isSuperAdminRole(req.Role) {
+		targetTenantID = uuid.Nil
+	}
 
 	user, err := h.usecase.CreateUser(r.Context(), usecase.CreateUserParam{
 		TenantID:   targetTenantID,
@@ -258,6 +261,9 @@ func (h *UserHandler) update(w http.ResponseWriter, r *http.Request, tenantID, i
 	targetTenantID := tenantID
 	if isSuperAdminRole(callerRole) && req.TenantID != nil && *req.TenantID != uuid.Nil {
 		targetTenantID = *req.TenantID
+	}
+	if isSuperAdminRole(req.Role) {
+		targetTenantID = uuid.Nil
 	}
 
 	user, err := h.usecase.UpdateUser(r.Context(), usecase.UpdateUserParam{

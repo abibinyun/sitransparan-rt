@@ -50,7 +50,31 @@ const clearServiceWorkerCaches = () => {
     .catch(() => {});
 };
 
+const parseJwt = (token: string): any => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+};
+
 const getInitialToken = (): string | null => {
+  const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null;
+  if (urlToken) {
+    try {
+      localStorage.setItem(TOKEN_KEY, urlToken);
+      setCookie(TOKEN_KEY, urlToken);
+    } catch {}
+    return urlToken;
+  }
   const ck = getCookie(TOKEN_KEY);
   const ls = localStorage.getItem(TOKEN_KEY);
   if (ck && ck !== ls) {
@@ -59,9 +83,27 @@ const getInitialToken = (): string | null => {
   }
   if (ls) return ls;
   if (ck) return ck;
-  return new URLSearchParams(window.location.search).get('token');
+  return null;
 };
 const getInitialUser = (): User | null => {
+  const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null;
+  if (urlToken) {
+    const payload = parseJwt(urlToken);
+    if (payload && payload.user_id) {
+      const u: User = {
+        id: payload.user_id,
+        email: payload.email || 'admin@sitransparan.rt',
+        name: payload.name || (payload.role === 'superadmin' ? 'Super Admin' : 'Admin'),
+        role: payload.role || 'resident',
+        tenants: [],
+      };
+      try {
+        localStorage.setItem(USER_KEY, JSON.stringify(u));
+        setCookie(USER_KEY, JSON.stringify(u));
+      } catch {}
+      return u;
+    }
+  }
   const ck = getCookie(USER_KEY);
   const ls = localStorage.getItem(USER_KEY);
   if (ck) {

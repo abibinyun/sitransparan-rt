@@ -5,7 +5,7 @@ test.describe('Authentication Flow', () => {
     await page.goto('/login');
     
     // Fill credentials
-    await page.getByLabel('Email').fill('admin@gmail.com');
+    await page.getByLabel('Email').fill('abi@gmail.com');
     await page.getByLabel('Kata Sandi').fill('admin123');
     
     // Submit login form via submit button "Masuk Akun"

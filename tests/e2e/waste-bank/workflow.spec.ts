@@ -26,7 +26,7 @@ test.describe('Bank Sampah & Karang Taruna Workflow', () => {
     await expect(page).toHaveURL(/.*admin\/waste-bank/);
 
     // 3. Verify header & KPI cards
-    await expect(page.getByRole('heading', { name: 'Bank Sampah Digital' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Unit Pemberdayaan & Inisiatif Lingkungan' })).toBeVisible();
     await expect(page.getByText('Total Sampah Terkumpul')).toBeVisible();
     await expect(page.getByText('Total Nilai Bruto')).toBeVisible();
 

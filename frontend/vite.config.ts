@@ -41,8 +41,20 @@ export default defineConfig({
     })
   ],
   server: {
+    host: '0.0.0.0',
+    port: 3000,
+    allowedHosts: true,
+    hmr: {
+      clientPort: 443,
+    },
     proxy: {
-      '/api': 'http://localhost:8081'
-    }
-  }
+      '/api': {
+        target: process.env.VITE_BACKEND_PROXY_URL || 'http://backend:8080',
+        changeOrigin: false,
+        headers: {
+          // Keep original host when forwarding to backend
+        },
+      },
+    },
+  },
 });

@@ -126,6 +126,49 @@ func (h *AuthHandler) GetPublicTenantInfo(w http.ResponseWriter, r *http.Request
 	})
 }
 
+// GetPublicTenants returns list of active tenants for public landing page
+func (h *AuthHandler) GetPublicTenants(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	tenants, total, err := h.authUsecase.ListTenants(r.Context(), 100, 0)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Filter only active tenants and omit internal metadata
+	type publicTenantItem struct {
+		ID      uuid.UUID `json:"id"`
+		Name    string    `json:"name"`
+		Slug    string    `json:"slug"`
+		LogoURL *string   `json:"logo_url,omitempty"`
+		Status  string    `json:"status"`
+	}
+
+	var activeTenants []publicTenantItem
+	for _, t := range tenants {
+		if t.IsActive() {
+			activeTenants = append(activeTenants, publicTenantItem{
+				ID:      t.ID,
+				Name:    t.Name,
+				Slug:    t.Slug,
+				LogoURL: t.LogoURL,
+				Status:  string(t.Status),
+			})
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"tenants": activeTenants,
+		"total":   len(activeTenants),
+		"_total":  total,
+	})
+}
+
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)

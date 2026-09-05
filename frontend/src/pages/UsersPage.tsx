@@ -56,6 +56,7 @@ export const UsersPage: React.FC = () => {
     role: RoleName;
     tenant_id?: string;
   }) => {
+    const tenantIdToSend = formData.role === 'superadmin' ? undefined : formData.tenant_id;
     if (selectedUser) {
       await updateUser.mutateAsync({
         id: selectedUser.id,
@@ -65,7 +66,7 @@ export const UsersPage: React.FC = () => {
           phone: formData.phone,
           role: formData.role,
           password: formData.password,
-          tenant_id: formData.tenant_id,
+          tenant_id: tenantIdToSend,
         },
       });
     } else {
@@ -75,7 +76,7 @@ export const UsersPage: React.FC = () => {
         password: formData.password!,
         phone: formData.phone,
         role: formData.role,
-        tenant_id: formData.tenant_id,
+        tenant_id: tenantIdToSend,
       });
     }
   };
@@ -112,7 +113,7 @@ export const UsersPage: React.FC = () => {
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
       <PageHeaderTabs
-        title="Pengaturan Akun & Keamanan"
+        title="Manajemen Pengguna"
         description="Kelola hak akses pengurus RT, penetapan peran warga, serta rekam jejak aktivitas audit."
         tabs={settingsTabs}
         actions={

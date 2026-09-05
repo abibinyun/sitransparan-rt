@@ -22,6 +22,7 @@ import { usePublicFinancialSummary, formatRupiah } from '../services/public_tran
 import { enablePushNotifications } from '../services/push';
 import { PublicBottomNav } from './PublicBottomNav';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
+import { TenantNotFoundPage } from './TenantNotFoundPage';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Kabar & Dokumen', icon: FileText, end: true },
@@ -33,7 +34,7 @@ const NAV_ITEMS = [
 
 export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
-  const { data: tenantInfo } = usePublicTenantQuery();
+  const { data: tenantInfo, isLoading: isTenantLoading, isError: isTenantError } = usePublicTenantQuery();
   const { data: kas } = usePublicFinancialSummary();
   const isAuthenticated = Boolean(user);
   const navigate = useNavigate();
@@ -42,6 +43,11 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
   const [pushMsg, setPushMsg] = React.useState('');
 
   const tenantName = tenantInfo?.name || 'Portal RT';
+
+  // Jika di subdomain tapi tenant tidak ditemukan di backend (404/non-existent slug)
+  if (!isTenantLoading && (isTenantError || tenantInfo === null)) {
+    return <TenantNotFoundPage />;
+  }
 
   const handleEnablePush = async () => {
     setPushStatus('loading');

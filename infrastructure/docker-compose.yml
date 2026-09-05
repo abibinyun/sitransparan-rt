@@ -63,7 +63,7 @@ services:
   backend:
     build:
       context: ..
-      dockerfile: infrastructure/Dockerfile.backend
+      dockerfile: infrastructure/Dockerfile.backend.dev
     container_name: transparansi_backend
     restart: always
     environment:
@@ -83,7 +83,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required - set it in infrastructure/.env (e.g. openssl rand -base64 48)}
       # Parent domain under which each tenant gets <slug>.<TENANT_BASE_DOMAIN>.
       # Must match the frontend build arg VITE_TENANT_BASE_DOMAIN.
-      TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-openrt.local}
+      TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-openrt.local},cube.my.id,iscube.web.id
       # Reverse proxies whose X-Forwarded-For is honored for per-IP rate
       # limiting (exact IP or CIDR). Empty (default) in dev/E2E.
       TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-}
@@ -91,6 +91,9 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@openrt.local}
+    volumes:
+      - ../backend:/app
+      - go_pkg_mod:/go/pkg/mod
     ports:
       - "127.0.0.1:8081:8080"
     depends_on:
@@ -103,7 +106,7 @@ services:
       # Traefik v3 HostRegexp uses plain anchored regexes (the v2 {name:regex}
       # template syntax matches nothing in v3). The regex is anchored so a
       # suffix-trick host like rt-003.openrt.local.attacker.com never matches.
-      - 'traefik.http.routers.backend.rule=Host(`api.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`localhost`) || HostRegexp(`^api\.[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`) || Host(`api.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+\.iscube\.web\.id$`)'
+      - 'traefik.http.routers.backend.rule=Host(`api.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`localhost`) || HostRegexp(`^api\.[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`) || Host(`api.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+\.iscube\.web\.id$`) || Host(`api.cube.my.id`) || HostRegexp(`^api\.[a-z0-9-]+\.cube\.my\.id$`)'
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
     healthcheck:
@@ -115,23 +118,26 @@ services:
   frontend:
     build:
       context: ..
-      dockerfile: infrastructure/Dockerfile.frontend
-      args:
-        # Baked into the static bundle at build time; must match backend's
-        # TENANT_BASE_DOMAIN so the frontend derives the same tenant slug.
-        VITE_TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-openrt.local}
+      dockerfile: infrastructure/Dockerfile.frontend.dev
     container_name: transparansi_frontend
     restart: always
+    environment:
+      - VITE_TENANT_BASE_DOMAIN=${TENANT_BASE_DOMAIN:-openrt.local}
+      - VITE_BACKEND_PROXY_URL=http://backend:8080
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
     ports:
-      - "127.0.0.1:3000:80"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - backend
     labels:
       - "traefik.enable=true"
-      - 'traefik.http.routers.frontend.rule=Host(`app.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`${TENANT_BASE_DOMAIN:-openrt.local}`) || HostRegexp(`^[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`) || Host(`app.iscube.web.id`) || Host(`iscube.web.id`) || HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`)'
+      - 'traefik.http.routers.frontend.rule=Host(`app.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`${TENANT_BASE_DOMAIN:-openrt.local}`) || HostRegexp(`^[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`) || Host(`app.iscube.web.id`) || Host(`iscube.web.id`) || HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`) || Host(`app.cube.my.id`) || Host(`cube.my.id`) || HostRegexp(`^[a-z0-9-]+\.cube\.my\.id$`)'
       - "traefik.http.routers.frontend.entrypoints=web"
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
 
 volumes:
   postgres_data:
   minio_data:
+  go_pkg_mod:

@@ -102,7 +102,7 @@ export const AnnouncementsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeaderTabs
-        title="Komunikasi & Partisipasi Warga"
+        title="Kelola Pengumuman & Dokumen RT/RW"
         description="Pusat informasi resmi RT, publikasi berkas, penampungan usulan, dan polling suara warga."
         tabs={commTabs}
         actions={

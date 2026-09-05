@@ -42,6 +42,18 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     await page.goto('/financial');
     const saldoBefore = await readSaldo(page);
 
+    // Ensure at least one fee category exists
+    await page.getByRole('button', { name: /^Master Kategori Iuran/ }).click();
+    if (await page.locator('table').locator('tr').count() <= 1) {
+      await page.getByRole('button', { name: 'Tambah Jenis Iuran' }).click();
+      await page.fill('#catName', 'Iuran Warga');
+      await page.fill('#catAmount', '50000');
+      await page.selectOption('#catPeriod', 'monthly');
+      await page.getByRole('button', { name: 'Simpan Kategori' }).click();
+      await expect(page.locator('table')).toContainText('Iuran Warga');
+    }
+    await page.getByRole('button', { name: /^Iuran Warga/ }).click();
+
     // Record the dues payment
     await page.getByRole('button', { name: '+ Bayar / Catat Iuran' }).click();
     await expect(page.getByRole('heading', { name: 'Catat / Bayar Iuran Warga' })).toBeVisible();

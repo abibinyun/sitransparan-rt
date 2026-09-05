@@ -479,45 +479,59 @@ func NewUserRepository(db *sql.DB) domain.UserRepository {
 
 func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO users (id, email, password_hash, name, phone, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+		INSERT INTO users (id, email, password_hash, name, phone, role_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
 	if user.ID == uuid.Nil {
 		user.ID = uuid.New()
 	}
-	return r.db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.Name, user.Phone).
+	return r.db.QueryRowContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.Name, user.Phone, user.RoleID).
 		Scan(&user.CreatedAt, &user.UpdatedAt)
 }
 
 func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
-	query := `SELECT id, email, password_hash, name, phone, created_at, updated_at FROM users WHERE id = $1`
+	query := `
+		SELECT u.id, u.email, u.password_hash, u.name, u.phone, u.role_id, COALESCE(r.name, '') as global_role_name, u.created_at, u.updated_at
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		WHERE u.id = $1
+	`
 	var u domain.User
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Phone, &u.CreatedAt, &u.UpdatedAt)
+	var globalRole string
+	err := r.db.QueryRowContext(ctx, query, id).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Phone, &u.RoleID, &globalRole, &u.CreatedAt, &u.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
+	u.GlobalRoleName = domain.RoleName(globalRole)
 	return &u, err
 }
 
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
-	query := `SELECT id, email, password_hash, name, phone, created_at, updated_at FROM users WHERE email = $1`
+	query := `
+		SELECT u.id, u.email, u.password_hash, u.name, u.phone, u.role_id, COALESCE(r.name, '') as global_role_name, u.created_at, u.updated_at
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		WHERE u.email = $1
+	`
 	var u domain.User
-	err := r.db.QueryRowContext(ctx, query, email).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Phone, &u.CreatedAt, &u.UpdatedAt)
+	var globalRole string
+	err := r.db.QueryRowContext(ctx, query, email).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.Phone, &u.RoleID, &globalRole, &u.CreatedAt, &u.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
+	u.GlobalRoleName = domain.RoleName(globalRole)
 	return &u, err
 }
 
 func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
 	query := `
 		UPDATE users
-		SET name = $1, phone = $2, password_hash = $3, updated_at = NOW()
-		WHERE id = $4
+		SET name = $1, phone = $2, password_hash = $3, role_id = $4, updated_at = NOW()
+		WHERE id = $5
 		RETURNING updated_at
 	`
-	return r.db.QueryRowContext(ctx, query, user.Name, user.Phone, user.PasswordHash, user.ID).Scan(&user.UpdatedAt)
+	return r.db.QueryRowContext(ctx, query, user.Name, user.Phone, user.PasswordHash, user.RoleID, user.ID).Scan(&user.UpdatedAt)
 }
 
 func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
@@ -589,8 +603,9 @@ func (r *userRepository) ListAll(ctx context.Context, limit, offset int) ([]*dom
 	}
 
 	query := `
-		SELECT u.id, u.email, u.name, u.phone, u.created_at, u.updated_at, COALESCE(r.name, 'superadmin') as role_name, tu.tenant_id, COALESCE(t.name, '') as tenant_name
+		SELECT u.id, u.email, u.name, u.phone, u.created_at, u.updated_at, COALESCE(r.name, ur.name, 'resident') as role_name, tu.tenant_id, COALESCE(t.name, '') as tenant_name
 		FROM users u
+		LEFT JOIN roles ur ON u.role_id = ur.id
 		LEFT JOIN tenant_users tu ON u.id = tu.user_id
 		LEFT JOIN roles r ON tu.role_id = r.id
 		LEFT JOIN tenants t ON tu.tenant_id = t.id

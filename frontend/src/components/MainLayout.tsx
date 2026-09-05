@@ -22,8 +22,10 @@ import { useAuthStore } from '../store/useAuthStore';
 import { TenantSwitcher } from '../components/TenantSwitcher';
 import { OfflineBanner } from './OfflineBanner';
 import { useTenantsQuery } from '../services/tenant';
+import { usePublicTenantQuery } from '../services/public_tenant';
+import { TenantNotFoundPage } from './TenantNotFoundPage';
 import { useSwitchTenantMutation } from '../services/auth';
-import { getTenantUrl, getTenantSlugFromHost } from '../utils/tenant';
+import { getTenantUrl, getTenantSlugFromHost, getPlatformUrl } from '../utils/tenant';
 
 type NavItem = {
   to: string;
@@ -32,6 +34,7 @@ type NavItem = {
   end?: boolean;
   adminOnly?: boolean;
   matchPrefixes?: string[];
+  externalHref?: string;
 };
 
 const baseNavItems: NavItem[] = [
@@ -81,8 +84,10 @@ const publicNavItems: NavItem[] = [
 ];
 
 const SuperAdminTenantSwitchCard: React.FC = () => {
-  const { data: tenants } = useTenantsQuery();
-  const { activeTenant, setAuth, user } = useAuthStore();
+  const { user } = useAuthStore();
+  const isSuper = user?.role === 'SUPER_ADMIN' || String(user?.role).toLowerCase().replace('-', '_') === 'superadmin' || String(user?.role).toLowerCase() === 'super_admin';
+  const { data: tenants } = useTenantsQuery({ enabled: isSuper });
+  const { activeTenant, setAuth } = useAuthStore();
   const switchTenantMutation = useSwitchTenantMutation();
   const handleSwitch = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const tenant = tenants?.find((t) => t.id === e.target.value);
@@ -127,9 +132,10 @@ const SuperAdminTenantSwitchCard: React.FC = () => {
 export const MainLayout: React.FC = () => {
   const { user, logout, activeTenant } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const hostSlug = (() => { try { return getTenantSlugFromHost(); } catch { return null; } })();
+  const { data: tenantInfo, isLoading: isTenantLoading, isError: isTenantError } = usePublicTenantQuery();
 
   React.useEffect(() => {
-    const hostSlug = (() => { try { return getTenantSlugFromHost(); } catch { return null; } })();
     if (!hostSlug || !user || !activeTenant) return;
     const isSuper = String(user.role).toLowerCase().replace('-','_') === 'superadmin' || String(user.role).toLowerCase() === 'super_admin';
     if (isSuper) return;
@@ -159,7 +165,7 @@ export const MainLayout: React.FC = () => {
       return [
         { to: '/admin', label: 'Dashboard (Support)', icon: LayoutDashboard, end: true },
         ...baseNavItems.filter((item) => item.to !== '/admin'),
-        { to: '/admin/tenants', label: '← Kembali Platform', icon: Shield },
+        { to: '/admin/tenants', label: '← Kembali Platform', icon: Shield, externalHref: getPlatformUrl('/admin/tenants') },
       ];
     }
 
@@ -186,14 +192,35 @@ export const MainLayout: React.FC = () => {
 
   const location = useLocation();
 
+  if (hostSlug && !isTenantLoading && (isTenantError || tenantInfo === null)) {
+    return <TenantNotFoundPage />;
+  }
+
   const renderNavigation = () => (
     <nav className="mt-8 space-y-1.5 px-3">
-      {navItems.map(({ to, label, icon: Icon, end, matchPrefixes }) => {
+      {navItems.map(({ to, label, icon: Icon, end, matchPrefixes, externalHref }) => {
         const isMatched = matchPrefixes
           ? matchPrefixes.some((prefix) => location.pathname.startsWith(prefix))
           : end
           ? location.pathname === to
           : location.pathname.startsWith(to);
+
+        if (externalHref) {
+          return (
+            <a
+              key={to}
+              href={externalHref}
+              onClick={() => setSidebarOpen(false)}
+              className="group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all duration-200 text-slate-400 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-300 group-hover:bg-white/10 group-hover:text-white transition-colors">
+                <Icon className="h-4.5 w-4.5" />
+              </span>
+              <span className="flex-1 truncate">{label}</span>
+              <ChevronRight className="h-4 w-4 transition-transform -translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-70" />
+            </a>
+          );
+        }
 
         return (
           <NavLink

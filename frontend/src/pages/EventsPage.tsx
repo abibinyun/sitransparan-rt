@@ -123,13 +123,13 @@ export const EventsPage: React.FC = () => {
         </div>
       )}
       <PageHeaderTabs
-        title="Kegiatan & Musyawarah RT"
+        title="Daftar Kegiatan RT/RW"
         description="Kelola agenda kepanitiaan, estimasi anggaran (RAB), RSVP warga, serta risalah musyawarah RT."
         tabs={eventTabs}
         actions={
           <Button onClick={() => handleOpenForm()} className="gap-2">
             <Plus className="h-4 w-4" />
-            Tambah Kegiatan
+            + Tambah Kegiatan
           </Button>
         }
       />

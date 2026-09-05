@@ -36,6 +36,19 @@ export const useTenantsQuery = (options?: { enabled?: boolean }) => {
   });
 };
 
+export const usePublicTenantsQuery = () => {
+  return useQuery<Tenant[], Error>({
+    queryKey: ['public-tenants'],
+    queryFn: async () => {
+      const res = await api.get<ListTenantsResponse | Tenant[]>('/public/tenants');
+      if (Array.isArray(res.data)) {
+        return res.data;
+      }
+      return res.data.tenants || [];
+    },
+  });
+};
+
 export const useCreateTenantMutation = () => {
   const queryClient = useQueryClient();
   return useMutation<Tenant, Error, CreateTenantPayload>({

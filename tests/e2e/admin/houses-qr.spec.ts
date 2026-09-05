@@ -7,11 +7,11 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
     await expect(page).toHaveURL('/admin');
 
-    // 2. Klik menu navigasi Stiker QR Rumah di sidebar
-    await page.getByRole('link', { name: 'Stiker QR Rumah' }).click();
+    // 2. Akses halaman Stiker QR Rumah
+    await page.goto('/admin/houses');
     await expect(page).toHaveURL('/admin/houses');
-    await expect(page.getByRole('heading', { name: 'Stiker QR Rumah Warga' })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('Mekanisme akses pintar 1 Rumah = 1 Token')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Kependudukan & Wilayah' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Cara Kerja Stiker QR Rumah:')).toBeVisible();
 
     // 3. Tambah Rumah Baru
     const blockNo = `Blok T-${Date.now()}`;

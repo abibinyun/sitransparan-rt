@@ -97,11 +97,6 @@ func (u *userUsecase) CreateUser(ctx context.Context, p CreateUserParam) (*domai
 		p.Role = domain.RoleResident
 	}
 
-	roleObj, err := u.roleRepo.GetByName(ctx, p.Role)
-	if err != nil {
-		return nil, ErrRoleNotFound
-	}
-
 	hash, err := bcrypt.GenerateFromPassword([]byte(p.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -115,8 +110,29 @@ func (u *userUsecase) CreateUser(ctx context.Context, p CreateUserParam) (*domai
 		Phone:        p.Phone,
 	}
 
+	if isSuperAdminCaller(p.Role) {
+		roleObj, err := u.roleRepo.GetByName(ctx, domain.RoleSuperAdmin)
+		if err == nil && roleObj != nil {
+			user.RoleID = &roleObj.ID
+			user.GlobalRoleName = domain.RoleSuperAdmin
+		}
+		if err := u.userRepo.Create(ctx, user); err != nil {
+			return nil, err
+		}
+		return &domain.UserWithRole{
+			User:     *user,
+			RoleName: domain.RoleSuperAdmin,
+			TenantID: nil,
+		}, nil
+	}
+
 	if err := u.userRepo.Create(ctx, user); err != nil {
 		return nil, err
+	}
+
+	roleObj, err := u.roleRepo.GetByName(ctx, p.Role)
+	if err != nil {
+		return nil, ErrRoleNotFound
 	}
 
 	tu := &domain.TenantUser{
@@ -177,12 +193,12 @@ func (u *userUsecase) GetUserByID(ctx context.Context, tenantID, userID uuid.UUI
 
 func (u *userUsecase) UpdateUser(ctx context.Context, p UpdateUserParam) (*domain.UserWithRole, error) {
 	tu, err := u.tenantUserRepo.GetByTenantAndUser(ctx, p.TenantID, p.UserID)
-	if err != nil {
+	if err != nil && p.TenantID != uuid.Nil {
 		return nil, ErrUserNotFound
 	}
 
 	// Protect superadmin accounts from tenant-scoped admins.
-	if !isSuperAdminCaller(p.CallerRole) && isSuperAdminRole(tu.RoleName) {
+	if tu != nil && !isSuperAdminCaller(p.CallerRole) && isSuperAdminRole(tu.RoleName) {
 		return nil, ErrForbidden
 	}
 
@@ -209,25 +225,70 @@ func (u *userUsecase) UpdateUser(ctx context.Context, p UpdateUserParam) (*domai
 		user.PasswordHash = string(hash)
 	}
 
+	if p.Role != "" {
+		if isSuperAdminCaller(p.Role) {
+			roleObj, err := u.roleRepo.GetByName(ctx, domain.RoleSuperAdmin)
+			if err == nil && roleObj != nil {
+				user.RoleID = &roleObj.ID
+				user.GlobalRoleName = domain.RoleSuperAdmin
+			}
+		} else {
+			user.RoleID = nil
+			user.GlobalRoleName = ""
+		}
+	}
+
 	if err := u.userRepo.Update(ctx, user); err != nil {
 		return nil, err
 	}
 
-	if p.Role != "" && p.Role != tu.RoleName {
+	var retRole domain.RoleName = domain.RoleSuperAdmin
+	var retTenantID *uuid.UUID
+
+	if tu != nil {
+		retRole = tu.RoleName
+		retTenantID = &p.TenantID
+		if p.Role != "" && p.Role != tu.RoleName {
+			if isSuperAdminCaller(p.Role) {
+				// Convert to global superadmin: delete tenant_users row
+				_ = u.tenantUserRepo.Delete(ctx, p.TenantID, p.UserID)
+				retRole = domain.RoleSuperAdmin
+				retTenantID = nil
+			} else {
+				roleObj, err := u.roleRepo.GetByName(ctx, p.Role)
+				if err != nil {
+					return nil, ErrRoleNotFound
+				}
+				if err := u.tenantUserRepo.UpdateRole(ctx, p.TenantID, p.UserID, roleObj.ID); err != nil {
+					return nil, err
+				}
+				retRole = p.Role
+			}
+		}
+	} else if p.Role != "" && !isSuperAdminCaller(p.Role) && p.TenantID != uuid.Nil {
+		// Convert from global superadmin to tenant user
 		roleObj, err := u.roleRepo.GetByName(ctx, p.Role)
 		if err != nil {
 			return nil, ErrRoleNotFound
 		}
-		if err := u.tenantUserRepo.UpdateRole(ctx, p.TenantID, p.UserID, roleObj.ID); err != nil {
+		newTU := &domain.TenantUser{
+			ID:       uuid.New(),
+			TenantID: p.TenantID,
+			UserID:   p.UserID,
+			RoleID:   roleObj.ID,
+			Status:   "active",
+		}
+		if err := u.tenantUserRepo.Create(ctx, newTU); err != nil {
 			return nil, err
 		}
-		tu.RoleName = p.Role
+		retRole = p.Role
+		retTenantID = &p.TenantID
 	}
 
 	return &domain.UserWithRole{
 		User:     *user,
-		RoleName: tu.RoleName,
-		TenantID: &p.TenantID,
+		RoleName: retRole,
+		TenantID: retTenantID,
 	}, nil
 }
 

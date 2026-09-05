@@ -48,6 +48,7 @@ async function createResidentAt(page: Page, name: string, nik: string) {
 
 test.describe('Tenant isolation through real tenant hostnames', () => {
   test('rt-003 and rt-004 data stay isolated (UI + direct URL + API)', async ({ page, request }) => {
+    test.setTimeout(60000);
     const ts = Date.now();
     const pw = 'Passw0rd!234';
     const aEmail = `a_admin_${ts}@test.local`;

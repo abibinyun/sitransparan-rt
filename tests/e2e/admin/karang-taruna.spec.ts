@@ -5,7 +5,7 @@ test.describe('Karang Taruna Management Flow', () => {
   test.beforeEach(async ({ page }) => {
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
     await page.goto('/admin/karang-taruna');
-    await expect(page.getByRole('heading', { name: /Karang Taruna/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Unit Pemberdayaan & Inisiatif Lingkungan' })).toBeVisible({ timeout: 10000 });
   });
 
   test('Admin RT can view structure, create period, and configure sections', async ({ page }) => {
@@ -13,7 +13,7 @@ test.describe('Karang Taruna Management Flow', () => {
     await page.getByRole('button', { name: /Masa Bakti/i }).click();
 
     // 2. Open Create Period Modal
-    await page.getByRole('button', { name: /Periode Baru/i }).click();
+    await page.getByRole('button', { name: 'Periode Baru' }).click();
     await expect(page.getByRole('heading', { name: /Buat Masa Bakti Baru/i })).toBeVisible();
 
     const timestamp = Date.now();
@@ -26,7 +26,7 @@ test.describe('Karang Taruna Management Flow', () => {
     await expect(page.getByText(periodName).first()).toBeVisible({ timeout: 10000 });
 
     // 3. Switch to Config tab
-    await page.getByRole('button', { name: /Konfigurasi Seksi/i }).click();
+    await page.getByRole('button', { name: /Konfigurasi Seksi & Peran/i }).click();
     await expect(page.getByText(/Konfigurasi Bidang & Seksi Pemuda/i)).toBeVisible();
 
     const newSection = `Divisi E-Sport ${timestamp}`;

@@ -189,7 +189,7 @@ export const MeetingPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeaderTabs
-        title="Kegiatan & Musyawarah RT"
+        title="Notulen Rapat & Tindak Lanjut"
         description="Kelola agenda kepanitiaan, estimasi anggaran (RAB), RSVP warga, serta risalah musyawarah RT."
         tabs={eventTabs}
         actions={

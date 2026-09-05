@@ -19,3 +19,10 @@ node_modules/
 
 # Visual audit screenshots
 /*.png
+
+# Dev & test artifacts
+backend/tmp/
+test-results/
+test_report.pdf
+playwright-report/
+

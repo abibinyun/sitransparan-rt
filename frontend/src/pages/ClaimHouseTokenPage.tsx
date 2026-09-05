@@ -6,11 +6,16 @@ import { getTenantSlugFromHost } from '../utils/tenant';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { usePublicTenantQuery } from '../services/public_tenant';
+import { TenantNotFoundPage } from '../components/TenantNotFoundPage';
 
 export const ClaimHouseTokenPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
+
+  const hostTenantSlug = getTenantSlugFromHost();
+  const { data: tenantInfo, isLoading: isTenantLoading, isError: isTenantError } = usePublicTenantQuery();
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -62,6 +67,10 @@ export const ClaimHouseTokenPage: React.FC = () => {
         );
       });
   }, [searchParams, setAuth]);
+
+  if (hostTenantSlug && !isTenantLoading && (isTenantError || tenantInfo === null)) {
+    return <TenantNotFoundPage />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">

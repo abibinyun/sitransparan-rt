@@ -13,7 +13,7 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const { token } = useAuthStore.getState();
-  if (token) {
+  if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   // NOTE: the active tenant is deliberately NOT sent as an X-Tenant-ID header.

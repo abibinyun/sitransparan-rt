@@ -81,7 +81,7 @@ export const UserModal: React.FC<UserModalProps> = ({
         phone: phone || undefined,
         role,
         password: password || undefined,
-        tenant_id: isSuperAdmin ? tenantId || undefined : undefined,
+        tenant_id: isSuperAdmin && role !== 'superadmin' ? tenantId || undefined : undefined,
       });
       onClose();
     } catch (err: any) {
@@ -136,7 +136,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           />
         </div>
 
-        {isSuperAdmin && (
+        {isSuperAdmin && role !== 'superadmin' && (
           <div className="space-y-1.5">
             <Label htmlFor="tenant_id">Tenant RT *</Label>
             <Select
@@ -164,7 +164,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           >
             <option value="resident">Warga (Resident)</option>
             <option value="admin_rt">Admin RT</option>
-            <option value="superadmin">Super Admin</option>
+            {isSuperAdmin && <option value="superadmin">Super Admin</option>}
           </Select>
         </div>
 

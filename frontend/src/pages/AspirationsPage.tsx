@@ -161,7 +161,7 @@ export const AspirationsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeaderTabs
-        title="Komunikasi & Partisipasi Warga"
+        title="Manajemen Aspirasi & Kebutuhan Lingkungan"
         description="Pusat informasi resmi RT, publikasi berkas, penampungan usulan, dan polling suara warga."
         tabs={commTabs}
         actions={

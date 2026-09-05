@@ -81,9 +81,10 @@ func splitBaseDomains(raw string) []string {
 		}
 	}
 
-	// Always ensure known environment or dev base domain is in the list
+	// Always ensure known environment, staging, or dev base domains are in the list
 	add("openrt.local")
 	add("iscube.web.id")
+	add("cube.my.id")
 
 	return result
 }

@@ -63,7 +63,7 @@ export const PollsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeaderTabs
-        title="Komunikasi & Partisipasi Warga"
+        title="Kelola Polling"
         description="Pusat informasi resmi RT, publikasi berkas, penampungan usulan, dan polling suara warga."
         tabs={commTabs}
         actions={

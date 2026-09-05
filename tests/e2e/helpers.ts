@@ -8,6 +8,7 @@ export const SUPERADMIN_PASSWORD = 'admin123';
 /** Login through the real login page (optionally on a tenant hostname origin). */
 export async function login(page: Page, email: string, password: string, origin = '') {
   await page.goto(`${origin}/login`);
+  await page.context().clearCookies();
   await page.evaluate(() => {
     localStorage.clear();
     sessionStorage.clear();

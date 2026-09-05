@@ -1577,6 +1577,12 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
     `?visibility=confidential` or direct ID. Now enforced server-side: non-admins are forced
     to `public` on the list, denied 403 on detail, and action items of non-public meetings
     are hidden from them.
+- **FIXED 2026-09-05 (AUDIT CHECKLIST 1.1, 1.3, 2.1, 2.2):**
+  - Root platform landing: `GET /api/v1/public/tenants` added so anonymous root domain `https://<base_domain>/` lists active RTs without 401 interceptor redirection.
+  - Subdomain 404 & ccTLD root redirect: 404 fallback page on unknown subdomain redirects correctly to full root platform domain via `getPlatformUrl('/')` (handles 3-part ccTLD such as `.web.id`, avoiding erroneous truncation to `.web.id`).
+  - Superadmin audit mode: `TenantMiddleware` permits `superadmin` role bypass across tenant subdomains and platform routes when `TenantID` is nil.
+  - Cross-subdomain login token propagation: `LoginPage` transmits token parameter during subdomain handoff and `useAuthStore` parses it on mount to bypass cross-subdomain cookie sandbox boundaries.
+  - Vite HMR WebSocket: dev port configured to 443 for TLS reverse proxy/tunnel compatibility.
 - **FIXED 2026-08-28 (GAP B1/B2/B5):**
   - Dashboard export — now uses backend blob `GET /dashboard/reports/financial/export?format=csv|pdf` (`dashboard.ts` `exportFinancialReport()` + loading/error) — no longer `window.print`/dummy CSV
   - Event RAB — `GET /events` now embeds `budget` (usecase agregat `ListBudgetsByEventID`, card shows `RAB: {description} Estimasi/Realisasi`, modal prefills)

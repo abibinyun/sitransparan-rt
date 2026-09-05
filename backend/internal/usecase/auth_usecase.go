@@ -176,11 +176,14 @@ func (u *authUsecase) Login(ctx context.Context, email, password string, tenantI
 		}
 	}
 
-	// Users without any tenant mapping get the lowest-privilege role with no
-	// tenant scope. They can authenticate but cannot access tenant data until an
-	// admin assigns them to a tenant.
+	// Users without any tenant mapping: check if user has a platform-level role (e.g. superadmin).
+	// Otherwise, default to resident (unmapped user).
 	if role == "" {
-		role = domain.RoleResident
+		if isSuperAdminRole(user.GlobalRoleName) {
+			role = domain.RoleSuperAdmin
+		} else {
+			role = domain.RoleResident
+		}
 	}
 
 	claims := domain.JWTClaims{
@@ -218,6 +221,12 @@ func (u *authUsecase) SwitchTenant(ctx context.Context, userID, tenantID uuid.UU
 		if isSuperAdminRole(tu.RoleName) {
 			isSuperAdmin = true
 			break
+		}
+	}
+	if !isSuperAdmin {
+		user, uErr := u.userRepo.GetByID(ctx, userID)
+		if uErr == nil && user != nil && isSuperAdminRole(user.GlobalRoleName) {
+			isSuperAdmin = true
 		}
 	}
 	var selected *domain.TenantUser
@@ -295,17 +304,56 @@ func (u *authUsecase) GetMe(ctx context.Context, userID uuid.UUID) (*domain.User
 	}
 	tus, err := u.tenantUserRepo.ListByUser(ctx, userID)
 	if err != nil || len(tus) == 0 {
-		return user, domain.RoleResident, uuid.Nil, nil
+		role := domain.RoleResident
+		if isSuperAdminRole(user.GlobalRoleName) {
+			role = domain.RoleSuperAdmin
+		}
+		return user, role, uuid.Nil, nil
 	}
 	tus = activeTenantUsers(tus)
 	if len(tus) == 0 {
-		return user, domain.RoleResident, uuid.Nil, nil
+		role := domain.RoleResident
+		if isSuperAdminRole(user.GlobalRoleName) {
+			role = domain.RoleSuperAdmin
+		}
+		return user, role, uuid.Nil, nil
 	}
 	sel := tus[0]
 	return user, sel.RoleName, sel.TenantID, nil
 }
 
 func (u *authUsecase) GetUserTenants(ctx context.Context, userID uuid.UUID) ([]*domain.Tenant, error) {
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	tus, err := u.tenantUserRepo.ListByUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	active := activeTenantUsers(tus)
+	isSuperAdmin := isSuperAdminRole(user.GlobalRoleName)
+	for _, tu := range active {
+		if isSuperAdminRole(tu.RoleName) {
+			isSuperAdmin = true
+			break
+		}
+	}
+
+	if isSuperAdmin {
+		allTenants, _, err := u.tenantRepo.List(ctx, 100, 0)
+		if err != nil {
+			return nil, err
+		}
+		var activeTenants []*domain.Tenant
+		for _, t := range allTenants {
+			if t.IsActive() {
+				activeTenants = append(activeTenants, t)
+			}
+		}
+		return activeTenants, nil
+	}
+
 	tenants, err := u.tenantUserRepo.ListTenantsByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -314,11 +362,6 @@ func (u *authUsecase) GetUserTenants(ctx context.Context, userID uuid.UUID) ([]*
 	if len(tenants) == 0 {
 		return tenants, nil
 	}
-	tus, err := u.tenantUserRepo.ListByUser(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	active := activeTenantUsers(tus)
 	activeTenantIDs := make(map[uuid.UUID]bool, len(active))
 	for _, tu := range active {
 		activeTenantIDs[tu.TenantID] = true

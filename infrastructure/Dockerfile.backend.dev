@@ -1,0 +1,15 @@
+FROM golang:1.25-alpine
+
+RUN apk --no-cache add ca-certificates tzdata curl git
+
+WORKDIR /app
+
+# Install air for live reloading Go backend (v1.61.7 supports go 1.25)
+RUN go install github.com/air-verse/air@v1.61.7
+
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+
+EXPOSE 8080
+
+CMD ["air", "-c", ".air.toml"]

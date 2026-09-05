@@ -125,7 +125,8 @@ func TenantMiddleware(tenantRepo domain.TenantRepository, baseDomain string) fun
 						http.Error(w, `{"error":"forbidden: tenant access denied"}`, http.StatusForbidden)
 						return
 					}
-					if claims == nil || claims.UserID == uuid.Nil || claims.TenantID == uuid.Nil || claims.TenantID != tenant.ID {
+					isSuperAdmin := claims != nil && (claims.Role == domain.RoleSuperAdmin || string(claims.Role) == "super_admin")
+					if !isSuperAdmin && (claims == nil || claims.UserID == uuid.Nil || claims.TenantID == uuid.Nil || claims.TenantID != tenant.ID) {
 						http.Error(w, `{"error":"forbidden: tenant mismatch"}`, http.StatusForbidden)
 						return
 					}
@@ -143,7 +144,8 @@ func TenantMiddleware(tenantRepo domain.TenantRepository, baseDomain string) fun
 						http.Error(w, `{"error":"forbidden: tenant access denied"}`, http.StatusForbidden)
 						return
 					}
-					if claims == nil || claims.UserID == uuid.Nil || claims.TenantID == uuid.Nil || claims.TenantID != tenant.ID {
+					isSuperAdmin := claims != nil && (claims.Role == domain.RoleSuperAdmin || string(claims.Role) == "super_admin")
+					if !isSuperAdmin && (claims == nil || claims.UserID == uuid.Nil || claims.TenantID == uuid.Nil || claims.TenantID != tenant.ID) {
 						http.Error(w, `{"error":"forbidden: tenant mismatch"}`, http.StatusForbidden)
 						return
 					}
@@ -156,15 +158,22 @@ func TenantMiddleware(tenantRepo domain.TenantRepository, baseDomain string) fun
 			// Platform host (or identity route): tenant context from JWT claims
 			// only. A claims tenant that no longer exists or is disabled must be
 			// denied explicitly instead of silently proceeding without context.
-			if claims != nil && claims.UserID != uuid.Nil && claims.TenantID != uuid.Nil {
-				tenant, err := tenantRepo.GetByID(r.Context(), claims.TenantID)
-				if err != nil || tenant == nil || !tenantActive(tenant) {
-					http.Error(w, `{"error":"forbidden: tenant access denied"}`, http.StatusForbidden)
+			if claims != nil && claims.UserID != uuid.Nil {
+				if claims.TenantID != uuid.Nil {
+					tenant, err := tenantRepo.GetByID(r.Context(), claims.TenantID)
+					if err != nil || tenant == nil || !tenantActive(tenant) {
+						http.Error(w, `{"error":"forbidden: tenant access denied"}`, http.StatusForbidden)
+						return
+					}
+					ctx := context.WithValue(r.Context(), TenantContextKey, tenant)
+					next.ServeHTTP(w, r.WithContext(ctx))
 					return
 				}
-				ctx := context.WithValue(r.Context(), TenantContextKey, tenant)
-				next.ServeHTTP(w, r.WithContext(ctx))
-				return
+				// SuperAdmin without specific tenant scope: pass through for global platform handlers
+				if claims.Role == domain.RoleSuperAdmin || string(claims.Role) == "super_admin" {
+					next.ServeHTTP(w, r)
+					return
+				}
 			}
 			next.ServeHTTP(w, r)
 		})
