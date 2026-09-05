@@ -114,12 +114,13 @@ export const FinancialPage: React.FC = () => {
     setTimeout(() => setFeedbackMsg(null), 4000);
   };
 
-  // Calculate dynamic collected dues per fee category
+  // Calculate dynamic collected dues and spent dues per fee category
   const duesCategoryBalances = React.useMemo(() => {
-    const balances: Record<string, { collected: number; verifiedCount: number; pendingCount: number }> = {};
+    const balances: Record<string, { collected: number; spent: number; balance: number; verifiedCount: number; pendingCount: number }> = {};
     for (const cat of catList) {
-      balances[cat.id] = { collected: 0, verifiedCount: 0, pendingCount: 0 };
+      balances[cat.id] = { collected: 0, spent: 0, balance: 0, verifiedCount: 0, pendingCount: 0 };
     }
+    // Track verified income from resident dues
     for (const d of duesList) {
       if (d.fee_category_id && balances[d.fee_category_id]) {
         if (d.status === 'verified') {
@@ -130,8 +131,24 @@ export const FinancialPage: React.FC = () => {
         }
       }
     }
+    // Track expense recorded for specific dues category
+    for (const tx of txList) {
+      if (tx.type === 'expense' && tx.category) {
+        // match category format 'IURAN_KELUAR: {name}' or exact name
+        for (const cat of catList) {
+          const keluarPrefix = `IURAN_KELUAR: ${cat.name}`;
+          if (tx.category === keluarPrefix || tx.category === cat.name || tx.category === `IURAN: ${cat.name}`) {
+            balances[cat.id].spent += Number(tx.amount) || 0;
+          }
+        }
+      }
+    }
+    // Calculate net remaining balance
+    for (const cat of catList) {
+      balances[cat.id].balance = balances[cat.id].collected - balances[cat.id].spent;
+    }
     return balances;
-  }, [catList, duesList]);
+  }, [catList, duesList, txList]);
 
   // Group dues by resident (Buku Iuran per Warga)
   const residentDuesSummary = React.useMemo(() => {
@@ -522,9 +539,12 @@ export const FinancialPage: React.FC = () => {
       {catList.length > 0 && (
         <div className="rounded-xl border border-emerald-100 bg-emerald-50/30 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-emerald-900 flex items-center gap-1.5">
-              <Coins className="h-4 w-4 text-emerald-600" /> Akumulasi Penerimaan per Jenis Iuran
-            </h3>
+            <div>
+              <h3 className="text-sm font-bold text-emerald-900 flex items-center gap-1.5">
+                <Coins className="h-4 w-4 text-emerald-600" /> Saldo & Alokasi per Pos Iuran Warga
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">Saldo bersih = Total iuran masuk dikurangi pengeluaran/penyaluran iuran terkait</p>
+            </div>
             <button
               onClick={() => {
                 setActiveTab('categories');
@@ -532,27 +552,31 @@ export const FinancialPage: React.FC = () => {
               }}
               className="text-xs text-emerald-700 hover:text-emerald-900 font-medium"
             >
-              Master Jenis Iuran →
+              Master Pos Iuran →
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {catList.map((c: any) => {
-              const b = duesCategoryBalances[c.id] || { collected: 0, verifiedCount: 0, pendingCount: 0 };
+              const b = duesCategoryBalances[c.id] || { collected: 0, spent: 0, balance: 0, verifiedCount: 0, pendingCount: 0 };
               return (
-                <div key={c.id} className="p-3.5 rounded-lg border border-emerald-200 bg-white shadow-xs">
+                <div key={c.id} className="p-3.5 rounded-lg border border-emerald-200 bg-white shadow-xs space-y-2">
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-xs font-semibold text-slate-800">{c.name}</span>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
+                      <p className="text-[10px] text-slate-400 mt-0.5">
                         Tarif: Rp {Number(c.amount).toLocaleString('id-ID')} ({c.period === 'monthly' ? 'Bln' : '1x'})
                       </p>
-                      <p className="text-[10px] text-emerald-700 mt-1 font-medium">
-                        {b.verifiedCount} Terverifikasi {b.pendingCount > 0 && `• ${b.pendingCount} Menunggu`}
-                      </p>
                     </div>
-                    <span className="text-sm font-bold text-emerald-700">
-                      Rp {b.collected.toLocaleString('id-ID')}
-                    </span>
+                    <div className="text-right">
+                      <span className={`text-sm font-bold ${b.balance >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                        Rp {b.balance.toLocaleString('id-ID')}
+                      </span>
+                      <p className="text-[9px] text-slate-400">Sisa Saldo</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] pt-1.5 border-t border-slate-100 text-slate-500">
+                    <span>Masuk: <strong className="text-emerald-600">Rp {b.collected.toLocaleString('id-ID')}</strong></span>
+                    <span>Keluar: <strong className="text-rose-600">Rp {b.spent.toLocaleString('id-ID')}</strong></span>
                   </div>
                 </div>
               );
@@ -612,27 +636,38 @@ export const FinancialPage: React.FC = () => {
         <div className="space-y-4">
           {/* Sub-view Toggle: Per Warga vs Riwayat Transaksi */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-xs">
-            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 text-xs font-semibold">
-              <button
-                onClick={() => setDuesViewMode('resident')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
-                  duesViewMode === 'resident'
-                    ? 'bg-white text-indigo-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 text-xs font-semibold">
+                <button
+                  onClick={() => setDuesViewMode('resident')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
+                    duesViewMode === 'resident'
+                      ? 'bg-white text-indigo-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Users className="h-3.5 w-3.5" /> Buku Iuran per Warga ({residentDuesSummary.length})
+                </button>
+                <button
+                  onClick={() => setDuesViewMode('history')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
+                    duesViewMode === 'history'
+                      ? 'bg-white text-indigo-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <History className="h-3.5 w-3.5" /> Riwayat Transaksi ({duesList.length})
+                </button>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsTxModalOpen(true)}
+                className="text-xs h-8 gap-1.5 border-rose-200 bg-rose-50/50 text-rose-700 hover:bg-rose-100"
+                title="Catat pengeluaran yang memotong dana dari pos iuran warga"
               >
-                <Users className="h-3.5 w-3.5" /> Buku Iuran per Warga ({residentDuesSummary.length})
-              </button>
-              <button
-                onClick={() => setDuesViewMode('history')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
-                  duesViewMode === 'history'
-                    ? 'bg-white text-indigo-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <History className="h-3.5 w-3.5" /> Riwayat Transaksi ({duesList.length})
-              </button>
+                <Wallet className="h-3.5 w-3.5" /> Salurkan / Pakai Dana Iuran
+              </Button>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">

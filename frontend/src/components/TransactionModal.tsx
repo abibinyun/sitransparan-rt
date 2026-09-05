@@ -182,7 +182,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                   <>
                     {/* Master Iuran Warga yang Terdaftar */}
                     {feeCategories.length > 0 && (
-                      <optgroup label="Pos / Tarif Iuran Warga">
+                      <optgroup label="Pos / Tarif Iuran Warga (Masuk)">
                         {feeCategories.map((fc: any) => (
                           <option key={fc.id} value={`IURAN: ${fc.name}`}>
                             {fc.name} (Iuran Warga)
@@ -198,7 +198,17 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                   </>
                 ) : (
                   <>
-                    <optgroup label="Pos Pengeluaran Kas">
+                    {/* Penggunaan / Penyaluran dari Iuran Warga */}
+                    {feeCategories.length > 0 && (
+                      <optgroup label="Penggunaan / Penyaluran Dana Iuran Warga">
+                        {feeCategories.map((fc: any) => (
+                          <option key={fc.id} value={`IURAN_KELUAR: ${fc.name}`}>
+                            Penyaluran / Pakai Dana {fc.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    <optgroup label="Pos Pengeluaran Kas RT">
                       {customOptions.filter((c) => c.type === 'expense').map((c) => (
                         <option key={c.id} value={c.name}>{c.name}</option>
                       ))}
