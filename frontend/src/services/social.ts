@@ -33,7 +33,7 @@ export function useReactionSummary(targetType: string, targetId: string) {
     },
     // Endpoint butuh login — jangan fetch untuk anonim (hindari spam 401)
     enabled: Boolean(user && targetId),
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 }
 
@@ -76,7 +76,7 @@ export function useOpenPolls() {
         return [];
       }
     },
-    staleTime: 60 * 1000,
+    staleTime: 0,
   });
 }
 

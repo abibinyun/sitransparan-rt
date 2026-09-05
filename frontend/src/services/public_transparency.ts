@@ -40,7 +40,7 @@ export function usePublicMeetings() {
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 }
 
@@ -56,7 +56,7 @@ export function usePublicFinancialSummary() {
         return null;
       }
     },
-    staleTime: 30 * 1000, // 30 detik
+    staleTime: 0,
   });
 }
 
@@ -81,7 +81,7 @@ export function usePublicEvents() {
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 }
 
@@ -113,7 +113,7 @@ export function usePublicFeeCategories() {
         return [];
       }
     },
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 }
 
@@ -142,6 +142,6 @@ export function usePublicTransactions(params?: { fund_id?: string; category?: st
         return [];
       }
     },
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 }

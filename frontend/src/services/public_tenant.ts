@@ -24,6 +24,6 @@ export function usePublicTenantQuery() {
       if (error?.response?.status === 404) return false;
       return failureCount < 1;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 }

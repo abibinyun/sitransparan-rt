@@ -62,7 +62,7 @@ export function usePublicKarangTarunaQuery() {
       const res = await api.get<PublicKTStructureResponse>(`/t/${slug}/karang-taruna`);
       return res.data;
     },
-    staleTime: 60_000,
+    staleTime: 0,
   });
 }
 
