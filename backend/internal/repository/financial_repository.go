@@ -98,7 +98,7 @@ func (r *financialRepository) UpdateFund(ctx context.Context, fund *domain.Fund)
 }
 
 func (r *financialRepository) DeleteFund(ctx context.Context, tenantID, id uuid.UUID) error {
-	query := fmt.Sprintf(`DELETE FROM %s WHERE tenant_id = $1 AND id = $2 AND is_default = FALSE`, TenantTable(ctx, "funds"))
+	query := fmt.Sprintf(`UPDATE %s SET deleted_at = NOW(), updated_at = NOW() WHERE tenant_id = $1 AND id = $2 AND is_default = FALSE AND deleted_at IS NULL`, TenantTable(ctx, "funds"))
 	res, err := r.db.ExecContext(ctx, query, tenantID, id)
 	if err != nil {
 		return err
@@ -215,7 +215,7 @@ func (r *financialRepository) UpdateFeeCategory(ctx context.Context, category *d
 }
 
 func (r *financialRepository) DeleteFeeCategory(ctx context.Context, tenantID, id uuid.UUID) error {
-	query := fmt.Sprintf(`DELETE FROM %s WHERE tenant_id = $1 AND id = $2`, TenantTable(ctx, "fee_categories"))
+	query := fmt.Sprintf(`UPDATE %s SET deleted_at = NOW(), updated_at = NOW() WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, TenantTable(ctx, "fee_categories"))
 	res, err := r.db.ExecContext(ctx, query, tenantID, id)
 	if err != nil {
 		return err

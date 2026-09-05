@@ -23,6 +23,7 @@ export interface Resident {
   rt_rw: string;
   phone: string;
   is_head_of_family: boolean;
+  status?: 'pending' | 'approved' | 'rejected' | 'moved' | 'deceased';
   ktp_url?: string;
   kk_url?: string;
   family_members?: FamilyMember[];

@@ -115,7 +115,7 @@ func (r *wasteBankRepository) UpdateCategory(ctx context.Context, c *domain.Wast
 
 func (r *wasteBankRepository) DeleteCategory(ctx context.Context, tenantID, id uuid.UUID) error {
 	table := TenantTable(ctx, "waste_categories")
-	query := fmt.Sprintf(`DELETE FROM %s WHERE tenant_id = $1 AND id = $2`, table)
+	query := fmt.Sprintf(`UPDATE %s SET deleted_at = NOW(), updated_at = NOW() WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, table)
 	res, err := r.db.ExecContext(ctx, query, tenantID, id)
 	if err != nil {
 		return err

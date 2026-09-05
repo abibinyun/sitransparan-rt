@@ -120,6 +120,11 @@ func (m *mockResidentRepo) GetFamilyMembers(ctx context.Context, residentID uuid
 	return m.members[residentID], nil
 }
 
+func (m *mockResidentRepo) PromoteFamilyMemberToHead(ctx context.Context, tenantID, currentHeadID, newHeadMemberID uuid.UUID) error {
+	m.audits = append(m.audits, "promote")
+	return nil
+}
+
 func (m *mockResidentRepo) UpdateStatus(ctx context.Context, tenantID, id uuid.UUID, status string) error {
 	res, ok := m.residents[id]
 	if !ok || res.TenantID != tenantID {
@@ -186,7 +191,7 @@ func TestResidentUsecase(t *testing.T) {
 		t.Fatalf("RemoveFamilyMember failed: %v", err)
 	}
 
-	// 6. Approve & Reject Resident
+	// 6. Approve & Reject & Update Status Resident
 	adminID := uuid.New()
 	if err := uc.Approve(ctx, tenantID, res.ID, adminID); err != nil {
 		t.Fatalf("Approve failed: %v", err)
@@ -194,6 +199,38 @@ func TestResidentUsecase(t *testing.T) {
 	resApproved, _ := uc.GetByID(ctx, tenantID, res.ID)
 	if resApproved.Status != "approved" {
 		t.Errorf("expected status approved, got %s", resApproved.Status)
+	}
+
+	// Update Status to moved (pindah)
+	if err := uc.UpdateStatus(ctx, tenantID, res.ID, adminID, "moved"); err != nil {
+		t.Fatalf("UpdateStatus moved failed: %v", err)
+	}
+	resMoved, _ := uc.GetByID(ctx, tenantID, res.ID)
+	if resMoved.Status != "moved" {
+		t.Errorf("expected status moved, got %s", resMoved.Status)
+	}
+
+	// Update Status to deceased (meninggal)
+	if err := uc.UpdateStatus(ctx, tenantID, res.ID, adminID, "deceased"); err != nil {
+		t.Fatalf("UpdateStatus deceased failed: %v", err)
+	}
+	resDeceased, _ := uc.GetByID(ctx, tenantID, res.ID)
+	if resDeceased.Status != "deceased" {
+		t.Errorf("expected status deceased, got %s", resDeceased.Status)
+	}
+
+	// Invalid status
+	if err := uc.UpdateStatus(ctx, tenantID, res.ID, adminID, "invalid_status"); err == nil {
+		t.Fatalf("expected error on invalid status")
+	}
+
+	// Promote Family Member to Head
+	memberID := uuid.New()
+	if err := uc.PromoteFamilyMemberToHead(ctx, tenantID, res.ID, memberID, adminID); err != nil {
+		t.Fatalf("expected nil on PromoteFamilyMemberToHead, got %v", err)
+	}
+	if err := uc.PromoteFamilyMemberToHead(ctx, uuid.Nil, res.ID, memberID, adminID); err == nil {
+		t.Fatalf("expected error on nil tenantID for promote")
 	}
 
 	if err := uc.Reject(ctx, tenantID, res.ID, adminID); err != nil {

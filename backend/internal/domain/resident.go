@@ -22,7 +22,7 @@ type Resident struct {
 	RTRW           *string         `json:"rt_rw,omitempty"`
 	Phone          *string         `json:"phone,omitempty"`
 	IsHeadOfFamily *bool           `json:"is_head_of_family,omitempty"`
-	Status         string          `json:"status"` // 'pending', 'approved', 'rejected'
+	Status         string          `json:"status"` // 'pending', 'approved', 'rejected', 'moved', 'deceased'
 	KTPURL         *string         `json:"ktp_url,omitempty"`
 	KKURL          *string         `json:"kk_url,omitempty"`
 	FamilyMembers  []*FamilyMember `json:"family_members,omitempty"`
@@ -52,6 +52,7 @@ type ResidentRepository interface {
 	UpdateFamilyMember(ctx context.Context, tenantID, residentID uuid.UUID, member *FamilyMember) error
 	RemoveFamilyMember(ctx context.Context, tenantID, residentID, memberID uuid.UUID) error
 	GetFamilyMembers(ctx context.Context, residentID uuid.UUID) ([]*FamilyMember, error)
+	PromoteFamilyMemberToHead(ctx context.Context, tenantID, currentHeadID, newHeadMemberID uuid.UUID) error
 	UpdateStatus(ctx context.Context, tenantID, id uuid.UUID, status string) error
 	LogAudit(ctx context.Context, tenantID, userID uuid.UUID, action, resource string, payload interface{}) error
 	UploadDocument(ctx context.Context, docType, filename string, content io.Reader, contentType string) (string, error)
@@ -68,5 +69,7 @@ type ResidentUsecase interface {
 	RemoveFamilyMember(ctx context.Context, tenantID, residentID, memberID uuid.UUID) error
 	Approve(ctx context.Context, tenantID, id, adminUserID uuid.UUID) error
 	Reject(ctx context.Context, tenantID, id, adminUserID uuid.UUID) error
+	PromoteFamilyMemberToHead(ctx context.Context, tenantID, currentHeadID, newHeadMemberID, adminUserID uuid.UUID) error
+	UpdateStatus(ctx context.Context, tenantID, id, adminUserID uuid.UUID, status string) error
 	UploadDocument(ctx context.Context, docType, filename string, content io.Reader, contentType string) (string, error)
 }

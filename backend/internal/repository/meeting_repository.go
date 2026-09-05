@@ -233,7 +233,7 @@ func (r *meetingRepository) Update(ctx context.Context, m *domain.Meeting) error
 
 func (r *meetingRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	table := TenantTable(ctx, "meetings")
-	query := fmt.Sprintf(`DELETE FROM %s WHERE id = $1`, table)
+	query := fmt.Sprintf(`UPDATE %s SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL`, table)
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err

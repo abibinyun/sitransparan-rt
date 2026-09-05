@@ -215,7 +215,7 @@ func (r *houseRepository) Delete(ctx context.Context, tenantID, id uuid.UUID) er
 		return err
 	}
 
-	query := fmt.Sprintf("DELETE FROM %s.houses WHERE id = $1", schema)
+	query := fmt.Sprintf("UPDATE %s.houses SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL", schema)
 	_, err = r.db.ExecContext(ctx, query, id)
 	return err
 }

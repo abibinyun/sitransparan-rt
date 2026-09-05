@@ -77,7 +77,7 @@ func (r *residentRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID
 	query := fmt.Sprintf(`
 		SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
 		FROM %s
-		WHERE tenant_id = $1 AND id = $2
+		WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL
 	`, TenantTable(ctx, "residents"))
 	var res domain.Resident
 	var encNIK *string
@@ -171,7 +171,11 @@ func (r *residentRepository) Update(ctx context.Context, resident *domain.Reside
 }
 
 func (r *residentRepository) Delete(ctx context.Context, tenantID, id uuid.UUID) error {
-	query := fmt.Sprintf(`DELETE FROM %s WHERE tenant_id = $1 AND id = $2`, TenantTable(ctx, "residents"))
+	query := fmt.Sprintf(`
+		UPDATE %s
+		SET deleted_at = NOW(), updated_at = NOW()
+		WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL
+	`, TenantTable(ctx, "residents"))
 	res, err := r.db.ExecContext(ctx, query, tenantID, id)
 	if err != nil {
 		return err
@@ -208,7 +212,7 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 
 		countQuery = fmt.Sprintf(`
 			SELECT COUNT(*) FROM %s r
-			WHERE r.tenant_id = $1 AND (
+			WHERE r.tenant_id = $1 AND r.deleted_at IS NULL AND (
 				r.full_name ILIKE $2
 				OR r.nik_hash = $3
 				OR r.kk_number ILIKE $2
@@ -218,6 +222,7 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 				OR EXISTS (
 					SELECT 1 FROM %s fm
 					WHERE fm.resident_id = r.id
+					  AND fm.deleted_at IS NULL
 					  AND (fm.full_name ILIKE $2)
 				)
 			)%s
@@ -229,7 +234,7 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 		query = fmt.Sprintf(`
 			SELECT r.id, r.tenant_id, r.nik, r.nik_hash, r.kk_number, r.full_name, r.gender, r.birth_place, r.birth_date, r.address, r.rt_rw, r.phone, r.is_head_of_family, r.status, r.ktp_url, r.kk_url, r.created_at, r.updated_at
 			FROM %s r
-			WHERE r.tenant_id = $1 AND (
+			WHERE r.tenant_id = $1 AND r.deleted_at IS NULL AND (
 				r.full_name ILIKE $2
 				OR r.nik_hash = $3
 				OR r.kk_number ILIKE $2
@@ -239,6 +244,7 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 				OR EXISTS (
 					SELECT 1 FROM %s fm
 					WHERE fm.resident_id = r.id
+					  AND fm.deleted_at IS NULL
 					  AND (fm.full_name ILIKE $2)
 				)
 			)%s
@@ -246,7 +252,7 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 		`, residentsTable, familyTable, headClause)
 		args = []interface{}{tenantID, searchStr, searchHash, limit, offset}
 	} else {
-		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1%s`, residentsTable, headClause)
+		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND deleted_at IS NULL%s`, residentsTable, headClause)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 			return nil, 0, err
 		}
@@ -254,7 +260,7 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 		query = fmt.Sprintf(`
 			SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
 			FROM %s
-			WHERE tenant_id = $1%s
+			WHERE tenant_id = $1 AND deleted_at IS NULL%s
 			ORDER BY created_at DESC LIMIT $2 OFFSET $3
 		`, residentsTable, headClause)
 		args = []interface{}{tenantID, limit, offset}
@@ -333,7 +339,7 @@ func (r *residentRepository) familyMembersByResidents(ctx context.Context, tenan
 		SELECT fm.id, fm.resident_id, fm.full_name, fm.nik, fm.relation, fm.birth_date, fm.gender, fm.created_at, fm.updated_at
 		FROM %s fm
 		JOIN %s r ON r.id = fm.resident_id
-		WHERE r.tenant_id = $1 AND fm.resident_id = ANY($2)
+		WHERE r.tenant_id = $1 AND fm.resident_id = ANY($2) AND fm.deleted_at IS NULL
 		ORDER BY fm.created_at ASC
 	`, TenantTable(ctx, "family_members"), TenantTable(ctx, "residents"))
 	rows, err := r.db.QueryContext(ctx, query, tenantID, pq.Array(residentIDs))
@@ -436,8 +442,9 @@ func (r *residentRepository) UpdateFamilyMember(ctx context.Context, tenantID, r
 
 func (r *residentRepository) RemoveFamilyMember(ctx context.Context, tenantID, residentID, memberID uuid.UUID) error {
 	query := fmt.Sprintf(`
-		DELETE FROM %s
-		WHERE id = $1 AND resident_id IN (SELECT id FROM %s WHERE id = $2 AND tenant_id = $3)
+		UPDATE %s
+		SET deleted_at = NOW(), updated_at = NOW()
+		WHERE id = $1 AND deleted_at IS NULL AND resident_id IN (SELECT id FROM %s WHERE id = $2 AND tenant_id = $3)
 	`, TenantTable(ctx, "family_members"), TenantTable(ctx, "residents"))
 	res, err := r.db.ExecContext(ctx, query, memberID, residentID, tenantID)
 	if err != nil {
@@ -457,7 +464,7 @@ func (r *residentRepository) GetFamilyMembers(ctx context.Context, residentID uu
 	query := fmt.Sprintf(`
 		SELECT id, resident_id, full_name, nik, relation, birth_date, gender, created_at, updated_at
 		FROM %s
-		WHERE resident_id = $1
+		WHERE resident_id = $1 AND deleted_at IS NULL
 		ORDER BY created_at ASC
 	`, TenantTable(ctx, "family_members"))
 	rows, err := r.db.QueryContext(ctx, query, residentID)
@@ -494,6 +501,164 @@ func (r *residentRepository) GetFamilyMembers(ctx context.Context, residentID uu
 		list = append(list, &fm)
 	}
 	return list, rows.Err()
+}
+
+func (r *residentRepository) PromoteFamilyMemberToHead(ctx context.Context, tenantID, currentHeadID, newHeadMemberID uuid.UUID) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Ambil data kepala keluarga saat ini
+	currentHeadQuery := fmt.Sprintf(`
+		SELECT id, kk_number, full_name, nik, gender, birth_date, birth_place, address, rt_rw, phone, status, ktp_url, kk_url
+		FROM %s
+		WHERE tenant_id = $1 AND id = $2
+		FOR UPDATE
+	`, TenantTable(ctx, "residents"))
+	var cHead domain.Resident
+	var cHeadEncNIK *string
+	if err := tx.QueryRowContext(ctx, currentHeadQuery, tenantID, currentHeadID).Scan(
+		&cHead.ID,
+		&cHead.KKNumber,
+		&cHead.FullName,
+		&cHeadEncNIK,
+		&cHead.Gender,
+		&cHead.BirthDate,
+		&cHead.BirthPlace,
+		&cHead.Address,
+		&cHead.RTRW,
+		&cHead.Phone,
+		&cHead.Status,
+		&cHead.KTPURL,
+		&cHead.KKURL,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("get current head: %w", err)
+	}
+
+	// 2. Ambil data anggota keluarga yang akan dipromosikan
+	memberQuery := fmt.Sprintf(`
+		SELECT id, full_name, nik, relation, birth_date, gender
+		FROM %s
+		WHERE id = $1 AND resident_id = $2
+		FOR UPDATE
+	`, TenantTable(ctx, "family_members"))
+	var member domain.FamilyMember
+	var memberEncNIK *string
+	if err := tx.QueryRowContext(ctx, memberQuery, newHeadMemberID, currentHeadID).Scan(
+		&member.ID,
+		&member.FullName,
+		&memberEncNIK,
+		&member.Relation,
+		&member.BirthDate,
+		&member.Gender,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("get family member to promote: %w", err)
+	}
+
+	// 3. Buat record baru di tabel residents untuk kepala keluarga baru
+	newHeadID := uuid.New()
+	var newHeadNIKHash *string
+	if memberEncNIK != nil && *memberEncNIK != "" {
+		dec, err := crypto.DecryptAESGCM(*memberEncNIK)
+		if err == nil {
+			h := crypto.HashHMAC(dec)
+			newHeadNIKHash = &h
+		}
+	}
+
+	insertNewHeadQuery := fmt.Sprintf(`
+		INSERT INTO %s (
+			id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date,
+			address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9,
+			$10, $11, $12, TRUE, 'approved', NULL, $13, NOW(), NOW()
+		)
+	`, TenantTable(ctx, "residents"))
+
+	if _, err := tx.ExecContext(ctx, insertNewHeadQuery,
+		newHeadID,
+		tenantID,
+		memberEncNIK,
+		newHeadNIKHash,
+		cHead.KKNumber,
+		member.FullName,
+		member.Gender,
+		cHead.BirthPlace,
+		member.BirthDate,
+		cHead.Address,
+		cHead.RTRW,
+		cHead.Phone,
+		cHead.KKURL,
+	); err != nil {
+		return fmt.Errorf("insert new head: %w", err)
+	}
+
+	// 4. Pindahkan semua anggota keluarga lain dari kepala lama ke kepala baru
+	relinkMembersQuery := fmt.Sprintf(`
+		UPDATE %s
+		SET resident_id = $1, updated_at = NOW()
+		WHERE resident_id = $2 AND id != $3
+	`, TenantTable(ctx, "family_members"))
+	if _, err := tx.ExecContext(ctx, relinkMembersQuery, newHeadID, currentHeadID, newHeadMemberID); err != nil {
+		return fmt.Errorf("relink family members: %w", err)
+	}
+
+	// 5. Masukkan kepala keluarga lama sebagai anggota keluarga di bawah kepala baru
+	oldHeadRelation := "Mantan Kepala Keluarga"
+	if cHead.Status == "deceased" {
+		oldHeadRelation = "Mantan Kepala Keluarga (Almarhum)"
+	} else if cHead.Status == "moved" {
+		oldHeadRelation = "Mantan Kepala Keluarga (Pindah)"
+	}
+	insertOldHeadAsMemberQuery := fmt.Sprintf(`
+		INSERT INTO %s (id, resident_id, full_name, nik, relation, birth_date, gender, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+	`, TenantTable(ctx, "family_members"))
+	if _, err := tx.ExecContext(ctx, insertOldHeadAsMemberQuery,
+		uuid.New(),
+		newHeadID,
+		cHead.FullName,
+		cHeadEncNIK,
+		&oldHeadRelation,
+		cHead.BirthDate,
+		cHead.Gender,
+	); err != nil {
+		return fmt.Errorf("insert old head as member: %w", err)
+	}
+
+	// 6. Hapus anggota keluarga yang dipromosikan dari tabel family_members
+	deleteMemberQuery := fmt.Sprintf(`
+		DELETE FROM %s WHERE id = $1
+	`, TenantTable(ctx, "family_members"))
+	if _, err := tx.ExecContext(ctx, deleteMemberQuery, newHeadMemberID); err != nil {
+		return fmt.Errorf("delete promoted member: %w", err)
+	}
+
+	// Relink relasi FK resident lama ke resident baru agar data historis tetap aman
+	relinkDuesQuery := fmt.Sprintf(`UPDATE %s SET resident_id = $1 WHERE resident_id = $2`, TenantTable(ctx, "dues_payments"))
+	_, _ = tx.ExecContext(ctx, relinkDuesQuery, newHeadID, currentHeadID)
+
+	relinkHousesQuery := fmt.Sprintf(`UPDATE %s SET head_resident_id = $1 WHERE head_resident_id = $2`, TenantTable(ctx, "houses"))
+	_, _ = tx.ExecContext(ctx, relinkHousesQuery, newHeadID, currentHeadID)
+
+	// 7. Hapus/turunkan resident lama (karena sudah berpindah menjadi family_member dari kepala keluarga baru)
+	deleteOldHeadQuery := fmt.Sprintf(`
+		DELETE FROM %s WHERE id = $1 AND tenant_id = $2
+	`, TenantTable(ctx, "residents"))
+	if _, err := tx.ExecContext(ctx, deleteOldHeadQuery, currentHeadID, tenantID); err != nil {
+		return fmt.Errorf("delete old head resident record: %w", err)
+	}
+
+	return tx.Commit()
 }
 
 func (r *residentRepository) UpdateStatus(ctx context.Context, tenantID, id uuid.UUID, status string) error {

@@ -44,6 +44,23 @@ export const ResidentDetailModal: React.FC<ResidentDetailModalProps> = ({
               ) : (
                 <Badge variant="secondary">Anggota Keluarga</Badge>
               )}
+              {resident.status === 'moved' ? (
+                <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300">
+                  Pindah
+                </Badge>
+              ) : resident.status === 'deceased' ? (
+                <Badge variant="secondary" className="bg-slate-200 text-slate-700 border-slate-400">
+                  Meninggal
+                </Badge>
+              ) : resident.status === 'rejected' ? (
+                <Badge variant="destructive">Ditolak</Badge>
+              ) : resident.status === 'pending' ? (
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                  Menunggu
+                </Badge>
+              ) : (
+                <Badge variant="success">Aktif</Badge>
+              )}
             </div>
             <p className="text-sm font-mono text-slate-500">NIK: {resident.nik || '-'}</p>
           </div>

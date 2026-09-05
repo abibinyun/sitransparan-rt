@@ -139,6 +139,52 @@ func (u *residentUsecase) Reject(ctx context.Context, tenantID, id, adminUserID 
 	return nil
 }
 
+func (u *residentUsecase) PromoteFamilyMemberToHead(ctx context.Context, tenantID, currentHeadID, newHeadMemberID, adminUserID uuid.UUID) error {
+	if tenantID == uuid.Nil || currentHeadID == uuid.Nil || newHeadMemberID == uuid.Nil {
+		return ErrInvalidInput
+	}
+
+	if err := u.repo.PromoteFamilyMemberToHead(ctx, tenantID, currentHeadID, newHeadMemberID); err != nil {
+		return err
+	}
+
+	_ = u.repo.LogAudit(ctx, tenantID, adminUserID, "promote_head_of_family", "residents", map[string]interface{}{
+		"current_head_id":    currentHeadID,
+		"promoted_member_id": newHeadMemberID,
+	})
+
+	return nil
+}
+
+func (u *residentUsecase) UpdateStatus(ctx context.Context, tenantID, id, adminUserID uuid.UUID, status string) error {
+	if tenantID == uuid.Nil || id == uuid.Nil {
+		return ErrInvalidInput
+	}
+	// Status valid: pending, approved, rejected, moved, deceased
+	switch status {
+	case "pending", "approved", "rejected", "moved", "deceased":
+	default:
+		return ErrInvalidInput
+	}
+
+	res, err := u.repo.GetByID(ctx, tenantID, id)
+	if err != nil {
+		return err
+	}
+
+	if err := u.repo.UpdateStatus(ctx, tenantID, id, status); err != nil {
+		return err
+	}
+
+	_ = u.repo.LogAudit(ctx, tenantID, adminUserID, "update_resident_status", "residents", map[string]interface{}{
+		"resident_id": id,
+		"old_status":  res.Status,
+		"new_status":  status,
+	})
+
+	return nil
+}
+
 func (u *residentUsecase) UploadDocument(ctx context.Context, docType, filename string, content io.Reader, contentType string) (string, error) {
 	return u.repo.UploadDocument(ctx, docType, filename, content, contentType)
 }

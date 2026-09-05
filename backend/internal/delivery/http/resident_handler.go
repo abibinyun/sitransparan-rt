@@ -10,6 +10,7 @@ import (
 	"backend/internal/delivery/http/middleware"
 	"backend/internal/domain"
 	"backend/internal/repository"
+	"backend/internal/usecase"
 	"github.com/google/uuid"
 )
 
@@ -81,6 +82,11 @@ func (h *ResidentHandler) handleResidents(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if len(parts) == 2 && parts[1] == "status" && r.Method == http.MethodPost {
+		h.updateStatus(w, r, tenant.ID, id)
+		return
+	}
+
 	if len(parts) == 2 && parts[1] == "family" && r.Method == http.MethodPost {
 		h.addFamilyMember(w, r, tenant.ID, id)
 		return
@@ -103,6 +109,16 @@ func (h *ResidentHandler) handleResidents(w http.ResponseWriter, r *http.Request
 			return
 		}
 		h.removeFamilyMember(w, r, tenant.ID, id, memberID)
+		return
+	}
+
+	if len(parts) == 4 && parts[1] == "family" && parts[3] == "promote" && r.Method == http.MethodPost {
+		memberID, err := uuid.Parse(parts[2])
+		if err != nil {
+			http.Error(w, `{"error":"invalid family member id"}`, http.StatusBadRequest)
+			return
+		}
+		h.promoteFamilyMember(w, r, tenant.ID, id, memberID)
 		return
 	}
 
@@ -320,6 +336,62 @@ func (h *ResidentHandler) reject(w http.ResponseWriter, r *http.Request, tenantI
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{"message": "resident rejected", "status": "rejected"})
+}
+
+func (h *ResidentHandler) promoteFamilyMember(w http.ResponseWriter, r *http.Request, tenantID, residentID, memberID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
+	adminUserID := middleware.GetUserIDFromContext(r.Context())
+	if err := h.usecase.PromoteFamilyMemberToHead(r.Context(), tenantID, residentID, memberID, adminUserID); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			http.Error(w, `{"error":"resident or family member not found"}`, http.StatusNotFound)
+			return
+		}
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "anggota keluarga berhasil dipromosikan menjadi kepala keluarga",
+	})
+}
+
+func (h *ResidentHandler) updateStatus(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
+	var req struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+	adminUserID := middleware.GetUserIDFromContext(r.Context())
+	if err := h.usecase.UpdateStatus(r.Context(), tenantID, id, adminUserID, req.Status); err != nil {
+		if errors.Is(err, usecase.ErrInvalidInput) {
+			http.Error(w, `{"error":"invalid resident status"}`, http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, repository.ErrNotFound) {
+			http.Error(w, `{"error":"resident not found"}`, http.StatusNotFound)
+			return
+		}
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "resident status updated",
+		"status":  req.Status,
+	})
 }
 
 func (h *ResidentHandler) handleUpload(w http.ResponseWriter, r *http.Request) {

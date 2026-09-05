@@ -196,7 +196,7 @@ func (r *announcementDocRepository) DeleteAnnouncement(ctx context.Context, tena
 		return nil
 	}
 
-	query := fmt.Sprintf(`DELETE FROM %s WHERE id = $1 AND tenant_id = $2`, TenantTable(ctx, "announcements"))
+	query := fmt.Sprintf(`UPDATE %s SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`, TenantTable(ctx, "announcements"))
 	res, err := r.db.ExecContext(ctx, query, id, tenantID)
 	if err != nil {
 		return err
@@ -318,7 +318,7 @@ func (r *announcementDocRepository) DeleteDocument(ctx context.Context, tenantID
 		return nil
 	}
 
-	query := fmt.Sprintf(`DELETE FROM %s WHERE id = $1 AND tenant_id = $2`, TenantTable(ctx, "documents"))
+	query := fmt.Sprintf(`UPDATE %s SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`, TenantTable(ctx, "documents"))
 	res, err := r.db.ExecContext(ctx, query, id, tenantID)
 	if err != nil {
 		return err

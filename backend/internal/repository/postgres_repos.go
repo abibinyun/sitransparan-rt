@@ -535,7 +535,7 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
 }
 
 func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM users WHERE id = $1`
+	query := `UPDATE users SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
@@ -555,7 +555,7 @@ func (r *userRepository) ListByTenant(ctx context.Context, tenantID uuid.UUID, l
 		SELECT COUNT(*)
 		FROM users u
 		JOIN tenant_users tu ON u.id = tu.user_id
-		WHERE tu.tenant_id = $1
+		WHERE tu.tenant_id = $1 AND u.deleted_at IS NULL
 	`
 	var count int64
 	if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
@@ -568,7 +568,7 @@ func (r *userRepository) ListByTenant(ctx context.Context, tenantID uuid.UUID, l
 		JOIN tenant_users tu ON u.id = tu.user_id
 		JOIN roles r ON tu.role_id = r.id
 		LEFT JOIN tenants t ON tu.tenant_id = t.id
-		WHERE tu.tenant_id = $1
+		WHERE tu.tenant_id = $1 AND u.deleted_at IS NULL
 		ORDER BY u.created_at DESC
 		LIMIT $2 OFFSET $3
 	`

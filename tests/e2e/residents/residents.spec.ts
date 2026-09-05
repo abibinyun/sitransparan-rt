@@ -256,6 +256,201 @@ test.describe('Resident Management — business workflow', () => {
     await expect(page.locator('table').first()).not.toContainText(name);
   });
 
+  test('admin changes resident status to moved and deceased with persistence', async ({ page }) => {
+    const ts = Date.now();
+    const name = `Warga Status ${ts}`;
+    const nik = nik16(ts);
+
+    // 1. Create resident
+    await page.goto('/admin/residents');
+    await page.getByRole('button', { name: 'Tambah Warga' }).click();
+    await page.fill('#nik', nik);
+    await page.fill('#kk_number', nik);
+    await page.fill('#full_name', name);
+    await page.check('#is_head_of_family');
+    await page.getByRole('button', { name: 'Simpan Data' }).click();
+    await expect(page.locator('table')).toContainText(name);
+
+    const row = page.locator('tr', { hasText: name });
+
+    // 2. Change status to 'moved' (Pindah)
+    page.once('dialog', (dialog) => dialog.accept());
+    const statusSelect = row.getByTitle('Ubah Status Kependudukan');
+    await statusSelect.selectOption('moved');
+    await expect(row).toContainText('Pindah');
+
+    // Verify persistence after reload
+    await page.reload();
+    const rowReloaded = page.locator('tr', { hasText: name });
+    await expect(rowReloaded).toContainText('Pindah');
+
+    // 3. Change status to 'deceased' (Meninggal)
+    page.once('dialog', (dialog) => dialog.accept());
+    await rowReloaded.getByTitle('Ubah Status Kependudukan').selectOption('deceased');
+    await expect(rowReloaded).toContainText('Meninggal');
+
+    // Verify detail modal also shows Meninggal
+    await rowReloaded.getByTitle('Lihat Detail Lengkap & Dokumen').click();
+    const detailDialog = page.getByRole('dialog');
+    await expect(detailDialog).toBeVisible();
+    await expect(detailDialog).toContainText('Meninggal');
+    await page.getByRole('button', { name: 'Tutup' }).click();
+    await expect(detailDialog).not.toBeVisible();
+
+    // Cleanup
+    page.once('dialog', (dialog) => dialog.accept());
+    await rowReloaded.getByTitle('Hapus Warga').click();
+    await expect(page.locator('table').first()).not.toContainText(name);
+  });
+
+  test('admin promotes a family member to head of family (Jadikan KK)', async ({ page }) => {
+    const ts = Date.now();
+    const oldHeadName = `Kepala Lama ${ts}`;
+    const childName = `Calon Kepala Baru ${ts}`;
+    const headNik = nik16(ts);
+    const childNik = nik16(ts + 1);
+
+    // 1. Create original head of family
+    await page.goto('/admin/residents');
+    await page.getByRole('button', { name: 'Tambah Warga' }).click();
+    await page.fill('#nik', headNik);
+    await page.fill('#kk_number', headNik);
+    await page.fill('#full_name', oldHeadName);
+    await page.check('#is_head_of_family');
+    await page.getByRole('button', { name: 'Simpan Data' }).click();
+    await expect(page.locator('table')).toContainText(oldHeadName);
+
+    // 2. Add family member
+    const headRow = page.locator('tr', { hasText: oldHeadName });
+    await headRow.getByTitle('Tambah Anggota Keluarga').click();
+    await expect(page.getByRole('heading', { name: 'Tambah Anggota Keluarga' })).toBeVisible();
+    await page.fill('#famName', childName);
+    await page.fill('#famNik', childNik);
+    await page.selectOption('#famRelation', 'Anak');
+    await page.fill('#famBirthDate', '2000-01-01');
+    await page.getByRole('button', { name: 'Tambah Anggota' }).click();
+    await expect(page.getByRole('heading', { name: 'Tambah Anggota Keluarga' })).not.toBeVisible();
+
+    // 3. Expand KK detail and promote member to head of family
+    await page.locator('tr', { hasText: oldHeadName }).getByTitle('Lihat/Kelola Anggota Keluarga').click();
+    const familyDetail = page
+      .locator('div.rounded-lg.border.border-slate-200.bg-white.p-4')
+      .filter({ hasText: 'Anggota Keluarga' })
+      .first();
+    await expect(familyDetail).toBeVisible();
+    await expect(familyDetail.locator('table')).toContainText(childName);
+
+    // Click "Jadikan KK" button with confirmation dialog
+    page.once('dialog', (dialog) => dialog.accept());
+    await familyDetail.getByRole('button', { name: 'Jadikan KK' }).click();
+
+    // 4. Verify new head appears in the primary table
+    await expect(page.locator('table').first()).toContainText(childName);
+    const newHeadRow = page.locator('tr', { hasText: childName });
+    await expect(newHeadRow).toContainText('Kepala Keluarga');
+
+    // 5. Expand new head's family detail: old head must now be listed as family member
+    await newHeadRow.getByTitle('Lihat/Kelola Anggota Keluarga').click();
+    const newFamilyDetail = page
+      .locator('div.rounded-lg.border.border-slate-200.bg-white.p-4')
+      .filter({ hasText: 'Anggota Keluarga' })
+      .first();
+    await expect(newFamilyDetail).toBeVisible();
+    await expect(newFamilyDetail.locator('table')).toContainText(oldHeadName);
+    await expect(newFamilyDetail.locator('table')).toContainText('Mantan Kepala Keluarga');
+
+    // Persistence: reload page keeps new head and demoted member
+    await page.reload();
+    await expect(page.locator('table').first()).toContainText(childName);
+    const persistedNewHead = page.locator('tr', { hasText: childName });
+    await persistedNewHead.getByTitle('Lihat/Kelola Anggota Keluarga').click();
+    const persistedFamilyDetail = page
+      .locator('div.rounded-lg.border.border-slate-200.bg-white.p-4')
+      .filter({ hasText: 'Anggota Keluarga' })
+      .first();
+    await expect(persistedFamilyDetail).toBeVisible();
+    await expect(persistedFamilyDetail.locator('table')).toContainText(oldHeadName);
+
+    // Cleanup
+    page.once('dialog', (dialog) => dialog.accept());
+    await persistedNewHead.getByTitle('Hapus Warga').click();
+    await expect(page.locator('table').first()).not.toContainText(childName);
+  });
+
+  test('admin replaces deceased head of family with daughter or young family member', async ({ page }) => {
+    const ts = Date.now();
+    const deceasedHeadName = `Ayah Almarhum ${ts}`;
+    const daughterName = `Anak Perempuan KK ${ts}`;
+    const headNik = nik16(ts);
+    const daughterNik = nik16(ts + 2);
+
+    // 1. Create head of family
+    await page.goto('/admin/residents');
+    await page.getByRole('button', { name: 'Tambah Warga' }).click();
+    await page.fill('#nik', headNik);
+    await page.fill('#kk_number', headNik);
+    await page.fill('#full_name', deceasedHeadName);
+    await page.check('#is_head_of_family');
+    await page.getByRole('button', { name: 'Simpan Data' }).click();
+    await expect(page.locator('table')).toContainText(deceasedHeadName);
+
+    // 2. Add daughter as family member
+    const headRow = page.locator('tr', { hasText: deceasedHeadName });
+    await headRow.getByTitle('Tambah Anggota Keluarga').click();
+    await expect(page.getByRole('heading', { name: 'Tambah Anggota Keluarga' })).toBeVisible();
+    await page.fill('#famName', daughterName);
+    await page.fill('#famNik', daughterNik);
+    await page.selectOption('#famRelation', 'Anak');
+    await page.selectOption('#famGender', 'Perempuan');
+    await page.fill('#famBirthDate', '2005-08-17'); // anak muda (18-20 tahun)
+    await page.getByRole('button', { name: 'Tambah Anggota' }).click();
+    await expect(page.getByRole('heading', { name: 'Tambah Anggota Keluarga' })).not.toBeVisible();
+
+    // 3. Mark current head as deceased (Meninggal)
+    page.once('dialog', (dialog) => dialog.accept());
+    await headRow.getByTitle('Ubah Status Kependudukan').selectOption('deceased');
+    await expect(headRow).toContainText('Meninggal');
+
+    // 4. Expand family and promote daughter to head of family
+    await headRow.getByTitle('Lihat/Kelola Anggota Keluarga').click();
+    const familyDetail = page
+      .locator('div.rounded-lg.border.border-slate-200.bg-white.p-4')
+      .filter({ hasText: 'Anggota Keluarga' })
+      .first();
+    await expect(familyDetail).toBeVisible();
+    await expect(familyDetail.locator('table')).toContainText(daughterName);
+    await expect(familyDetail.locator('table')).toContainText('Perempuan');
+
+    page.once('dialog', (dialog) => dialog.accept());
+    await familyDetail.getByRole('button', { name: 'Jadikan KK' }).click();
+
+    // 5. Verify daughter is now the active head of family
+    await expect(page.locator('table').first()).toContainText(daughterName);
+    const daughterRow = page.locator('tr', { hasText: daughterName });
+    await expect(daughterRow).toContainText('Kepala Keluarga');
+    await expect(daughterRow).toContainText('Aktif');
+
+    // 6. Expand daughter's KK detail: deceased father is preserved as Mantan Kepala Keluarga (Almarhum)
+    await daughterRow.getByTitle('Lihat/Kelola Anggota Keluarga').click();
+    const newFamilyDetail = page
+      .locator('div.rounded-lg.border.border-slate-200.bg-white.p-4')
+      .filter({ hasText: 'Anggota Keluarga' })
+      .first();
+    await expect(newFamilyDetail).toBeVisible();
+    await expect(newFamilyDetail.locator('table')).toContainText(deceasedHeadName);
+    await expect(newFamilyDetail.locator('table')).toContainText('Mantan Kepala Keluarga (Almarhum)');
+
+    // Persistence: reload page
+    await page.reload();
+    const daughterRowReloaded = page.locator('tr', { hasText: daughterName });
+    await expect(daughterRowReloaded).toContainText('Kepala Keluarga');
+
+    // Cleanup
+    page.once('dialog', (dialog) => dialog.accept());
+    await daughterRowReloaded.getByTitle('Hapus Warga').click();
+    await expect(page.locator('table').first()).not.toContainText(daughterName);
+  });
+
   test('form validation blocks submission when required fields are missing', async ({ page }) => {
     await page.goto('/admin/residents');
     await page.getByRole('button', { name: 'Tambah Warga' }).click();

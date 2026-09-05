@@ -132,6 +132,23 @@ func (m *mockResidentUsecase) Reject(ctx context.Context, tenantID, id, adminUse
 	return nil
 }
 
+func (m *mockResidentUsecase) PromoteFamilyMemberToHead(ctx context.Context, tenantID, currentHeadID, newHeadMemberID, adminUserID uuid.UUID) error {
+	r, ok := m.residents[currentHeadID]
+	if !ok || r.TenantID != tenantID {
+		return usecase.ErrResidentNotFound
+	}
+	return nil
+}
+
+func (m *mockResidentUsecase) UpdateStatus(ctx context.Context, tenantID, id, adminUserID uuid.UUID, status string) error {
+	r, ok := m.residents[id]
+	if !ok || r.TenantID != tenantID {
+		return usecase.ErrResidentNotFound
+	}
+	r.Status = status
+	return nil
+}
+
 func (m *mockResidentUsecase) UploadDocument(ctx context.Context, docType, filename string, content io.Reader, contentType string) (string, error) {
 	return "/uploads/" + docType + "/" + filename, nil
 }
@@ -223,7 +240,24 @@ func TestResidentHandler(t *testing.T) {
 		t.Fatalf("expected status 200 on reject, got %d", w.Code)
 	}
 
-	// 7. Delete Resident
+	// 7. Update Status
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/residents/"+created.ID.String()+"/status", bytes.NewBufferString(`{"status":"moved"}`))
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200 on update status, got %d", w.Code)
+	}
+
+	// 8. Promote Family Member
+	promoteMemberID := uuid.New()
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/residents/"+created.ID.String()+"/family/"+promoteMemberID.String()+"/promote", nil)
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200 on promote family member, got %d", w.Code)
+	}
+
+	// 9. Delete Resident
 	req = httptest.NewRequest(http.MethodDelete, "/api/v1/residents/"+created.ID.String(), nil)
 	w = httptest.NewRecorder()
 	mux.ServeHTTP(w, req)

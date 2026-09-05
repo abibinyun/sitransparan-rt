@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { useResidents, useDeleteResident, useDeleteFamilyMember } from '../services/resident';
+import {
+  useResidents,
+  useDeleteResident,
+  useDeleteFamilyMember,
+  useUpdateResidentStatus,
+  usePromoteFamilyMember,
+} from '../services/resident';
 import { Resident, FamilyMember } from '../types/resident';
 import { ResidentModal } from '../components/ResidentModal';
 import { ResidentDetailModal } from '../components/ResidentDetailModal';
@@ -50,6 +56,36 @@ export const ResidentsPage: React.FC = () => {
 
   const deleteMutation = useDeleteResident();
   const deleteFamilyMutation = useDeleteFamilyMember();
+  const updateStatusMutation = useUpdateResidentStatus();
+  const promoteMutation = usePromoteFamilyMember();
+
+  const handlePromoteFamilyMember = async (residentId: string, memberId: string, name: string, currentHeadStatus?: string) => {
+    const isDeceasedOrMoved = currentHeadStatus === 'deceased' || currentHeadStatus === 'moved';
+    const confirmMessage = isDeceasedOrMoved
+      ? `Jadikan ${name} sebagai Kepala Keluarga baru menggantikan kepala keluarga yang sudah tidak aktif/meninggal?\nData kepala keluarga sebelumnya akan tetap tercatat dalam arsip keluarga.`
+      : `Jadikan ${name} sebagai Kepala Keluarga baru?\nKepala keluarga saat ini akan dialihkan menjadi anggota keluarga.`;
+
+    if (confirm(confirmMessage)) {
+      await promoteMutation.mutateAsync({ residentId, memberId });
+    }
+  };
+
+  const handleUpdateStatus = async (
+    id: string,
+    name: string,
+    status: 'pending' | 'approved' | 'rejected' | 'moved' | 'deceased'
+  ) => {
+    const labelMap: Record<string, string> = {
+      approved: 'Aktif / Disetujui',
+      moved: 'Pindah',
+      deceased: 'Meninggal Dunia',
+      rejected: 'Ditolak',
+      pending: 'Menunggu',
+    };
+    if (confirm(`Ubah status kependudukan ${name} menjadi "${labelMap[status]}"?`)) {
+      await updateStatusMutation.mutateAsync({ id, status });
+    }
+  };
 
   const residents = data?.data || [];
   const total = data?.total || 0;
@@ -179,9 +215,45 @@ export const ResidentsPage: React.FC = () => {
                     </TableCell>
                     <TableCell>{r.phone || '-'}</TableCell>
                     <TableCell>
-                      <Badge variant="success">Aktif</Badge>
+                      {r.status === 'moved' ? (
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300">
+                          Pindah
+                        </Badge>
+                      ) : r.status === 'deceased' ? (
+                        <Badge variant="secondary" className="bg-slate-200 text-slate-700 border-slate-400">
+                          Meninggal
+                        </Badge>
+                      ) : r.status === 'rejected' ? (
+                        <Badge variant="destructive">Ditolak</Badge>
+                      ) : r.status === 'pending' ? (
+                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                          Menunggu
+                        </Badge>
+                      ) : (
+                        <Badge variant="success">Aktif</Badge>
+                      )}
                     </TableCell>
-                    <TableCell className="text-right space-x-1">
+                    <TableCell className="text-right space-x-1 whitespace-nowrap">
+                      {/* Ganti Status Kependudukan */}
+                      <select
+                        value={r.status || 'approved'}
+                        onChange={(e) =>
+                          handleUpdateStatus(
+                            r.id,
+                            r.full_name,
+                            e.target.value as 'pending' | 'approved' | 'rejected' | 'moved' | 'deceased'
+                          )
+                        }
+                        className="text-xs h-8 px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        title="Ubah Status Kependudukan"
+                      >
+                        <option value="approved">Aktif</option>
+                        <option value="moved">Pindah</option>
+                        <option value="deceased">Meninggal</option>
+                        <option value="pending">Menunggu</option>
+                        <option value="rejected">Ditolak</option>
+                      </select>
+
                       <Button
                         variant="ghost"
                         size="sm"
@@ -274,6 +346,15 @@ export const ResidentsPage: React.FC = () => {
                                     <TableCell><Badge variant="outline">{fm.relation}</Badge></TableCell>
                                     <TableCell>{fm.gender || '-'}</TableCell>
                                     <TableCell className="text-right space-x-1">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handlePromoteFamilyMember(r.id, fm.id, fm.full_name, r.status)}
+                                        title="Jadikan Kepala Keluarga Baru"
+                                        className="h-7 text-xs px-2 text-indigo-700 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-800 gap-1"
+                                      >
+                                        <UserCheck className="h-3 w-3" /> Jadikan KK
+                                      </Button>
                                       <Button
                                         variant="ghost"
                                         size="sm"

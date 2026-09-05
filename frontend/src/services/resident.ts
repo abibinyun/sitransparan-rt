@@ -162,3 +162,55 @@ export function useUploadResidentDoc() {
     },
   });
 }
+
+export function useApproveResident() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post(`/residents/${id}/approve`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['residents'] });
+    },
+  });
+}
+
+export function useRejectResident() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post(`/residents/${id}/reject`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['residents'] });
+    },
+  });
+}
+
+export function usePromoteFamilyMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ residentId, memberId }: { residentId: string; memberId: string }) => {
+      const res = await api.post(`/residents/${residentId}/family/${memberId}/promote`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['residents'] });
+    },
+  });
+}
+
+export function useUpdateResidentStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'pending' | 'approved' | 'rejected' | 'moved' | 'deceased' }) => {
+      const res = await api.post(`/residents/${id}/status`, { status });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['residents'] });
+    },
+  });
+}

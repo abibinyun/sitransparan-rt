@@ -321,7 +321,7 @@ func (r *karangTarunaRepository) UpdateMember(ctx context.Context, m *domain.Kar
 }
 
 func (r *karangTarunaRepository) DeleteMember(ctx context.Context, tenantID, id uuid.UUID) error {
-	query := fmt.Sprintf(`DELETE FROM %s WHERE id = $1`, TenantTable(ctx, "karang_taruna_members"))
+	query := fmt.Sprintf(`UPDATE %s SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL`, TenantTable(ctx, "karang_taruna_members"))
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
