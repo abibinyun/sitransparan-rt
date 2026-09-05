@@ -19,7 +19,7 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
     await page.getByRole('button', { name: 'Tambah Rumah' }).click();
     await expect(page.getByText('Daftarkan Rumah Baru')).toBeVisible();
 
-    await page.getByPlaceholder('Contoh: Blok A1 No. 05').fill(blockNo);
+    await page.getByPlaceholder(/Contoh: .*Blok A1 No\. 05/).fill(blockNo);
     await page.getByPlaceholder('Contoh: Jl. Melati Raya RT 05').fill('Jl. Mawar Indah');
     await page.getByRole('button', { name: 'Simpan & Buat QR' }).click();
 

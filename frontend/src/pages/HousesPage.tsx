@@ -411,11 +411,11 @@ export const HousesPage: React.FC = () => {
             <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nomor Blok / Rumah <span className="text-rose-500">*</span>
+                  Atas Nama <span className="text-rose-500">*</span>
                 </label>
                 <Input
                   required
-                  placeholder="Contoh: Blok A1 No. 05"
+                  placeholder="Contoh: Bpk. Bambang Pamungkas / Blok A1 No. 05"
                   value={blockNumber}
                   onChange={(e) => setBlockNumber(e.target.value)}
                 />
