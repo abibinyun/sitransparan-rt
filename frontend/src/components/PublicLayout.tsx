@@ -5,12 +5,9 @@ import {
   FileText,
   MessageSquareHeart,
   CalendarDays,
-  Flame,
   Recycle,
   LogIn,
   ShieldCheck,
-  Menu,
-  X,
   Landmark,
   User
 } from 'lucide-react';
@@ -26,8 +23,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Kabar & Dokumen', icon: FileText, end: true },
   { to: '/usulan', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
   { to: '/agenda', label: 'Agenda Warga', icon: CalendarDays },
-  { to: '/karang-taruna', label: 'Karang Taruna', icon: Flame },
-  { to: '/bank-sampah', label: 'Bank Sampah', icon: Recycle },
+  { to: '/program', label: 'Program & Lingkungan', icon: Recycle },
 ];
 
 export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
@@ -36,7 +32,6 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
   const { data: kas } = usePublicFinancialSummary();
   const isAuthenticated = Boolean(user);
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   const tenantName = tenantInfo?.name || 'Portal RT';
 
@@ -113,7 +108,7 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
               ))}
             </nav>
 
-            {/* Aksi Akun Pengurus / Login */}
+            {/* Aksi Akun Pengurus / Login (Desktop) */}
             <div className="hidden md:flex items-center gap-2">
               {isAuthenticated ? (
                 <button
@@ -131,62 +126,8 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
                 </Link>
               )}
             </div>
-
-            {/* Mobile Menu Trigger */}
-            <div className="flex md:hidden items-center gap-2">
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-xl border border-slate-200 text-slate-700 bg-white"
-                aria-label="Buka Menu"
-              >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-            </div>
           </div>
         </div>
-
-        {/* Mobile Dropdown Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1 shadow-lg">
-            {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold ${
-                    isActive ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700 hover:bg-slate-50'
-                  }`
-                }
-              >
-                <Icon className="w-4 h-4 text-emerald-600" />
-                {label}
-              </NavLink>
-            ))}
-            <div className="pt-2 border-t border-slate-100">
-              {isAuthenticated ? (
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    navigate('/admin');
-                  }}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-xs py-2.5 rounded-xl"
-                >
-                  <User className="w-4 h-4 text-emerald-400" /> Masuk Panel Internal
-                </button>
-              ) : (
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-xs py-2.5 rounded-xl"
-                >
-                  <LogIn className="w-4 h-4 text-emerald-400" /> Masuk Pengurus RT
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
       </header>
 
       {/* Main Container */}

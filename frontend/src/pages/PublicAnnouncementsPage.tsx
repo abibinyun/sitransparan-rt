@@ -242,12 +242,43 @@ export const PublicAnnouncementsPage: React.FC = () => {
                       {item.content}
                     </div>
 
-                    {/* Media galeri foto lampiran jika ada */}
-                    {item.media_urls && item.media_urls.length > 0 && (
-                      <div className="pt-2">
-                        <MediaCarousel urls={item.media_urls} alt={item.title} />
-                      </div>
-                    )}
+                    {/* Media foto (attachment_url gambar + media_urls) */}
+                    {(() => {
+                      const isImage = (url: string) => /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(url) || url.includes('/proofs/') || url.includes('/files/');
+                      const allPhotos: string[] = [];
+                      if (item.attachment_url && isImage(item.attachment_url)) {
+                        allPhotos.push(item.attachment_url);
+                      }
+                      if (item.media_urls && item.media_urls.length > 0) {
+                        item.media_urls.forEach((u) => {
+                          if (!allPhotos.includes(u)) allPhotos.push(u);
+                        });
+                      }
+
+                      return (
+                        <>
+                          {allPhotos.length > 0 && (
+                            <div className="pt-2">
+                              <MediaCarousel urls={allPhotos} alt={item.title} />
+                            </div>
+                          )}
+
+                          {/* Jika attachment berupa dokumen/PDF non-gambar */}
+                          {item.attachment_url && !isImage(item.attachment_url) && (
+                            <div className="pt-2">
+                              <a
+                                href={getFileUrl(item.attachment_url)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                              >
+                                <FileText className="w-3.5 h-3.5" /> Unduh Dokumen Lampiran
+                              </a>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
 
                     {/* Footer kartu: Tanggal & Reaksi Sosial Warga */}
                     <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">

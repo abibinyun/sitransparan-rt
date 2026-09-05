@@ -27,6 +27,7 @@ const KarangTarunaPage = lazy(() => import('./pages/KarangTarunaPage').then(m =>
 const PublicKarangTarunaPage = lazy(() => import('./pages/PublicKarangTarunaPage').then(m => ({ default: m.PublicKarangTarunaPage })));
 const WasteBankPage = lazy(() => import('./pages/WasteBankPage').then(m => ({ default: m.WasteBankPage })));
 const PublicWasteBankPage = lazy(() => import('./pages/PublicWasteBankPage').then(m => ({ default: m.PublicWasteBankPage })));
+const PublicProgramsPage = lazy(() => import('./pages/PublicProgramsPage').then(m => ({ default: m.PublicProgramsPage })));
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
 const HousesPage = lazy(() => import('./pages/HousesPage').then(m => ({ default: m.HousesPage })));
 const ClaimHouseTokenPage = lazy(() => import('./pages/ClaimHouseTokenPage').then(m => ({ default: m.ClaimHouseTokenPage })));
@@ -76,17 +77,19 @@ export function App() {
               <Route path="/kabar" element={<PublicAnnouncementsPage />} />
               <Route path="/usulan" element={<PublicAspirationsPage />} />
               <Route path="/agenda" element={<PublicEventsPage />} />
+              <Route path="/program" element={<PublicProgramsPage />} />
               <Route path="/karang-taruna" element={<PublicKarangTarunaPage />} />
-              <Route path="/pemuda" element={<Navigate to="/karang-taruna" replace />} />
+              <Route path="/pemuda" element={<Navigate to="/program?tab=environment" replace />} />
               <Route path="/bank-sampah" element={<PublicWasteBankPage />} />
-              <Route path="/sampah" element={<Navigate to="/bank-sampah" replace />} />
+              <Route path="/sampah" element={<Navigate to="/program" replace />} />
 
               {/* Backward compatibility redirects for legacy /public/* paths */}
               <Route path="/public/announcements" element={<Navigate to="/" replace />} />
               <Route path="/public/aspirations" element={<Navigate to="/usulan" replace />} />
               <Route path="/public/events" element={<Navigate to="/agenda" replace />} />
-              <Route path="/public/karang-taruna" element={<Navigate to="/karang-taruna" replace />} />
-              <Route path="/public/bank-sampah" element={<Navigate to="/bank-sampah" replace />} />
+              <Route path="/public/program" element={<Navigate to="/program" replace />} />
+              <Route path="/public/karang-taruna" element={<Navigate to="/program?tab=environment" replace />} />
+              <Route path="/public/bank-sampah" element={<Navigate to="/program" replace />} />
             </Route>
 
             {/* Protected Internal Routes (/admin namespace) */}

@@ -4,8 +4,7 @@ import {
   Newspaper,
   MessageSquareHeart,
   CalendarDays,
-  Flame,
-  Recycle,
+  Sparkles,
   UserRound
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
@@ -14,8 +13,7 @@ const items = [
   { to: '/', label: 'Kabar', icon: Newspaper, end: true },
   { to: '/usulan', label: 'Aspirasi', icon: MessageSquareHeart },
   { to: '/agenda', label: 'Agenda', icon: CalendarDays },
-  { to: '/karang-taruna', label: 'Pemuda', icon: Flame },
-  { to: '/bank-sampah', label: 'Sampah', icon: Recycle },
+  { to: '/program', label: 'Program', icon: Sparkles },
 ];
 
 /**
@@ -30,7 +28,7 @@ export const PublicBottomNav: React.FC = () => {
       aria-label="Navigasi ponsel"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/80 bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)] md:hidden shadow-lg"
     >
-      <div className="grid grid-cols-6 items-center h-16 px-1">
+      <div className="grid grid-cols-5 items-center h-16 px-1">
         {items.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
