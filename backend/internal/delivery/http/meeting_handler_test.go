@@ -205,6 +205,7 @@ func TestMeetingHandler_PublicTenantMeetings(t *testing.T) {
 	// The real repository filters by visibility; the mock mirrors that contract
 	// by returning only the public meeting for a visibility='public' query.
 	mockUC.On("ListMeetings", mock.Anything, "public").Return([]domain.Meeting{*pub}, nil)
+	mockUC.On("GetMeetingByID", mock.Anything, pub.ID).Return(pub, nil)
 
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux, noopMiddleware, noopMiddleware)

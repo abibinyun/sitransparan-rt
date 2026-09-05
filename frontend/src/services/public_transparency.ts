@@ -2,6 +2,20 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { getTenantSlugOrFallback } from '../utils/tenant';
 
+export interface PublicMeetingDecision {
+  id: string;
+  decision_text: string;
+  category: string;
+}
+
+export interface PublicMeetingActionItem {
+  id: string;
+  task: string;
+  assignee_name: string;
+  due_date?: string;
+  status: string;
+}
+
 export interface PublicMeeting {
   id: string;
   title: string;
@@ -10,6 +24,8 @@ export interface PublicMeeting {
   location: string;
   meeting_type: string;
   status: string;
+  decisions?: PublicMeetingDecision[];
+  action_items?: PublicMeetingActionItem[];
 }
 
 export interface PublicFundSummary {

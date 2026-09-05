@@ -499,14 +499,30 @@ func (h *MeetingHandler) HandleActionItemByID(w http.ResponseWriter, r *http.Req
 
 // publicMeetingView is the anonymous-safe projection of a meeting: internal
 // notes and creator identity are never exposed on the public feed.
+type publicMeetingDecisionView struct {
+	ID           uuid.UUID `json:"id"`
+	DecisionText string    `json:"decision_text"`
+	Category     string    `json:"category"`
+}
+
+type publicMeetingActionItemView struct {
+	ID           uuid.UUID `json:"id"`
+	Task         string    `json:"task"`
+	AssigneeName string    `json:"assignee_name"`
+	DueDate      *string   `json:"due_date,omitempty"`
+	Status       string    `json:"status"`
+}
+
 type publicMeetingView struct {
-	ID          uuid.UUID `json:"id"`
-	Title       string    `json:"title"`
-	Agenda      string    `json:"agenda"`
-	MeetingDate time.Time `json:"meeting_date"`
-	Location    string    `json:"location"`
-	MeetingType string    `json:"meeting_type"`
-	Status      string    `json:"status"`
+	ID          uuid.UUID                     `json:"id"`
+	Title       string                        `json:"title"`
+	Agenda      string                        `json:"agenda"`
+	MeetingDate time.Time                     `json:"meeting_date"`
+	Location    string                        `json:"location"`
+	MeetingType string                        `json:"meeting_type"`
+	Status      string                        `json:"status"`
+	Decisions   []publicMeetingDecisionView   `json:"decisions,omitempty"`
+	ActionItems []publicMeetingActionItemView `json:"action_items,omitempty"`
 }
 
 // handlePublicTenantMeetings serves GET /api/v1/t/{slug}/meetings — the
@@ -538,6 +554,28 @@ func (h *MeetingHandler) handlePublicTenantMeetings(w http.ResponseWriter, r *ht
 
 	view := make([]publicMeetingView, 0, len(meetings))
 	for _, m := range meetings {
+		fullMeeting, err := h.meetingUsecase.GetMeetingByID(r.Context(), m.ID)
+		var decisions []publicMeetingDecisionView
+		var actions []publicMeetingActionItemView
+		if err == nil && fullMeeting != nil {
+			for _, d := range fullMeeting.Decisions {
+				decisions = append(decisions, publicMeetingDecisionView{
+					ID:           d.ID,
+					DecisionText: d.DecisionText,
+					Category:     d.Category,
+				})
+			}
+			for _, a := range fullMeeting.ActionItems {
+				actions = append(actions, publicMeetingActionItemView{
+					ID:           a.ID,
+					Task:         a.Task,
+					AssigneeName: a.AssigneeName,
+					DueDate:      a.DueDate,
+					Status:       a.Status,
+				})
+			}
+		}
+
 		view = append(view, publicMeetingView{
 			ID:          m.ID,
 			Title:       m.Title,
@@ -546,6 +584,8 @@ func (h *MeetingHandler) handlePublicTenantMeetings(w http.ResponseWriter, r *ht
 			Location:    m.Location,
 			MeetingType: m.MeetingType,
 			Status:      m.Status,
+			Decisions:   decisions,
+			ActionItems: actions,
 		})
 	}
 
