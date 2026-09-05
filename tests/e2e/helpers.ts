@@ -20,7 +20,8 @@ export async function login(page: Page, email: string, password: string, origin 
   await page.getByLabel('Kata Sandi').fill(password);
   await page.getByRole('button', { name: 'Masuk Akun' }).click();
   await page.waitForURL((url) => url.pathname !== '/login', { timeout: 15000 });
-  await page.waitForLoadState('networkidle');
+  await page.waitForSelector('nav, header, [role="navigation"]', { timeout: 10000 }).catch(() => {});
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /** Parse "Rp 50.000" style Indonesian currency text into a number. */

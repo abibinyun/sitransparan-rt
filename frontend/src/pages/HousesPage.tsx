@@ -5,6 +5,7 @@ import {
   useUpdateHouse, 
   useDeleteHouse, 
   useRegenerateHouseToken, 
+  useResetHousePin,
   House 
 } from '../services/house';
 import { useResidents } from '../services/resident';
@@ -30,6 +31,7 @@ import {
   Trash2,
   Users,
   MessageCircle,
+  KeyRound,
 } from 'lucide-react';
 
 export const HousesPage: React.FC = () => {
@@ -51,6 +53,7 @@ export const HousesPage: React.FC = () => {
   const updateMutation = useUpdateHouse();
   const deleteMutation = useDeleteHouse();
   const regenerateMutation = useRegenerateHouseToken();
+  const resetPinMutation = useResetHousePin();
 
   const houses = data?.data || [];
   const residents = residentsData?.data || [];
@@ -114,10 +117,17 @@ export const HousesPage: React.FC = () => {
   };
 
   const handleRegenerate = async (house: House) => {
-    if (!window.confirm(`Reset QR Token untuk Blok/No ${house.block_number}? Stiker QR lama tidak akan bisa digunakan lagi.`)) {
+    if (!window.confirm(`Reset QR Token untuk Blok/No ${house.block_number}? Stiker QR lama tidak akan bisa digunakan lagi dan sesi aktif akan terputus.`)) {
       return;
     }
     await regenerateMutation.mutateAsync(house.id);
+  };
+
+  const handleResetPin = async (house: House) => {
+    if (!window.confirm(`Reset PIN 4 Digit untuk Blok/No ${house.block_number}? PIN baru akan di-generate otomatis.`)) {
+      return;
+    }
+    await resetPinMutation.mutateAsync(house.id);
   };
 
   const copyClaimUrl = (token: string) => {
@@ -130,8 +140,9 @@ export const HousesPage: React.FC = () => {
   const getWhatsAppShareUrl = (house: House) => {
     const claimUrl = getTenantUrl(tenantSlug, `/claim?token=${house.access_token}`);
     const headName = house.head_resident?.full_name ? `Bapak/Ibu ${house.head_resident.full_name}` : 'Bapak/Ibu';
+    const pinText = house.pin_code ? `\n🔑 PIN Verifikasi Rumah Anda: *${house.pin_code}* (simpan baik-baik)\n` : '';
     const message = encodeURIComponent(
-      `Halo ${headName},\n\nBerikut tautan resmi Portal Transparansi RT untuk rumah ${house.block_number}.\n\nCukup klik tautan ini untuk langsung membuka kas RT, agenda kegiatan, dan ikut musyawarah warga tanpa perlu kata sandi:\n👉 ${claimUrl}\n\nSalam hormat,\nPengurus RT`
+      `Halo ${headName},\n\nBerikut tautan resmi Portal Transparansi RT untuk rumah ${house.block_number}.${pinText}\nCukup klik tautan ini untuk langsung membuka kas RT, agenda kegiatan, dan ikut musyawarah warga tanpa perlu kata sandi:\n👉 ${claimUrl}\n\nSalam hormat,\nPengurus RT`
     );
     let phone = (house.head_resident?.phone || '').replace(/[^0-9]/g, '');
     if (phone.startsWith('0')) {
@@ -222,6 +233,7 @@ export const HousesPage: React.FC = () => {
                 <TableHead>Blok / No. Rumah</TableHead>
                 <TableHead>Alamat Lengkap</TableHead>
                 <TableHead>Kepala Keluarga Terkait</TableHead>
+                <TableHead>PIN Stiker</TableHead>
                 <TableHead>Status Token</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
@@ -270,6 +282,23 @@ export const HousesPage: React.FC = () => {
                         ) : (
                           <span className="text-slate-400 italic">Belum ditautkan</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <code className="bg-slate-100 text-slate-800 font-mono font-bold text-xs px-2 py-0.5 rounded border border-slate-200">
+                            {house.pin_code || '----'}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleResetPin(house)}
+                            disabled={resetPinMutation.isPending}
+                            title="Reset PIN 4 Digit"
+                            className="text-slate-400 hover:text-amber-600 p-1 h-6 w-6"
+                          >
+                            <KeyRound className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -513,7 +542,15 @@ export const HousesPage: React.FC = () => {
                       <div className="text-[10px] text-slate-500 truncate max-w-full">
                         {h.head_resident ? h.head_resident.full_name : h.address || 'Warga RT'}
                       </div>
-                      <div className="mt-1 text-[9px] text-emerald-800 font-semibold bg-emerald-50 py-0.5 rounded">
+                      {h.pin_code && (
+                        <div className="mt-1.5 flex items-center justify-center gap-1">
+                          <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">PIN:</span>
+                          <span className="text-xs font-mono font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-300">
+                            {h.pin_code}
+                          </span>
+                        </div>
+                      )}
+                      <div className="mt-1.5 text-[9px] text-emerald-800 font-semibold bg-emerald-50 py-0.5 rounded">
                         Scan untuk Musyawarah & Usulan
                       </div>
                     </div>

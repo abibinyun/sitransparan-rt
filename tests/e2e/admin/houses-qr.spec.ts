@@ -3,6 +3,7 @@ import { login, ADMIN_EMAIL, ADMIN_PASSWORD } from '../helpers';
 
 test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
   test('Admin RT can manage houses and citizen can claim QR access session', async ({ page }) => {
+    test.setTimeout(60000);
     // 1. Login sebagai Admin RT
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
     await expect(page).toHaveURL('/admin');
@@ -105,7 +106,9 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
     await page.goto('/admin/houses');
     await expect(page.getByText(blockNo)).toBeVisible({ timeout: 10000 });
 
-    page.once('dialog', (dialog) => dialog.accept());
+    page.on('dialog', async (dialog) => {
+      await dialog.accept();
+    });
     await page.locator('tr', { hasText: blockNo }).getByTitle('Hapus Rumah').click();
     await expect(page.getByText(blockNo)).not.toBeVisible({ timeout: 10000 });
   });

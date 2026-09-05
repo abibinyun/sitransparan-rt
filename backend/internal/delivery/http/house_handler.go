@@ -219,6 +219,42 @@ func (h *HouseHandler) RegenerateTokenAdmin(w http.ResponseWriter, r *http.Reque
 	_ = json.NewEncoder(w).Encode(house)
 }
 
+// ResetPinAdmin me-reset kode PIN stiker rumah
+func (h *HouseHandler) ResetPinAdmin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	tenant := middleware.GetTenantFromContext(r.Context())
+	if tenant == nil {
+		http.Error(w, `{"error":"tenant context missing"}`, http.StatusBadRequest)
+		return
+	}
+
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/admin/houses/")
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) < 2 || parts[1] != "reset-pin" {
+		http.Error(w, `{"error":"invalid url"}`, http.StatusBadRequest)
+		return
+	}
+
+	houseID, err := uuid.Parse(parts[0])
+	if err != nil {
+		http.Error(w, `{"error":"invalid house id"}`, http.StatusBadRequest)
+		return
+	}
+
+	house, err := h.houseUC.ResetPin(r.Context(), tenant.ID, houseID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(house)
+}
+
 func (h *HouseHandler) RegisterRoutes(mux *http.ServeMux, tenantMw, authMw, adminMw func(http.Handler) http.Handler) {
 	// Public endpoint for QR claiming
 	mux.HandleFunc("/api/v1/house-access/claim", h.ClaimToken)
@@ -238,6 +274,11 @@ func (h *HouseHandler) RegisterRoutes(mux *http.ServeMux, tenantMw, authMw, admi
 
 		if strings.HasSuffix(r.URL.Path, "/regenerate-token") {
 			h.RegenerateTokenAdmin(w, r)
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "/reset-pin") {
+			h.ResetPinAdmin(w, r)
 			return
 		}
 

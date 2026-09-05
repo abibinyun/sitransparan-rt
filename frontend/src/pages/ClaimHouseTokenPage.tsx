@@ -23,6 +23,7 @@ export const ClaimHouseTokenPage: React.FC = () => {
     block_number: string;
     tenant_name: string;
     head_name?: string;
+    pin_code?: string;
   } | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -85,6 +86,7 @@ export const ClaimHouseTokenPage: React.FC = () => {
           block_number: res.house.block_number,
           tenant_name: res.tenant_name,
           head_name: res.head_resident?.full_name,
+          pin_code: res.house.pin_code,
         });
 
         setStatus('success');
@@ -141,6 +143,14 @@ export const ClaimHouseTokenPage: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-slate-500">Kepala Keluarga:</span>
                       <strong className="text-emerald-800">{houseInfo.head_name}</strong>
+                    </div>
+                  )}
+                  {houseInfo.pin_code && (
+                    <div className="flex justify-between items-center pt-1 border-t border-slate-200 mt-1">
+                      <span className="text-slate-500">PIN Stiker Rumah:</span>
+                      <strong className="font-mono text-xs bg-white px-2 py-0.5 rounded border border-slate-300 text-slate-800">
+                        {houseInfo.pin_code}
+                      </strong>
                     </div>
                   )}
                 </div>

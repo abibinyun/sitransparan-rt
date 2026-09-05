@@ -23,6 +23,8 @@ type House struct {
 	HeadResident   *Resident        `json:"head_resident,omitempty"`
 	AccessToken    string           `json:"access_token"`
 	TokenStatus    HouseTokenStatus `json:"token_status"`
+	PinCode        string           `json:"pin_code"`
+	TokenVersion   int              `json:"token_version"`
 	CreatedAt      time.Time        `json:"created_at"`
 	UpdatedAt      time.Time        `json:"updated_at"`
 }
@@ -41,7 +43,8 @@ type HouseRepository interface {
 	GetByToken(ctx context.Context, tenantID uuid.UUID, token string) (*House, error)
 	List(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]House, int, error)
 	Update(ctx context.Context, tenantID uuid.UUID, house *House) error
-	RevokeAndRegenerateToken(ctx context.Context, tenantID, id uuid.UUID, newToken string) error
+	RevokeAndRegenerateToken(ctx context.Context, tenantID, id uuid.UUID, newToken, newPin string) error
+	ResetPin(ctx context.Context, tenantID, id uuid.UUID, newPin string) error
 	Delete(ctx context.Context, tenantID, id uuid.UUID) error
 }
 
@@ -52,4 +55,6 @@ type HouseUsecase interface {
 	UpdateHouse(ctx context.Context, tenantID uuid.UUID, house *House) (*House, error)
 	DeleteHouse(ctx context.Context, tenantID, houseID uuid.UUID) error
 	RegenerateToken(ctx context.Context, tenantID, houseID uuid.UUID) (*House, error)
+	ResetPin(ctx context.Context, tenantID, houseID uuid.UUID) (*House, error)
+	VerifyPin(ctx context.Context, tenantID, houseID uuid.UUID, inputPin string) (bool, error)
 }

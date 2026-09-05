@@ -141,9 +141,14 @@ Format pengisian:
     - Layar klaim sukses dilengkapi banner PWA "Pasang Aplikasi RT di Layar Depan HP" (via event `beforeinstallprompt`) untuk memudahkan warga lansia dan non-teknis agar tidak perlu scan ulang setiap hari.
     - E2E Playwright test memverifikasi auto-login warga via QR token dan redirect ke portal aspirasi.
   - Temuan / Feedback: Berhasil. Alur klaim warga tanpa password (passwordless 1 rumah 1 token) dengan multi-channel (QR fisik, direct WA link, PWA add-to-homescreen) berjalan end-to-end.
-- [x] **4.2.4 Regenerate Token QR Rumah**
-  - Verifikasi: Tombol reset token (`RefreshCw`) meng-update `access_token` baru di backend via `POST /api/v1/admin/houses/{id}/regenerate-token`. Token lama otomatis hangus dan ditolak saat dicoba klaim (menampilkan pesan error jelas di UI tanpa mental ke `/login`), sedangkan token baru langsung aktif dan dapat diklaim warga.
-  - Temuan / Feedback: Berhasil. Terverifikasi deterministik dalam E2E Playwright.
+- [x] **4.2.4 Regenerate Token QR Rumah, Kill Switch Sesi & Reset PIN Stiker**
+  - Verifikasi:
+    - Tombol reset token (`RefreshCw`) meng-update `access_token` baru, meng-generate `pin_code` 4 digit acak baru, dan menaikkan `token_version + 1` via `POST /api/v1/admin/houses/{id}/regenerate-token`. Token lama otomatis hangus dan sesi aktif di perangkat hilang/lama langsung invalidated (kill switch), sedangkan token baru langsung aktif dan dapat diklaim warga.
+    - Kolom "PIN Stiker" menampilkan kode PIN 4 digit acak default yang tercetak pada stiker fisik rumah, dilengkapi tombol aksi `Reset PIN` (`KeyRound` icon via `POST /api/v1/admin/houses/{id}/reset-pin`) untuk meng-generate ulang PIN tanpa perlu memutus token QR.
+    - Fallback verifikasi identitas: sistem mendukung verifikasi PIN berbasis kode stiker acak atau 4 digit terakhir NIK Kepala Keluarga saat data warga sudah ditautkan (`house_usecase.VerifyPin`).
+    - Stiker QR cetak (`window.print()`) dan layar sukses klaim warga otomatis mencantumkan informasi PIN stiker rumah tersebut.
+    - Terverifikasi deterministik dalam E2E Playwright suite (`houses-qr.spec.ts`).
+  - Temuan / Feedback: Berhasil. Solusi keamanan proporsional (nol-friksi bagi lansia/warga harian, namun memiliki kill switch seketika dan proteksi PIN saat HP hilang).
 
 ---
 

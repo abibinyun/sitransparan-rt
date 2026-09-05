@@ -10,6 +10,8 @@ export interface House {
   head_resident?: Resident;
   access_token: string;
   token_status: 'active' | 'revoked' | 'suspended';
+  pin_code?: string;
+  token_version?: number;
   created_at: string;
   updated_at: string;
 }
@@ -89,6 +91,19 @@ export function useRegenerateHouseToken() {
   return useMutation({
     mutationFn: async (houseId: string) => {
       const res = await api.post<House>(`/admin/houses/${houseId}/regenerate-token`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-houses'] });
+    },
+  });
+}
+
+export function useResetHousePin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (houseId: string) => {
+      const res = await api.post<House>(`/admin/houses/${houseId}/reset-pin`);
       return res.data;
     },
     onSuccess: () => {

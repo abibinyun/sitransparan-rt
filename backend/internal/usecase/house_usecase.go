@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -46,6 +47,13 @@ func generateRandomToken() (string, error) {
 		return "", err
 	}
 	return "hsk_" + hex.EncodeToString(bytes), nil
+}
+
+func generateRandomPin() string {
+	b := make([]byte, 2)
+	rand.Read(b)
+	num := (int(b[0])<<8 | int(b[1])) % 9000 + 1000
+	return fmt.Sprintf("%04d", num)
 }
 
 func (u *houseUsecase) ClaimAccessToken(ctx context.Context, tenantSlug, token string) (*domain.HouseAccessClaimResponse, error) {
@@ -122,6 +130,12 @@ func (u *houseUsecase) CreateHouse(ctx context.Context, tenantID uuid.UUID, hous
 		}
 		house.AccessToken = tok
 	}
+	if house.PinCode == "" {
+		house.PinCode = generateRandomPin()
+	}
+	if house.TokenVersion == 0 {
+		house.TokenVersion = 1
+	}
 	if err := u.houseRepo.Create(ctx, tenantID, house); err != nil {
 		return nil, err
 	}
@@ -142,6 +156,9 @@ func (u *houseUsecase) UpdateHouse(ctx context.Context, tenantID uuid.UUID, hous
 	if house.TokenStatus == "" {
 		house.TokenStatus = existing.TokenStatus
 	}
+	if house.PinCode == "" {
+		house.PinCode = existing.PinCode
+	}
 	if err := u.houseRepo.Update(ctx, tenantID, house); err != nil {
 		return nil, err
 	}
@@ -161,10 +178,45 @@ func (u *houseUsecase) RegenerateToken(ctx context.Context, tenantID, houseID uu
 	if err != nil {
 		return nil, err
 	}
+	newPin := generateRandomPin()
 
-	if err := u.houseRepo.RevokeAndRegenerateToken(ctx, tenantID, houseID, newToken); err != nil {
+	if err := u.houseRepo.RevokeAndRegenerateToken(ctx, tenantID, houseID, newToken, newPin); err != nil {
 		return nil, err
 	}
 
 	return u.houseRepo.GetByID(ctx, tenantID, houseID)
+}
+
+func (u *houseUsecase) ResetPin(ctx context.Context, tenantID, houseID uuid.UUID) (*domain.House, error) {
+	newPin := generateRandomPin()
+	if err := u.houseRepo.ResetPin(ctx, tenantID, houseID, newPin); err != nil {
+		return nil, err
+	}
+	return u.houseRepo.GetByID(ctx, tenantID, houseID)
+}
+
+func (u *houseUsecase) VerifyPin(ctx context.Context, tenantID, houseID uuid.UUID, inputPin string) (bool, error) {
+	house, err := u.houseRepo.GetByID(ctx, tenantID, houseID)
+	if err != nil || house == nil {
+		return false, errors.New("data rumah tidak ditemukan")
+	}
+
+	// 1. Cek langsung kecocokan PinCode acak stiker
+	if house.PinCode != "" && house.PinCode == inputPin {
+		return true, nil
+	}
+
+	// 2. Fallback: Cek 4 digit terakhir NIK Kepala Keluarga jika ada
+	if house.HeadResidentID != nil {
+		head, err := u.residentRepo.GetByID(ctx, tenantID, *house.HeadResidentID)
+		if err == nil && head != nil && head.NIK != nil && len(*head.NIK) >= 4 {
+			nikStr := *head.NIK
+			last4NIK := nikStr[len(nikStr)-4:]
+			if last4NIK == inputPin {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }
