@@ -54,7 +54,11 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...formData, birth_date: dateOnlyToISO(formData.birth_date) };
+    const payload = {
+      ...formData,
+      nik: formData.nik?.trim() ? formData.nik.trim() : undefined,
+      birth_date: dateOnlyToISO(formData.birth_date),
+    };
     if (member) {
       await updateFamilyMemberMutation.mutateAsync({
         residentId,
@@ -90,13 +94,16 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
             onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="famNik">NIK</Label>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="famNik">NIK</Label>
+            <span className="text-[11px] text-slate-400">Opsional untuk anak &lt; 17 tahun</span>
+          </div>
           <Input
             id="famNik"
             type="text"
-            required
             maxLength={16}
+            placeholder="16 digit NIK (kosongkan bila belum ada)"
             value={formData.nik}
             onChange={(e) => setFormData({ ...formData, nik: e.target.value })}
           />

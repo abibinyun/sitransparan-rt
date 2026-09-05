@@ -228,7 +228,13 @@ export const ResidentDetailModal: React.FC<ResidentDetailModalProps> = ({
                     {resident.family_members.map((fm) => (
                       <tr key={fm.id} className="hover:bg-slate-50/50">
                         <td className="px-3 py-2.5 font-medium text-slate-800">{fm.full_name}</td>
-                        <td className="px-3 py-2.5 font-mono text-slate-600">{fm.nik || '-'}</td>
+                        <td className="px-3 py-2.5 font-mono text-slate-600">
+                          {fm.nik ? (
+                            fm.nik
+                          ) : (
+                            <span className="text-[11px] text-slate-400 font-sans italic">Belum Ada NIK</span>
+                          )}
+                        </td>
                         <td className="px-3 py-2.5">
                           <Badge variant="outline">{fm.relation || 'Anggota'}</Badge>
                         </td>

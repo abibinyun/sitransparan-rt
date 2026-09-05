@@ -264,7 +264,13 @@ export const ResidentsPage: React.FC = () => {
                                 {r.family_members.map((fm) => (
                                   <TableRow key={fm.id}>
                                     <TableCell className="font-medium">{fm.full_name}</TableCell>
-                                    <TableCell className="font-mono text-xs">{fm.nik || '-'}</TableCell>
+                                    <TableCell className="font-mono text-xs">
+                                      {fm.nik ? (
+                                        fm.nik
+                                      ) : (
+                                        <span className="text-[11px] text-slate-400 font-sans italic">Tanpa NIK</span>
+                                      )}
+                                    </TableCell>
                                     <TableCell><Badge variant="outline">{fm.relation}</Badge></TableCell>
                                     <TableCell>{fm.gender || '-'}</TableCell>
                                     <TableCell className="text-right space-x-1">

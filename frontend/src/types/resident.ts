@@ -2,7 +2,7 @@ export interface FamilyMember {
   id: string;
   resident_id: string;
   full_name: string;
-  nik: string;
+  nik?: string;
   relation: string;
   birth_date: string;
   gender: string;

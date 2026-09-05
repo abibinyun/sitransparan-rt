@@ -79,18 +79,18 @@ test.describe('Resident Management — business workflow', () => {
     await page.getByRole('button', { name: 'Simpan Data' }).click();
     await expect(page.locator('table')).toContainText(headName);
 
-    // Add a family member through the family modal
+    // Add a family member through the family modal (anak di bawah 17 tahun tanpa NIK)
     const headRow = page.locator('tr', { hasText: headName });
     await headRow.getByTitle('Tambah Anggota Keluarga').click();
     await expect(page.getByRole('heading', { name: 'Tambah Anggota Keluarga' })).toBeVisible();
     await page.fill('#famName', childName);
-    await page.fill('#famNik', nik16(ts + 1));
+    // famNik sengaja dikosongkan untuk menguji anak < 17 tahun tanpa NIK
     await page.selectOption('#famRelation', 'Anak');
     await page.fill('#famBirthDate', '2015-05-20');
     await page.getByRole('button', { name: 'Tambah Anggota' }).click();
     await expect(page.getByRole('heading', { name: 'Tambah Anggota Keluarga' })).not.toBeVisible();
 
-    // Expand the KK detail and verify the member is listed with its relation
+    // Expand the KK detail and verify the member is listed with its relation and Tanpa NIK
     await page.locator('tr', { hasText: headName }).getByTitle('Lihat/Kelola Anggota Keluarga').click();
     const familyDetail = page
       .locator('div.rounded-lg.border.border-slate-200.bg-white.p-4')
@@ -99,6 +99,7 @@ test.describe('Resident Management — business workflow', () => {
     await expect(familyDetail).toBeVisible();
     await expect(familyDetail.locator('table')).toContainText(childName);
     await expect(familyDetail.locator('table')).toContainText('Anak');
+    await expect(familyDetail.locator('table')).toContainText('Tanpa NIK');
 
     // Persistence: reload keeps the family member
     await page.reload();
@@ -109,6 +110,7 @@ test.describe('Resident Management — business workflow', () => {
       .filter({ hasText: 'Anggota Keluarga' })
       .first();
     await expect(familyDetailReload.locator('table')).toContainText(childName);
+    await expect(familyDetailReload.locator('table')).toContainText('Tanpa NIK');
 
     // EDIT family member
     const updatedChildName = `Anak KK Updated ${ts}`;
