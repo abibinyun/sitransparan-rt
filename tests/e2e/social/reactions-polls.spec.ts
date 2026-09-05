@@ -155,5 +155,15 @@ test.describe('Fase 3 — Reaksi & Polling (identitas wajib, 1 orang 1 aksi)', (
     expect(pubBody.total_votes).toBe(1);
     expect(pubBody.my_vote).toBeUndefined();
     expect(JSON.stringify(pubBody)).not.toContain('user_id');
+
+    // Public list open polls endpoint: aggregate results for guest users
+    const pubList = await request.get(`${API}/api/v1/t/sitransparan-rt/polls`);
+    expect(pubList.status()).toBe(200);
+    const pubListBody = await pubList.json();
+    expect(Array.isArray(pubListBody.data)).toBe(true);
+    const found = pubListBody.data.find((p: any) => p.id === pollId);
+    expect(found).toBeDefined();
+    expect(found.total_votes).toBe(1);
+    expect(found.my_vote).toBeUndefined();
   });
 });

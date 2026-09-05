@@ -280,6 +280,23 @@ func (h *SocialHandler) handleVote(w http.ResponseWriter, r *http.Request) {
 	writeSocialJSON(w, http.StatusOK, poll)
 }
 
+// handlePublicOpenPolls: daftar jajak pendapat aktif untuk publik (hasil agregat, tanpa voter identity).
+func (h *SocialHandler) handlePublicOpenPolls(w http.ResponseWriter, r *http.Request) {
+	r, ok := h.resolvePublicTenant(w, r)
+	if !ok {
+		return
+	}
+	polls, err := h.usecase.OpenPolls(r.Context(), nil, nil, false)
+	if err != nil {
+		writeSocialError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if polls == nil {
+		polls = []*domain.Poll{}
+	}
+	writeSocialJSON(w, http.StatusOK, map[string]interface{}{"data": polls})
+}
+
 // handlePublicPollResults: hasil AGREGAT tanpa login (tanpa my_vote).
 func (h *SocialHandler) handlePublicPollResults(w http.ResponseWriter, r *http.Request) {
 	r, ok := h.resolvePublicTenant(w, r)
@@ -348,6 +365,7 @@ func (h *SocialHandler) RegisterRoutes(
 	mux.Handle("POST /api/v1/polls/{id}/vote", authMw(rateLimiter(tenantMw(http.HandlerFunc(h.handleVote)))))
 
 	// Hasil agregat publik
+	mux.HandleFunc("GET /api/v1/t/{slug}/polls", h.handlePublicOpenPolls)
 	mux.HandleFunc("GET /api/v1/t/{slug}/polls/{id}", h.handlePublicPollResults)
 	// KPI portal (publik, rate-limited)
 	mux.Handle("POST /api/v1/t/{slug}/events", rateLimiter(http.HandlerFunc(h.handlePortalEvent)))

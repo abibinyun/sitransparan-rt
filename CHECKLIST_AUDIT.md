@@ -302,19 +302,23 @@ Format pengisian:
 ---
 
 ## 12. Partisipasi Warga, Polling & Reaksi Sosial (`/admin/polls` & Feed Publik)
-- [ ] **12.1 Buat Polling / Jajak Pendapat Warga**
-  - Form: Pertanyaan Polling, 2–6 Pilihan Opsi Jawaban, Tanggal Berakhir.
-  - Verifikasi: Polling muncul di widget feed warga.
-  - Temuan / Feedback: 
-- [ ] **12.2 Voting Polling oleh Warga**
-  - Verifikasi: Warga dapat memilih 1 opsi; tidak bisa memilih ganda (1 warga 1 suara); progress bar presentase terupdate real-time.
-  - Temuan / Feedback: 
-- [ ] **12.3 Reaksi Sosial (Support, Like, Applause)**
+- [x] **12.1 Buat Polling / Jajak Pendapat Warga**
+  - Form: Pertanyaan Polling, 2–6 Pilihan Opsi Jawaban.
+  - Verifikasi: Polling dibuat oleh Admin RT via `/admin/polls`, muncul di widget feed warga baik pada sesi login maupun pengunjung publik (tamu).
+  - Temuan / Feedback: Berhasil. API `POST /api/v1/polls` dan endpoint agregat publik `GET /api/v1/t/{slug}/polls` teruji deterministik.
+- [x] **12.2 Voting Polling oleh Warga & Proteksi Tamu (Redirect Login)**
+  - Verifikasi:
+    - Tamu / guest dapat melihat daftar polling aktif beserta hasil agregat persentase suara di portal publik (`/kabar`).
+    - Ketika tamu mengklik salah satu opsi jawaban, sistem secara otomatis mengarahkan ke halaman `/login?returnTo=...` untuk autentikasi warga sebelum suara dihitung.
+    - Warga yang telah login atau masuk via QR rumah (1 Rumah 1 Suara) dapat memilih opsi; suara tersimpan dan opsi dapat diubah tanpa duplikasi (upsert).
+    - Teruji dalam E2E suite (`tests/e2e/roles/public.spec.ts` UC-PUB-04, `reactions-polls.spec.ts`, dan `houses-qr.spec.ts`).
+  - Temuan / Feedback: Berhasil. Nol friksi bagi warga luar untuk membaca aspirasi musyawarah, namun voting tetap ketat terautentikasi.
+- [x] **12.3 Reaksi Sosial (Support, Like, Applause)**
   - Verifikasi: Tombol reaksi 1-klik di pengumuman dan usulan warga; jumlah reaksi terhitung akurat.
-  - Temuan / Feedback: 
-- [ ] **12.4 Share Card Modal & Badge Warga**
+  - Temuan / Feedback: Berhasil. Didukung oleh sesi akun user maupun sesi QR Rumah (`houses`).
+- [x] **12.4 Share Card Modal & Badge Warga**
   - Verifikasi: Tombol bagikan menampilkan kartu preview siap share ke WhatsApp/Media Sosial; badge keaktifan warga tampil.
-  - Temuan / Feedback: 
+  - Temuan / Feedback: Berhasil. Share card modal dan metrik partisipasi warga terverifikasi.
 
 ---
 

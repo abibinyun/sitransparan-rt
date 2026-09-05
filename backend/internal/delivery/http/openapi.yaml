@@ -1508,6 +1508,17 @@ paths:
         '400':
           description: Polling tutup / option_index di luar jangkauan
 
+  /api/v1/t/{slug}/polls:
+    get:
+      summary: Daftar polling terbuka untuk portal publik (PUBLIC, hasil agregat, tanpa voter identity)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: '{ data: [{ id, question, options, status, votes, total_votes }] }'
+        '404':
+          description: Tenant tidak ditemukan
+
   /api/v1/t/{slug}/polls/{id}:
     get:
       summary: Hasil agregat polling untuk portal publik (PUBLIC, tanpa my_vote)

@@ -64,17 +64,18 @@ export function useOpenPolls() {
   const slug = getTenantSlugOrFallback();
   const { user } = useAuthStore();
   return useQuery<PublicPoll[], Error>({
-    queryKey: ['polls', slug],
+    queryKey: ['polls', slug, Boolean(user)],
     queryFn: async () => {
       try {
-        const res = await api.get<{ data: PublicPoll[] }>('/polls');
+        // Jika user login: panggil /polls (membawa my_vote)
+        // Jika user guest: panggil /t/{slug}/polls (hasil agregat publik)
+        const endpoint = user ? '/polls' : `/t/${slug}/polls`;
+        const res = await api.get<{ data: PublicPoll[] }>(endpoint);
         return res.data.data ?? [];
       } catch {
         return [];
       }
     },
-    // Endpoint polling berada di balik auth — anonim tidak fetch
-    enabled: Boolean(user),
     staleTime: 60 * 1000,
   });
 }

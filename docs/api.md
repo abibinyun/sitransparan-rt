@@ -39,6 +39,7 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 | GET | `/api/v1/t/{slug}/financial-summary` | Ringkasan kas **agregat** (`current_balance`, `monthly_income`, `monthly_expense`, `spending_breakdown`). |
 | GET | `/api/v1/t/{slug}/events` | List agenda mendatang (20 terbaru, sorted). |
 | POST | `/api/v1/t/{slug}/events` | KPI portal `feed_view` / `share_opened` (rate-limited). Body: `{event_type, target_id?}`. |
+| GET | `/api/v1/t/{slug}/polls` | Daftar polling terbuka untuk portal publik (hasil **agregat**, tanpa voter identity). |
 | GET | `/api/v1/t/{slug}/polls/{id}` | Hasil **agregat** polling untuk portal publik (tanpa `my_vote`). |
 | GET | `/api/v1/t/{slug}/karang-taruna` | Struktur pengurus Karang Taruna & periode aktif publik. |
 | GET | `/api/v1/t/{slug}/waste-bank/summary` | Ringkasan metrik publik Bank Sampah (total kg, tabungan warga, kas pemuda). |

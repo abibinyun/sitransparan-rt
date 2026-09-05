@@ -53,7 +53,8 @@ export const PollWidget: React.FC = () => {
                       <button
                         onClick={() => {
                           if (!user) {
-                            window.location.href = '/login';
+                            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                            window.location.href = `/login?returnTo=${returnUrl}`;
                             return;
                           }
                           setVoteError('');
