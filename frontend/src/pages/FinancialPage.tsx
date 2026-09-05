@@ -651,12 +651,12 @@ export const FinancialPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+      {/* Tabs Navigasi Utama (Scrollable on Mobile) */}
+      <div className="border-b border-gray-200 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <nav className="-mb-px flex space-x-6 sm:space-x-8 overflow-x-auto scrollbar-none touch-pan-x">
           <button
             onClick={() => setActiveTab('dues')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-all ${
+            className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
               activeTab === 'dues'
                 ? 'border-indigo-500 text-indigo-600 font-bold'
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
@@ -666,7 +666,7 @@ export const FinancialPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('transactions')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-all ${
+            className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
               activeTab === 'transactions'
                 ? 'border-indigo-500 text-indigo-600 font-bold'
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
@@ -676,7 +676,7 @@ export const FinancialPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('funds')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-all ${
+            className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
               activeTab === 'funds'
                 ? 'border-indigo-500 text-indigo-600 font-bold'
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
@@ -686,7 +686,7 @@ export const FinancialPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('categories')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-all ${
+            className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
               activeTab === 'categories'
                 ? 'border-indigo-500 text-indigo-600 font-bold'
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
@@ -701,9 +701,9 @@ export const FinancialPage: React.FC = () => {
       {activeTab === 'dues' && (
         <div className="space-y-4">
           {/* Sub-view Toggle: Per Warga vs Riwayat Iuran Masuk vs Riwayat Pengeluaran Iuran */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-xs">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 text-xs font-semibold">
+          <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-xs">
+            <div className="flex items-center overflow-x-auto scrollbar-none pb-1 lg:pb-0">
+              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 text-xs font-semibold whitespace-nowrap">
                 <button
                   onClick={() => setDuesViewMode('resident')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
@@ -737,7 +737,7 @@ export const FinancialPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
               {/* Filter Kategori Pos Iuran */}
               <div className="w-full sm:w-44">
                 <Select
@@ -889,8 +889,9 @@ export const FinancialPage: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <div className="overflow-x-auto scrollbar-thin">
+                    <table className="min-w-[700px] w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                           Warga
@@ -973,10 +974,11 @@ export const FinancialPage: React.FC = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
 
-                  {/* Pagination */}
-                  <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 bg-gray-50/50">
-                    <span className="text-xs text-slate-500">
+                {/* Pagination */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50/50">
+                    <span className="text-xs text-slate-500 text-center sm:text-left">
                       Menampilkan {paginatedDues.length} dari {filteredDues.length} iuran
                     </span>
                     <div className="flex items-center gap-2">
@@ -1036,8 +1038,8 @@ export const FinancialPage: React.FC = () => {
                     : 'Belum ada pengeluaran atau penyaluran dari pos iuran warga.'}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                <div className="overflow-x-auto scrollbar-thin">
+                  <table className="min-w-[700px] w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -1216,7 +1218,8 @@ export const FinancialPage: React.FC = () => {
               </div>
             ) : (
               <>
-                <table className="min-w-full divide-y divide-gray-200">
+                <div className="overflow-x-auto scrollbar-thin">
+                  <table className="min-w-[700px] w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -1284,10 +1287,11 @@ export const FinancialPage: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
 
-                {/* Pagination */}
-                <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 bg-gray-50/50">
-                  <span className="text-xs text-slate-500">
+              {/* Pagination */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50/50">
+                  <span className="text-xs text-slate-500 text-center sm:text-left">
                     Menampilkan {paginatedTx.length} dari {filteredTransactions.length} transaksi
                   </span>
                   <div className="flex items-center gap-2">
@@ -1335,48 +1339,50 @@ export const FinancialPage: React.FC = () => {
           ) : fundList.length === 0 ? (
             <div className="p-6 text-center text-gray-500">Belum ada kantong kas</div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Nama Kantong Kas</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tipe</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Saldo Saat Ini</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Deskripsi / Peruntukan</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {fundList.map((f: any) => (
-                  <tr key={f.id}>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">
-                      {f.name} {f.is_default && <span className="ml-2 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700 font-bold">Utama</span>}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                      <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
-                        {f.type}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm font-bold text-gray-900">
-                      Rp {(f.balance || 0).toLocaleString('id-ID')}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{f.description || '-'}</td>
-                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                      {!f.is_default && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteFund(f.id, f.is_default)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Hapus Kantong Kas"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </td>
+            <div className="overflow-x-auto scrollbar-thin">
+              <table className="min-w-[650px] w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Nama Kantong Kas</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tipe</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Saldo Saat Ini</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Deskripsi / Peruntukan</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {fundList.map((f: any) => (
+                    <tr key={f.id}>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">
+                        {f.name} {f.is_default && <span className="ml-2 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700 font-bold">Utama</span>}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                        <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
+                          {f.type}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-bold text-gray-900">
+                        Rp {(f.balance || 0).toLocaleString('id-ID')}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{f.description || '-'}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
+                        {!f.is_default && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteFund(f.id, f.is_default)}
+                            className="text-red-600 hover:text-red-800"
+                            title="Hapus Kantong Kas"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
@@ -1426,42 +1432,44 @@ export const FinancialPage: React.FC = () => {
               ) : catList.length === 0 ? (
                 <div className="p-6 text-center text-gray-500">Belum ada jenis iuran. Silakan tambahkan baru.</div>
               ) : (
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Nama Iuran</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tarif / Nominal</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Periode</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Keterangan</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {catList.map((cat: any) => (
-                      <tr key={cat.id}>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">{cat.name}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">Rp {Number(cat.amount).toLocaleString('id-ID')}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                          <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
-                            {cat.period === 'monthly' ? 'Bulanan' : 'Sekali Bayar (Insidental)'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{cat.description || '-'}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteCategory(cat.id)}
-                            className="text-red-600 hover:text-red-800"
-                            title="Hapus Kategori"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </td>
+                <div className="overflow-x-auto scrollbar-thin">
+                  <table className="min-w-[650px] w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Nama Iuran</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tarif / Nominal</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Periode</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Keterangan</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {catList.map((cat: any) => (
+                        <tr key={cat.id}>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">{cat.name}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">Rp {Number(cat.amount).toLocaleString('id-ID')}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                            <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
+                              {cat.period === 'monthly' ? 'Bulanan' : 'Sekali Bayar (Insidental)'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">{cat.description || '-'}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteCategory(cat.id)}
+                              className="text-red-600 hover:text-red-800"
+                              title="Hapus Kategori"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
