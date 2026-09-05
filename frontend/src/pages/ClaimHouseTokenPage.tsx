@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { getTenantSlugFromHost } from '../utils/tenant';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, ArrowRight, Download } from 'lucide-react';
 import { usePublicTenantQuery } from '../services/public_tenant';
 import { TenantNotFoundPage } from '../components/TenantNotFoundPage';
 
@@ -24,6 +24,35 @@ export const ClaimHouseTokenPage: React.FC = () => {
     tenant_name: string;
     head_name?: string;
   } | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+    }
+  };
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -120,6 +149,25 @@ export const ClaimHouseTokenPage: React.FC = () => {
               <p className="text-xs text-slate-600 leading-relaxed">
                 Anda kini dapat langsung memberikan suara di musyawarah/polling, menyampaikan aspirasi, dan memantau transparansi kas RT.
               </p>
+
+              {deferredPrompt && !isInstalled && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-left space-y-2">
+                  <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                    <Download className="w-4 h-4 text-amber-700" />
+                    Pasang Aplikasi RT di Layar Depan HP
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-normal">
+                    Pasang ikon di HP Anda agar nanti bisa langsung buka kas & voting RT tanpa perlu scan ulang stiker QR.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={handleInstallClick}
+                    className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold py-1.5 h-8"
+                  >
+                    Pasang Sekarang (Gratis & Ringan)
+                  </Button>
+                </div>
+              )}
 
               <div className="space-y-2 pt-2">
                 <Button

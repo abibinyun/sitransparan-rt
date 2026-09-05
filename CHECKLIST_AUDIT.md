@@ -133,12 +133,14 @@ Format pengisian:
 - [x] **4.2.2 Cetak Sticker QR Code Rumah**
   - Verifikasi: Modal pratinjau stiker QR tampil rapi dalam format grid kartu stiker, memuat nama RT, Blok/Nomor unit, dan QR code siap cetak via tombol cetak (`window.print()`).
   - Temuan / Feedback: Berhasil. Dialog pratinjau lembar cetak stiker QR dapat dibuka dan memuat data rumah.
-- [x] **4.2.3 Salin Link Klaim Rumah & Uji Klaim Warga (`/claim?token=...`)**
+- [x] **4.2.3 Salin Link Klaim Rumah, Kirim Direct WhatsApp & Uji Klaim Warga (`/claim?token=...`)**
   - Verifikasi:
     - Tombol "Salin Tautan Akses Warga" menyalin URL klaim rumah tenant secara instan ke clipboard.
+    - Tombol "Kirim ke WhatsApp" (`MessageCircle` icon) membuka tautan resmi WhatsApp (`wa.me/<phone>?text=...`) dengan pesan template personal untuk Kepala Keluarga / warga unit bersangkutan, memuat tautan klaim direct tanpa password.
     - Warga memindai/membuka link klaim (`/claim?slug=...&token=...`): sistem memvalidasi token via `GET /api/v1/house-access/claim`, mengisukan sesi JWT scoped ke rumah dan tenant dengan role `resident`, dan menampilkan layar sukses verifikasi rumah serta tombol pintas menuju Portal Transparansi atau formulir Aspirasi Warga.
+    - Layar klaim sukses dilengkapi banner PWA "Pasang Aplikasi RT di Layar Depan HP" (via event `beforeinstallprompt`) untuk memudahkan warga lansia dan non-teknis agar tidak perlu scan ulang setiap hari.
     - E2E Playwright test memverifikasi auto-login warga via QR token dan redirect ke portal aspirasi.
-  - Temuan / Feedback: Berhasil. Alur klaim warga tanpa password (passwordless 1 rumah 1 token) berjalan end-to-end.
+  - Temuan / Feedback: Berhasil. Alur klaim warga tanpa password (passwordless 1 rumah 1 token) dengan multi-channel (QR fisik, direct WA link, PWA add-to-homescreen) berjalan end-to-end.
 - [x] **4.2.4 Regenerate Token QR Rumah**
   - Verifikasi: Tombol reset token (`RefreshCw`) meng-update `access_token` baru di backend via `POST /api/v1/admin/houses/{id}/regenerate-token`. Token lama otomatis hangus dan ditolak saat dicoba klaim (menampilkan pesan error jelas di UI tanpa mental ke `/login`), sedangkan token baru langsung aktif dan dapat diklaim warga.
   - Temuan / Feedback: Berhasil. Terverifikasi deterministik dalam E2E Playwright.

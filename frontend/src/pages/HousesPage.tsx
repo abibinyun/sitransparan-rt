@@ -29,6 +29,7 @@ import {
   Edit2,
   Trash2,
   Users,
+  MessageCircle,
 } from 'lucide-react';
 
 export const HousesPage: React.FC = () => {
@@ -124,6 +125,19 @@ export const HousesPage: React.FC = () => {
     navigator.clipboard.writeText(url);
     setCopiedToken(token);
     setTimeout(() => setCopiedToken(null), 2000);
+  };
+
+  const getWhatsAppShareUrl = (house: House) => {
+    const claimUrl = getTenantUrl(tenantSlug, `/claim?token=${house.access_token}`);
+    const headName = house.head_resident?.full_name ? `Bapak/Ibu ${house.head_resident.full_name}` : 'Bapak/Ibu';
+    const message = encodeURIComponent(
+      `Halo ${headName},\n\nBerikut tautan resmi Portal Transparansi RT untuk rumah ${house.block_number}.\n\nCukup klik tautan ini untuk langsung membuka kas RT, agenda kegiatan, dan ikut musyawarah warga tanpa perlu kata sandi:\n👉 ${claimUrl}\n\nSalam hormat,\nPengurus RT`
+    );
+    let phone = (house.head_resident?.phone || '').replace(/[^0-9]/g, '');
+    if (phone.startsWith('0')) {
+      phone = '62' + phone.substring(1);
+    }
+    return phone ? `https://wa.me/${phone}?text=${message}` : `https://wa.me/?text=${message}`;
   };
 
   const getQRImageUrl = (token: string) => {
@@ -287,6 +301,15 @@ export const HousesPage: React.FC = () => {
                               <Copy className="w-3.5 h-3.5" />
                             )}
                           </Button>
+                          <a
+                            href={getWhatsAppShareUrl(house)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center p-2 rounded text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 h-8 w-8"
+                            title={house.head_resident?.phone ? `Kirim ke WhatsApp (${house.head_resident.phone})` : 'Kirim ke WhatsApp Warga'}
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                          </a>
                           <a
                             href={claimUrl}
                             target="_blank"
