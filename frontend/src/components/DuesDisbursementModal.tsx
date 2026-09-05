@@ -74,19 +74,27 @@ export const DuesDisbursementModal: React.FC<DuesDisbursementModalProps> = ({
       return;
     }
 
+    if (amount > selectedBalance) {
+      setError(`Saldo pos iuran tidak mencukupi (Tersedia: Rp ${selectedBalance.toLocaleString('id-ID')}, Dibutuhkan: Rp ${Number(amount).toLocaleString('id-ID')})`);
+      return;
+    }
+
     const catName = selectedCat ? selectedCat.name : 'IURAN';
 
     try {
       setError('');
       if (targetType === 'fund') {
         // Perpindahan dana dari Iuran ke Kantong Kas tujuan
-        const targetFund = funds.find((f: any) => f.id === targetFundId);
-        const fundNameLabel = targetFund ? targetFund.name : 'Kas Tujuan';
+        // Jika targetFundId kosong, pilih kantong kas default
+        const defaultFund = funds.find((f: any) => f.is_default) || funds[0];
+        const chosenFundId = targetFundId || defaultFund?.id;
+        const targetFund = funds.find((f: any) => f.id === chosenFundId);
+        const fundNameLabel = targetFund ? targetFund.name : 'Kas Utama RT';
 
         // Mutasi masuk ke kantong kas tujuan dari pos iuran (ini memindahkan uang masuk ke fund)
         await createTx.mutateAsync({
           type: 'income',
-          fund_id: targetFundId || undefined,
+          fund_id: chosenFundId || undefined,
           category: `IURAN_PINDAH_KAS: ${catName}`,
           amount: Number(amount),
           transaction_date: dateOnlyToISO(transactionDate)!,
@@ -112,7 +120,7 @@ export const DuesDisbursementModal: React.FC<DuesDisbursementModalProps> = ({
       setProofUrl('');
       setTargetFundId('');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal memproses penyaluran dana iuran');
+      setError(err.response?.data?.error || err.response?.data?.message || 'Gagal memproses penyaluran dana iuran');
     }
   };
 

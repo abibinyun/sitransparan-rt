@@ -22,6 +22,17 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
 
   const [type, setType] = useState<TransactionType>('income');
   const [fundId, setFundId] = useState<string>('');
+
+  // Auto-select default fund saat modal dibuka atau list kantong kas siap
+  React.useEffect(() => {
+    if (isOpen && funds.length > 0 && !fundId) {
+      const defaultFund = funds.find((f: any) => f.is_default) || funds[0];
+      if (defaultFund) {
+        setFundId(defaultFund.id);
+      }
+    }
+  }, [isOpen, funds, fundId]);
+
   const [category, setCategory] = useState('');
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState('');
@@ -71,6 +82,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
     }
   };
 
+  const selectedFund = funds.find((f: any) => f.id === fundId) || funds.find((f: any) => f.is_default) || funds[0];
+  const fundBalance = selectedFund?.balance ?? 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalCategory = isCustomCategory ? customCategory.trim() : category;
@@ -79,11 +93,20 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
       return;
     }
 
+    // Pastikan jika transaksi pengeluaran (expense), saldo kantong kas mencukupi
+    if (type === 'expense' && amount > fundBalance) {
+      setError(`Saldo kantong kas "${selectedFund?.name || 'Kas'}" tidak mencukupi (Tersedia: Rp ${fundBalance.toLocaleString('id-ID')}, Dibutuhkan: Rp ${Number(amount).toLocaleString('id-ID')})`);
+      return;
+    }
+
+    // Resolusikan fund_id: jika belum dipilih atau string kosong, gunakan id kantong kas default
+    const resolvedFundId = fundId || selectedFund?.id;
+
     try {
       setError('');
       await createTx.mutateAsync({
         type,
-        fund_id: fundId || undefined,
+        fund_id: resolvedFundId || undefined,
         category: finalCategory,
         amount: Number(amount),
         transaction_date: dateOnlyToISO(transactionDate)!,
@@ -100,7 +123,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
       setDescription('');
       setProofUrl('');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal mencatat transaksi kas');
+      setError(err.response?.data?.error || err.response?.data?.message || 'Gagal mencatat transaksi kas');
     }
   };
 
@@ -143,16 +166,23 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="txFund">Kantong Kas (Fund) *</Label>
+          <div className="flex justify-between items-center">
+            <Label htmlFor="txFund">Kantong Kas (Fund) *</Label>
+            {selectedFund && (
+              <span className="text-[11px] text-slate-500 font-medium">
+                Saldo: <strong className="text-slate-800">Rp {(selectedFund.balance ?? 0).toLocaleString('id-ID')}</strong>
+              </span>
+            )}
+          </div>
           <Select
             id="txFund"
             value={fundId}
             onChange={(e) => setFundId(e.target.value)}
           >
-            <option value="">-- Default (Kas Utama RT) --</option>
+            <option value="">-- Default ({funds.find((f: any) => f.is_default)?.name || 'Kas Utama RT'}) --</option>
             {funds.map((f: any) => (
               <option key={f.id} value={f.id}>
-                {f.name} {f.is_default ? '(Utama)' : ''}
+                {f.name} {f.is_default ? '(Utama)' : ''} - Saldo Rp {(f.balance ?? 0).toLocaleString('id-ID')}
               </option>
             ))}
           </Select>
@@ -230,10 +260,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
               id="txAmount"
               type="number"
               min="1"
-              value={amount}
+              value={amount || ''}
               onChange={(e) => setAmount(Number(e.target.value))}
               required
             />
+            {type === 'expense' && amount > fundBalance && (
+              <p className="text-[11px] text-rose-600 font-medium">
+                ⚠️ Saldo tidak mencukupi (Tersedia: Rp {fundBalance.toLocaleString('id-ID')})
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="txDate">Tanggal *</Label>

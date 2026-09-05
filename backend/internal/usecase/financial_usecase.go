@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -168,6 +169,101 @@ func (u *financialUsecase) CreateFinancialTransaction(ctx context.Context, tenan
 	}
 	tx.TenantID = tenantID
 	tx.CreatedBy = &createdBy
+
+	// Pastikan fund_id terisi. Jika nil, auto-assign ke default fund (Kas RT Utama)
+	funds, err := u.repo.ListFunds(ctx, tenantID)
+	if err == nil && len(funds) > 0 {
+		if tx.FundID == nil || *tx.FundID == uuid.Nil {
+			var defaultFund *domain.Fund
+			for _, f := range funds {
+				if f.IsDefault {
+					defaultFund = f
+					break
+				}
+			}
+			if defaultFund == nil && len(funds) > 0 {
+				defaultFund = funds[0]
+			}
+			if defaultFund != nil {
+				tx.FundID = &defaultFund.ID
+			}
+		}
+	}
+
+	// Validasi kecukupan saldo: jangan biarkan pengeluaran melebihi saldo tersedia
+	if tx.Type == "expense" && tx.FundID != nil && *tx.FundID != uuid.Nil {
+		// Hitung saldo kantong kas bersangkutan
+		txs, _, listErr := u.repo.ListFinancialTransactions(ctx, tenantID, "", 5000, 0)
+		if listErr == nil {
+			var currentFundBalance float64
+			for _, t := range txs {
+				if t.FundID != nil && *t.FundID == *tx.FundID {
+					if t.Type == "income" {
+						currentFundBalance += t.Amount
+					} else if t.Type == "expense" {
+						currentFundBalance -= t.Amount
+					}
+				}
+			}
+			if tx.Amount > currentFundBalance {
+				return fmt.Errorf("saldo kantong kas tidak mencukupi (tersedia: Rp %.0f, dibutuhkan: Rp %.0f)", currentFundBalance, tx.Amount)
+			}
+		}
+	}
+
+	// Validasi jika pengeluaran atau transfer bersumber dari pos iuran (IURAN_KELUAR / IURAN_PINDAH_KAS)
+	if strings.HasPrefix(tx.Category, "IURAN_KELUAR: ") || strings.HasPrefix(tx.Category, "IURAN_PINDAH_KAS: ") {
+		catName := ""
+		if strings.HasPrefix(tx.Category, "IURAN_KELUAR: ") {
+			catName = strings.TrimPrefix(tx.Category, "IURAN_KELUAR: ")
+		} else {
+			catName = strings.TrimPrefix(tx.Category, "IURAN_PINDAH_KAS: ")
+		}
+		catName = strings.TrimSpace(catName)
+
+		if catName != "" {
+			feeCats, _, catErr := u.repo.ListFeeCategories(ctx, tenantID, 100, 0)
+			if catErr == nil {
+				var targetCatID *uuid.UUID
+				for _, fc := range feeCats {
+					if fc.Name == catName {
+						targetCatID = &fc.ID
+						break
+					}
+				}
+				if targetCatID != nil {
+					// Hitung total penerimaan iuran yang terverifikasi untuk kategori ini
+					dues, _, duesErr := u.repo.ListDuesPayments(ctx, tenantID, nil, "verified", 5000, 0)
+					var collected float64
+					if duesErr == nil {
+						for _, d := range dues {
+							if d.FeeCategoryID == *targetCatID {
+								collected += d.Amount
+							}
+						}
+					}
+					// Hitung total pengeluaran dan penyaluran yang sudah pernah dilakukan dari pos iuran ini
+					allTxs, _, txsErr := u.repo.ListFinancialTransactions(ctx, tenantID, "", 5000, 0)
+					var spent float64
+					if txsErr == nil {
+						keluarPrefix := "IURAN_KELUAR: " + catName
+						transferPrefix := "IURAN_PINDAH_KAS: " + catName
+						for _, t := range allTxs {
+							if (t.Type == "expense" && (t.Category == keluarPrefix || t.Category == catName || t.Category == "IURAN: "+catName)) ||
+								(t.Type == "income" && t.Category == transferPrefix) {
+								spent += t.Amount
+							}
+						}
+					}
+					availableDues := collected - spent
+					if tx.Amount > availableDues {
+						return fmt.Errorf("saldo pos iuran %s tidak mencukupi (tersedia: Rp %.0f, dibutuhkan: Rp %.0f)", catName, availableDues, tx.Amount)
+					}
+				}
+			}
+		}
+	}
+
 	return u.repo.CreateFinancialTransaction(ctx, tx)
 }
 

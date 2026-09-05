@@ -282,14 +282,50 @@ func TestFinancialUsecase(t *testing.T) {
 		t.Fatalf("ListDuesPayments failed: %v", err)
 	}
 
-	// 3. Financial Transaction CRUD
+	// 3. Financial Transaction CRUD & Default Fund Auto-assign & Saldo Guard
+	defaultFund := &domain.Fund{
+		TenantID:  tenantID,
+		Name:      "Kas RT",
+		Type:      "operational",
+		IsDefault: true,
+	}
+	if err := uc.CreateFund(ctx, tenantID, defaultFund); err != nil {
+		t.Fatalf("CreateFund failed: %v", err)
+	}
+
 	tx := &domain.FinancialTransaction{
 		Type:     "income",
-		Category: "Iuran",
+		Category: "Donasi",
 		Amount:   60000,
 	}
+	// FundID nil -> should be auto-assigned to defaultFund.ID
 	if err := uc.CreateFinancialTransaction(ctx, tenantID, tx, userID); err != nil {
 		t.Fatalf("CreateFinancialTransaction failed: %v", err)
+	}
+	if tx.FundID == nil || *tx.FundID != defaultFund.ID {
+		t.Fatalf("expected tx.FundID to be auto-assigned to default fund %v, got %v", defaultFund.ID, tx.FundID)
+	}
+
+	// Pengeluaran melebihi saldo kas (saldo 60.000, coba keluarkan 100.000) -> harus ditolak
+	overExpenseTx := &domain.FinancialTransaction{
+		FundID:   &defaultFund.ID,
+		Type:     "expense",
+		Category: "Operasional",
+		Amount:   100000,
+	}
+	if err := uc.CreateFinancialTransaction(ctx, tenantID, overExpenseTx, userID); err == nil {
+		t.Fatalf("expected error when expense exceeds fund balance, got nil")
+	}
+
+	// Pengeluaran dalam batas saldo (40.000 <= 60.000) -> harus sukses
+	validExpenseTx := &domain.FinancialTransaction{
+		FundID:   &defaultFund.ID,
+		Type:     "expense",
+		Category: "Operasional",
+		Amount:   40000,
+	}
+	if err := uc.CreateFinancialTransaction(ctx, tenantID, validExpenseTx, userID); err != nil {
+		t.Fatalf("CreateFinancialTransaction for valid expense failed: %v", err)
 	}
 
 	gotTx, err := uc.GetFinancialTransactionByID(ctx, tenantID, tx.ID)
