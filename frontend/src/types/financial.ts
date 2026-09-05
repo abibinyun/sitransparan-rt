@@ -22,6 +22,7 @@ export interface FeeCategory {
   amount: number;
   period: FeePeriod;
   description?: string;
+  balance?: number;
   created_at: string;
   updated_at: string;
 }

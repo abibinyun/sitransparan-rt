@@ -42,15 +42,23 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     await page.goto('/financial');
     const saldoBefore = await readSaldo(page);
 
-    // Ensure at least one fee category exists
+    // Ensure at least one fee category exists (seeded with Iuran Sampah or create Iuran Warga)
     await page.getByRole('button', { name: /^Master Kategori Iuran/ }).click();
-    if (await page.locator('table').locator('tr').count() <= 1) {
+    const hasExistingCategory = (await page.locator('table').locator('tr').count()) > 1;
+    let selectedCategoryName = 'Iuran Sampah';
+    if (!hasExistingCategory) {
       await page.getByRole('button', { name: 'Tambah Jenis Iuran' }).click();
       await page.fill('#catName', 'Iuran Warga');
       await page.fill('#catAmount', '50000');
       await page.selectOption('#catPeriod', 'monthly');
       await page.getByRole('button', { name: 'Simpan Kategori' }).click();
       await expect(page.locator('table')).toContainText('Iuran Warga');
+      selectedCategoryName = 'Iuran Warga';
+    } else {
+      const firstRowText = await page.locator('table tbody tr').first().locator('td').first().textContent();
+      if (firstRowText?.trim()) {
+        selectedCategoryName = firstRowText.trim();
+      }
     }
     await page.getByRole('button', { name: /^Iuran Warga/ }).click();
 
@@ -63,7 +71,7 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     const residentValue = await residentOpt.getAttribute('value');
     await page.selectOption('#duesResident', residentValue!);
 
-    const catOpt = page.locator('#duesCategory option').filter({ hasText: 'Iuran Warga' }).first();
+    const catOpt = page.locator('#duesCategory option').filter({ hasText: selectedCategoryName }).first();
     await catOpt.waitFor({ state: 'attached' });
     const catValue = await catOpt.getAttribute('value');
     await page.selectOption('#duesCategory', catValue!);
@@ -100,7 +108,7 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     await page.fill('#txAmount', '100000');
     await page.fill('#txDesc', `TX IN E2E ${Date.now()}`);
     await page.getByRole('button', { name: 'Simpan Transaksi' }).click();
-    await page.getByRole('button', { name: 'Transaksi Kas RT', exact: true }).click();
+    await page.getByRole('button', { name: /^Transaksi Kas RT/ }).click();
     await expect(page.locator('table')).toContainText('IURAN_WARGA');
     await expect(page.locator('table')).toContainText('+ Rp 100.000');
 
@@ -144,14 +152,14 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     await page.getByRole('button', { name: 'Simpan Transaksi' }).click();
 
     // Verify transaction row displays the assigned fund name
-    await page.getByRole('button', { name: 'Transaksi Kas RT', exact: true }).click();
+    await page.getByRole('button', { name: /^Transaksi Kas RT/ }).click();
     await expect(page.locator('table')).toContainText(fundName);
     await expect(page.locator('table')).toContainText('+ Rp 75.000');
   });
 
   test('financial transactions are append-only — no edit/delete actions in the UI', async ({ page }) => {
     await page.goto('/financial');
-    await page.getByRole('button', { name: 'Transaksi Kas RT', exact: true }).click();
+    await page.getByRole('button', { name: /^Transaksi Kas RT/ }).click();
 
     // The transactions table never offers edit/delete buttons
     const txButtons = page.locator('table').getByRole('button');

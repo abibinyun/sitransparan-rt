@@ -332,35 +332,23 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 	if err := db.QueryRowContext(ctx, `SELECT id FROM tenants WHERE slug = $1`, slug).Scan(&tenantID); err != nil {
 		return err
 	}
-	// Idempotent: never duplicate the default category on re-provisioning.
+	// Seed 1 default fee category: "Iuran Sampah"
 	if _, err := db.ExecContext(ctx,
-		`INSERT INTO `+pq.QuoteIdentifier(schemaName)+`.fee_categories (tenant_id, name, amount, period)
-		 SELECT $1::uuid, $2::text, $3::numeric, $4::text
-		 WHERE NOT EXISTS (SELECT 1 FROM `+pq.QuoteIdentifier(schemaName)+`.fee_categories WHERE name = $2::text)`, tenantID, "Iuran Warga", 50000.0, "monthly"); err != nil {
+		`INSERT INTO `+pq.QuoteIdentifier(schemaName)+`.fee_categories (tenant_id, name, amount, period, description)
+		 SELECT $1::uuid, $2::text, $3::numeric, $4::text, $5::text
+		 WHERE NOT EXISTS (SELECT 1 FROM `+pq.QuoteIdentifier(schemaName)+`.fee_categories WHERE name = $2::text)`,
+		tenantID, "Iuran Sampah", 25000.0, "monthly", "Iuran kebersihan & pengelolaan sampah RT"); err != nil {
 		return err
 	}
 
-	fundsSeeds := []struct {
-		name        string
-		fundType    string
-		description string
-		isDefault   bool
-	}{
-		{"Kas Utama RT", "operational", "Kas operasional umum RT", true},
-		{"Kas Karang Taruna", "youth", "Kas pemuda dan kegiatan 17-an", false},
-		{"Dana Sosial & Kematian", "social", "Dana santunan warga sakit / duka", false},
-		{"Kas Sarana & Pembangunan", "infrastructure", "Dana perbaikan jalan, pos satpam & sarpras", false},
-	}
-
-	for _, fs := range fundsSeeds {
-		if _, err := db.ExecContext(ctx,
-			`INSERT INTO `+pq.QuoteIdentifier(schemaName)+`.funds (tenant_id, name, type, description, is_default)
-			 SELECT $1::uuid, $2::text, $3::text, $4::text, $5::boolean
-			 WHERE NOT EXISTS (SELECT 1 FROM `+pq.QuoteIdentifier(schemaName)+`.funds WHERE name = $2::text AND tenant_id = $1::uuid)`,
-			tenantID, fs.name, fs.fundType, fs.description, fs.isDefault,
-		); err != nil {
-			return err
-		}
+	// Seed 1 default fund: "Kas RT"
+	if _, err := db.ExecContext(ctx,
+		`INSERT INTO `+pq.QuoteIdentifier(schemaName)+`.funds (tenant_id, name, type, description, is_default)
+		 SELECT $1::uuid, $2::text, $3::text, $4::text, $5::boolean
+		 WHERE NOT EXISTS (SELECT 1 FROM `+pq.QuoteIdentifier(schemaName)+`.funds WHERE tenant_id = $1::uuid AND is_default = TRUE)`,
+		tenantID, "Kas RT", "operational", "Kas operasional umum RT", true,
+	); err != nil {
+		return err
 	}
 
 	return nil

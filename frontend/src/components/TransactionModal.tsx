@@ -25,6 +25,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
   const [category, setCategory] = useState('');
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState('');
+  const [customOptions, setCustomOptions] = useState<{ id: string; name: string; type: 'income' | 'expense' }[]>([]);
+
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem('sitransparan_custom_cash_categories');
+      if (saved) {
+        setCustomOptions(JSON.parse(saved));
+      }
+    } catch {}
+  }, [isOpen]);
   const [amount, setAmount] = useState<number>(0);
   const [transactionDate, setTransactionDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -160,6 +170,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                     <option value="DONASI">Donasi / Sumbangan</option>
                     <option value="DANA_DESA">Dana Bantuan Desa/Pemerintah</option>
                     <option value="LAINNYA_PEMASUKAN">Pemasukan Lain-lain</option>
+                    {customOptions.filter((c) => c.type === 'income').map((c) => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
                   </>
                 ) : (
                   <>
@@ -168,6 +181,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                     <option value="KEGIATAN_WARGA">Kegiatan & Acara RT</option>
                     <option value="PERBAIKAN_FASILITAS">Perbaikan Fasilitas</option>
                     <option value="LAINNYA_PENGELUARAN">Pengeluaran Lain-lain</option>
+                    {customOptions.filter((c) => c.type === 'expense').map((c) => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
                   </>
                 )}
                 <option value="__CUSTOM__">+ Buat Kategori Kustom / Baru...</option>

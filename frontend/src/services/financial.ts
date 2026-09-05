@@ -133,7 +133,7 @@ export function useDuesPayments(params?: DuesPaymentFilter) {
     queryKey: ['financial', 'dues', params],
     queryFn: async () => {
       const res = await api.get<any>('/financial/dues', { params });
-      return Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      return res.data;
     },
   });
 }
@@ -170,7 +170,7 @@ export function useFinancialTransactions(params?: TransactionFilter) {
     queryKey: ['financial', 'transactions', params],
     queryFn: async () => {
       const res = await api.get<any>('/financial/transactions', { params });
-      return Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      return res.data;
     },
   });
 }
