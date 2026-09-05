@@ -80,6 +80,47 @@ const baseNavItems: NavItem[] = [
   },
 ];
 
+// Menu khusus warga / resident (mandiri & transparansi)
+const residentNavItems: NavItem[] = [
+  { to: '/admin', label: 'Dashboard Warga', icon: LayoutDashboard, end: true },
+  { 
+    to: '/admin/financial', 
+    label: 'Iuran & Keuangan', 
+    icon: WalletCards,
+    matchPrefixes: ['/admin/financial']
+  },
+  { 
+    to: '/admin/aspirations', 
+    label: 'Aspirasi & Usulan', 
+    icon: MessageSquareHeart,
+    matchPrefixes: ['/admin/aspirations']
+  },
+  { 
+    to: '/admin/events', 
+    label: 'Agenda Kegiatan', 
+    icon: CalendarDays,
+    matchPrefixes: ['/admin/events', '/admin/meetings']
+  },
+  { 
+    to: '/admin/announcements', 
+    label: 'Kabar & Dokumen', 
+    icon: Bell,
+    matchPrefixes: ['/admin/announcements', '/admin/polls']
+  },
+  { 
+    to: '/admin/waste-bank', 
+    label: 'Tabungan Sampah', 
+    icon: Flame,
+    matchPrefixes: ['/admin/waste-bank', '/admin/karang-taruna']
+  },
+  { 
+    to: '/admin/profile', 
+    label: 'Profil Akun Saya', 
+    icon: UserCircle,
+    matchPrefixes: ['/admin/profile']
+  },
+];
+
 const publicNavItems: NavItem[] = [
   { to: '/', label: 'Portal Transparansi', icon: Bell, end: true },
 ];
@@ -178,8 +219,16 @@ export const MainLayout: React.FC = () => {
       ];
     }
 
+    if (!isAdminRT) {
+      // Role resident / warga
+      return [
+        ...residentNavItems,
+        ...publicNavItems,
+      ];
+    }
+
     const items = [
-      ...baseNavItems.filter((item) => !item.adminOnly || isAdminRT),
+      ...baseNavItems,
       ...publicNavItems,
     ];
     return items;
@@ -325,7 +374,15 @@ export const MainLayout: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="min-w-0 pr-2">
                   <p className="text-sm font-bold text-white truncate">{user?.name || 'Pengguna'}</p>
-                  <p className="mt-0.5 text-xs font-medium text-slate-400">{user?.role || 'ROLE'}</p>
+                  <p className="mt-0.5 text-xs font-medium text-slate-400">
+                    {(() => {
+                      const role = String(user?.role || '').toLowerCase();
+                      if (role === 'resident') return 'Warga RT (Resident)';
+                      if (role === 'admin_rt' || role === 'rt_admin') return 'Pengurus RT (Admin)';
+                      if (role.includes('super')) return 'Super Admin Platform';
+                      return user?.role || 'ROLE';
+                    })()}
+                  </p>
                 </div>
                 <NavLink
                   to="/admin/profile"
@@ -359,7 +416,9 @@ export const MainLayout: React.FC = () => {
                 <Menu className="h-5 w-5" />
               </button>
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-400">Administrasi Warga</p>
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-400">
+                  {String(user?.role || '').toLowerCase() === 'resident' ? 'Layanan Warga RT' : 'Administrasi Warga'}
+                </p>
                 <h2 className="text-lg font-black tracking-tight text-slate-950 sm:text-2xl">Platform RT App</h2>
               </div>
             </div>

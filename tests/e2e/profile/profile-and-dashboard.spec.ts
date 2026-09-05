@@ -80,11 +80,26 @@ test.describe('Profile & Resident Dashboard', () => {
     await expect(page.getByRole('heading', { name: /Selamat Datang,/i })).toBeVisible({ timeout: 10000 });
 
     // 4. Verifikasi modul-modul dashboard personal warga
-    await expect(page.getByText(/Portal Mandiri Warga RT/i)).toBeVisible();
-    await expect(page.getByText(/Status Iuran KK/i)).toBeVisible();
-    await expect(page.getByText(/Tabungan Sampah/i)).toBeVisible();
-    await expect(page.getByText(/Usulan Saya/i)).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Riwayat Iuran Keluarga' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Usulan & Aduan Saya' })).toBeVisible();
+    const main = page.getByRole('main');
+    await expect(main.getByText(/Portal Mandiri Warga RT/i)).toBeVisible();
+    await expect(main.getByText(/Status Iuran KK/i)).toBeVisible();
+    await expect(main.getByText(/Tabungan Sampah/i)).toBeVisible();
+    await expect(main.getByText(/Usulan Saya/i)).toBeVisible();
+    await expect(main.getByRole('heading', { name: 'Riwayat Iuran Keluarga' })).toBeVisible();
+    await expect(main.getByRole('heading', { name: 'Usulan & Aduan Saya' })).toBeVisible();
+
+    // 5. Verifikasi sidebar navigasi khusus resident (berbeda dengan Admin RT)
+    await expect(page.getByRole('link', { name: 'Dashboard Warga' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Iuran & Keuangan' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Aspirasi & Usulan' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Agenda Kegiatan' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Kabar & Dokumen' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Tabungan Sampah' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Profil Akun Saya' })).toBeVisible();
+
+    // Menu pengurus RT & admin harus disembunyikan dari resident
+    await expect(page.getByRole('link', { name: 'Kependudukan' })).not.toBeVisible();
+    await expect(page.getByRole('link', { name: 'Pemberdayaan RT' })).not.toBeVisible();
+    await expect(page.getByRole('link', { name: 'Pengaturan & Akun' })).not.toBeVisible();
   });
 });
