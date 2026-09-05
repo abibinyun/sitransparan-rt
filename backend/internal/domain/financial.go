@@ -107,6 +107,9 @@ type FinancialRepository interface {
 
 	// Storage
 	UploadProof(ctx context.Context, filename string, content io.Reader, contentType string) (string, error)
+
+	// Reset Data (Testing/Admin)
+	ResetFinancialData(ctx context.Context, tenantID uuid.UUID) error
 }
 
 type FinancialUsecase interface {
@@ -140,4 +143,7 @@ type FinancialUsecase interface {
 
 	// Upload Proof
 	UploadProof(ctx context.Context, filename string, content io.Reader, contentType string) (string, error)
+
+	// Reset Data (Testing/Admin)
+	ResetFinancialData(ctx context.Context, tenantID uuid.UUID) error
 }

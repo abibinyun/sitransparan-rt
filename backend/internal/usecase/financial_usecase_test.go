@@ -220,6 +220,12 @@ func (m *mockFinancialRepo) UploadProof(ctx context.Context, filename string, co
 	return "/uploads/proofs/test_" + filename, nil
 }
 
+func (m *mockFinancialRepo) ResetFinancialData(ctx context.Context, tenantID uuid.UUID) error {
+	m.duesPayments = make(map[uuid.UUID]*domain.DuesPayment)
+	m.transactions = make(map[uuid.UUID]*domain.FinancialTransaction)
+	return nil
+}
+
 func TestFinancialUsecase(t *testing.T) {
 	repo := newMockFinancialRepo()
 	uc := usecase.NewFinancialUsecase(repo)

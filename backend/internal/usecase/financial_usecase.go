@@ -292,3 +292,8 @@ func (u *financialUsecase) UploadProof(ctx context.Context, filename string, con
 	}
 	return u.repo.UploadProof(ctx, filename, content, contentType)
 }
+
+// Reset Financial Data
+func (u *financialUsecase) ResetFinancialData(ctx context.Context, tenantID uuid.UUID) error {
+	return u.repo.ResetFinancialData(ctx, tenantID)
+}

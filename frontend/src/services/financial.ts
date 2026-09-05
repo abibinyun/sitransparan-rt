@@ -203,3 +203,17 @@ export function useUploadProof() {
     },
   });
 }
+
+// Reset Financial Data (Testing)
+export function useResetFinancialData() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await api.post('/financial/reset-data');
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['financial'] });
+    },
+  });
+}

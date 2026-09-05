@@ -55,8 +55,8 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
       await page.waitForTimeout(1000);
     }
 
-    // 5. Lakukan Penyaluran / Transfer dana iuran ke Kas RT
-    await page.getByRole('button', { name: /Salurkan \/ Pakai Dana Iuran/i }).click();
+    // 5. Lakukan Penyaluran / Transfer dana iuran ke Kas RT via kartu Pos Iuran
+    await page.getByRole('button', { name: /Keluarkan \/ Salurkan Dana/i }).first().click();
 
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByText('Salurkan / Keluarkan Dana Iuran')).toBeVisible();
@@ -114,8 +114,8 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
     expect(iuranPageText).toContain('30.000');
     expect(iuranPageText).toContain('20.000');
 
-    // 9. Lakukan Belanja Langsung dari sisa pos iuran (External Expense): Rp 10.000
-    await page.getByRole('button', { name: /Salurkan \/ Pakai Dana Iuran/i }).click();
+    // 9. Lakukan Belanja Langsung dari sisa pos iuran (External Expense): Rp 10.000 via kartu Pos Iuran
+    await page.getByRole('button', { name: /Keluarkan \/ Salurkan Dana/i }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
     // Pilih opsi belanja langsung

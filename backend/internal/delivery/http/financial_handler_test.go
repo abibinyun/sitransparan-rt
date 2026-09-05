@@ -233,6 +233,12 @@ func (m *mockFinancialUsecase) UploadProof(ctx context.Context, filename string,
 	return "/uploads/proofs/test_" + filename, nil
 }
 
+func (m *mockFinancialUsecase) ResetFinancialData(ctx context.Context, tenantID uuid.UUID) error {
+	m.duesPayments = make(map[uuid.UUID]*domain.DuesPayment)
+	m.transactions = make(map[uuid.UUID]*domain.FinancialTransaction)
+	return nil
+}
+
 func mockFinancialAuthMiddleware(tenant *domain.Tenant, userID uuid.UUID) (func(http.Handler) http.Handler, func(http.Handler) http.Handler) {
 	tenantMw := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

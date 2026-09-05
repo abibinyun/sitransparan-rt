@@ -664,3 +664,17 @@ func (r *financialRepository) UploadProof(ctx context.Context, filename string, 
 	}
 	return r.minioClient.Upload(ctx, objectKey, bytes.NewReader(data), int64(len(data)), contentType)
 }
+
+// Reset Financial Data (dues and transactions for testing)
+func (r *financialRepository) ResetFinancialData(ctx context.Context, tenantID uuid.UUID) error {
+	duesTable := TenantTable(ctx, "dues_payments")
+	txTable := TenantTable(ctx, "financial_transactions")
+
+	_, err := r.db.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s", duesTable))
+	if err != nil {
+		return err
+	}
+	_, err = r.db.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s", txTable))
+	return err
+}
+

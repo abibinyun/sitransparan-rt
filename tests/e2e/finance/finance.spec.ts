@@ -78,8 +78,8 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     await page.fill('#duesAmount', '50000');
     await page.getByRole('button', { name: 'Simpan Iuran' }).click();
 
-    // Switch to Riwayat Transaksi sub-tab to view individual row & actions
-    await page.getByRole('button', { name: /^Riwayat Transaksi/ }).click();
+    // Switch to Iuran Masuk sub-tab to view individual row & actions
+    await page.getByRole('button', { name: /Iuran Masuk/i }).click();
 
     // Row appears with pending status
     const row = page.locator('tr', { hasText: residentName });

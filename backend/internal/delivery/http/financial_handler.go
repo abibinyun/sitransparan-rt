@@ -40,6 +40,7 @@ func (h *FinancialHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http
 	mux.Handle("/api/v1/financial/categories/", categoriesHandler)
 
 	mux.Handle("/api/v1/financial/summary", authMw(tenantMw(http.HandlerFunc(h.handleSummary))))
+	mux.Handle("POST /api/v1/financial/reset-data", authMw(tenantMw(http.HandlerFunc(h.handleResetFinancialData))))
 
 	mux.Handle("/api/v1/financial/dues", duesHandler)
 	mux.Handle("/api/v1/financial/dues/", duesHandler)
@@ -565,6 +566,32 @@ func (h *FinancialHandler) handleSummary(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(summary)
+}
+
+// POST /api/v1/financial/reset-data
+func (h *FinancialHandler) handleResetFinancialData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	tenant := middleware.GetTenantFromContext(r.Context())
+	if tenant == nil {
+		http.Error(w, `{"error":"tenant context missing"}`, http.StatusBadRequest)
+		return
+	}
+
+	err := h.usecase.ResetFinancialData(r.Context(), tenant.ID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "Data keuangan berhasil direset ke state awal",
+	})
 }
 
 type publicFundView struct {

@@ -10,6 +10,7 @@ import {
   useFunds,
   useCreateFund,
   useDeleteFund,
+  useResetFinancialData,
 } from '../services/financial';
 import { DuesPaymentModal } from '../components/DuesPaymentModal';
 import { DuesDisbursementModal } from '../components/DuesDisbursementModal';
@@ -19,7 +20,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
-import { Plus, Trash2, Wallet, Coins, Search, Users, ChevronRight, Edit2, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { Plus, Trash2, Wallet, Coins, Search, Users, ChevronRight, Edit2, ArrowDownRight, ArrowUpRight, RotateCcw } from 'lucide-react';
 import { FeePeriod, FundType } from '../types/financial';
 import { getFileUrl } from '../utils/file';
 import { useResidents } from '../services/resident';
@@ -90,12 +91,8 @@ export const FinancialPage: React.FC = () => {
   const txLimit = 10;
 
   const { data: summary, isLoading: isSummaryLoading } = useFinancialSummary();
-  const { data: rawDues, isLoading: isDuesLoading } = useDuesPayments({
-    status: duesStatusFilter === 'all' ? undefined : duesStatusFilter,
-  });
-  const { data: rawTx, isLoading: isTxLoading } = useFinancialTransactions({
-    type: txTypeFilter === 'all' ? undefined : txTypeFilter,
-  });
+  const { data: rawDues, isLoading: isDuesLoading } = useDuesPayments();
+  const { data: rawTx, isLoading: isTxLoading } = useFinancialTransactions();
   const { data: rawCats, isLoading: isCatsLoading } = useFeeCategories();
   const { data: rawFunds, isLoading: isFundsLoading } = useFunds();
   const { data: rawResidents, isLoading: isResidentsLoading } = useResidents({ limit: 100 });
@@ -111,6 +108,7 @@ export const FinancialPage: React.FC = () => {
   const deleteFeeCat = useDeleteFeeCategory();
   const createFund = useCreateFund();
   const deleteFund = useDeleteFund();
+  const resetFinancialData = useResetFinancialData();
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const showFeedback = (type: 'success' | 'error', text: string) => {
@@ -463,7 +461,7 @@ export const FinancialPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">Transparansi Keuangan RT</h2>
           <p className="text-sm text-gray-500">Pemisahan tegas Iuran Warga vs Arus Kas Buku Utama</p>
         </div>
-        {/* Top 3 Action Buttons */}
+        {/* Top Action Buttons */}
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => setIsDuesModalOpen(true)}
@@ -483,6 +481,24 @@ export const FinancialPage: React.FC = () => {
             className="border-indigo-300 bg-indigo-50/50 text-indigo-700 hover:bg-indigo-100 gap-1.5"
           >
             <Plus className="h-4 w-4" /> + Kantong Kas Baru
+          </Button>
+          <Button
+            onClick={async () => {
+              if (window.confirm('Apakah Anda yakin ingin mengosongkan seluruh data iuran dan transaksi kas untuk testing? Tindakan ini tidak dapat dibatalkan.')) {
+                try {
+                  await resetFinancialData.mutateAsync();
+                  showFeedback('success', 'Seluruh data transaksi dan iuran berhasil direset ke Rp 0.');
+                } catch (err: any) {
+                  showFeedback('error', err?.response?.data?.error || 'Gagal mereset data keuangan.');
+                }
+              }
+            }}
+            variant="outline"
+            disabled={resetFinancialData.isPending}
+            className="border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 gap-1.5"
+            title="Reset seluruh transaksi dan iuran warga ke Rp 0 untuk keperluan testing"
+          >
+            <RotateCcw className="h-4 w-4" /> {resetFinancialData.isPending ? 'Mereset...' : 'Reset Data Keuangan'}
           </Button>
         </div>
       </div>
@@ -719,18 +735,6 @@ export const FinancialPage: React.FC = () => {
                   <ArrowUpRight className="h-3.5 w-3.5 text-rose-600" /> Pengeluaran / Penyaluran ({duesDisbursementList.length})
                 </button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedDisburseCatId('');
-                  setIsDisburseModalOpen(true);
-                }}
-                className="text-xs h-8 gap-1.5 border-rose-200 bg-rose-50/50 text-rose-700 hover:bg-rose-100"
-                title="Catat pengeluaran yang memotong dana dari pos iuran warga"
-              >
-                <Wallet className="h-3.5 w-3.5" /> Salurkan / Pakai Dana Iuran
-              </Button>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
