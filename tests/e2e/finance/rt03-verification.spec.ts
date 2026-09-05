@@ -48,7 +48,7 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
     await expect(page.getByRole('heading', { name: 'Catat / Bayar Iuran Warga' })).toBeHidden();
 
     // 4. Verifikasi status iuran jika pending
-    await page.getByRole('button', { name: /Riwayat Transaksi/i }).click();
+    await page.getByRole('button', { name: /Iuran Masuk/i }).click();
     const verifyBtn = page.getByRole('button', { name: 'Verifikasi' }).first();
     if (await verifyBtn.isVisible()) {
       await verifyBtn.click();

@@ -19,7 +19,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
-import { Plus, Trash2, Wallet, Coins, Search, Users, History, ChevronRight, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Wallet, Coins, Search, Users, ChevronRight, Edit2, ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { FeePeriod, FundType } from '../types/financial';
 import { getFileUrl } from '../utils/file';
 import { useResidents } from '../services/resident';
@@ -74,7 +74,8 @@ export const FinancialPage: React.FC = () => {
   const [fundDesc, setFundDesc] = useState('');
 
   // Filter & Pagination for Dues
-  const [duesViewMode, setDuesViewMode] = useState<'resident' | 'history'>('resident');
+  const [duesViewMode, setDuesViewMode] = useState<'resident' | 'history' | 'disbursements'>('resident');
+  const [duesCategoryFilter, setDuesCategoryFilter] = useState<string>('all');
   const [selectedResidentId, setSelectedResidentId] = useState<string | null>(null);
   const [duesStatusFilter, setDuesStatusFilter] = useState<'all' | 'pending' | 'verified' | 'rejected'>('all');
   const [duesSearch, setDuesSearch] = useState('');
@@ -232,10 +233,11 @@ export const FinancialPage: React.FC = () => {
     return list;
   }, [duesList, residentList, duesSearch]);
 
-  // Filter & paginate dues list client-side with search
+  // Filter & paginate dues list client-side with search & category filter
   const filteredDues = React.useMemo(() => {
     return duesList.filter((d) => {
       if (duesStatusFilter !== 'all' && d.status !== duesStatusFilter) return false;
+      if (duesCategoryFilter !== 'all' && d.fee_category_id !== duesCategoryFilter) return false;
       if (duesSearch.trim()) {
         const query = duesSearch.toLowerCase();
         const residentName = (d.resident_name || '').toLowerCase();
@@ -244,7 +246,37 @@ export const FinancialPage: React.FC = () => {
       }
       return true;
     });
-  }, [duesList, duesStatusFilter, duesSearch]);
+  }, [duesList, duesStatusFilter, duesCategoryFilter, duesSearch]);
+
+  // Filter pengeluaran dan penyaluran yang bersumber dari pos iuran warga
+  const duesDisbursementList = React.useMemo(() => {
+    return txList.filter((tx) => {
+      const isDirectExpense = tx.type === 'expense' && catList.some((c) => tx.category === `IURAN_KELUAR: ${c.name}` || tx.category === c.name || tx.category === `IURAN: ${c.name}`);
+      const isFundTransfer = tx.type === 'income' && catList.some((c) => tx.category === `IURAN_PINDAH_KAS: ${c.name}`);
+      return isDirectExpense || isFundTransfer;
+    });
+  }, [txList, catList]);
+
+  const filteredDisbursements = React.useMemo(() => {
+    return duesDisbursementList.filter((tx) => {
+      if (duesCategoryFilter !== 'all') {
+        const targetCat = catList.find((c) => c.id === duesCategoryFilter);
+        if (targetCat) {
+          const matchDirect = tx.category === `IURAN_KELUAR: ${targetCat.name}` || tx.category === targetCat.name || tx.category === `IURAN: ${targetCat.name}`;
+          const matchTransfer = tx.category === `IURAN_PINDAH_KAS: ${targetCat.name}`;
+          if (!matchDirect && !matchTransfer) return false;
+        }
+      }
+      if (duesSearch.trim()) {
+        const query = duesSearch.toLowerCase();
+        const cat = (tx.category || '').toLowerCase();
+        const desc = (tx.description || '').toLowerCase();
+        const fundName = (tx.fund_name || '').toLowerCase();
+        if (!cat.includes(query) && !desc.includes(query) && !fundName.includes(query)) return false;
+      }
+      return true;
+    });
+  }, [duesDisbursementList, duesCategoryFilter, duesSearch, catList]);
 
   const totalDuesPages = Math.max(1, Math.ceil(filteredDues.length / duesLimit));
   const paginatedDues = React.useMemo(() => {
@@ -652,7 +684,7 @@ export const FinancialPage: React.FC = () => {
       {/* Tab Content: Dues (Iuran Warga) */}
       {activeTab === 'dues' && (
         <div className="space-y-4">
-          {/* Sub-view Toggle: Per Warga vs Riwayat Transaksi */}
+          {/* Sub-view Toggle: Per Warga vs Riwayat Iuran Masuk vs Riwayat Pengeluaran Iuran */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-xs">
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 text-xs font-semibold">
@@ -664,7 +696,7 @@ export const FinancialPage: React.FC = () => {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <Users className="h-3.5 w-3.5" /> Buku Iuran per Warga ({residentDuesSummary.length})
+                  <Users className="h-3.5 w-3.5" /> Buku Iuran ({residentDuesSummary.length})
                 </button>
                 <button
                   onClick={() => setDuesViewMode('history')}
@@ -674,7 +706,17 @@ export const FinancialPage: React.FC = () => {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <History className="h-3.5 w-3.5" /> Riwayat Transaksi ({duesList.length})
+                  <ArrowDownRight className="h-3.5 w-3.5 text-emerald-600" /> Iuran Masuk ({duesList.length})
+                </button>
+                <button
+                  onClick={() => setDuesViewMode('disbursements')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
+                    duesViewMode === 'disbursements'
+                      ? 'bg-white text-indigo-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <ArrowUpRight className="h-3.5 w-3.5 text-rose-600" /> Pengeluaran / Penyaluran ({duesDisbursementList.length})
                 </button>
               </div>
               <Button
@@ -692,6 +734,25 @@ export const FinancialPage: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+              {/* Filter Kategori Pos Iuran */}
+              <div className="w-full sm:w-44">
+                <Select
+                  value={duesCategoryFilter}
+                  onChange={(e) => {
+                    setDuesCategoryFilter(e.target.value);
+                    setDuesPage(1);
+                  }}
+                  className="text-xs h-9 bg-white"
+                >
+                  <option value="all">Semua Pos Iuran</option>
+                  {catList.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
               {duesViewMode === 'history' && (
                 <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-semibold">
                   {(['all', 'pending', 'verified', 'rejected'] as const).map((st) => (
@@ -712,11 +773,11 @@ export const FinancialPage: React.FC = () => {
                   ))}
                 </div>
               )}
-              <div className="relative w-full sm:w-60">
+              <div className="relative w-full sm:w-56">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                 <Input
                   type="text"
-                  placeholder={duesViewMode === 'resident' ? 'Cari nama warga...' : 'Cari nama / jenis iuran...'}
+                  placeholder={duesViewMode === 'resident' ? 'Cari nama warga...' : 'Cari keterangan / pos...'}
                   value={duesSearch}
                   onChange={(e) => {
                     setDuesSearch(e.target.value);
@@ -937,6 +998,121 @@ export const FinancialPage: React.FC = () => {
                     </div>
                   </div>
                 </>
+              )}
+            </div>
+          )}
+
+          {/* View 3: Riwayat Pengeluaran & Penyaluran Iuran */}
+          {duesViewMode === 'disbursements' && (
+            <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-gray-200 bg-rose-50/40 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-bold text-rose-950 flex items-center gap-2">
+                    <ArrowUpRight className="h-4 w-4 text-rose-600" /> Riwayat Pengeluaran & Penyaluran Dana Iuran
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Daftar belanja langsung keperluan pos dan pemindahan alokasi ke kantong kas RT
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-slate-500 block">Total Pengeluaran Iuran:</span>
+                  <span className="text-sm font-bold text-rose-600">
+                    Rp{' '}
+                    {filteredDisbursements
+                      .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0)
+                      .toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+
+              {filteredDisbursements.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 text-sm">
+                  {duesSearch || duesCategoryFilter !== 'all'
+                    ? 'Tidak ada riwayat pengeluaran yang cocok dengan filter.'
+                    : 'Belum ada pengeluaran atau penyaluran dari pos iuran warga.'}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Tanggal
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Pos Iuran Sumber
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Tipe Penyaluran
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Keterangan / Keperluan
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Jumlah
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Bukti / Nota
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {filteredDisbursements.map((tx: any) => {
+                        const isTransfer = tx.category?.startsWith('IURAN_PINDAH_KAS');
+                        const catClean = tx.category
+                          ?.replace('IURAN_PINDAH_KAS: ', '')
+                          ?.replace('IURAN_KELUAR: ', '')
+                          ?.replace('IURAN: ', '');
+
+                        return (
+                          <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="whitespace-nowrap px-6 py-4 text-xs text-gray-600">
+                              {new Date(tx.transaction_date).toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-xs font-semibold text-slate-800">
+                              {catClean || '-'}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-xs">
+                              {isTransfer ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 border border-indigo-200">
+                                  <Wallet className="h-3 w-3" /> Pindah ke Kas RT ({tx.fund_name || 'Kas'})
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 border border-rose-200">
+                                  <ArrowUpRight className="h-3 w-3" /> Belanja Langsung
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-xs text-gray-700 max-w-xs truncate" title={tx.description}>
+                              {tx.description || '-'}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-xs font-bold text-rose-600">
+                              - Rp {Number(tx.amount).toLocaleString('id-ID')}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-right text-xs">
+                              {tx.proof_url ? (
+                                <a
+                                  href={getFileUrl(tx.proof_url)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-indigo-600 underline hover:text-indigo-900 font-medium"
+                                >
+                                  Lihat Bukti
+                                </a>
+                              ) : (
+                                <span className="text-slate-400">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
