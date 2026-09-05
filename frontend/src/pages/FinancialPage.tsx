@@ -134,13 +134,16 @@ export const FinancialPage: React.FC = () => {
         }
       }
     }
-    // Track expense recorded for specific dues category
+    // Track expense recorded for specific dues category or transferred to funds
     for (const tx of txList) {
-      if (tx.type === 'expense' && tx.category) {
-        // match category format 'IURAN_KELUAR: {name}' or exact name
+      if (tx.category) {
         for (const cat of catList) {
           const keluarPrefix = `IURAN_KELUAR: ${cat.name}`;
-          if (tx.category === keluarPrefix || tx.category === cat.name || tx.category === `IURAN: ${cat.name}`) {
+          const transferPrefix = `IURAN_PINDAH_KAS: ${cat.name}`;
+          if (
+            (tx.type === 'expense' && (tx.category === keluarPrefix || tx.category === cat.name || tx.category === `IURAN: ${cat.name}`)) ||
+            (tx.type === 'income' && tx.category === transferPrefix)
+          ) {
             balances[cat.id].spent += Number(tx.amount) || 0;
           }
         }

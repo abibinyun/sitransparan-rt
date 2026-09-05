@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"io"
+	"strings"
 	"time"
 
 	"backend/internal/domain"
@@ -47,7 +48,7 @@ func (u *financialUsecase) ListFunds(ctx context.Context, tenantID uuid.UUID) ([
 	if err != nil {
 		return nil, err
 	}
-	// Calculate balance per fund
+	// Calculate balance per fund strictly from transactions assigned to the fund
 	txs, _, err := u.repo.ListFinancialTransactions(ctx, tenantID, "", 1000, 0)
 	if err == nil {
 		fundBalanceMap := make(map[uuid.UUID]float64)
@@ -57,25 +58,6 @@ func (u *financialUsecase) ListFunds(ctx context.Context, tenantID uuid.UUID) ([
 					fundBalanceMap[*tx.FundID] += tx.Amount
 				} else if tx.Type == "expense" {
 					fundBalanceMap[*tx.FundID] -= tx.Amount
-				}
-			}
-		}
-
-		// Also add verified dues into default fund if not explicitly assigned
-		dues, _, duesErr := u.repo.ListDuesPayments(ctx, tenantID, nil, "verified", 1000, 0)
-		if duesErr == nil {
-			var defaultFundID uuid.UUID
-			for _, f := range funds {
-				if f.IsDefault {
-					defaultFundID = f.ID
-					break
-				}
-			}
-			if defaultFundID != uuid.Nil {
-				for _, d := range dues {
-					if d.Status == "verified" {
-						fundBalanceMap[defaultFundID] += d.Amount
-					}
 				}
 			}
 		}
@@ -256,10 +238,15 @@ func (u *financialUsecase) GetFinancialSummary(ctx context.Context, tenantID uui
 	spendingMap := make(map[string]float64)
 
 	for _, tx := range txs {
+		// Abaikan transfer internal iuran -> kas dari total penghitungan income baru,
+		// karena dananya sudah terhitung saat iuran warga masuk.
+		isInternalTransfer := strings.HasPrefix(tx.Category, "IURAN_PINDAH_KAS")
 		if tx.Type == "income" {
-			totalIncome += tx.Amount
-			if tx.TransactionDate.Year() == currentYear && tx.TransactionDate.Month() == currentMonth {
-				monthlyIncome += tx.Amount
+			if !isInternalTransfer {
+				totalIncome += tx.Amount
+				if tx.TransactionDate.Year() == currentYear && tx.TransactionDate.Month() == currentMonth {
+					monthlyIncome += tx.Amount
+				}
 			}
 		} else if tx.Type == "expense" {
 			totalExpense += tx.Amount

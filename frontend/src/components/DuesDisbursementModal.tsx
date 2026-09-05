@@ -83,30 +83,18 @@ export const DuesDisbursementModal: React.FC<DuesDisbursementModalProps> = ({
         const targetFund = funds.find((f: any) => f.id === targetFundId);
         const fundNameLabel = targetFund ? targetFund.name : 'Kas Tujuan';
 
-        // 1. Catat transaksi pengeluaran dari pos iuran
+        // Mutasi masuk ke kantong kas tujuan dari pos iuran (ini memindahkan uang masuk ke fund)
         await createTx.mutateAsync({
-          type: 'expense',
-          category: `IURAN_KELUAR: ${catName}`,
+          type: 'income',
+          fund_id: targetFundId || undefined,
+          category: `IURAN_PINDAH_KAS: ${catName}`,
           amount: Number(amount),
           transaction_date: dateOnlyToISO(transactionDate)!,
           description: `Penyaluran dari Iuran ${catName} ke ${fundNameLabel}${description ? ` - ${description}` : ''}`,
           proof_url: proofUrl || undefined,
         });
-
-        // 2. Jika disalurkan ke kantong kas tertentu, catat pemasukan di kantong kas tersebut
-        if (targetFundId) {
-          await createTx.mutateAsync({
-            type: 'income',
-            fund_id: targetFundId,
-            category: `TERIMA_DARI_IURAN: ${catName}`,
-            amount: Number(amount),
-            transaction_date: dateOnlyToISO(transactionDate)!,
-            description: `Penerimaan alokasi dana dari Iuran ${catName}${description ? ` - ${description}` : ''}`,
-            proof_url: proofUrl || undefined,
-          });
-        }
       } else {
-        // Pengeluaran langsung ke luar (vendor pihak ketiga / keperluan pos itu sendiri)
+        // Pengeluaran belanja langsung ke vendor pihak ketiga
         await createTx.mutateAsync({
           type: 'expense',
           category: `IURAN_KELUAR: ${catName}`,
