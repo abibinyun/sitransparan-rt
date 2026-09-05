@@ -6,7 +6,7 @@ async function loginAsAdmin(page: Page) {
 }
 
 async function readSaldo(page: Page): Promise<number> {
-  const card = page.locator('div.rounded-lg').filter({ hasText: 'Saldo Kas RT' });
+  const card = page.locator('div.rounded-lg.border').filter({ hasText: 'Saldo Kas RT (Total)' });
   await expect(card).toBeVisible();
   return parseRp(await card.locator('p.mt-2').innerText());
 }
@@ -78,6 +78,9 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
     await page.fill('#duesAmount', '50000');
     await page.getByRole('button', { name: 'Simpan Iuran' }).click();
 
+    // Switch to Riwayat Transaksi sub-tab to view individual row & actions
+    await page.getByRole('button', { name: /^Riwayat Transaksi/ }).click();
+
     // Row appears with pending status
     const row = page.locator('tr', { hasText: residentName });
     await expect(row).toContainText('pending');
@@ -92,6 +95,7 @@ test.describe('Finance — dues, transactions & summary recalculation', () => {
 
     // Persistence after reload
     await page.reload();
+    await page.getByRole('button', { name: /^Riwayat Transaksi/ }).click();
     await expect(page.locator('tr', { hasText: residentName })).toContainText('verified');
     expect(await readSaldo(page)).toBe(saldoAfter);
   });
