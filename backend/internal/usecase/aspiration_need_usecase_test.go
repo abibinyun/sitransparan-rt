@@ -118,7 +118,7 @@ func (m *mockAspirationNeedRepo) DeleteEventSponsor(ctx context.Context, tenantI
 	return nil
 }
 
-func TestSubmitAspirationAnonymous(t *testing.T) {
+func TestSubmitAspirationNonAnonymous(t *testing.T) {
 	repo := newMockAspirationNeedRepo()
 	uc := usecase.NewAspirationNeedUsecase(repo)
 
@@ -130,6 +130,7 @@ func TestSubmitAspirationAnonymous(t *testing.T) {
 		Content:     "Test Content",
 		Category:    "suggestion",
 		IsAnonymous: true,
+		AuthorName:  "Budi Santoso",
 		ResidentID:  &resID,
 	}
 
@@ -138,8 +139,12 @@ func TestSubmitAspirationAnonymous(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if asp.ResidentID != nil {
-		t.Errorf("expected ResidentID to be nil when IsAnonymous is true, got %v", asp.ResidentID)
+	// Opsi anonim kini ditiadakan secara sistem
+	if asp.IsAnonymous {
+		t.Errorf("expected IsAnonymous to be false, got true")
+	}
+	if asp.AuthorName != "Budi Santoso" {
+		t.Errorf("expected AuthorName to be Budi Santoso, got %s", asp.AuthorName)
 	}
 }
 
@@ -160,7 +165,8 @@ func TestUpdateAspirationStatusAndResponse(t *testing.T) {
 	}
 
 	respMsg := "Will fix tomorrow"
-	updated, err := uc.UpdateAspirationStatus(context.Background(), tenantID, asp.ID, "under_review", &respMsg)
+	respAuthor := "Pengurus RT"
+	updated, err := uc.UpdateAspirationStatus(context.Background(), tenantID, asp.ID, "under_review", &respMsg, &respAuthor)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

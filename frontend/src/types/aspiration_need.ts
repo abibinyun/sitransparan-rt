@@ -10,7 +10,9 @@ export interface Aspiration {
   category: AspirationCategory;
   status: AspirationStatus;
   is_anonymous: boolean;
+  author_name: string;
   response?: string;
+  responder_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -19,12 +21,14 @@ export interface CreateAspirationPayload {
   title: string;
   content: string;
   category: AspirationCategory;
-  is_anonymous: boolean;
+  author_name?: string;
+  is_anonymous?: boolean;
 }
 
 export interface UpdateAspirationStatusPayload {
   status: AspirationStatus;
   response?: string;
+  responder_name?: string;
 }
 
 export type CommunityNeedStatus = 'proposed' | 'approved' | 'in_progress' | 'completed';

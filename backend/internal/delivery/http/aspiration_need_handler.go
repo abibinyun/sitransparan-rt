@@ -240,14 +240,25 @@ func (h *AspirationNeedHandler) handlePrivateAspirations(w http.ResponseWriter, 
 				return
 			}
 			var req struct {
-				Status   string  `json:"status"`
-				Response *string `json:"response"`
+				Status        string  `json:"status"`
+				Response      *string `json:"response"`
+				ResponderName *string `json:"responder_name"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 				http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
 				return
 			}
-			updated, err := h.usecase.UpdateAspirationStatus(r.Context(), tenant.ID, id, req.Status, req.Response)
+			responder := "Pengurus RT"
+			if req.ResponderName != nil && *req.ResponderName != "" {
+				responder = *req.ResponderName
+			} else if claims := middleware.GetJWTClaims(r.Context()); claims != nil {
+				if claims.Role == domain.RoleSuperAdmin {
+					responder = "Super Admin"
+				} else {
+					responder = "Pengurus RT"
+				}
+			}
+			updated, err := h.usecase.UpdateAspirationStatus(r.Context(), tenant.ID, id, req.Status, req.Response, &responder)
 			if err != nil {
 				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 				return

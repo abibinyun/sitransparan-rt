@@ -21,8 +21,10 @@ func (u *aspirationNeedUsecase) SubmitAspiration(ctx context.Context, tenantID u
 		return errors.New("title, content, and category are required")
 	}
 	asp.TenantID = tenantID
-	if asp.IsAnonymous {
-		asp.ResidentID = nil
+	// Menolak/menghilangkan anonim — semua aspirasi memiliki identitas pembuat
+	asp.IsAnonymous = false
+	if asp.AuthorName == "" {
+		asp.AuthorName = "Warga RT"
 	}
 	return u.repo.CreateAspiration(ctx, asp)
 }
@@ -41,12 +43,13 @@ func (u *aspirationNeedUsecase) ListAspirations(ctx context.Context, tenantID uu
 	}
 
 	if isPublic {
-		// Public listings must never expose internal resident identifiers, for
-		// anonymous and non-anonymous aspirations alike.
+		// Public listings must never expose internal resident identifiers, but
+		// human-readable author_name and responder_name are preserved for transparency.
 		sanitized := make([]*domain.Aspiration, 0, len(items))
 		for _, item := range items {
 			cp := *item
 			cp.ResidentID = nil
+			cp.IsAnonymous = false
 			sanitized = append(sanitized, &cp)
 		}
 		return sanitized, total, nil
@@ -55,7 +58,7 @@ func (u *aspirationNeedUsecase) ListAspirations(ctx context.Context, tenantID uu
 	return items, total, nil
 }
 
-func (u *aspirationNeedUsecase) UpdateAspirationStatus(ctx context.Context, tenantID, id uuid.UUID, status string, response *string) (*domain.Aspiration, error) {
+func (u *aspirationNeedUsecase) UpdateAspirationStatus(ctx context.Context, tenantID, id uuid.UUID, status string, response *string, responderName *string) (*domain.Aspiration, error) {
 	asp, err := u.repo.GetAspirationByID(ctx, tenantID, id)
 	if err != nil {
 		return nil, err
@@ -66,6 +69,9 @@ func (u *aspirationNeedUsecase) UpdateAspirationStatus(ctx context.Context, tena
 	}
 	if response != nil {
 		asp.Response = response
+	}
+	if responderName != nil && *responderName != "" {
+		asp.ResponderName = responderName
 	}
 
 	if err := u.repo.UpdateAspiration(ctx, asp); err != nil {

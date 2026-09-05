@@ -15,9 +15,11 @@ type Aspiration struct {
 	Content     string     `json:"content"`
 	Category    string     `json:"category"`    // 'suggestion', 'complaint', 'question'
 	Status      string     `json:"status"`      // 'submitted', 'under_review', 'resolved', 'rejected'
-	IsAnonymous bool       `json:"is_anonymous"`
-	Response    *string    `json:"response,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
+	IsAnonymous   bool       `json:"is_anonymous"`
+	AuthorName    string     `json:"author_name"`
+	Response      *string    `json:"response,omitempty"`
+	ResponderName *string    `json:"responder_name,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
@@ -64,7 +66,7 @@ type AspirationNeedUsecase interface {
 	SubmitAspiration(ctx context.Context, tenantID uuid.UUID, asp *Aspiration) error
 	GetAspiration(ctx context.Context, tenantID, id uuid.UUID) (*Aspiration, error)
 	ListAspirations(ctx context.Context, tenantID uuid.UUID, isPublic bool, limit, offset int) ([]*Aspiration, int64, error)
-	UpdateAspirationStatus(ctx context.Context, tenantID, id uuid.UUID, status string, response *string) (*Aspiration, error)
+	UpdateAspirationStatus(ctx context.Context, tenantID, id uuid.UUID, status string, response *string, responderName *string) (*Aspiration, error)
 
 	CreateCommunityNeed(ctx context.Context, tenantID uuid.UUID, need *CommunityNeed) error
 	GetCommunityNeed(ctx context.Context, tenantID, id uuid.UUID) (*CommunityNeed, error)

@@ -20,18 +20,19 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
   isOpen = true,
 }) => {
   const [title, setTitle] = useState('');
+  const [authorName, setAuthorName] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<AspirationCategory>('suggestion');
-  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
     await onSubmit({
-      title,
-      content,
+      title: title.trim(),
+      author_name: authorName.trim() || 'Warga RT',
+      content: content.trim(),
       category,
-      is_anonymous: isAnonymous,
+      is_anonymous: false,
     });
     if (onClose) onClose();
   };
@@ -61,6 +62,17 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="aspAuthor">Nama Warga / Akun</Label>
+          <Input
+            id="aspAuthor"
+            type="text"
+            value={authorName}
+            onChange={(e) => setAuthorName(e.target.value)}
+            placeholder="Nama lengkap atau identitas warga (misal: Budi RT 03)..."
+          />
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="aspCategory">Kategori</Label>
           <Select
             id="aspCategory"
@@ -84,19 +96,6 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
             className="flex w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             placeholder="Jelaskan aspirasi atau keluhan Anda..."
           />
-        </div>
-
-        <div className="flex items-center gap-2 pt-1">
-          <input
-            type="checkbox"
-            id="is_anonymous"
-            checked={isAnonymous}
-            onChange={(e) => setIsAnonymous(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-          />
-          <Label htmlFor="is_anonymous" className="cursor-pointer select-none">
-            Kirim secara Anonim (Sembunyikan Identitas)
-          </Label>
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">

@@ -90,13 +90,16 @@ func (m *mockAspirationNeedUsecase) ListAspirations(ctx context.Context, tenantI
 	return res, int64(len(res)), nil
 }
 
-func (m *mockAspirationNeedUsecase) UpdateAspirationStatus(ctx context.Context, tenantID, id uuid.UUID, status string, response *string) (*domain.Aspiration, error) {
+func (m *mockAspirationNeedUsecase) UpdateAspirationStatus(ctx context.Context, tenantID, id uuid.UUID, status string, response *string, responderName *string) (*domain.Aspiration, error) {
 	asp, err := m.GetAspiration(ctx, tenantID, id)
 	if err != nil {
 		return nil, err
 	}
 	asp.Status = status
 	asp.Response = response
+	if responderName != nil {
+		asp.ResponderName = responderName
+	}
 	return asp, nil
 }
 

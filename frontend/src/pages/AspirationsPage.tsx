@@ -32,6 +32,7 @@ export const AspirationsPage: React.FC = () => {
   const [selectedAspiration, setSelectedAspiration] = useState<Aspiration | null>(null);
   const [newStatus, setNewStatus] = useState<AspirationStatus>('submitted');
   const [responseMessage, setResponseMessage] = useState('');
+  const [responderName, setResponderName] = useState('');
 
   // Community Need Form State
   const [showNeedModal, setShowNeedModal] = useState(false);
@@ -58,6 +59,7 @@ export const AspirationsPage: React.FC = () => {
     setSelectedAspiration(item);
     setNewStatus(item.status);
     setResponseMessage(item.response || '');
+    setResponderName(item.responder_name || '');
   };
 
   const handleSaveAspirationResponse = async (e: React.FormEvent) => {
@@ -68,6 +70,7 @@ export const AspirationsPage: React.FC = () => {
       payload: {
         status: newStatus,
         response: responseMessage,
+        responder_name: responderName.trim() || undefined,
       },
     });
     setSelectedAspiration(null);
@@ -221,6 +224,10 @@ export const AspirationsPage: React.FC = () => {
                         </span>
                         <span>•</span>
                         {getAspirationStatusBadge(item.status as any)}
+                        <span>•</span>
+                        <span className="text-xs font-medium text-slate-600">
+                          Pengusul: {item.author_name || 'Warga RT'}
+                        </span>
                       </div>
                       <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
                     </div>
@@ -235,7 +242,14 @@ export const AspirationsPage: React.FC = () => {
                   <p className="text-sm text-slate-600">{item.content || (item as any).description || ''}</p>
                   {item.response && (
                     <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 space-y-1">
-                      <p className="font-semibold text-slate-900">Tanggapan Pengurus:</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-slate-900">Tanggapan Pengurus:</p>
+                        {item.responder_name && (
+                          <span className="text-[11px] font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
+                            Dijawab oleh: {item.responder_name}
+                          </span>
+                        )}
+                      </div>
                       <p>{item.response}</p>
                     </div>
                   )}
@@ -314,6 +328,17 @@ export const AspirationsPage: React.FC = () => {
               <option value="resolved">Selesai / Ditindaklanjuti</option>
               <option value="rejected">Ditolak</option>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="responderName">Nama Petugas / Pengurus Penjawab</Label>
+            <Input
+              id="responderName"
+              type="text"
+              value={responderName}
+              onChange={(e) => setResponderName(e.target.value)}
+              placeholder="Contoh: Bpk. Bambang (Ketua RT 03)..."
+            />
           </div>
 
           <div className="space-y-2">

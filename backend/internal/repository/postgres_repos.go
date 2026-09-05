@@ -198,7 +198,9 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 			category VARCHAR(50) NOT NULL CHECK (category IN ('suggestion', 'complaint', 'question')),
 			status VARCHAR(50) NOT NULL DEFAULT 'submitted' CHECK (status IN ('submitted', 'under_review', 'resolved', 'rejected')),
 			is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
+			author_name VARCHAR(255) NOT NULL DEFAULT 'Warga RT',
 			response TEXT,
+			responder_name VARCHAR(255),
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);`,
@@ -318,6 +320,8 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 		);`,
 		`ALTER TABLE ` + pq.QuoteIdentifier(schemaName) + `.announcements
 			ADD COLUMN IF NOT EXISTS media_urls JSONB NOT NULL DEFAULT '[]'::jsonb;`,
+		`ALTER TABLE ` + pq.QuoteIdentifier(schemaName) + `.announcements
+			ADD COLUMN IF NOT EXISTS file_urls JSONB NOT NULL DEFAULT '[]'::jsonb;`,
 	}
 
 	for _, ddl := range tablesDDL {

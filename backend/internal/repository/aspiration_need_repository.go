@@ -30,16 +30,20 @@ func (r *aspirationNeedRepository) CreateAspiration(ctx context.Context, asp *do
 		asp.Status = "submitted"
 	}
 
+	if asp.AuthorName == "" {
+		asp.AuthorName = "Warga RT"
+	}
+
 	if r.db == nil {
 		return nil
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, tenant_id, resident_id, title, content, category, status, is_anonymous, response, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO %s (id, tenant_id, resident_id, title, content, category, status, is_anonymous, author_name, response, responder_name, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	`, TenantTable(ctx, "aspirations"))
 	_, err := r.db.ExecContext(ctx, query,
-		asp.ID, asp.TenantID, asp.ResidentID, asp.Title, asp.Content, asp.Category, asp.Status, asp.IsAnonymous, asp.Response, asp.CreatedAt, asp.UpdatedAt,
+		asp.ID, asp.TenantID, asp.ResidentID, asp.Title, asp.Content, asp.Category, asp.Status, asp.IsAnonymous, asp.AuthorName, asp.Response, asp.ResponderName, asp.CreatedAt, asp.UpdatedAt,
 	)
 	return err
 }
@@ -50,13 +54,13 @@ func (r *aspirationNeedRepository) GetAspirationByID(ctx context.Context, tenant
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, tenant_id, resident_id, title, content, category, status, is_anonymous, response, created_at, updated_at
+		SELECT id, tenant_id, resident_id, title, content, category, status, is_anonymous, COALESCE(author_name, 'Warga RT'), response, responder_name, created_at, updated_at
 		FROM %s
 		WHERE id = $1 AND tenant_id = $2
 	`, TenantTable(ctx, "aspirations"))
 	asp := &domain.Aspiration{}
 	err := r.db.QueryRowContext(ctx, query, id, tenantID).Scan(
-		&asp.ID, &asp.TenantID, &asp.ResidentID, &asp.Title, &asp.Content, &asp.Category, &asp.Status, &asp.IsAnonymous, &asp.Response, &asp.CreatedAt, &asp.UpdatedAt,
+		&asp.ID, &asp.TenantID, &asp.ResidentID, &asp.Title, &asp.Content, &asp.Category, &asp.Status, &asp.IsAnonymous, &asp.AuthorName, &asp.Response, &asp.ResponderName, &asp.CreatedAt, &asp.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -77,7 +81,7 @@ func (r *aspirationNeedRepository) ListAspirations(ctx context.Context, tenantID
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, tenant_id, resident_id, title, content, category, status, is_anonymous, response, created_at, updated_at
+		SELECT id, tenant_id, resident_id, title, content, category, status, is_anonymous, COALESCE(author_name, 'Warga RT'), response, responder_name, created_at, updated_at
 		FROM %s
 		WHERE tenant_id = $1
 		ORDER BY created_at DESC
@@ -92,7 +96,7 @@ func (r *aspirationNeedRepository) ListAspirations(ctx context.Context, tenantID
 	list := []*domain.Aspiration{}
 	for rows.Next() {
 		asp := &domain.Aspiration{}
-		if err := rows.Scan(&asp.ID, &asp.TenantID, &asp.ResidentID, &asp.Title, &asp.Content, &asp.Category, &asp.Status, &asp.IsAnonymous, &asp.Response, &asp.CreatedAt, &asp.UpdatedAt); err != nil {
+		if err := rows.Scan(&asp.ID, &asp.TenantID, &asp.ResidentID, &asp.Title, &asp.Content, &asp.Category, &asp.Status, &asp.IsAnonymous, &asp.AuthorName, &asp.Response, &asp.ResponderName, &asp.CreatedAt, &asp.UpdatedAt); err != nil {
 			return nil, 0, err
 		}
 		list = append(list, asp)
@@ -107,13 +111,17 @@ func (r *aspirationNeedRepository) UpdateAspiration(ctx context.Context, asp *do
 		return nil
 	}
 
+	if asp.AuthorName == "" {
+		asp.AuthorName = "Warga RT"
+	}
+
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET resident_id = $1, title = $2, content = $3, category = $4, status = $5, is_anonymous = $6, response = $7, updated_at = $8
-		WHERE id = $9 AND tenant_id = $10
+		SET resident_id = $1, title = $2, content = $3, category = $4, status = $5, is_anonymous = $6, author_name = $7, response = $8, responder_name = $9, updated_at = $10
+		WHERE id = $11 AND tenant_id = $12
 	`, TenantTable(ctx, "aspirations"))
 	res, err := r.db.ExecContext(ctx, query,
-		asp.ResidentID, asp.Title, asp.Content, asp.Category, asp.Status, asp.IsAnonymous, asp.Response, asp.UpdatedAt, asp.ID, asp.TenantID,
+		asp.ResidentID, asp.Title, asp.Content, asp.Category, asp.Status, asp.IsAnonymous, asp.AuthorName, asp.Response, asp.ResponderName, asp.UpdatedAt, asp.ID, asp.TenantID,
 	)
 	if err != nil {
 		return err

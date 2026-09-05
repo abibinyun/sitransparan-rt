@@ -12,7 +12,6 @@ import {
   Building,
   XCircle,
   Search,
-  Lock,
   Check
 } from 'lucide-react';
 
@@ -186,11 +185,6 @@ export const PublicAspirationsPage: React.FC = () => {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         {getCategoryBadge(item.category)}
-                        {item.is_anonymous && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                            <Lock className="w-3 h-3" /> Anonim
-                          </span>
-                        )}
                       </div>
                       {getAspirationStatusBadge(item.status)}
                     </div>
@@ -207,8 +201,15 @@ export const PublicAspirationsPage: React.FC = () => {
                     {/* Respon Pengurus RT jika ada */}
                     {item.response && (
                       <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-4 space-y-1">
-                        <p className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                          <Check className="w-4 h-4 text-emerald-600" /> Tindak Lanjut Pengurus RT
+                        <p className="text-xs font-bold text-emerald-950 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Check className="w-4 h-4 text-emerald-600" /> Tindak Lanjut Pengurus RT
+                          </span>
+                          {item.responder_name && (
+                            <span className="text-[11px] font-medium text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                              Dijawab oleh: {item.responder_name}
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-emerald-900 leading-relaxed">
                           {item.response}
@@ -216,8 +217,8 @@ export const PublicAspirationsPage: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-                      <span>{item.is_anonymous ? 'Warga Lingkungan (Anonim)' : 'Warga RT'}</span>
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                      <span className="font-medium text-slate-700">Oleh: {item.author_name || 'Warga RT'}</span>
                       <span>{new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                     </div>
                   </article>
