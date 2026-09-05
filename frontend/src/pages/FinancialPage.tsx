@@ -395,19 +395,37 @@ export const FinancialPage: React.FC = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Total Masuk (Income)</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Masuk (Income)</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Gabungan Kas & Iuran Warga</p>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700">Global</span>
+          </div>
           <p className="mt-2 text-2xl font-bold text-green-600">
             {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_income || 0).toLocaleString('id-ID')}`}
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Total Keluar (Expense)</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Keluar (Expense)</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Pengeluaran Operasional & Acara</p>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700">Global</span>
+          </div>
           <p className="mt-2 text-2xl font-bold text-red-600">
             {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_expense || 0).toLocaleString('id-ID')}`}
           </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Saldo Kas RT (Total)</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Saldo Kas RT (Total)</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Akumulasi Seluruh Kantong Kas</p>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700">Total Riil</span>
+          </div>
           <p className="mt-2 text-2xl font-bold text-indigo-600">
             {isSummaryLoading ? '...' : `Rp ${(summary?.current_balance || 0).toLocaleString('id-ID')}`}
           </p>
