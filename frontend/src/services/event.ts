@@ -5,7 +5,6 @@ import {
   CreateEventPayload,
   UpdateEventPayload,
   EventBudget,
-  EventParticipant,
   EventFilter,
 } from '../types/event';
 
@@ -74,19 +73,6 @@ export function useSaveEventBudget() {
   return useMutation({
     mutationFn: async ({ eventId, payload }: { eventId: string; payload: Partial<EventBudget> }) => {
       const res = await api.post<EventBudget>(`/events/${eventId}/budget`, payload);
-      return res.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events'] });
-    },
-  });
-}
-
-export function useSaveEventRSVP() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ eventId, payload }: { eventId: string; payload: Partial<EventParticipant> }) => {
-      const res = await api.post<EventParticipant>(`/events/${eventId}/rsvp`, payload);
       return res.data;
     },
     onSuccess: () => {

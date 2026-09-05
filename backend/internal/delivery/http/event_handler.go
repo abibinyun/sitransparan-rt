@@ -37,15 +37,17 @@ func (h *EventHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Han
 
 // publicEventView adalah proyeksi aman agenda untuk portal anonim.
 type publicEventView struct {
-	ID          uuid.UUID `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	EventDate   time.Time `json:"event_date"`
-	Location    string    `json:"location"`
-	Status      string    `json:"status"`
+	ID            uuid.UUID `json:"id"`
+	Title         string    `json:"title"`
+	Description   string    `json:"description"`
+	EventDate     *time.Time `json:"event_date,omitempty"`
+	Location      string    `json:"location"`
+	Status        string    `json:"status"`
+	EstimatedCost float64   `json:"estimated_cost,omitempty"`
+	ActualCost    float64   `json:"actual_cost,omitempty"`
 }
 
-// handlePublicTenantEvents menyajikan agenda mendatang (urut tanggal).
+// handlePublicTenantEvents menyajikan seluruh timeline agenda warga (urut tanggal/terbaru).
 func (h *EventHandler) handlePublicTenantEvents(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
 	if hostSlug, matched := middleware.HostnameSlug(r.Host, h.baseDomain); matched && hostSlug != slug {
@@ -59,18 +61,15 @@ func (h *EventHandler) handlePublicTenantEvents(w http.ResponseWriter, r *http.R
 	}
 	r = r.WithContext(context.WithValue(r.Context(), domain.TenantContextKey, tenant))
 
-	events, _, err := h.usecase.ListEvents(r.Context(), tenant.ID, 50, 0, "")
+	// Ambil hingga 100 agenda (tahunan, dadakan, terjadwal, berlangsung, maupun arsip)
+	events, _, err := h.usecase.ListEvents(r.Context(), tenant.ID, 100, 0, "")
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return
 	}
 
-	now := time.Now()
 	view := make([]publicEventView, 0, len(events))
 	for _, e := range events {
-		if e.EventDate == nil || e.EventDate.Before(now) {
-			continue // agenda = mendatang saja
-		}
 		desc := ""
 		if e.Description != nil {
 			desc = *e.Description
@@ -79,19 +78,35 @@ func (h *EventHandler) handlePublicTenantEvents(w http.ResponseWriter, r *http.R
 		if e.Location != nil {
 			loc = *e.Location
 		}
+		var est, act float64
+		if e.Budget != nil {
+			est = e.Budget.EstimatedCost
+			act = e.Budget.ActualCost
+		}
 		view = append(view, publicEventView{
-			ID:          e.ID,
-			Title:       e.Title,
-			Description: desc,
-			EventDate:   *e.EventDate,
-			Location:    loc,
-			Status:      e.Status,
+			ID:            e.ID,
+			Title:         e.Title,
+			Description:   desc,
+			EventDate:     e.EventDate,
+			Location:      loc,
+			Status:        e.Status,
+			EstimatedCost: est,
+			ActualCost:    act,
 		})
 	}
-	sort.Slice(view, func(i, j int) bool { return view[i].EventDate.Before(view[j].EventDate) })
-	if len(view) > 20 {
-		view = view[:20]
-	}
+	// Urutkan berdasarkan tanggal acara (yang paling dekat/mendatang dulu, jika ada)
+	sort.Slice(view, func(i, j int) bool {
+		if view[i].EventDate == nil && view[j].EventDate == nil {
+			return false
+		}
+		if view[i].EventDate == nil {
+			return false
+		}
+		if view[j].EventDate == nil {
+			return true
+		}
+		return view[i].EventDate.Before(*view[j].EventDate)
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

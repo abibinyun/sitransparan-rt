@@ -64,9 +64,11 @@ export interface PublicEvent {
   id: string;
   title: string;
   description: string;
-  event_date: string;
+  event_date?: string;
   location: string;
   status: string;
+  estimated_cost?: number;
+  actual_cost?: number;
 }
 
 export function usePublicEvents() {
