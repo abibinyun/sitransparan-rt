@@ -145,28 +145,47 @@ test.describe('Resident Management — business workflow', () => {
   test('search by name filters the resident list to the matching record', async ({ page }) => {
     const ts = Date.now();
     const uniqueName = `Warga Cari ${ts}`;
+    const childName = `Anggota Cari ${ts}`;
     const nik = nik16(ts);
+    const kk = nik16(ts + 99);
 
     await page.goto('/admin/residents');
     await page.getByRole('button', { name: 'Tambah Warga' }).click();
     await page.fill('#nik', nik);
-    await page.fill('#kk_number', nik);
+    await page.fill('#kk_number', kk);
     await page.fill('#full_name', uniqueName);
     await page.check('#is_head_of_family');
     await page.getByRole('button', { name: 'Simpan Data' }).click();
     await expect(page.locator('table')).toContainText(uniqueName);
 
-    // Search for the exact name — only the matching row should remain
-    await page.getByPlaceholder('Cari berdasarkan NAMA atau NIK...').fill(uniqueName);
-    await expect(page.locator('tbody tr', { hasText: uniqueName })).toHaveCount(1);
-    await expect(page.locator('table')).toContainText(nik);
+    // Add family member to test searching by family member name
+    const headRow = page.locator('tr', { hasText: uniqueName });
+    await headRow.getByTitle('Tambah Anggota Keluarga').click();
+    await page.fill('#famName', childName);
+    await page.selectOption('#famRelation', 'Anak');
+    await page.getByRole('button', { name: 'Tambah Anggota' }).click();
+    await expect(page.getByRole('heading', { name: 'Tambah Anggota Keluarga' })).not.toBeVisible();
 
-    // Search by NIK
-    await page.getByPlaceholder('Cari berdasarkan NAMA atau NIK...').fill(nik);
+    const searchInput = page.getByPlaceholder(/Cari kepala keluarga/i);
+
+    // 1. Search for the exact head name
+    await searchInput.fill(uniqueName);
+    await expect(page.locator('tbody tr', { hasText: uniqueName })).toHaveCount(1);
+
+    // 2. Search by NIK
+    await searchInput.fill(nik);
+    await expect(page.locator('tbody tr', { hasText: uniqueName })).toHaveCount(1);
+
+    // 3. Search by KK number
+    await searchInput.fill(kk);
+    await expect(page.locator('tbody tr', { hasText: uniqueName })).toHaveCount(1);
+
+    // 4. Search by Family Member name
+    await searchInput.fill(childName);
     await expect(page.locator('tbody tr', { hasText: uniqueName })).toHaveCount(1);
 
     // Clear the search — record is still there
-    await page.getByPlaceholder('Cari berdasarkan NAMA atau NIK...').fill('');
+    await searchInput.fill('');
     await expect(page.locator('table').first()).toContainText(uniqueName);
 
     // Cleanup

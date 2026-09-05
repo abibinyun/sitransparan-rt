@@ -204,17 +204,46 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 		searchStr := "%" + cleanQ + "%"
 		searchHash := crypto.HashHMAC(cleanQ)
 
-		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik_hash = $3 OR kk_number ILIKE $2)%s`, residentsTable, headClause)
+		familyTable := TenantTable(ctx, "family_members")
+
+		countQuery = fmt.Sprintf(`
+			SELECT COUNT(*) FROM %s r
+			WHERE r.tenant_id = $1 AND (
+				r.full_name ILIKE $2
+				OR r.nik_hash = $3
+				OR r.kk_number ILIKE $2
+				OR r.address ILIKE $2
+				OR r.phone ILIKE $2
+				OR r.rt_rw ILIKE $2
+				OR EXISTS (
+					SELECT 1 FROM %s fm
+					WHERE fm.resident_id = r.id
+					  AND (fm.full_name ILIKE $2)
+				)
+			)%s
+		`, residentsTable, familyTable, headClause)
 		if err := r.db.QueryRowContext(ctx, countQuery, tenantID, searchStr, searchHash).Scan(&count); err != nil {
 			return nil, 0, err
 		}
 
 		query = fmt.Sprintf(`
-			SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
-			FROM %s
-			WHERE tenant_id = $1 AND (full_name ILIKE $2 OR nik_hash = $3 OR kk_number ILIKE $2)%s
-			ORDER BY created_at DESC LIMIT $4 OFFSET $5
-		`, residentsTable, headClause)
+			SELECT r.id, r.tenant_id, r.nik, r.nik_hash, r.kk_number, r.full_name, r.gender, r.birth_place, r.birth_date, r.address, r.rt_rw, r.phone, r.is_head_of_family, r.status, r.ktp_url, r.kk_url, r.created_at, r.updated_at
+			FROM %s r
+			WHERE r.tenant_id = $1 AND (
+				r.full_name ILIKE $2
+				OR r.nik_hash = $3
+				OR r.kk_number ILIKE $2
+				OR r.address ILIKE $2
+				OR r.phone ILIKE $2
+				OR r.rt_rw ILIKE $2
+				OR EXISTS (
+					SELECT 1 FROM %s fm
+					WHERE fm.resident_id = r.id
+					  AND (fm.full_name ILIKE $2)
+				)
+			)%s
+			ORDER BY r.created_at DESC LIMIT $4 OFFSET $5
+		`, residentsTable, familyTable, headClause)
 		args = []interface{}{tenantID, searchStr, searchHash, limit, offset}
 	} else {
 		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1%s`, residentsTable, headClause)

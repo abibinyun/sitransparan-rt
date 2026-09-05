@@ -124,7 +124,7 @@ export const ResidentsPage: React.FC = () => {
             <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
             <Input
               type="text"
-              placeholder="Cari berdasarkan NAMA atau NIK..."
+              placeholder="Cari kepala keluarga, no KK, NIK, nama anggota keluarga, alamat, no telepon..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
