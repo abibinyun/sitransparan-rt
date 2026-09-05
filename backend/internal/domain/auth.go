@@ -67,9 +67,10 @@ type TenantUser struct {
 }
 
 type JWTClaims struct {
-	UserID   uuid.UUID `json:"user_id"`
-	TenantID uuid.UUID `json:"tenant_id,omitempty"`
-	Role     RoleName  `json:"role,omitempty"`
+	UserID   uuid.UUID  `json:"user_id"`
+	TenantID uuid.UUID  `json:"tenant_id,omitempty"`
+	HouseID  *uuid.UUID `json:"house_id,omitempty"`
+	Role     RoleName   `json:"role,omitempty"`
 	jwt.RegisteredClaims
 }
 

@@ -149,6 +149,14 @@ Format pengisian:
     - Stiker QR cetak (`window.print()`) dan layar sukses klaim warga otomatis mencantumkan informasi PIN stiker rumah tersebut.
     - Terverifikasi deterministik dalam E2E Playwright suite (`houses-qr.spec.ts`).
   - Temuan / Feedback: Berhasil. Solusi keamanan proporsional (nol-friksi bagi lansia/warga harian, namun memiliki kill switch seketika dan proteksi PIN saat HP hilang).
+- [x] **4.2.5 Musyawarah Lingkungan & Voting Polling via Sesi QR Rumah (1 Rumah = 1 Suara)**
+  - Verifikasi:
+    - Migrasi `000031_allow_house_poll_voting.up.sql`: Mendukung identitas pemilih berbasis `house_id` pada tabel `poll_votes` dan `reactions`, menjadikan `user_id` nullable dengan constraint integritas pemilih `chk_poll_vote_voter (user_id IS NOT NULL OR house_id IS NOT NULL)`.
+    - Hak suara unik 1 Rumah = 1 Suara ditegakkan server-side via partial unique index `uq_poll_house_vote (poll_id, house_id)`.
+    - Aliran context `house_id` diteruskan penuh dari JWT claims (`AuthMiddleware` -> context -> `SocialHandler` -> `SocialUsecase` -> `SocialRepository`).
+    - Warga yang masuk via klaim QR rumah dapat langsung memberikan suara pada jajak pendapat di portal kabar lingkungan (`PollWidget`), opsi suara otomatis tersimpan, dan warga dapat mengubah pilihan suara tanpa duplikasi (upsert).
+    - Teruji penuh melalui unit test usecase (`TestSocialUsecase_Polls`) dan skenario E2E regression Playwright (`tests/e2e/admin/houses-qr.spec.ts`, 1 passed).
+  - Temuan / Feedback: Berhasil. Akses warga passwordless kini terintegrasi penuh ke mekanisme musyawarah digital RT/RW dengan integritas hak suara terjaga (1 rumah = 1 suara).
 
 ---
 

@@ -17,11 +17,19 @@ const (
 	TenantContextKey            = domain.TenantContextKey
 	UserContextKey   contextKey = "user_id"
 	RoleContextKey   contextKey = "role"
+	HouseContextKey  contextKey = "house_id"
 )
 
 func GetTenantFromContext(ctx context.Context) *domain.Tenant {
 	if t, ok := ctx.Value(TenantContextKey).(*domain.Tenant); ok {
 		return t
+	}
+	return nil
+}
+
+func GetHouseIDFromContext(ctx context.Context) *uuid.UUID {
+	if id, ok := ctx.Value(HouseContextKey).(*uuid.UUID); ok {
+		return id
 	}
 	return nil
 }
@@ -72,6 +80,9 @@ func WithClaims(ctx context.Context, claims *domain.JWTClaims) context.Context {
 	}
 	ctx = context.WithValue(ctx, UserContextKey, claims.UserID)
 	ctx = context.WithValue(ctx, RoleContextKey, claims.Role)
+	if claims.HouseID != nil {
+		ctx = context.WithValue(ctx, HouseContextKey, claims.HouseID)
+	}
 	ctx = context.WithValue(ctx, jwtClaimsContextKey, claims)
 	return ctx
 }

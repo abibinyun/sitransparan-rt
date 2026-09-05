@@ -101,6 +101,31 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
     await page.goto(`/claim?slug=sitransparan-rt&token=${updatedHouse.access_token}`);
     await expect(page.getByText('Akses Berhasil Terverifikasi')).toBeVisible({ timeout: 10000 });
 
+    // 12. Test Musyawarah & Polling Warga via Sesi QR Rumah (1 Rumah = 1 Suara)
+    // Buat polling via API dengan token Admin RT
+    const createPollRes = await page.request.post('http://127.0.0.1:8081/api/v1/polls', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      data: {
+        question: `Polling Musyawarah ${blockNo}`,
+        options: ['Setuju Paving Jalan', 'Tunda Musim Depan'],
+      },
+    });
+    expect(createPollRes.status()).toBe(201);
+    const pollData = await createPollRes.json();
+
+    // Masuk ke halaman portal kabar warga (membawa widget polling)
+    await page.goto('/kabar');
+    const pollCard = page.locator('div', { hasText: `Polling Musyawarah ${blockNo}` }).last();
+    await expect(pollCard).toBeVisible({ timeout: 10000 });
+
+    // Berikan suara via sesi QR rumah
+    await pollCard.getByRole('button', { name: /Setuju Paving Jalan/i }).click();
+    await expect(page.getByText('suara Anda tercatat').first()).toBeVisible({ timeout: 10000 });
+    await expect(pollCard.getByRole('button', { name: /Setuju Paving Jalan — pilihan Anda/i })).toBeVisible({ timeout: 10000 });
+
     // 13. Login kembali sebagai Admin RT untuk Hapus data rumah
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
     await page.goto('/admin/houses');

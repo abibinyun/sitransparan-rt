@@ -58,9 +58,15 @@ func (h *SocialHandler) resolvePublicTenant(w http.ResponseWriter, r *http.Reque
 // handleReactions: GET summary, POST set, DELETE remove — semua butuh login.
 func (h *SocialHandler) handleReactions(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	houseID := middleware.GetHouseIDFromContext(r.Context())
+	if userID == uuid.Nil && (houseID == nil || *houseID == uuid.Nil) {
 		writeSocialError(w, http.StatusUnauthorized, "login diperlukan untuk berinteraksi")
 		return
+	}
+
+	var uidPtr *uuid.UUID
+	if userID != uuid.Nil {
+		uidPtr = &userID
 	}
 
 	targetType := r.URL.Query().Get("target_type")
@@ -77,18 +83,18 @@ func (h *SocialHandler) handleReactions(w http.ResponseWriter, r *http.Request) 
 		}
 		switch r.Method {
 		case http.MethodGet:
-			summary, err := h.usecase.Summary(r.Context(), targetType, id, userID)
+			summary, err := h.usecase.Summary(r.Context(), targetType, id, uidPtr, houseID)
 			if err != nil {
 				writeSocialError(w, http.StatusBadRequest, err.Error())
 				return
 			}
 			writeSocialJSON(w, http.StatusOK, summary)
 		case http.MethodDelete:
-			if err := h.usecase.Unreact(r.Context(), targetType, id, userID); err != nil {
+			if err := h.usecase.Unreact(r.Context(), targetType, id, uidPtr, houseID); err != nil {
 				writeSocialError(w, http.StatusBadRequest, err.Error())
 				return
 			}
-			summary, err := h.usecase.Summary(r.Context(), targetType, id, userID)
+			summary, err := h.usecase.Summary(r.Context(), targetType, id, uidPtr, houseID)
 			if err != nil {
 				writeSocialJSON(w, http.StatusOK, map[string]string{"message": "reaction removed"})
 				return
@@ -126,14 +132,15 @@ func (h *SocialHandler) handleReactions(w http.ResponseWriter, r *http.Request) 
 	rx := &domain.Reaction{
 		TargetType: req.TargetType,
 		TargetID:   targetID,
-		UserID:     userID,
+		UserID:     uidPtr,
+		HouseID:    houseID,
 		Reaction:   req.Reaction,
 	}
 	if err := h.usecase.React(r.Context(), rx); err != nil {
 		writeSocialError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	summary, err := h.usecase.Summary(r.Context(), rx.TargetType, rx.TargetID, userID)
+	summary, err := h.usecase.Summary(r.Context(), rx.TargetType, rx.TargetID, uidPtr, houseID)
 	if err != nil {
 		writeSocialJSON(w, http.StatusCreated, map[string]string{"message": "reaction saved"})
 		return
@@ -144,16 +151,17 @@ func (h *SocialHandler) handleReactions(w http.ResponseWriter, r *http.Request) 
 // handlePolls: GET list open (login: dengan my_vote), POST create (admin).
 func (h *SocialHandler) handlePolls(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
+	houseID := middleware.GetHouseIDFromContext(r.Context())
 	role := middleware.GetRoleFromContext(r.Context())
 
 	switch r.Method {
 	case http.MethodGet:
-		includeViewer := userID != uuid.Nil
-		var viewer uuid.UUID
-		if includeViewer {
-			viewer = userID
+		includeViewer := userID != uuid.Nil || (houseID != nil && *houseID != uuid.Nil)
+		var viewer *uuid.UUID
+		if userID != uuid.Nil {
+			viewer = &userID
 		}
-		polls, err := h.usecase.OpenPolls(r.Context(), viewer, includeViewer)
+		polls, err := h.usecase.OpenPolls(r.Context(), viewer, houseID, includeViewer)
 		if err != nil {
 			writeSocialError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -176,7 +184,10 @@ func (h *SocialHandler) handlePolls(w http.ResponseWriter, r *http.Request) {
 			writeSocialError(w, http.StatusBadRequest, "invalid request body")
 			return
 		}
-		poll := &domain.Poll{Question: req.Question, Options: req.Options, CreatedBy: &userID}
+		poll := &domain.Poll{Question: req.Question, Options: req.Options}
+		if userID != uuid.Nil {
+			poll.CreatedBy = &userID
+		}
 		if err := h.usecase.CreatePoll(r.Context(), poll); err != nil {
 			writeSocialError(w, http.StatusBadRequest, err.Error())
 			return
@@ -196,16 +207,17 @@ func (h *SocialHandler) handlePollByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userID := middleware.GetUserIDFromContext(r.Context())
+	houseID := middleware.GetHouseIDFromContext(r.Context())
 	role := middleware.GetRoleFromContext(r.Context())
 
 	switch r.Method {
 	case http.MethodGet:
-		includeViewer := userID != uuid.Nil
-		var viewer uuid.UUID
-		if includeViewer {
-			viewer = userID
+		includeViewer := userID != uuid.Nil || (houseID != nil && *houseID != uuid.Nil)
+		var viewer *uuid.UUID
+		if userID != uuid.Nil {
+			viewer = &userID
 		}
-		poll, err := h.usecase.Poll(r.Context(), id, viewer, includeViewer)
+		poll, err := h.usecase.Poll(r.Context(), id, viewer, houseID, includeViewer)
 		if err != nil {
 			writeSocialError(w, http.StatusNotFound, "poll not found")
 			return
@@ -231,7 +243,8 @@ func (h *SocialHandler) handlePollByID(w http.ResponseWriter, r *http.Request) {
 // handleVote: POST satu suara — warga login, 1 orang 1 suara (unique constraint).
 func (h *SocialHandler) handleVote(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	houseID := middleware.GetHouseIDFromContext(r.Context())
+	if userID == uuid.Nil && (houseID == nil || *houseID == uuid.Nil) {
 		writeSocialError(w, http.StatusUnauthorized, "login diperlukan untuk memberi suara")
 		return
 	}
@@ -251,11 +264,15 @@ func (h *SocialHandler) handleVote(w http.ResponseWriter, r *http.Request) {
 		writeSocialError(w, http.StatusBadRequest, "option_index is required")
 		return
 	}
-	if err := h.usecase.Vote(r.Context(), pollID, userID, *req.OptionIndex); err != nil {
+	var uidPtr *uuid.UUID
+	if userID != uuid.Nil {
+		uidPtr = &userID
+	}
+	if err := h.usecase.Vote(r.Context(), pollID, uidPtr, houseID, *req.OptionIndex); err != nil {
 		writeSocialError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	poll, err := h.usecase.Poll(r.Context(), pollID, userID, true)
+	poll, err := h.usecase.Poll(r.Context(), pollID, uidPtr, houseID, true)
 	if err != nil {
 		writeSocialJSON(w, http.StatusOK, map[string]string{"message": "vote saved"})
 		return
@@ -274,7 +291,7 @@ func (h *SocialHandler) handlePublicPollResults(w http.ResponseWriter, r *http.R
 		writeSocialError(w, http.StatusBadRequest, "invalid poll id")
 		return
 	}
-	poll, err := h.usecase.Poll(r.Context(), id, uuid.Nil, false)
+	poll, err := h.usecase.Poll(r.Context(), id, nil, nil, false)
 	if err != nil {
 		writeSocialError(w, http.StatusNotFound, "poll not found")
 		return

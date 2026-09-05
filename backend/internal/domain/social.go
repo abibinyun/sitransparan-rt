@@ -10,12 +10,13 @@ import (
 // Reaction adalah apresiasi ringan 1-warga-1-reaksi per target.
 // Identitas wajib: tidak ada reaksi anonim (gerbang §7 konsep portal).
 type Reaction struct {
-	ID         uuid.UUID `json:"id"`
-	TargetType string    `json:"target_type"` // announcement | event | meeting
-	TargetID   uuid.UUID `json:"target_id"`
-	UserID     uuid.UUID `json:"user_id"`
-	Reaction   string    `json:"reaction"` // support | like | applause
-	CreatedAt  time.Time `json:"created_at"`
+	ID         uuid.UUID  `json:"id"`
+	TargetType string     `json:"target_type"` // announcement | event | meeting
+	TargetID   uuid.UUID  `json:"target_id"`
+	UserID     *uuid.UUID `json:"user_id,omitempty"`
+	HouseID    *uuid.UUID `json:"house_id,omitempty"`
+	Reaction   string     `json:"reaction"` // support | like | applause
+	CreatedAt  time.Time  `json:"created_at"`
 }
 
 type ReactionSummary struct {
@@ -42,14 +43,14 @@ type Poll struct {
 type SocialRepository interface {
 	// Reactions
 	SetReaction(ctx context.Context, r *Reaction) error
-	RemoveReaction(ctx context.Context, targetType string, targetID, userID uuid.UUID) error
-	ReactionSummary(ctx context.Context, targetType string, targetID, userID uuid.UUID) (*ReactionSummary, error)
+	RemoveReaction(ctx context.Context, targetType string, targetID uuid.UUID, userID, houseID *uuid.UUID) error
+	ReactionSummary(ctx context.Context, targetType string, targetID uuid.UUID, userID, houseID *uuid.UUID) (*ReactionSummary, error)
 
 	// Polls
 	CreatePoll(ctx context.Context, p *Poll) error
-	GetPoll(ctx context.Context, id, viewerID uuid.UUID, includeViewer bool) (*Poll, error)
-	ListOpenPolls(ctx context.Context, viewerID uuid.UUID, includeViewer bool) ([]*Poll, error)
-	VotePoll(ctx context.Context, pollID, userID uuid.UUID, optionIndex int) error
+	GetPoll(ctx context.Context, id uuid.UUID, viewerID, houseID *uuid.UUID, includeViewer bool) (*Poll, error)
+	ListOpenPolls(ctx context.Context, viewerID, houseID *uuid.UUID, includeViewer bool) ([]*Poll, error)
+	VotePoll(ctx context.Context, pollID uuid.UUID, userID, houseID *uuid.UUID, optionIndex int) error
 	ClosePoll(ctx context.Context, id uuid.UUID) error
 
 	// KPI instrumentasi (konsep portal §4)
@@ -58,13 +59,13 @@ type SocialRepository interface {
 
 type SocialUsecase interface {
 	React(ctx context.Context, r *Reaction) error
-	Unreact(ctx context.Context, targetType string, targetID, userID uuid.UUID) error
-	Summary(ctx context.Context, targetType string, targetID, userID uuid.UUID) (*ReactionSummary, error)
+	Unreact(ctx context.Context, targetType string, targetID uuid.UUID, userID, houseID *uuid.UUID) error
+	Summary(ctx context.Context, targetType string, targetID uuid.UUID, userID, houseID *uuid.UUID) (*ReactionSummary, error)
 
 	CreatePoll(ctx context.Context, p *Poll) error
-	Poll(ctx context.Context, id, viewerID uuid.UUID, includeViewer bool) (*Poll, error)
-	OpenPolls(ctx context.Context, viewerID uuid.UUID, includeViewer bool) ([]*Poll, error)
-	Vote(ctx context.Context, pollID, userID uuid.UUID, optionIndex int) error
+	Poll(ctx context.Context, id uuid.UUID, viewerID, houseID *uuid.UUID, includeViewer bool) (*Poll, error)
+	OpenPolls(ctx context.Context, viewerID, houseID *uuid.UUID, includeViewer bool) ([]*Poll, error)
+	Vote(ctx context.Context, pollID uuid.UUID, userID, houseID *uuid.UUID, optionIndex int) error
 	ClosePoll(ctx context.Context, id uuid.UUID) error
 
 	// KPI instrumentasi (konsep portal §4): event ringan sisi server.

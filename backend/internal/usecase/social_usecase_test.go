@@ -11,9 +11,9 @@ import (
 
 // Mock repo in-memory yang mensimulasikan kontrak unik per (user, target).
 type mockSocialRepo struct {
-	reactions map[string]string // "type|target|user" -> reaction
+	reactions map[string]string // "type|target|actor" -> reaction
 	polls     map[uuid.UUID]*domain.Poll
-	votes     map[string]int // "poll|user" -> option_index
+	votes     map[string]int // "poll|actor" -> option_index
 }
 
 func newMockSocialRepo() *mockSocialRepo {
@@ -24,26 +24,39 @@ func newMockSocialRepo() *mockSocialRepo {
 	}
 }
 
-func key(t string, target, user uuid.UUID) string { return t + "|" + target.String() + "|" + user.String() }
+func actorKey(user, house *uuid.UUID) string {
+	if house != nil && *house != uuid.Nil {
+		return "h:" + house.String()
+	}
+	if user != nil && *user != uuid.Nil {
+		return "u:" + user.String()
+	}
+	return ""
+}
+
+func key(t string, target uuid.UUID, user, house *uuid.UUID) string {
+	return t + "|" + target.String() + "|" + actorKey(user, house)
+}
 
 func (m *mockSocialRepo) SetReaction(ctx context.Context, r *domain.Reaction) error {
-	m.reactions[key(r.TargetType, r.TargetID, r.UserID)] = r.Reaction
+	m.reactions[key(r.TargetType, r.TargetID, r.UserID, r.HouseID)] = r.Reaction
 	return nil
 }
 
-func (m *mockSocialRepo) RemoveReaction(ctx context.Context, t string, target, user uuid.UUID) error {
-	delete(m.reactions, key(t, target, user))
+func (m *mockSocialRepo) RemoveReaction(ctx context.Context, t string, target uuid.UUID, user, house *uuid.UUID) error {
+	delete(m.reactions, key(t, target, user, house))
 	return nil
 }
 
-func (m *mockSocialRepo) ReactionSummary(ctx context.Context, t string, target, user uuid.UUID) (*domain.ReactionSummary, error) {
+func (m *mockSocialRepo) ReactionSummary(ctx context.Context, t string, target uuid.UUID, user, house *uuid.UUID) (*domain.ReactionSummary, error) {
 	s := &domain.ReactionSummary{Counts: map[string]int64{}}
+	aKey := actorKey(user, house)
 	for k, v := range m.reactions {
 		parts := splitKey(k)
 		if parts[0] == t && parts[1] == target.String() {
 			s.Counts[v]++
 			s.Total++
-			if parts[2] == user.String() {
+			if aKey != "" && parts[2] == aKey {
 				mine := v
 				s.Mine = &mine
 			}
@@ -78,25 +91,26 @@ func (m *mockSocialRepo) CreatePoll(ctx context.Context, p *domain.Poll) error {
 	return nil
 }
 
-func (m *mockSocialRepo) GetPoll(ctx context.Context, id, viewer uuid.UUID, includeViewer bool) (*domain.Poll, error) {
+func (m *mockSocialRepo) GetPoll(ctx context.Context, id uuid.UUID, viewer, house *uuid.UUID, includeViewer bool) (*domain.Poll, error) {
 	p, ok := m.polls[id]
 	if !ok {
 		return nil, errSocialNotFound
 	}
-	m.attachResults(p, viewer, includeViewer)
+	m.attachResults(p, viewer, house, includeViewer)
 	return p, nil
 }
 
 // attachResults menghitung agregat + suara viewer, meniru perilaku repo asli.
-func (m *mockSocialRepo) attachResults(p *domain.Poll, viewer uuid.UUID, includeViewer bool) {
+func (m *mockSocialRepo) attachResults(p *domain.Poll, viewer, house *uuid.UUID, includeViewer bool) {
 	p.Votes = make([]int64, len(p.Options))
 	p.Total = 0
+	aKey := actorKey(viewer, house)
 	for k, idx := range m.votes {
 		parts := splitKey(k)
 		if parts[0] == p.ID.String() {
 			p.Votes[idx]++
 			p.Total++
-			if includeViewer && parts[1] == viewer.String() {
+			if includeViewer && aKey != "" && parts[1] == aKey {
 				i := idx
 				p.MyVote = &i
 			}
@@ -104,18 +118,18 @@ func (m *mockSocialRepo) attachResults(p *domain.Poll, viewer uuid.UUID, include
 	}
 }
 
-func (m *mockSocialRepo) ListOpenPolls(ctx context.Context, viewer uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
+func (m *mockSocialRepo) ListOpenPolls(ctx context.Context, viewer, house *uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
 	var out []*domain.Poll
 	for _, p := range m.polls {
 		if p.Status == "open" {
-			m.attachResults(p, viewer, includeViewer)
+			m.attachResults(p, viewer, house, includeViewer)
 			out = append(out, p)
 		}
 	}
 	return out, nil
 }
 
-func (m *mockSocialRepo) VotePoll(ctx context.Context, pollID, user uuid.UUID, idx int) error {
+func (m *mockSocialRepo) VotePoll(ctx context.Context, pollID uuid.UUID, user, house *uuid.UUID, idx int) error {
 	p, ok := m.polls[pollID]
 	if !ok {
 		return errSocialNotFound
@@ -126,7 +140,8 @@ func (m *mockSocialRepo) VotePoll(ctx context.Context, pollID, user uuid.UUID, i
 	if idx < 0 || idx >= len(p.Options) {
 		return errPollRange
 	}
-	m.votes[pollID.String()+"|"+user.String()] = idx
+	aKey := actorKey(user, house)
+	m.votes[pollID.String()+"|"+aKey] = idx
 	return nil
 }
 
@@ -157,28 +172,29 @@ func TestSocialUsecase_Reactions(t *testing.T) {
 	target := uuid.New()
 
 	// Valid reaction
-	rx := &domain.Reaction{TargetType: "announcement", TargetID: target, UserID: user, Reaction: "support"}
+	rx := &domain.Reaction{TargetType: "announcement", TargetID: target, UserID: &user, Reaction: "support"}
 	if err := uc.React(ctx, rx); err != nil {
 		t.Fatalf("React failed: %v", err)
 	}
 
 	// Invalid type rejected
-	if err := uc.React(ctx, &domain.Reaction{TargetType: "announcement", TargetID: target, UserID: user, Reaction: "fire"}); err == nil {
+	if err := uc.React(ctx, &domain.Reaction{TargetType: "announcement", TargetID: target, UserID: &user, Reaction: "fire"}); err == nil {
 		t.Fatal("expected invalid reaction type to be rejected")
 	}
 
 	// Anonymous rejected
-	if err := uc.React(ctx, &domain.Reaction{TargetType: "announcement", TargetID: target, UserID: uuid.Nil, Reaction: "like"}); err == nil {
+	nilUser := uuid.Nil
+	if err := uc.React(ctx, &domain.Reaction{TargetType: "announcement", TargetID: target, UserID: &nilUser, Reaction: "like"}); err == nil {
 		t.Fatal("expected anonymous reaction to be rejected")
 	}
 
 	// Invalid target rejected
-	if err := uc.React(ctx, &domain.Reaction{TargetType: "resident", TargetID: target, UserID: user, Reaction: "like"}); err == nil {
+	if err := uc.React(ctx, &domain.Reaction{TargetType: "resident", TargetID: target, UserID: &user, Reaction: "like"}); err == nil {
 		t.Fatal("expected invalid target_type to be rejected")
 	}
 
 	// Summary reflects one reaction
-	sum, err := uc.Summary(ctx, "announcement", target, user)
+	sum, err := uc.Summary(ctx, "announcement", target, &user, nil)
 	if err != nil {
 		t.Fatalf("Summary failed: %v", err)
 	}
@@ -187,10 +203,10 @@ func TestSocialUsecase_Reactions(t *testing.T) {
 	}
 
 	// Unreact clears
-	if err := uc.Unreact(ctx, "announcement", target, user); err != nil {
+	if err := uc.Unreact(ctx, "announcement", target, &user, nil); err != nil {
 		t.Fatalf("Unreact failed: %v", err)
 	}
-	sum, _ = uc.Summary(ctx, "announcement", target, user)
+	sum, _ = uc.Summary(ctx, "announcement", target, &user, nil)
 	if sum.Total != 0 || sum.Mine != nil {
 		t.Fatalf("expected empty summary after unreact: %+v", sum)
 	}
@@ -214,19 +230,19 @@ func TestSocialUsecase_Polls(t *testing.T) {
 	}
 
 	// Vote valid
-	if err := uc.Vote(ctx, poll.ID, voter, 0); err != nil {
+	if err := uc.Vote(ctx, poll.ID, &voter, nil, 0); err != nil {
 		t.Fatalf("Vote failed: %v", err)
 	}
 	// Change vote (1 orang 1 suara — upsert)
-	if err := uc.Vote(ctx, poll.ID, voter, 1); err != nil {
+	if err := uc.Vote(ctx, poll.ID, &voter, nil, 1); err != nil {
 		t.Fatalf("Vote change failed: %v", err)
 	}
 	// Out of range rejected
-	if err := uc.Vote(ctx, poll.ID, voter, 5); err == nil {
+	if err := uc.Vote(ctx, poll.ID, &voter, nil, 5); err == nil {
 		t.Fatal("expected out-of-range option to be rejected")
 	}
 
-	got, err := uc.Poll(ctx, poll.ID, voter, true)
+	got, err := uc.Poll(ctx, poll.ID, &voter, nil, true)
 	if err != nil {
 		t.Fatalf("Poll failed: %v", err)
 	}
@@ -241,8 +257,32 @@ func TestSocialUsecase_Polls(t *testing.T) {
 	if err := uc.ClosePoll(ctx, poll.ID); err != nil {
 		t.Fatalf("ClosePoll failed: %v", err)
 	}
-	if err := uc.Vote(ctx, poll.ID, admin, 0); err == nil {
+	if err := uc.Vote(ctx, poll.ID, &admin, nil, 0); err == nil {
 		t.Fatal("expected vote on closed poll to be rejected")
+	}
+
+	// Test House QR Session Voting (1 Rumah = 1 Suara)
+	pollHouse := &domain.Poll{Question: "Pilih cat pos ronda?", Options: []string{"Hijau", "Biru"}, CreatedBy: &admin}
+	if err := uc.CreatePoll(ctx, pollHouse); err != nil {
+		t.Fatalf("CreatePoll failed: %v", err)
+	}
+	houseA := uuid.New()
+	if err := uc.Vote(ctx, pollHouse.ID, nil, &houseA, 0); err != nil {
+		t.Fatalf("House QR vote failed: %v", err)
+	}
+	// Suara rumah yang sama memperbarui opsi (upsert 1 rumah 1 suara)
+	if err := uc.Vote(ctx, pollHouse.ID, nil, &houseA, 1); err != nil {
+		t.Fatalf("House QR vote change failed: %v", err)
+	}
+	gotHouse, err := uc.Poll(ctx, pollHouse.ID, nil, &houseA, true)
+	if err != nil {
+		t.Fatalf("Poll failed: %v", err)
+	}
+	if gotHouse.Total != 1 || gotHouse.Votes[1] != 1 {
+		t.Fatalf("expected 1 vote on option 1 from house, got %+v", gotHouse.Votes)
+	}
+	if gotHouse.MyVote == nil || *gotHouse.MyVote != 1 {
+		t.Fatalf("expected my_vote=1 for house, got %v", gotHouse.MyVote)
 	}
 }
 

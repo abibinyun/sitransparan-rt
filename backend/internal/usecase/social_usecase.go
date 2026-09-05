@@ -29,24 +29,24 @@ func (u *socialUsecase) React(ctx context.Context, r *domain.Reaction) error {
 	if !validReactionTargets[r.TargetType] {
 		return errors.New("target_type must be one of: announcement, event, meeting")
 	}
-	if r.UserID == uuid.Nil {
-		return errors.New("user context required")
+	if (r.UserID == nil || *r.UserID == uuid.Nil) && (r.HouseID == nil || *r.HouseID == uuid.Nil) {
+		return errors.New("user or house context required")
 	}
 	return u.repo.SetReaction(ctx, r)
 }
 
-func (u *socialUsecase) Unreact(ctx context.Context, targetType string, targetID, userID uuid.UUID) error {
+func (u *socialUsecase) Unreact(ctx context.Context, targetType string, targetID uuid.UUID, userID, houseID *uuid.UUID) error {
 	if !validReactionTargets[targetType] {
 		return errors.New("target_type must be one of: announcement, event, meeting")
 	}
-	return u.repo.RemoveReaction(ctx, targetType, targetID, userID)
+	return u.repo.RemoveReaction(ctx, targetType, targetID, userID, houseID)
 }
 
-func (u *socialUsecase) Summary(ctx context.Context, targetType string, targetID, userID uuid.UUID) (*domain.ReactionSummary, error) {
+func (u *socialUsecase) Summary(ctx context.Context, targetType string, targetID uuid.UUID, userID, houseID *uuid.UUID) (*domain.ReactionSummary, error) {
 	if !validReactionTargets[targetType] {
 		return nil, errors.New("target_type must be one of: announcement, event, meeting")
 	}
-	return u.repo.ReactionSummary(ctx, targetType, targetID, userID)
+	return u.repo.ReactionSummary(ctx, targetType, targetID, userID, houseID)
 }
 
 func (u *socialUsecase) CreatePoll(ctx context.Context, p *domain.Poll) error {
@@ -64,19 +64,19 @@ func (u *socialUsecase) CreatePoll(ctx context.Context, p *domain.Poll) error {
 	return u.repo.CreatePoll(ctx, p)
 }
 
-func (u *socialUsecase) Poll(ctx context.Context, id, viewerID uuid.UUID, includeViewer bool) (*domain.Poll, error) {
-	return u.repo.GetPoll(ctx, id, viewerID, includeViewer)
+func (u *socialUsecase) Poll(ctx context.Context, id uuid.UUID, viewerID, houseID *uuid.UUID, includeViewer bool) (*domain.Poll, error) {
+	return u.repo.GetPoll(ctx, id, viewerID, houseID, includeViewer)
 }
 
-func (u *socialUsecase) OpenPolls(ctx context.Context, viewerID uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
-	return u.repo.ListOpenPolls(ctx, viewerID, includeViewer)
+func (u *socialUsecase) OpenPolls(ctx context.Context, viewerID, houseID *uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
+	return u.repo.ListOpenPolls(ctx, viewerID, houseID, includeViewer)
 }
 
-func (u *socialUsecase) Vote(ctx context.Context, pollID, userID uuid.UUID, optionIndex int) error {
-	if userID == uuid.Nil {
-		return errors.New("user context required")
+func (u *socialUsecase) Vote(ctx context.Context, pollID uuid.UUID, userID, houseID *uuid.UUID, optionIndex int) error {
+	if (userID == nil || *userID == uuid.Nil) && (houseID == nil || *houseID == uuid.Nil) {
+		return errors.New("user or house context required")
 	}
-	return u.repo.VotePoll(ctx, pollID, userID, optionIndex)
+	return u.repo.VotePoll(ctx, pollID, userID, houseID, optionIndex)
 }
 
 func (u *socialUsecase) ClosePoll(ctx context.Context, id uuid.UUID) error {
