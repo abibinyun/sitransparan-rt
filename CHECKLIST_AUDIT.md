@@ -102,20 +102,20 @@ Format pengisian:
 
 ## 4. Kependudukan & Data Rumah (`/admin/residents`)
 ### 4.1 Tab Warga & Anggota Keluarga
-- [ ] **4.1.1 Tambah Warga Baru (`ResidentModal`)**
-  - Form: NIK (16 digit), Nama, No KK, Alamat, Status Tempat Tinggal, No Telepon, Status Perkawinan, Pekerjaan.
-  - Verifikasi: Validasi form, NIK tersimpan terenkripsi, data muncul di tabel warga.
-  - Temuan / Feedback: 
-- [ ] **4.1.2 Detail Warga & Anggota Keluarga (`FamilyMemberModal`)**
-  - Aksi: Buka detail warga -> Tambah anggota keluarga (anak/istri/famili lain).
-  - Verifikasi: Hubungan keluarga tersimpan dan tampil terdaftar di bawah KK tersebut.
-  - Temuan / Feedback: 
-- [ ] **4.1.3 Edit & Hapus Warga**
-  - Verifikasi: Edit informasi warga tersimpan; tombol hapus menampilkan konfirmasi modal sebelum terhapus.
-  - Temuan / Feedback: 
-- [ ] **4.1.4 Filter & Pencarian Warga**
-  - Verifikasi: Cari nama/alamat, filter status domisili (Tetap / Kontrak).
-  - Temuan / Feedback: 
+- [x] **4.1.1 Tambah Warga Baru (`ResidentModal`)**
+  - Form: NIK (16 digit), Nama, No KK, Alamat, Status Tempat Tinggal, No Telepon, Status Perkawinan, Pekerjaan, upload dokumen KTP & KK.
+  - Verifikasi: Validasi form berjalan, upload MinIO persisten, preview foto tampil langsung di form, NIK tersimpan terenkripsi AES-GCM + HMAC. E2E test lulus (`residents.spec.ts`).
+  - Temuan / Feedback: Berhasil. Dokumen KTP & KK tersimpan dan tampil live preview.
+- [x] **4.1.2 Detail Warga & Anggota Keluarga (`ResidentDetailModal` & `FamilyMemberModal`)**
+  - Aksi: Buka detail warga (`Eye` icon) -> Tampil rincian demografi, pratinjau dokumen ukuran penuh, dan daftar anggota keluarga. Tambah, edit, dan hapus anggota keluarga.
+  - Verifikasi: Full CRUD anggota keluarga (POST, GET, PUT, DELETE) berjalan dengan enkripsi NIK di backend. E2E test CRUD anggota keluarga dan modal detail lulus.
+  - Temuan / Feedback: Berhasil. Modal detail warga dan CRUD anggota keluarga lengkap.
+- [x] **4.1.3 Edit & Hapus Warga**
+  - Verifikasi: Edit informasi warga terupdate dan persisten setelah reload; tombol hapus menampilkan dialog konfirmasi sebelum data dihapus. E2E test lulus.
+  - Temuan / Feedback: Berhasil.
+- [x] **4.1.4 Filter & Pencarian Warga**
+  - Verifikasi: Kolom input pencarian cepat dan akurat berdasarkan Nama, NIK, atau No KK. Dropdown filter redundan dihilangkan sesuai preferensi. E2E test lulus.
+  - Temuan / Feedback: Berhasil. Input pencarian tunggal lebih bersih dan responsif.
 
 ### 4.2 Tab Data Rumah & QR Code Warga (`HousesPage`)
 - [ ] **4.2.1 Tambah & Edit Data Rumah**
