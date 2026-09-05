@@ -14,6 +14,7 @@ import { DocumentUploadModal } from '../components/DocumentUploadModal';
 import { Announcement, CreateAnnouncementPayload, Document, CreateDocumentPayload } from '../types/announcement_doc';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { FileText, MessageSquareHeart, Vote } from 'lucide-react';
+import { getFileUrl } from '../utils/file';
 
 export const AnnouncementsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'announcements' | 'documents'>('announcements');
@@ -244,7 +245,7 @@ export const AnnouncementsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-right text-sm space-x-3">
                         <a
-                          href={doc.file_url}
+                          href={getFileUrl(doc.file_url)}
                           target="_blank"
                           rel="noreferrer"
                           className="font-medium text-indigo-600 hover:text-indigo-900 underline"

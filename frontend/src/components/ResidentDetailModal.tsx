@@ -4,6 +4,7 @@ import { Dialog } from './ui/dialog';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { UserCheck, Phone, MapPin, FileText, ExternalLink, Users, Edit3 } from 'lucide-react';
+import { getFileUrl } from '../utils/file';
 
 interface ResidentDetailModalProps {
   isOpen: boolean;
@@ -135,7 +136,7 @@ export const ResidentDetailModal: React.FC<ResidentDetailModalProps> = ({
                 <div className="space-y-2 w-full flex flex-col items-center">
                   {resident.ktp_url.match(/\.(jpeg|jpg|png|webp|gif)/i) ? (
                     <img
-                      src={resident.ktp_url}
+                      src={getFileUrl(resident.ktp_url)}
                       alt="Foto KTP"
                       className="h-32 max-w-full object-contain rounded-lg border border-slate-200 bg-white shadow-sm"
                     />
@@ -146,7 +147,7 @@ export const ResidentDetailModal: React.FC<ResidentDetailModalProps> = ({
                     </div>
                   )}
                   <a
-                    href={resident.ktp_url}
+                    href={getFileUrl(resident.ktp_url)}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
@@ -166,7 +167,7 @@ export const ResidentDetailModal: React.FC<ResidentDetailModalProps> = ({
                 <div className="space-y-2 w-full flex flex-col items-center">
                   {resident.kk_url.match(/\.(jpeg|jpg|png|webp|gif)/i) ? (
                     <img
-                      src={resident.kk_url}
+                      src={getFileUrl(resident.kk_url)}
                       alt="Foto Kartu Keluarga"
                       className="h-32 max-w-full object-contain rounded-lg border border-slate-200 bg-white shadow-sm"
                     />
@@ -177,7 +178,7 @@ export const ResidentDetailModal: React.FC<ResidentDetailModalProps> = ({
                     </div>
                   )}
                   <a
-                    href={resident.kk_url}
+                    href={getFileUrl(resident.kk_url)}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"

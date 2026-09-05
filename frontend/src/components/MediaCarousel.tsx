@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { getFileUrl } from '../utils/file';
 
 /**
  * Carousel foto feed (Fase 2): scroll-snap native, tanpa library.
@@ -35,7 +36,7 @@ export const MediaCarousel: React.FC<{ urls: string[]; alt: string }> = ({ urls,
         {urls.map((url, i) => (
           <img
             key={i}
-            src={url}
+            src={getFileUrl(url)}
             alt={`${alt} — foto ${i + 1} dari ${urls.length}`}
             loading="lazy"
             className="w-full shrink-0 snap-start object-cover"

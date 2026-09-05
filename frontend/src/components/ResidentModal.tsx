@@ -9,6 +9,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
 import { UploadCloud, FileText, Home } from 'lucide-react';
+import { getFileUrl } from '../utils/file';
 
 interface ResidentModalProps {
   isOpen: boolean;
@@ -289,7 +290,7 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
                   <div className="flex flex-col items-center gap-2 w-full">
                     {formData.ktp_url.match(/\.(jpeg|jpg|png|webp|gif)/i) ? (
                       <img
-                        src={formData.ktp_url}
+                        src={getFileUrl(formData.ktp_url)}
                         alt="KTP"
                         className="h-28 w-auto max-w-full object-contain rounded-lg border border-slate-200"
                       />
@@ -301,7 +302,7 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
                     )}
                     <div className="flex items-center gap-3 text-xs">
                       <a
-                        href={formData.ktp_url}
+                        href={getFileUrl(formData.ktp_url)}
                         target="_blank"
                         rel="noreferrer"
                         className="text-indigo-600 hover:underline font-semibold"
@@ -356,7 +357,7 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
                   <div className="flex flex-col items-center gap-2 w-full">
                     {formData.kk_url.match(/\.(jpeg|jpg|png|webp|gif)/i) ? (
                       <img
-                        src={formData.kk_url}
+                        src={getFileUrl(formData.kk_url)}
                         alt="KK"
                         className="h-28 w-auto max-w-full object-contain rounded-lg border border-slate-200"
                       />
@@ -368,7 +369,7 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
                     )}
                     <div className="flex items-center gap-3 text-xs">
                       <a
-                        href={formData.kk_url}
+                        href={getFileUrl(formData.kk_url)}
                         target="_blank"
                         rel="noreferrer"
                         className="text-indigo-600 hover:underline font-semibold"

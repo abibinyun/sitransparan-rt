@@ -149,6 +149,8 @@ func main() {
 	mux.HandleFunc("GET /api/v1/t/resolve", authHandler.ResolveHost)
 	mux.HandleFunc("GET /api/v1/t/{slug}/info", authHandler.GetPublicTenantInfo)
 	mux.HandleFunc("GET /api/v1/public/tenants", authHandler.GetPublicTenants)
+	fileHandler := delivery.NewStorageFileHandler(storageClient)
+	mux.HandleFunc("GET /api/v1/files/", fileHandler.ServeFile)
 	// Login/register are the public brute-force surface: apply the stricter
 	// per-IP auth budget here (the general limiter below still applies too).
 	mux.Handle("POST /api/v1/auth/login", authRateLimitMw(http.HandlerFunc(authHandler.Login)))

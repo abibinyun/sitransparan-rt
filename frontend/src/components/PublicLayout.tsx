@@ -23,6 +23,7 @@ import { enablePushNotifications } from '../services/push';
 import { PublicBottomNav } from './PublicBottomNav';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { TenantNotFoundPage } from './TenantNotFoundPage';
+import { getFileUrl } from '../utils/file';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Kabar & Dokumen', icon: FileText, end: true },
@@ -111,7 +112,7 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
             <Link to="/" className="flex items-center gap-3 group">
               <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white overflow-hidden shadow-sm group-hover:bg-slate-800 transition-colors">
                 {tenantInfo?.logo_url ? (
-                  <img src={tenantInfo.logo_url} alt={tenantName} className="w-full h-full object-cover" />
+                  <img src={getFileUrl(tenantInfo.logo_url)} alt={tenantName} className="w-full h-full object-cover" />
                 ) : (
                   <Building2 className="w-5 h-5 text-emerald-400" />
                 )}

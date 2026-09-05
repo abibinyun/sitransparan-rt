@@ -217,8 +217,14 @@ test.describe('Resident Management — business workflow', () => {
     await page.locator('tr', { hasText: name }).getByTitle('Lihat Detail Lengkap & Dokumen').click();
     const detailDialog = page.getByRole('dialog');
     await expect(detailDialog).toBeVisible();
-    await expect(detailDialog.locator('img[alt="Foto KTP"]')).toBeVisible();
-    await expect(detailDialog.locator('img[alt="Foto Kartu Keluarga"]')).toBeVisible();
+    const ktpImg = detailDialog.locator('img[alt="Foto KTP"]');
+    const kkImg = detailDialog.locator('img[alt="Foto Kartu Keluarga"]');
+    await expect(ktpImg).toBeVisible();
+    await expect(kkImg).toBeVisible();
+
+    // Verify images use backend proxy path /api/v1/files/ instead of raw localhost:9000
+    const ktpSrc = await ktpImg.getAttribute('src');
+    expect(ktpSrc).toContain('/api/v1/files/');
 
     await page.getByRole('button', { name: 'Tutup' }).click();
     await expect(detailDialog).not.toBeVisible();

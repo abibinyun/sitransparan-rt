@@ -83,6 +83,9 @@ func (c *Client) Upload(ctx context.Context, objectName string, reader io.Reader
 	if err != nil {
 		return "", fmt.Errorf("minio: put object %q: %w", objectName, err)
 	}
+	if c.publicBase == "" || strings.Contains(c.publicBase, "localhost:9000") || strings.Contains(c.publicBase, "127.0.0.1:9000") {
+		return fmt.Sprintf("/api/v1/files/%s", objectName), nil
+	}
 	return fmt.Sprintf("%s/%s/%s", c.publicBase, c.bucket, objectName), nil
 }
 
@@ -96,4 +99,21 @@ func ObjectKey(tenantSlug, category, uniqueName, ext string) string {
 		key += category + "/"
 	}
 	return key + uniqueName + ext
+}
+
+// GetObject retrieves an object stream from the bucket.
+func (c *Client) GetObject(ctx context.Context, objectName string) (io.ReadCloser, string, int64, error) {
+	if c == nil || c.mc == nil {
+		return nil, "", 0, fmt.Errorf("minio: storage disabled")
+	}
+	obj, err := c.mc.GetObject(ctx, c.bucket, objectName, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, "", 0, err
+	}
+	stat, err := obj.Stat()
+	if err != nil {
+		_ = obj.Close()
+		return nil, "", 0, err
+	}
+	return obj, stat.ContentType, stat.Size, nil
 }

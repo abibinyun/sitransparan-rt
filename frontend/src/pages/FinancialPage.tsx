@@ -20,6 +20,7 @@ import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
 import { Plus, Trash2, Wallet } from 'lucide-react';
 import { FeePeriod, FundType } from '../types/financial';
+import { getFileUrl } from '../utils/file';
 
 export const FinancialPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dues' | 'transactions' | 'categories' | 'funds'>('dues');
@@ -357,7 +358,7 @@ export const FinancialPage: React.FC = () => {
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                       {item.proof_url ? (
                         <a
-                          href={item.proof_url}
+                          href={getFileUrl(item.proof_url)}
                           target="_blank"
                           rel="noreferrer"
                           className="text-indigo-600 underline hover:text-indigo-900"
@@ -455,7 +456,7 @@ export const FinancialPage: React.FC = () => {
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                       {tx.proof_url ? (
                         <a
-                          href={tx.proof_url}
+                          href={getFileUrl(tx.proof_url)}
                           target="_blank"
                           rel="noreferrer"
                           className="text-indigo-600 underline hover:text-indigo-900"

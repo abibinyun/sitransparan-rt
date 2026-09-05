@@ -11,6 +11,7 @@ import { ParticipationCard } from '../components/ParticipationCard';
 import { enablePushNotifications } from '../services/push';
 import axios from 'axios';
 import { getTenantSlugOrFallback } from '../utils/tenant';
+import { getFileUrl } from '../utils/file';
 import {
   FileText,
   Download,
@@ -296,7 +297,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
                         {new Date(doc.created_at).toLocaleDateString('id-ID')}
                       </span>
                       <a
-                        href={doc.file_url}
+                        href={getFileUrl(doc.file_url)}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200/60"
