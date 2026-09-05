@@ -12,6 +12,7 @@ import {
   useDeleteFund,
 } from '../services/financial';
 import { DuesPaymentModal } from '../components/DuesPaymentModal';
+import { DuesDisbursementModal } from '../components/DuesDisbursementModal';
 import { TransactionModal } from '../components/TransactionModal';
 import { SimpleDialog } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
@@ -26,6 +27,8 @@ import { useResidents } from '../services/resident';
 export const FinancialPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dues' | 'transactions' | 'funds' | 'categories'>('dues');
   const [isDuesModalOpen, setIsDuesModalOpen] = useState(false);
+  const [isDisburseModalOpen, setIsDisburseModalOpen] = useState(false);
+  const [selectedDisburseCatId, setSelectedDisburseCatId] = useState('');
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   const [isFundModalOpen, setIsFundModalOpen] = useState(false);
@@ -559,7 +562,7 @@ export const FinancialPage: React.FC = () => {
             {catList.map((c: any) => {
               const b = duesCategoryBalances[c.id] || { collected: 0, spent: 0, balance: 0, verifiedCount: 0, pendingCount: 0 };
               return (
-                <div key={c.id} className="p-3.5 rounded-lg border border-emerald-200 bg-white shadow-xs space-y-2">
+                <div key={c.id} className="p-3.5 rounded-lg border border-emerald-200 bg-white shadow-xs space-y-2.5">
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-xs font-semibold text-slate-800">{c.name}</span>
@@ -577,6 +580,18 @@ export const FinancialPage: React.FC = () => {
                   <div className="flex justify-between items-center text-[10px] pt-1.5 border-t border-slate-100 text-slate-500">
                     <span>Masuk: <strong className="text-emerald-600">Rp {b.collected.toLocaleString('id-ID')}</strong></span>
                     <span>Keluar: <strong className="text-rose-600">Rp {b.spent.toLocaleString('id-ID')}</strong></span>
+                  </div>
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDisburseCatId(c.id);
+                        setIsDisburseModalOpen(true);
+                      }}
+                      className="w-full py-1 text-[11px] font-semibold rounded bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors"
+                    >
+                      Keluarkan / Salurkan Dana →
+                    </button>
                   </div>
                 </div>
               );
@@ -662,7 +677,10 @@ export const FinancialPage: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsTxModalOpen(true)}
+                onClick={() => {
+                  setSelectedDisburseCatId('');
+                  setIsDisburseModalOpen(true);
+                }}
                 className="text-xs h-8 gap-1.5 border-rose-200 bg-rose-50/50 text-rose-700 hover:bg-rose-100"
                 title="Catat pengeluaran yang memotong dana dari pos iuran warga"
               >
@@ -1687,6 +1705,14 @@ export const FinancialPage: React.FC = () => {
           );
         })()}
       </SimpleDialog>
+
+      {/* Modal Khusus Penyaluran / Pengeluaran Pos Iuran Warga */}
+      <DuesDisbursementModal
+        isOpen={isDisburseModalOpen}
+        onClose={() => setIsDisburseModalOpen(false)}
+        defaultFeeCategoryId={selectedDisburseCatId}
+        categoryBalances={duesCategoryBalances}
+      />
     </div>
   );
 };

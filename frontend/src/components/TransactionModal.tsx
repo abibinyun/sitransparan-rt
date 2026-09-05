@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useCreateFinancialTransaction, useUploadProof, useFunds, useFeeCategories } from '../services/financial';
+import { useCreateFinancialTransaction, useUploadProof, useFunds } from '../services/financial';
 import { TransactionType } from '../types/financial';
 import { dateOnlyToISO } from '../utils/date';
 import { Dialog } from './ui/dialog';
@@ -18,9 +18,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
   const createTx = useCreateFinancialTransaction();
   const uploadProof = useUploadProof();
   const { data: rawFunds } = useFunds();
-  const { data: rawCats } = useFeeCategories();
   const funds = Array.isArray(rawFunds) ? rawFunds : (rawFunds as any)?.data || [];
-  const feeCategories = Array.isArray(rawCats) ? rawCats : (rawCats as any)?.data || [];
 
   const [type, setType] = useState<TransactionType>('income');
   const [fundId, setFundId] = useState<string>('');
@@ -180,17 +178,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                 <option value="">-- Pilih Kategori --</option>
                 {type === 'income' ? (
                   <>
-                    {/* Master Iuran Warga yang Terdaftar */}
-                    {feeCategories.length > 0 && (
-                      <optgroup label="Pos / Tarif Iuran Warga (Masuk)">
-                        {feeCategories.map((fc: any) => (
-                          <option key={fc.id} value={`IURAN: ${fc.name}`}>
-                            {fc.name} (Iuran Warga)
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    <optgroup label="Pos Pemasukan Kas">
+                    <optgroup label="Pos Pemasukan Kas RT">
                       {customOptions.filter((c) => c.type === 'income').map((c) => (
                         <option key={c.id} value={c.name}>{c.name}</option>
                       ))}
@@ -198,16 +186,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                   </>
                 ) : (
                   <>
-                    {/* Penggunaan / Penyaluran dari Iuran Warga */}
-                    {feeCategories.length > 0 && (
-                      <optgroup label="Penggunaan / Penyaluran Dana Iuran Warga">
-                        {feeCategories.map((fc: any) => (
-                          <option key={fc.id} value={`IURAN_KELUAR: ${fc.name}`}>
-                            Penyaluran / Pakai Dana {fc.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
                     <optgroup label="Pos Pengeluaran Kas RT">
                       {customOptions.filter((c) => c.type === 'expense').map((c) => (
                         <option key={c.id} value={c.name}>{c.name}</option>
