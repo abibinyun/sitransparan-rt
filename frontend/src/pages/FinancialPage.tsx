@@ -461,10 +461,10 @@ export const FinancialPage: React.FC = () => {
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-gray-500">Saldo Kas RT (Total)</p>
+              <p className="text-sm font-medium text-gray-500">Total Dana</p>
               <p className="text-[11px] text-slate-400 mt-0.5">Total Kas Semua Kantong Termasuk Iuran</p>
             </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700">Total Riil</span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700">Global</span>
           </div>
           <p className="mt-2 text-2xl font-bold text-indigo-600">
             {isSummaryLoading ? '...' : `Rp ${(summary?.current_balance || 0).toLocaleString('id-ID')}`}

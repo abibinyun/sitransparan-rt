@@ -6,7 +6,7 @@ async function loginAsAdmin(page: Page) {
 }
 
 async function readSaldo(page: Page): Promise<number> {
-  const card = page.locator('div.rounded-lg.border').filter({ hasText: 'Saldo Kas RT (Total)' });
+  const card = page.locator('div.rounded-lg.border').filter({ hasText: 'Total Dana' });
   await expect(card).toBeVisible();
   return parseRp(await card.locator('p.mt-2').innerText());
 }
