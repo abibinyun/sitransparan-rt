@@ -1074,45 +1074,52 @@ export const FinancialPage: React.FC = () => {
               </div>
 
               {/* Form Tambah Kategori Kas Baru */}
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <h4 className="font-semibold text-xs text-slate-800 mb-2">Tambah Master Kategori Kas Baru</h4>
-                <form onSubmit={handleAddCustomCashCategory} className="flex flex-col sm:flex-row gap-2 items-end">
-                  <div className="flex-1 space-y-1">
-                    <Label htmlFor="newCashCatName" className="text-xs">Nama Kategori</Label>
-                    <Input
-                      id="newCashCatName"
-                      placeholder="Contoh: BANTUAN_DUKA, POSYANDU"
-                      value={newCashCatName}
-                      onChange={(e) => setNewCashCatName(e.target.value)}
-                      className="text-xs h-9 bg-white"
-                      required
-                    />
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
+                <div className="mb-4">
+                  <h4 className="font-semibold text-sm text-slate-900">Tambah Master Kategori Kas Baru</h4>
+                  <p className="text-xs text-slate-500">Buat pos kategori baru untuk transaksi kas buku besar RT</p>
+                </div>
+                <form onSubmit={handleAddCustomCashCategory} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="newCashCatName" className="text-xs font-medium text-slate-700">Nama Kategori *</Label>
+                      <Input
+                        id="newCashCatName"
+                        placeholder="Contoh: BANTUAN_DUKA, POSYANDU"
+                        value={newCashCatName}
+                        onChange={(e) => setNewCashCatName(e.target.value)}
+                        className="text-xs h-10 bg-slate-50/50"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="newCashCatType" className="text-xs font-medium text-slate-700">Tipe Kas *</Label>
+                      <Select
+                        id="newCashCatType"
+                        value={newCashCatType}
+                        onChange={(e) => setNewCashCatType(e.target.value as any)}
+                        className="text-xs h-10 bg-slate-50/50"
+                      >
+                        <option value="income">Pemasukan (Income)</option>
+                        <option value="expense">Pengeluaran (Expense)</option>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="newCashCatDesc" className="text-xs font-medium text-slate-700">Keterangan (Opsional)</Label>
+                      <Input
+                        id="newCashCatDesc"
+                        placeholder="Catatan peruntukan pos kas"
+                        value={newCashCatDesc}
+                        onChange={(e) => setNewCashCatDesc(e.target.value)}
+                        className="text-xs h-10 bg-slate-50/50"
+                      />
+                    </div>
                   </div>
-                  <div className="w-full sm:w-40 space-y-1">
-                    <Label htmlFor="newCashCatType" className="text-xs">Tipe Kas</Label>
-                    <Select
-                      id="newCashCatType"
-                      value={newCashCatType}
-                      onChange={(e) => setNewCashCatType(e.target.value as any)}
-                      className="text-xs h-9 bg-white"
-                    >
-                      <option value="income">Pemasukan (Income)</option>
-                      <option value="expense">Pengeluaran (Expense)</option>
-                    </Select>
+                  <div className="flex justify-end pt-2">
+                    <Button type="submit" size="sm" className="gap-1.5 px-4 h-9 font-medium">
+                      <Plus className="h-4 w-4" /> Simpan Kategori Kas
+                    </Button>
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <Label htmlFor="newCashCatDesc" className="text-xs">Keterangan (Opsional)</Label>
-                    <Input
-                      id="newCashCatDesc"
-                      placeholder="Catatan penggunaan"
-                      value={newCashCatDesc}
-                      onChange={(e) => setNewCashCatDesc(e.target.value)}
-                      className="text-xs h-9 bg-white"
-                    />
-                  </div>
-                  <Button type="submit" size="sm" className="h-9">
-                    <Plus className="h-4 w-4 mr-1" /> Simpan Kategori
-                  </Button>
                 </form>
               </div>
             </div>
