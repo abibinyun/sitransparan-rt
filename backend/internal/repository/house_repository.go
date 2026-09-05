@@ -67,7 +67,7 @@ func (r *houseRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID) (
 	query := fmt.Sprintf(`
 		SELECT id, block_number, address, head_resident_id, access_token, token_status, created_at, updated_at
 		FROM %s.houses
-		WHERE id = $1
+		WHERE id = $1 AND deleted_at IS NULL
 	`, schema)
 
 	var h domain.House
@@ -98,7 +98,7 @@ func (r *houseRepository) GetByToken(ctx context.Context, tenantID uuid.UUID, to
 	query := fmt.Sprintf(`
 		SELECT id, block_number, address, head_resident_id, access_token, token_status, created_at, updated_at
 		FROM %s.houses
-		WHERE access_token = $1 AND token_status = 'active'
+		WHERE access_token = $1 AND token_status = 'active' AND deleted_at IS NULL
 	`, schema)
 
 	var h domain.House
@@ -127,7 +127,7 @@ func (r *houseRepository) List(ctx context.Context, tenantID uuid.UUID, limit, o
 	}
 
 	var total int
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s.houses", schema)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s.houses WHERE deleted_at IS NULL", schema)
 	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&total); err != nil {
 		return nil, 0, err
 	}
@@ -142,6 +142,7 @@ func (r *houseRepository) List(ctx context.Context, tenantID uuid.UUID, limit, o
 	query := fmt.Sprintf(`
 		SELECT id, block_number, address, head_resident_id, access_token, token_status, created_at, updated_at
 		FROM %s.houses
+		WHERE deleted_at IS NULL
 		ORDER BY block_number ASC
 		LIMIT $1 OFFSET $2
 	`, schema)

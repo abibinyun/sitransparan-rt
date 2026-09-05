@@ -126,19 +126,22 @@ Format pengisian:
   - Temuan / Feedback: Berhasil. Sesuai kebutuhan pergantian kepala keluarga ketika terjadi musibah atau mutasi warga.
 
 ### 4.2 Tab Data Rumah & QR Code Warga (`HousesPage`)
-- [ ] **4.2.1 Tambah & Edit Data Rumah**
-  - Form: Blok/Nomor Rumah, Alamat Lengkap, RT/RW, Status Hunian (Dihuni/Kosong).
-  - Verifikasi: Data tersimpan, token QR terbuat otomatis.
-  - Temuan / Feedback: 
-- [ ] **4.2.2 Cetak Sticker QR Code Rumah**
-  - Verifikasi: Preview sticker QR tampil jelas, tombol cetak memformat lembar print sticker siap tempel.
-  - Temuan / Feedback: 
-- [ ] **4.2.3 Salin Link Klaim Rumah & Uji Klaim Warga (`/claim-house?token=...`)**
-  - Verifikasi: Link klaim dibuka warga, warga terverifikasi terhubung ke rumah tersebut.
-  - Temuan / Feedback: 
-- [ ] **4.2.4 Regenerate Token QR Rumah**
-  - Verifikasi: Token lama hangus, token baru dibuat tanpa merusak data penghuni yang sudah klaim.
-  - Temuan / Feedback: 
+- [x] **4.2.1 Tambah & Edit Data Rumah**
+  - Form: Blok/Nomor Rumah, Alamat Lengkap, Kepala Keluarga penghuni.
+  - Verifikasi: Data rumah tersimpan persisten, token QR terbuat otomatis berstatus `active`, soft-delete pada hapus rumah terfilter (`WHERE deleted_at IS NULL`). E2E test lulus (`houses-qr.spec.ts`).
+  - Temuan / Feedback: Berhasil. Tambah, edit alamat, dan hapus rumah berjalan akurat.
+- [x] **4.2.2 Cetak Sticker QR Code Rumah**
+  - Verifikasi: Modal pratinjau stiker QR tampil rapi dalam format grid kartu stiker, memuat nama RT, Blok/Nomor unit, dan QR code siap cetak via tombol cetak (`window.print()`).
+  - Temuan / Feedback: Berhasil. Dialog pratinjau lembar cetak stiker QR dapat dibuka dan memuat data rumah.
+- [x] **4.2.3 Salin Link Klaim Rumah & Uji Klaim Warga (`/claim?token=...`)**
+  - Verifikasi:
+    - Tombol "Salin Tautan Akses Warga" menyalin URL klaim rumah tenant secara instan ke clipboard.
+    - Warga memindai/membuka link klaim (`/claim?slug=...&token=...`): sistem memvalidasi token via `GET /api/v1/house-access/claim`, mengisukan sesi JWT scoped ke rumah dan tenant dengan role `resident`, dan menampilkan layar sukses verifikasi rumah serta tombol pintas menuju Portal Transparansi atau formulir Aspirasi Warga.
+    - E2E Playwright test memverifikasi auto-login warga via QR token dan redirect ke portal aspirasi.
+  - Temuan / Feedback: Berhasil. Alur klaim warga tanpa password (passwordless 1 rumah 1 token) berjalan end-to-end.
+- [x] **4.2.4 Regenerate Token QR Rumah**
+  - Verifikasi: Tombol reset token (`RefreshCw`) meng-update `access_token` baru di backend via `POST /api/v1/admin/houses/{id}/regenerate-token`. Token lama otomatis hangus dan ditolak saat dicoba klaim (menampilkan pesan error jelas di UI tanpa mental ke `/login`), sedangkan token baru langsung aktif dan dapat diklaim warga.
+  - Temuan / Feedback: Berhasil. Terverifikasi deterministik dalam E2E Playwright.
 
 ---
 

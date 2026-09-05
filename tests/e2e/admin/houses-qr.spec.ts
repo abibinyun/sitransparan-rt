@@ -71,15 +71,41 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
     await houseRow.getByTitle('Edit Rumah').click();
     await expect(page.getByText('Edit Data Rumah')).toBeVisible();
 
-    const updatedAddress = 'Jl. Anggrek No. 99 RT 03';
+    const updatedAddress = `Jl. Anggrek No. ${Date.now()} RT 03`;
     await page.getByPlaceholder('Contoh: Jl. Melati Raya RT 05').fill(updatedAddress);
     await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
 
     // Verifikasi alamat terupdate di tabel
-    await expect(page.getByText(updatedAddress)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('tr', { hasText: blockNo })).toContainText(updatedAddress);
 
-    // 12. Hapus data rumah
-    page.on('dialog', (dialog) => dialog.accept());
+    // 12. Regenerate Token (Reset QR)
+    page.once('dialog', (dialog) => dialog.accept());
+    await houseRow.getByTitle('Generate Ulang Token (Reset QR)').click();
+
+    // Ambil token baru dari backend dan pastikan token lama tidak lagi sama
+    const apiRes2 = await page.request.get('http://127.0.0.1:8081/api/v1/admin/houses', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const data2 = await apiRes2.json();
+    const updatedHouse = data2.data.find((h: any) => h.block_number === blockNo);
+    expect(updatedHouse.access_token).not.toBe(targetHouse.access_token);
+
+    // Coba claim dengan token lama (harus gagal)
+    await page.goto(`/claim?slug=sitransparan-rt&token=${targetHouse.access_token}`);
+    await expect(page.getByText('Gagal Membuka Akses Stiker QR')).toBeVisible({ timeout: 10000 });
+
+    // Coba claim dengan token baru (harus sukses)
+    await page.goto(`/claim?slug=sitransparan-rt&token=${updatedHouse.access_token}`);
+    await expect(page.getByText('Akses Berhasil Terverifikasi')).toBeVisible({ timeout: 10000 });
+
+    // 13. Login kembali sebagai Admin RT untuk Hapus data rumah
+    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await page.goto('/admin/houses');
+    await expect(page.getByText(blockNo)).toBeVisible({ timeout: 10000 });
+
+    page.once('dialog', (dialog) => dialog.accept());
     await page.locator('tr', { hasText: blockNo }).getByTitle('Hapus Rumah').click();
     await expect(page.getByText(blockNo)).not.toBeVisible({ timeout: 10000 });
   });
