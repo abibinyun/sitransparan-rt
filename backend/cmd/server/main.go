@@ -114,6 +114,11 @@ func main() {
 	houseUC := usecase.NewHouseUsecase(houseRepo, tenantRepo, residentRepo, userRepo, tuRepo, roleRepo, jwtSecret, jwtDuration)
 	houseHandler := delivery.NewHouseHandler(houseUC)
 
+	// Inventaris & Aset RT (General Inventory & Peminjaman Barang)
+	inventoryRepo := repository.NewInventoryRepository(db)
+	inventoryUC := usecase.NewInventoryUsecase(inventoryRepo)
+	inventoryHandler := delivery.NewInventoryHandler(inventoryUC)
+
 	// Interaksi sosial Fase 3 (reaksi & polling) — budget rate-limit ketat
 	// selaras endpoint auth (anti-spam, konsep portal §7.3).
 	socialRepo := repository.NewSocialRepository(db)
@@ -199,6 +204,9 @@ func main() {
 
 	// House QR Access (1 Rumah = 1 Token)
 	houseHandler.RegisterRoutes(mux, tenantMw, authMw, adminMw)
+
+	// Inventaris RT & Peminjaman Barang
+	inventoryHandler.RegisterRoutes(mux, tenantMw, authMw)
 
 	// Social interactions (reactions & polls) — strict rate budget
 	socialHandler.RegisterRoutes(mux, tenantMw, authMw, authRateLimitMw)

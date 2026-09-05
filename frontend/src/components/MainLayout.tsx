@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   MessageSquareHeart,
+  Package,
   Shield,
   ShieldCheck,
   Users,
@@ -72,6 +73,12 @@ const baseNavItems: NavItem[] = [
     matchPrefixes: ['/admin/karang-taruna', '/admin/waste-bank', '/admin/programs']
   },
   { 
+    to: '/admin/inventory', 
+    label: 'Inventaris & Aset RT', 
+    icon: Package,
+    matchPrefixes: ['/admin/inventory']
+  },
+  { 
     to: '/admin/users', 
     label: 'Pengaturan & Akun', 
     icon: ShieldCheck, 
@@ -112,6 +119,12 @@ const residentNavItems: NavItem[] = [
     label: 'Tabungan Sampah', 
     icon: Flame,
     matchPrefixes: ['/admin/waste-bank', '/admin/karang-taruna']
+  },
+  { 
+    to: '/admin/inventory', 
+    label: 'Pinjam Inventaris RT', 
+    icon: Package,
+    matchPrefixes: ['/admin/inventory']
   },
   { 
     to: '/admin/profile', 

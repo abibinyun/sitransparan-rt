@@ -27,6 +27,7 @@ const PollsPage = lazy(() => import('./pages/PollsPage').then(m => ({ default: m
 const KarangTarunaPage = lazy(() => import('./pages/KarangTarunaPage').then(m => ({ default: m.KarangTarunaPage })));
 const PublicKarangTarunaPage = lazy(() => import('./pages/PublicKarangTarunaPage').then(m => ({ default: m.PublicKarangTarunaPage })));
 const WasteBankPage = lazy(() => import('./pages/WasteBankPage').then(m => ({ default: m.WasteBankPage })));
+const InventoryPage = lazy(() => import('./pages/InventoryPage').then(m => ({ default: m.InventoryPage })));
 const PublicWasteBankPage = lazy(() => import('./pages/PublicWasteBankPage').then(m => ({ default: m.PublicWasteBankPage })));
 const PublicProgramsPage = lazy(() => import('./pages/PublicProgramsPage').then(m => ({ default: m.PublicProgramsPage })));
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
@@ -108,6 +109,7 @@ export function App() {
                 <Route path="/admin/karang-taruna" element={<KarangTarunaPage />} />
                 <Route path="/admin/programs" element={<Navigate to="/admin/karang-taruna" replace />} />
                 <Route path="/admin/waste-bank" element={<WasteBankPage />} />
+                <Route path="/admin/inventory" element={<InventoryPage />} />
                 <Route path="/admin/houses" element={<HousesPage />} />
                 <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RT_ADMIN']} />}>
                   <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
@@ -130,6 +132,7 @@ export function App() {
                 <Route path="/karang-taruna" element={<Navigate to="/admin/karang-taruna" replace />} />
                 <Route path="/programs" element={<Navigate to="/admin/karang-taruna" replace />} />
                 <Route path="/waste-bank" element={<Navigate to="/admin/waste-bank" replace />} />
+                <Route path="/inventory" element={<Navigate to="/admin/inventory" replace />} />
                 <Route path="/bank-sampah" element={<Navigate to="/admin/waste-bank" replace />} />
                 <Route path="/houses" element={<Navigate to="/admin/houses" replace />} />
                 <Route path="/profile" element={<Navigate to="/admin/profile" replace />} />
