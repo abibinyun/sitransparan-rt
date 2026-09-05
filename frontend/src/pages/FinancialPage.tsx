@@ -78,6 +78,10 @@ export const FinancialPage: React.FC = () => {
   const [duesViewMode, setDuesViewMode] = useState<'resident' | 'history' | 'disbursements'>('resident');
   const [duesCategoryFilter, setDuesCategoryFilter] = useState<string>('all');
   const [selectedResidentId, setSelectedResidentId] = useState<string | null>(null);
+  const [modalDuesYearFilter, setModalDuesYearFilter] = useState<string>('all');
+  const [modalDuesCategoryFilter, setModalDuesCategoryFilter] = useState<string>('all');
+  const [modalDuesPage, setModalDuesPage] = useState<number>(1);
+  const MODAL_PAGE_SIZE = 10;
   const [duesStatusFilter, setDuesStatusFilter] = useState<'all' | 'pending' | 'verified' | 'rejected'>('all');
   const [duesSearch, setDuesSearch] = useState('');
   const [duesPage, setDuesPage] = useState(1);
@@ -1786,108 +1790,182 @@ export const FinancialPage: React.FC = () => {
       {/* Modal Detail Rincian Iuran Per Warga */}
       <SimpleDialog
         isOpen={!!selectedResidentId}
-        onClose={() => setSelectedResidentId(null)}
-        title={`Rincian Iuran: ${residentDuesSummary.find((r) => r.resident_id === selectedResidentId)?.resident_name || 'Warga'}`}
+        onClose={() => {
+          setSelectedResidentId(null);
+          setModalDuesPage(1);
+          setModalDuesYearFilter('all');
+          setModalDuesCategoryFilter('all');
+        }}
+        title={`Buku Iuran: ${residentDuesSummary.find((r) => r.resident_id === selectedResidentId)?.resident_name || 'Warga'}`}
       >
         {(() => {
           const res = residentDuesSummary.find((r) => r.resident_id === selectedResidentId);
           if (!res) return null;
+
+          // Ekstrak list tahun unik dari item transaksi warga
+          const availableYears = Array.from(
+            new Set(res.items.map((i: any) => String(i.period_year || new Date(i.created_at).getFullYear())))
+          ).sort((a, b) => Number(b) - Number(a));
+
+          // Filter item transaksi di modal
+          const filteredItems = res.items.filter((item: any) => {
+            const itemYear = String(item.period_year || new Date(item.created_at).getFullYear());
+            if (modalDuesYearFilter !== 'all' && itemYear !== modalDuesYearFilter) return false;
+            if (modalDuesCategoryFilter !== 'all' && item.fee_category_id !== modalDuesCategoryFilter) return false;
+            return true;
+          });
+
+          const totalModalPages = Math.ceil(filteredItems.length / MODAL_PAGE_SIZE) || 1;
+          const paginatedItems = filteredItems.slice(
+            (modalDuesPage - 1) * MODAL_PAGE_SIZE,
+            modalDuesPage * MODAL_PAGE_SIZE
+          );
+
           return (
             <div className="space-y-4 text-xs">
-              <div className="p-3 rounded-lg bg-indigo-50/60 border border-indigo-100 flex justify-between items-center">
+              {/* Ringkasan Akumulasi */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                 <div>
-                  <span className="font-semibold text-slate-700">Total Telah Lunas:</span>
-                  <div className="text-lg font-bold text-indigo-700">
+                  <span className="text-[11px] font-medium text-slate-500">Total Telah Lunas Disetor:</span>
+                  <div className="text-xl font-bold tracking-tight text-slate-900 mt-0.5">
                     Rp {res.total_paid.toLocaleString('id-ID')}
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-[11px] text-slate-500">Status Pembayaran:</span>
-                  <div className="font-medium text-slate-800">
-                    {res.verified_count} Lunas • {res.pending_count} Menunggu
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                    {res.verified_count} Lunas
+                  </span>
+                  {res.pending_count > 0 && (
+                    <span className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-100 text-amber-800">
+                      {res.pending_count} Menunggu Verifikasi
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <h5 className="font-bold text-slate-800 mb-2">Pos Iuran yang Sudah Dibayar</h5>
-                <div className="space-y-1.5">
+              {/* Pos Iuran Summary Badges */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-slate-700">
+                  <span className="font-semibold text-xs">Akumulasi per Pos Iuran:</span>
+                  <span className="text-[10px] text-slate-400">{Object.keys(res.categories).length} Pos Terbayar</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
                   {Object.values(res.categories).length === 0 ? (
-                    <div className="p-3 text-center text-slate-400 italic bg-slate-50 rounded-lg">
-                      Belum pernah membayar pos iuran apa pun.
-                    </div>
+                    <span className="text-slate-400 italic">Belum ada riwayat pembayaran</span>
                   ) : (
                     Object.values(res.categories).map((c) => (
                       <div
                         key={c.category_name}
-                        className="p-2.5 rounded-lg border border-slate-200 bg-white flex justify-between items-center"
+                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-slate-200 bg-white text-[11px]"
                       >
-                        <div>
-                          <span className="font-bold text-slate-900">{c.category_name}</span>
-                          <p className="text-[11px] text-slate-500 mt-0.5">
-                            Total {c.count}x bayar (Terakhir: {c.latest_period})
-                          </p>
-                        </div>
-                        <span className="font-bold text-emerald-700">
-                          Rp {c.total.toLocaleString('id-ID')}
-                        </span>
+                        <span className="text-slate-600 font-medium">{c.category_name}:</span>
+                        <strong className="text-emerald-700">Rp {c.total.toLocaleString('id-ID')}</strong>
+                        <span className="text-[10px] text-slate-400">({c.count}x)</span>
                       </div>
                     ))
                   )}
                 </div>
               </div>
 
-              <div>
-                <h5 className="font-bold text-slate-800 mb-2">Riwayat Pembayaran Lengkap</h5>
-                <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
-                  {res.items.length === 0 ? (
-                    <div className="p-3 text-center text-slate-400 italic">Tidak ada transaksi</div>
+              {/* Filter Bar Riwayat Transaksi */}
+              <div className="pt-2 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 mb-2">
+                  <span className="font-semibold text-xs text-slate-800">
+                    Daftar Pembayaran ({filteredItems.length})
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {availableYears.length > 1 && (
+                      <select
+                        value={modalDuesYearFilter}
+                        onChange={(e) => {
+                          setModalDuesYearFilter(e.target.value);
+                          setModalDuesPage(1);
+                        }}
+                        className="text-[11px] h-7 px-2 rounded border border-slate-200 bg-white text-slate-700"
+                      >
+                        <option value="all">Semua Tahun</option>
+                        {availableYears.map((y) => (
+                          <option key={y} value={y}>Tahun {y}</option>
+                        ))}
+                      </select>
+                    )}
+
+                    {catList.length > 1 && (
+                      <select
+                        value={modalDuesCategoryFilter}
+                        onChange={(e) => {
+                          setModalDuesCategoryFilter(e.target.value);
+                          setModalDuesPage(1);
+                        }}
+                        className="text-[11px] h-7 px-2 rounded border border-slate-200 bg-white text-slate-700 max-w-[140px] truncate"
+                      >
+                        <option value="all">Semua Pos</option>
+                        {catList.map((cat: any) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
+
+                {/* List Item Transaksi dengan Scroll & Pagination */}
+                <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 bg-white overflow-hidden">
+                  {filteredItems.length === 0 ? (
+                    <div className="p-4 text-center text-slate-400 italic">
+                      Tidak ada transaksi pembayaran yang cocok.
+                    </div>
                   ) : (
-                    res.items.map((item) => (
-                      <div key={item.id} className="p-2.5 flex justify-between items-center bg-white hover:bg-slate-50">
-                        <div>
-                          <span className="font-medium text-slate-800">
-                            {item.fee_category_name || 'Iuran'} ({item.period_month}/{item.period_year})
-                          </span>
+                    paginatedItems.map((item: any) => (
+                      <div key={item.id} className="p-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-slate-800 truncate">
+                              {item.fee_category_name || 'Iuran'}
+                            </span>
+                            <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                              ({item.period_month ? `${item.period_month}/` : ''}{item.period_year || '-'})
+                            </span>
+                          </div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span
-                              className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                              className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
                                 item.status === 'verified'
-                                  ? 'bg-green-100 text-green-800'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                   : item.status === 'rejected'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-amber-100 text-amber-800'
+                                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
                               }`}
                             >
-                              {item.status}
+                              {item.status === 'verified' ? 'Lunas' : item.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
                             </span>
                             {item.proof_url && (
                               <a
                                 href={getFileUrl(item.proof_url)}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-indigo-600 underline text-[10px]"
+                                className="text-indigo-600 hover:text-indigo-800 underline text-[10px] font-medium"
                               >
-                                Bukti
+                                Lihat Bukti
                               </a>
                             )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className="font-bold text-slate-900">
+
+                        <div className="text-right whitespace-nowrap">
+                          <span className="font-bold text-slate-900 text-xs">
                             Rp {Number(item.amount).toLocaleString('id-ID')}
                           </span>
                           {item.status === 'pending' && (
-                            <div className="flex gap-1.5 justify-end mt-1">
+                            <div className="flex gap-2 justify-end mt-1">
                               <button
                                 onClick={() => handleVerify(item.id, 'verified')}
-                                className="text-green-600 hover:text-green-800 font-bold text-[10px]"
+                                className="text-emerald-700 hover:text-emerald-900 font-bold text-[10px]"
                               >
                                 Verifikasi
                               </button>
                               <button
                                 onClick={() => handleVerify(item.id, 'rejected')}
-                                className="text-red-600 hover:text-red-800 font-bold text-[10px]"
+                                className="text-rose-600 hover:text-rose-800 font-bold text-[10px]"
                               >
                                 Tolak
                               </button>
@@ -1898,10 +1976,49 @@ export const FinancialPage: React.FC = () => {
                     ))
                   )}
                 </div>
+
+                {/* Modal Pagination Footer */}
+                {totalModalPages > 1 && (
+                  <div className="flex items-center justify-between pt-2.5 px-1">
+                    <span className="text-[11px] text-slate-400">
+                      Hal {modalDuesPage} dari {totalModalPages} ({filteredItems.length} data)
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={modalDuesPage <= 1}
+                        onClick={() => setModalDuesPage((p) => Math.max(1, p - 1))}
+                        className="h-6 px-2 text-[10px]"
+                      >
+                        Sebelumnya
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={modalDuesPage >= totalModalPages}
+                        onClick={() => setModalDuesPage((p) => Math.min(totalModalPages, p + 1))}
+                        className="h-6 px-2 text-[10px]"
+                      >
+                        Selanjutnya
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end pt-3 border-t border-slate-100">
-                <Button size="sm" variant="outline" onClick={() => setSelectedResidentId(null)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedResidentId(null);
+                    setModalDuesPage(1);
+                    setModalDuesYearFilter('all');
+                    setModalDuesCategoryFilter('all');
+                  }}
+                  className="h-8 px-4 text-xs font-medium"
+                >
                   Tutup
                 </Button>
               </div>
