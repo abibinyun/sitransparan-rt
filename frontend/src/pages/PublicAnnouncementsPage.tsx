@@ -8,7 +8,7 @@ import { ReactionButton } from '../components/ReactionButton';
 import { PollWidget } from '../components/PollWidget';
 import { MediaCarousel } from '../components/MediaCarousel';
 import { ParticipationCard } from '../components/ParticipationCard';
-import { enablePushNotifications } from '../services/push';
+import { enablePushNotifications, checkPushSubscriptionActive } from '../services/push';
 import axios from 'axios';
 import { getTenantSlugOrFallback } from '../utils/tenant';
 import { getFileUrl } from '../utils/file';
@@ -34,13 +34,29 @@ export const PublicAnnouncementsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [shareTarget, setShareTarget] = useState<ShareableAnnouncement | null>(null);
-  const [pushStatus, setPushStatus] = useState<'idle' | 'loading' | 'enabled' | 'error'>('idle');
+  const [pushStatus, setPushStatus] = useState<'idle' | 'loading' | 'enabled' | 'error'>(() => {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      return 'enabled';
+    }
+    return 'idle';
+  });
   const [pushErrorMsg, setPushErrorMsg] = useState<string>('');
 
   React.useEffect(() => {
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      setPushStatus('enabled');
-    }
+    let isMounted = true;
+    checkPushSubscriptionActive().then((isActive) => {
+      if (isMounted) {
+        if (isActive) {
+          setPushStatus('enabled');
+        } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          // Izin browser granted, namun subscription belum tercatat di PushManager/SW
+          setPushStatus('enabled');
+        }
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleEnablePush = async () => {

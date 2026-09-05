@@ -31,6 +31,22 @@ export async function getPushConfig(): Promise<PushConfig | null> {
   }
 }
 
+export async function checkPushSubscriptionActive(): Promise<boolean> {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return false;
+  }
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+    return false;
+  }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return sub !== null;
+  } catch {
+    return Notification.permission === 'granted';
+  }
+}
+
 export async function enablePushNotifications(): Promise<{ ok: boolean; reason?: string }> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     return { ok: false, reason: 'Peramban tidak mendukung notifikasi.' };
