@@ -31,7 +31,9 @@ api.interceptors.response.use(
       error.config?.url?.includes('/auth/login') ||
       error.config?.url?.includes('/auth/register') ||
       error.config?.url?.includes('/house-access/claim') ||
-      error.config?.url?.includes('/push/subscribe');
+      error.config?.url?.includes('/push/subscribe') ||
+      error.config?.url?.includes('/push/config') ||
+      error.config?.url?.includes('/social/badge');
     if (error.response?.status === 401 && !isAuthRoute) {
       useAuthStore.getState().logout();
       if (window.location.pathname !== '/login') {

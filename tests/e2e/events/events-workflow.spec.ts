@@ -62,23 +62,6 @@ test.describe('Events — full business workflow (CRUD + RAB + RSVP)', () => {
     expect(saved, 'budget item tersimpan').toBeTruthy();
     expect(Number(saved!.estimated_cost)).toBe(500000);
     expect(Number(saved!.actual_cost)).toBe(450000);
-    // RSVP: pick a resident and record attendance
-    await card.getByRole('button', { name: 'RSVP Kehadiran' }).click();
-    const rsvpDialog = page.getByRole('dialog');
-    await expect(rsvpDialog).toBeVisible();
-    const saveBtn = rsvpDialog.getByRole('button', { name: 'Simpan Status' });
-    await expect(saveBtn).toBeDisabled(); // resident not chosen yet
-    await rsvpDialog.getByLabel('Pilih Warga').selectOption({ index: 1 });
-    await expect(saveBtn).toBeEnabled();
-    await rsvpDialog.getByLabel('Status Kehadiran').selectOption({ index: 0 }); // Hadir
-    // The modal closes silently on success — assert on the backend response
-    const [rsvpResp] = await Promise.all([
-      page.waitForResponse((r) => r.url().includes('/rsvp') && r.request().method() === 'POST'),
-      saveBtn.click(),
-    ]);
-    expect(rsvpResp.status(), 'RSVP diterima backend').toBeLessThan(300);
-    await expect(rsvpDialog).not.toBeVisible({ timeout: 10000 });
-
     // Cleanup — delete the event to keep residue low
     page.on('dialog', (dialog) => dialog.accept());
     await card.getByRole('button', { name: 'Hapus' }).click();

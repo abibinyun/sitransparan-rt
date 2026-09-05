@@ -222,6 +222,32 @@ func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 	}
 }
 
+// OptionalAuthMiddleware parses the JWT if present, but allows unauthenticated requests to proceed.
+func OptionalAuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
+	secret := []byte(jwtSecret)
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+			claims := &domain.JWTClaims{}
+
+			token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+				return secret, nil
+			}, jwt.WithValidMethods([]string{"HS256"}))
+
+			if err == nil && token.Valid && claims.UserID != uuid.Nil {
+				r = r.WithContext(WithClaims(r.Context(), claims))
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // RBACMiddleware enforces required roles (e.g. superadmin, admin_rt, resident).
 func RBACMiddleware(allowedRoles ...domain.RoleName) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

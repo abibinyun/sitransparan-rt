@@ -7,7 +7,6 @@ import {
 } from '../services/event';
 import { EventItem, EventStatus, CreateEventPayload } from '../types/event';
 import { EventBudgetModal } from '../components/EventBudgetModal';
-import { EventRSVPModal } from '../components/EventRSVPModal';
 import { SimpleDialog } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -29,7 +28,6 @@ export const EventsPage: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
 
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
-  const [isRSVPModalOpen, setIsRSVPModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [toast, setToast] = useState<string>('');
   const showToast = (msg: string) => {
@@ -194,29 +192,16 @@ export const EventsPage: React.FC = () => {
               </div>
 
               <div className="pt-2 border-t space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="outline"
-                    className="text-xs"
-                    onClick={() => {
-                      setSelectedEvent(event);
-                      setIsBudgetModalOpen(true);
-                    }}
-                  >
-                    RAB & Budget
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="text-xs"
-                    onClick={() => {
-                      setSelectedEvent(event);
-                      setIsRSVPModalOpen(true);
-                    }}
-                  >
-                    RSVP Kehadiran
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  className="w-full text-xs"
+                  onClick={() => {
+                    setSelectedEvent(event);
+                    setIsBudgetModalOpen(true);
+                  }}
+                >
+                  RAB & Budget
+                </Button>
 
                 <div className="flex justify-end space-x-2 pt-2">
                   <Button
@@ -332,17 +317,6 @@ export const EventsPage: React.FC = () => {
         }}
         event={selectedEvent}
         onSaved={() => showToast('RAB berhasil disimpan')}
-      />
-
-      {/* Modal RSVP */}
-      <EventRSVPModal
-        isOpen={isRSVPModalOpen}
-        onClose={() => {
-          setIsRSVPModalOpen(false);
-          setSelectedEvent(null);
-        }}
-        event={selectedEvent}
-        onSaved={() => showToast('RSVP berhasil disimpan')}
       />
     </div>
   );

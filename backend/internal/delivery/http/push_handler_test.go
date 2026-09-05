@@ -35,11 +35,11 @@ func (m *mockPushUsecase) Badge(ctx context.Context, userID uuid.UUID) (*domain.
 
 func TestPushHandler_PublicSubscribe(t *testing.T) {
 	mockUC := &mockPushUsecase{}
-	h := NewPushHandler(mockUC)
+	h := NewPushHandler(mockUC, nil)
 
 	mux := http.NewServeMux()
 	passthrough := func(next http.Handler) http.Handler { return next }
-	h.RegisterRoutes(mux, passthrough, passthrough)
+	h.RegisterRoutes(mux, passthrough, passthrough, passthrough)
 
 	body, _ := json.Marshal(map[string]string{
 		"endpoint":    "https://example.com/push/sub1",

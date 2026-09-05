@@ -9,11 +9,15 @@ import {
   Clock,
   Users,
   CheckSquare,
+  Edit2,
+  Trash2,
 } from 'lucide-react';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import {
   useMeetingsQuery,
   useCreateMeetingMutation,
+  useUpdateMeetingMutation,
+  useDeleteMeetingMutation,
   useActionItemsQuery,
   useCreateActionItemMutation,
   useUpdateActionItemMutation,
@@ -32,6 +36,7 @@ export const MeetingPage: React.FC = () => {
 
   // Modals
   const [isCreateMeetingOpen, setIsCreateMeetingOpen] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [isCreateActionOpen, setIsCreateActionOpen] = useState(false);
   const [isAddDecisionOpen, setIsAddDecisionOpen] = useState(false);
   const [isAddAttendeeOpen, setIsAddAttendeeOpen] = useState(false);
@@ -74,19 +79,78 @@ export const MeetingPage: React.FC = () => {
   const { data: actionItems = [], isLoading: isLoadingActions } = useActionItemsQuery();
 
   const createMeetingMutation = useCreateMeetingMutation();
+  const updateMeetingMutation = useUpdateMeetingMutation();
+  const deleteMeetingMutation = useDeleteMeetingMutation();
   const createActionItemMutation = useCreateActionItemMutation();
   const updateActionItemMutation = useUpdateActionItemMutation();
   const addDecisionMutation = useAddDecisionMutation();
   const addAttendeeMutation = useAddAttendeeMutation();
 
+  const handleOpenCreateMeeting = () => {
+    setEditingMeeting(null);
+    setMeetingForm({
+      title: '',
+      agenda: '',
+      meeting_date: new Date().toISOString().slice(0, 16),
+      location: 'Balai Pertemuan Warga',
+      meeting_type: 'regular',
+      visibility: 'internal',
+      status: 'scheduled',
+      notes: '',
+    });
+    setIsCreateMeetingOpen(true);
+  };
+
+  const handleOpenEditMeeting = (m: Meeting) => {
+    setEditingMeeting(m);
+    const dt = m.meeting_date ? new Date(m.meeting_date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16);
+    setMeetingForm({
+      title: m.title || '',
+      agenda: m.agenda || '',
+      meeting_date: dt,
+      location: m.location || 'Balai Pertemuan Warga',
+      meeting_type: m.meeting_type || 'regular',
+      visibility: m.visibility || 'internal',
+      status: m.status || 'scheduled',
+      notes: m.notes || '',
+    });
+    setIsCreateMeetingOpen(true);
+  };
+
+  const handleDeleteMeeting = async (id: string) => {
+    if (!window.confirm('Apakah Anda yakin ingin menghapus arsip rapat ini beserta seluruh notulen dan keputusannya?')) {
+      return;
+    }
+    try {
+      await deleteMeetingMutation.mutateAsync(id);
+      if (selectedMeetingId === id) {
+        setSelectedMeetingId(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Gagal menghapus rapat');
+    }
+  };
+
   const handleCreateMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createMeetingMutation.mutateAsync({
-        ...meetingForm,
-        meeting_date: new Date(meetingForm.meeting_date).toISOString(),
-      });
+      if (editingMeeting) {
+        await updateMeetingMutation.mutateAsync({
+          id: editingMeeting.id,
+          dto: {
+            ...meetingForm,
+            meeting_date: new Date(meetingForm.meeting_date).toISOString(),
+          },
+        });
+      } else {
+        await createMeetingMutation.mutateAsync({
+          ...meetingForm,
+          meeting_date: new Date(meetingForm.meeting_date).toISOString(),
+        });
+      }
       setIsCreateMeetingOpen(false);
+      setEditingMeeting(null);
       setMeetingForm({
         title: '',
         agenda: '',
@@ -203,7 +267,7 @@ export const MeetingPage: React.FC = () => {
                 + Tugas Baru
               </button>
               <button
-                onClick={() => setIsCreateMeetingOpen(true)}
+                onClick={handleOpenCreateMeeting}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm"
               >
                 <Plus className="w-4 h-4" />
@@ -310,7 +374,29 @@ export const MeetingPage: React.FC = () => {
                       ID: {selectedMeeting.id.slice(0, 8)}...
                     </span>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 mt-2">{selectedMeeting.title}</h2>
+                  <div className="flex items-start justify-between gap-4 mt-2">
+                    <h2 className="text-xl font-bold text-gray-900">{selectedMeeting.title}</h2>
+                    {isAdmin && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => handleOpenEditMeeting(selectedMeeting)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition"
+                          title="Edit Rapat"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          Edit Rapat
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMeeting(selectedMeeting.id)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition"
+                          title="Hapus Rapat"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Hapus
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-4 mt-2 text-xs text-gray-500">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-4 h-4 text-gray-400" />
@@ -511,7 +597,9 @@ export const MeetingPage: React.FC = () => {
       {isCreateMeetingOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl">
-            <h2 className="text-lg font-bold text-gray-900">Catat Rapat Baru</h2>
+            <h2 className="text-lg font-bold text-gray-900">
+              {editingMeeting ? 'Edit Arsip Rapat' : 'Catat Rapat Baru'}
+            </h2>
             <form onSubmit={handleCreateMeeting} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Judul Rapat</label>
@@ -598,10 +686,14 @@ export const MeetingPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={createMeetingMutation.isPending}
+                  disabled={createMeetingMutation.isPending || updateMeetingMutation.isPending}
                   className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition disabled:opacity-50"
                 >
-                  {createMeetingMutation.isPending ? 'Menyimpan...' : 'Simpan Notulen'}
+                  {createMeetingMutation.isPending || updateMeetingMutation.isPending
+                    ? 'Menyimpan...'
+                    : editingMeeting
+                    ? 'Simpan Perubahan'
+                    : 'Simpan Notulen'}
                 </button>
               </div>
             </form>

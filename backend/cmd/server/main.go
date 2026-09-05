@@ -119,10 +119,11 @@ func main() {
 	socialRepo := repository.NewSocialRepository(db)
 	socialUC := usecase.NewSocialUsecase(socialRepo)
 	socialHandler := delivery.NewSocialHandler(socialUC, tenantRepo, cfg.TenantBaseDomain)
-	pushHandler := delivery.NewPushHandler(pushUC)
+	pushHandler := delivery.NewPushHandler(pushUC, tenantRepo)
 
 	tenantMw := middleware.TenantMiddleware(tenantRepo, cfg.TenantBaseDomain)
 	authMw := middleware.AuthMiddleware(jwtSecret)
+	optionalAuthMw := middleware.OptionalAuthMiddleware(jwtSecret)
 	adminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin, domain.RoleAdminRT)
 	superAdminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin)
 	secHeadersMw := middleware.SecurityHeadersMiddleware()
@@ -202,7 +203,7 @@ func main() {
 	socialHandler.RegisterRoutes(mux, tenantMw, authMw, authRateLimitMw)
 
 	// Web Push & badge partisipasi (Fase 4)
-	pushHandler.RegisterRoutes(mux, authMw, tenantMw)
+	pushHandler.RegisterRoutes(mux, authMw, optionalAuthMw, tenantMw)
 
 	// SuperAdmin routes
 	superAdminMux := http.NewServeMux()

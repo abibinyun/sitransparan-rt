@@ -12,11 +12,12 @@ import (
 
 // PushHandler menangani langganan Web Push + badge partisipasi (Fase 4).
 type PushHandler struct {
-	usecase domain.PushUsecase
+	usecase    domain.PushUsecase
+	tenantRepo domain.TenantRepository
 }
 
-func NewPushHandler(usecase domain.PushUsecase) *PushHandler {
-	return &PushHandler{usecase: usecase}
+func NewPushHandler(usecase domain.PushUsecase, tenantRepo domain.TenantRepository) *PushHandler {
+	return &PushHandler{usecase: usecase, tenantRepo: tenantRepo}
 }
 
 // handleConfig: publik — kunci VAPID + status fitur (untuk UI consent).
@@ -55,6 +56,10 @@ func (h *PushHandler) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 	tenantCtx := middleware.GetTenantFromContext(r.Context())
 	if tenantCtx != nil && tenantCtx.ID != uuid.Nil {
 		tIDPtr = &tenantCtx.ID
+	} else if req.TenantSlug != "" {
+		if t, err := h.tenantRepo.GetBySlug(r.Context(), req.TenantSlug); err == nil && t != nil {
+			tIDPtr = &t.ID
+		}
 	}
 
 	sub := &domain.PushSubscription{
@@ -109,9 +114,9 @@ func (h *PushHandler) handleBadge(w http.ResponseWriter, r *http.Request) {
 	writeSocialJSON(w, http.StatusOK, badge)
 }
 
-func (h *PushHandler) RegisterRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler, tenantMw func(http.Handler) http.Handler) {
+func (h *PushHandler) RegisterRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler, optionalAuthMw func(http.Handler) http.Handler, tenantMw func(http.Handler) http.Handler) {
 	mux.HandleFunc("GET /api/v1/push/config", h.handleConfig)
-	mux.Handle("POST /api/v1/push/subscribe", authMw(tenantMw(http.HandlerFunc(h.handleSubscribe))))
-	mux.Handle("POST /api/v1/push/unsubscribe", authMw(tenantMw(http.HandlerFunc(h.handleUnsubscribe))))
+	mux.Handle("POST /api/v1/push/subscribe", optionalAuthMw(http.HandlerFunc(h.handleSubscribe)))
+	mux.Handle("POST /api/v1/push/unsubscribe", optionalAuthMw(http.HandlerFunc(h.handleUnsubscribe)))
 	mux.Handle("GET /api/v1/social/badge", authMw(http.HandlerFunc(h.handleBadge)))
 }
