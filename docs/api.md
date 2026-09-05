@@ -36,7 +36,9 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 | POST | `/api/v1/t/{slug}/aspirations` | Submit aspirasi publik anonim (`resident_id` diabaikan). |
 | GET | `/api/v1/t/{slug}/needs` | List kebutuhan lingkungan publik. |
 | GET | `/api/v1/t/{slug}/meetings` | Notulen rapat **publik saja** (tanpa notes internal & `created_by`). Hostname mismatch → 404. |
-| GET | `/api/v1/t/{slug}/financial-summary` | Ringkasan kas **agregat** (`current_balance`, `monthly_income`, `monthly_expense`, `spending_breakdown`). |
+| GET | `/api/v1/t/{slug}/financial-summary` | Ringkasan kas **agregat** (`current_balance`, `monthly_income`, `monthly_expense`, `spending_breakdown`, `funds`). |
+| GET | `/api/v1/t/{slug}/financial/categories` | Kategori pos iuran dengan agregasi saldo & penyaluran publik (`collected`, `spent`, `balance`). |
+| GET | `/api/v1/t/{slug}/financial/transactions` | Riwayat mutasi buku kas terbuka (filter `fund_id`, `category`). Bukti & user ID tidak diekspos. |
 | GET | `/api/v1/t/{slug}/events` | List agenda mendatang (20 terbaru, sorted). |
 | POST | `/api/v1/t/{slug}/events` | KPI portal `feed_view` / `share_opened` (rate-limited). Body: `{event_type, target_id?}`. |
 | GET | `/api/v1/t/{slug}/polls` | Daftar polling terbuka untuk portal publik (hasil **agregat**, tanpa voter identity). |

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Download, X, Smartphone, CheckCircle2, HelpCircle } from 'lucide-react';
+import { Download, X, Smartphone, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -7,12 +7,13 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const DISMISS_KEY = 'sitransparan_pwa_dismissed';
+
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  const [showManualGuide, setShowManualGuide] = useState(false);
 
   useEffect(() => {
     // Check if running in standalone mode (already installed)
@@ -24,6 +25,17 @@ export function PWAInstallPrompt() {
     if (isAppStandalone) {
       setIsVisible(false);
       return;
+    }
+
+    // Check if user previously dismissed prompt
+    const dismissedAt = localStorage.getItem(DISMISS_KEY);
+    if (dismissedAt) {
+      const hoursSinceDismiss = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60);
+      // Don't show again for 7 days if user dismissed it
+      if (hoursSinceDismiss < 168) {
+        setIsVisible(false);
+        return;
+      }
     }
 
     // Detect iOS
@@ -52,90 +64,64 @@ export function PWAInstallPrompt() {
         setIsVisible(false);
       }
       setDeferredPrompt(null);
-    } else {
-      // Fallback if browser hasn't fired beforeinstallprompt yet
-      setShowManualGuide(true);
     }
   };
 
   const handleDismiss = () => {
     setIsVisible(false);
+    localStorage.setItem(DISMISS_KEY, Date.now().toString());
   };
 
   if (!isVisible || isStandalone) return null;
 
   return (
-    <>
-      <div className="fixed bottom-16 md:bottom-4 left-4 right-4 z-50 mx-auto max-w-md animate-in fade-in slide-in-from-bottom-4 duration-300">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-4 text-white shadow-2xl ring-1 ring-white/20">
-          <button
-            onClick={handleDismiss}
-            className="absolute top-2 right-2 rounded-full p-1 text-white/80 hover:bg-white/20 hover:text-white"
-            aria-label="Tutup"
-          >
-            <X className="h-4 w-4" />
-          </button>
+    <aside
+      aria-label="Pemasangan Aplikasi"
+      className="fixed bottom-20 md:bottom-6 right-4 z-40 max-w-sm w-full animate-in fade-in slide-in-from-bottom-3 duration-200"
+    >
+      <div className="bg-slate-900/95 text-white backdrop-blur-md rounded-xl p-3.5 shadow-xl border border-slate-700/80 flex items-start gap-3">
+        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+          <Smartphone className="h-4 w-4" />
+        </div>
 
-          <div className="flex items-start gap-3.5">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-md">
-              <Smartphone className="h-6 w-6" />
-            </div>
-
-            <div className="flex-1 pr-4">
-              <h4 className="text-sm font-bold text-white leading-tight">
-                Pasang Aplikasi Warga RT
-              </h4>
-              <p className="mt-1 text-xs text-blue-100 leading-relaxed">
-                Buka pengumuman, voting &amp; kas RT lebih cepat tanpa perlu buka browser.
-              </p>
-
-              {isIOS ? (
-                <div className="mt-2 text-xs bg-white/10 rounded-lg p-2 text-blue-50">
-                  Ketuk tombol <b>Bagikan (Share)</b> di Safari lalu pilih <b>"Tambah ke Layar Utama"</b>.
-                </div>
-              ) : (
-                <div className="mt-3 flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    onClick={handleInstallClick}
-                    className="bg-white text-blue-700 hover:bg-blue-50 font-semibold text-xs h-8 px-3 shadow"
-                  >
-                    <Download className="h-3.5 w-3.5 mr-1.5" />
-                    Pasang di HP
-                  </Button>
-                  <div className="flex items-center gap-1 text-[11px] text-blue-100">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" /> Ringan &amp; Cepat
-                  </div>
-                </div>
-              )}
-            </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="text-xs font-bold text-slate-100">
+              Pasang Aplikasi Warga
+            </h4>
+            <button
+              onClick={handleDismiss}
+              className="rounded-md p-1 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              aria-label="Tutup pemberitahuan"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
+          <p className="mt-0.5 text-[11px] text-slate-300 line-clamp-1">
+            Akses pengumuman, iuran &amp; agenda lebih cepat langsung dari layar utama HP.
+          </p>
+
+          {isIOS ? (
+            <p className="mt-1.5 text-[10px] text-slate-400 bg-slate-800/80 rounded px-2 py-1">
+              Ketuk tombol <strong>Bagikan</strong> di Safari lalu pilih <strong>Tambah ke Layar Utama</strong>.
+            </p>
+          ) : (
+            <div className="mt-2 flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={handleInstallClick}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[11px] h-7 px-2.5 rounded-lg shadow-xs"
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Pasang di HP
+              </Button>
+              <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                <CheckCircle2 className="h-3 w-3 text-emerald-400" /> Cepat &amp; hemat kuota
+              </span>
+            </div>
+          )}
         </div>
       </div>
-
-      {showManualGuide && !isIOS && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white text-slate-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <div className="flex items-center gap-2 text-blue-600 font-bold mb-3">
-              <HelpCircle className="h-5 w-5" />
-              Cara Pasang di HP Android
-            </div>
-            <p className="text-xs text-slate-600 mb-4">
-              Jika tombol otomatis belum muncul, Anda bisa memasangnya dalam 2 langkah mudah:
-            </p>
-            <ol className="text-xs text-slate-700 space-y-2 list-decimal list-inside bg-slate-50 p-3 rounded-lg border">
-              <li>Ketuk ikon <b>titik tiga (⋮)</b> di pojok kanan atas browser Chrome.</li>
-              <li>Pilih menu <b>"Pasang aplikasi"</b> atau <b>"Tambahkan ke Layar Utama"</b>.</li>
-            </ol>
-            <Button
-              className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white text-xs h-9"
-              onClick={() => setShowManualGuide(false)}
-            >
-              Saya Mengerti
-            </Button>
-          </div>
-        </div>
-      )}
-    </>
+    </aside>
   );
 }

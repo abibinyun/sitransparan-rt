@@ -1416,7 +1416,36 @@ paths:
         - { name: slug, in: path, required: true, schema: { type: string } }
       responses:
         '200':
-          description: '{ current_balance, monthly_income, monthly_expense, spending_breakdown }'
+          description: '{ current_balance, monthly_income, monthly_expense, spending_breakdown, funds }'
+        '404':
+          description: Tenant tidak ditemukan / tidak aktif / mismatch hostname
+
+  /api/v1/t/{slug}/financial/categories:
+    get:
+      summary: Kategori pos iuran dengan agregasi saldo & pengeluaran untuk transparansi (PUBLIC)
+      description: >
+        Menampilkan daftar pos iuran warga dengan total terkumpul, terpakai, dan sisa saldo.
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: '{ data: [{ id, name, amount, period, collected, spent, balance }] }'
+        '404':
+          description: Tenant tidak ditemukan / tidak aktif / mismatch hostname
+
+  /api/v1/t/{slug}/financial/transactions:
+    get:
+      summary: Riwayat mutasi buku kas terbuka (PUBLIC)
+      description: >
+        Riwayat keluar-masuk buku kas yang dapat difilter per fund_id atau nama kategori.
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: fund_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: category, in: query, required: false, schema: { type: string } }
+        - { name: limit, in: query, required: false, schema: { type: integer, default: 50 } }
+      responses:
+        '200':
+          description: '{ data: [{ id, fund_id, fund_name, type, category, amount, transaction_date, description }] }'
         '404':
           description: Tenant tidak ditemukan / tidak aktif / mismatch hostname
 

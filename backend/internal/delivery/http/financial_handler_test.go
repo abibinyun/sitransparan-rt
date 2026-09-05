@@ -392,3 +392,75 @@ func TestFinancialHandler_PublicTenantSummary_HostMismatchDenied(t *testing.T) {
 		t.Fatalf("expected 404 on hostname mismatch, got %d", w.Code)
 	}
 }
+
+func TestFinancialHandler_PublicTenantCategoriesAndTransactions(t *testing.T) {
+	tenant := &domain.Tenant{ID: uuid.New(), Name: "RT 01", Slug: "rt01", Status: "active"}
+	tenantRepo := &mockTenantRepoForAnnDoc{tenant: tenant}
+	uc := newMockFinancialUsecase()
+
+	cat := &domain.FeeCategory{
+		ID:       uuid.New(),
+		TenantID: tenant.ID,
+		Name:     "Kebersihan",
+		Amount:   25000,
+		Period:   "monthly",
+	}
+	uc.categories[cat.ID] = cat
+
+	fund := &domain.Fund{
+		ID:        uuid.New(),
+		TenantID:  tenant.ID,
+		Name:      "Kas Utama",
+		Type:      "operational",
+		IsDefault: true,
+	}
+	uc.funds[fund.ID] = fund
+
+	proof := "https://secret.local/proof.jpg"
+	desc := "Pembayaran sampah mawar"
+	tx := &domain.FinancialTransaction{
+		ID:              uuid.New(),
+		TenantID:        tenant.ID,
+		FundID:          &fund.ID,
+		FundName:        &fund.Name,
+		Type:            "income",
+		Category:        "Kebersihan",
+		Amount:          25000,
+		TransactionDate: time.Now(),
+		Description:     &desc,
+		ProofURL:        &proof,
+	}
+	uc.transactions[tx.ID] = tx
+
+	handler := delivery.NewFinancialHandler(uc, tenantRepo, "openrt.local")
+	mux := http.NewServeMux()
+	handler.RegisterRoutes(mux, noopFinancialMW, noopFinancialMW)
+
+	// 1. Test public categories
+	reqCat := httptest.NewRequest(http.MethodGet, "/api/v1/t/rt01/financial/categories", nil)
+	wCat := httptest.NewRecorder()
+	mux.ServeHTTP(wCat, reqCat)
+	if wCat.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for public categories, got %d: %s", wCat.Code, wCat.Body.String())
+	}
+	bodyCat := wCat.Body.String()
+	if !strings.Contains(bodyCat, "Kebersihan") || !strings.Contains(bodyCat, "collected") {
+		t.Errorf("public categories missing expected fields: %s", bodyCat)
+	}
+
+	// 2. Test public transactions
+	reqTx := httptest.NewRequest(http.MethodGet, "/api/v1/t/rt01/financial/transactions?category=Kebersihan", nil)
+	wTx := httptest.NewRecorder()
+	mux.ServeHTTP(wTx, reqTx)
+	if wTx.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for public transactions, got %d: %s", wTx.Code, wTx.Body.String())
+	}
+	bodyTx := wTx.Body.String()
+	if !strings.Contains(bodyTx, "Pembayaran sampah mawar") {
+		t.Errorf("public transactions missing transaction description: %s", bodyTx)
+	}
+	// Verify sensitive fields (proof_url, created_by) are NOT leaked
+	if strings.Contains(bodyTx, "proof_url") || strings.Contains(bodyTx, "secret.local") {
+		t.Errorf("public transactions leaked sensitive proof_url: %s", bodyTx)
+	}
+}

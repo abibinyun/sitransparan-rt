@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"backend/internal/delivery/http/middleware"
 	"backend/internal/domain"
@@ -26,6 +27,8 @@ func (h *FinancialHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http
 	// Public tenant route: /api/v1/t/{slug}/financial-summary — aggregate-only
 	// transparency data for the anonymous public portal (no payer rows).
 	mux.HandleFunc("GET /api/v1/t/{slug}/financial-summary", h.handlePublicTenantSummary)
+	mux.HandleFunc("GET /api/v1/t/{slug}/financial/categories", h.handlePublicTenantCategories)
+	mux.HandleFunc("GET /api/v1/t/{slug}/financial/transactions", h.handlePublicTenantTransactions)
 
 	fundsHandler := authMw(tenantMw(http.HandlerFunc(h.handleFunds)))
 	categoriesHandler := authMw(tenantMw(http.HandlerFunc(h.handleCategories)))
@@ -660,6 +663,164 @@ func (h *FinancialHandler) handlePublicTenantSummary(w http.ResponseWriter, r *h
 		MonthlyExpense:    summary.MonthlyExpense,
 		SpendingBreakdown: breakdown,
 		Funds:             publicFunds,
+	})
+}
+
+type publicCategoryView struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Amount      float64   `json:"amount"`
+	Period      string    `json:"period"`
+	Description *string   `json:"description,omitempty"`
+	Collected   float64   `json:"collected"`
+	Spent       float64   `json:"spent"`
+	Balance     float64   `json:"balance"`
+}
+
+// handlePublicTenantCategories serves GET /api/v1/t/{slug}/financial/categories
+// for public transparency: lists active fee categories with aggregated collected,
+// spent, and net balance (without exposing any resident identity).
+func (h *FinancialHandler) handlePublicTenantCategories(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+
+	if hostSlug, matched := middleware.HostnameSlug(r.Host, h.baseDomain); matched && hostSlug != slug {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	tenant, err := h.tenantRepo.GetBySlug(r.Context(), slug)
+	if err != nil || tenant == nil || !tenant.IsActive() {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	r = r.WithContext(context.WithValue(r.Context(), domain.TenantContextKey, tenant))
+
+	cats, _, err := h.usecase.ListFeeCategories(r.Context(), tenant.ID, 100, 0)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	dues, _, _ := h.usecase.ListDuesPayments(r.Context(), tenant.ID, nil, "verified", 5000, 0)
+	txs, _, _ := h.usecase.ListFinancialTransactions(r.Context(), tenant.ID, "", 5000, 0)
+
+	res := make([]publicCategoryView, 0, len(cats))
+	for _, c := range cats {
+		var collected, spent float64
+		for _, d := range dues {
+			if d.FeeCategoryID == c.ID {
+				collected += d.Amount
+			}
+		}
+		keluarPrefix := "IURAN_KELUAR: " + c.Name
+		transferPrefix := "IURAN_PINDAH_KAS: " + c.Name
+		for _, tx := range txs {
+			if (tx.Type == "expense" && (tx.Category == keluarPrefix || tx.Category == c.Name || tx.Category == "IURAN: "+c.Name)) ||
+				(tx.Type == "income" && tx.Category == transferPrefix) {
+				spent += tx.Amount
+			}
+		}
+		res = append(res, publicCategoryView{
+			ID:          c.ID,
+			Name:        c.Name,
+			Amount:      c.Amount,
+			Period:      c.Period,
+			Description: c.Description,
+			Collected:   collected,
+			Spent:       spent,
+			Balance:     collected - spent,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"data": res,
+	})
+}
+
+type publicTransactionView struct {
+	ID              uuid.UUID  `json:"id"`
+	FundID          *uuid.UUID `json:"fund_id,omitempty"`
+	FundName        *string    `json:"fund_name,omitempty"`
+	Type            string     `json:"type"`
+	Category        string     `json:"category"`
+	Amount          float64    `json:"amount"`
+	TransactionDate time.Time  `json:"transaction_date"`
+	Description     *string    `json:"description,omitempty"`
+}
+
+// handlePublicTenantTransactions serves GET /api/v1/t/{slug}/financial/transactions
+// for public transparency: lists transparent ledger transactions filtered by fund_id
+// or category name, omitting sensitive proof URLs and user identity.
+func (h *FinancialHandler) handlePublicTenantTransactions(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+
+	if hostSlug, matched := middleware.HostnameSlug(r.Host, h.baseDomain); matched && hostSlug != slug {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	tenant, err := h.tenantRepo.GetBySlug(r.Context(), slug)
+	if err != nil || tenant == nil || !tenant.IsActive() {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	r = r.WithContext(context.WithValue(r.Context(), domain.TenantContextKey, tenant))
+
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	fundIDStr := r.URL.Query().Get("fund_id")
+	categoryQuery := strings.TrimSpace(r.URL.Query().Get("category"))
+
+	txs, _, err := h.usecase.ListFinancialTransactions(r.Context(), tenant.ID, "", 1000, 0)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	var targetFundID *uuid.UUID
+	if fundIDStr != "" {
+		if parsed, pErr := uuid.Parse(fundIDStr); pErr == nil {
+			targetFundID = &parsed
+		}
+	}
+
+	filtered := make([]publicTransactionView, 0, limit)
+	for _, t := range txs {
+		if targetFundID != nil && (t.FundID == nil || *t.FundID != *targetFundID) {
+			continue
+		}
+		if categoryQuery != "" {
+			keluarPrefix := "IURAN_KELUAR: " + categoryQuery
+			transferPrefix := "IURAN_PINDAH_KAS: " + categoryQuery
+			if t.Category != categoryQuery && t.Category != keluarPrefix && t.Category != transferPrefix && t.Category != ("IURAN: "+categoryQuery) {
+				continue
+			}
+		}
+		filtered = append(filtered, publicTransactionView{
+			ID:              t.ID,
+			FundID:          t.FundID,
+			FundName:        t.FundName,
+			Type:            t.Type,
+			Category:        t.Category,
+			Amount:          t.Amount,
+			TransactionDate: t.TransactionDate,
+			Description:     t.Description,
+		})
+		if len(filtered) >= limit {
+			break
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"data": filtered,
 	})
 }
 

@@ -55,6 +55,23 @@ test.describe('Public transparency API — anonymous access', () => {
     }
   });
 
+  test('GET /t/{slug}/financial/categories and /transactions work and do not leak sensitive fields', async ({ request }) => {
+    const resCat = await request.get(`${API}/api/v1/t/${SLUG}/financial/categories`);
+    expect(resCat.status()).toBe(200);
+    const bodyCat = await resCat.json();
+    expect(Array.isArray(bodyCat.data)).toBe(true);
+
+    const resTx = await request.get(`${API}/api/v1/t/${SLUG}/financial/transactions`);
+    expect(resTx.status()).toBe(200);
+    const bodyTx = await resTx.json();
+    expect(Array.isArray(bodyTx.data)).toBe(true);
+
+    const rawTx = JSON.stringify(bodyTx);
+    for (const leaked of ['proof_url', 'created_by']) {
+      expect(rawTx).not.toContain(leaked);
+    }
+  });
+
   test('unknown or inactive slug is 404, hostname mismatch is 404', async ({ request }) => {
     expect((await request.get(`${API}/api/v1/t/rt-tidak-ada/meetings`)).status()).toBe(404);
     expect((await request.get(`${API}/api/v1/t/rt-tidak-ada/financial-summary`)).status()).toBe(404);
