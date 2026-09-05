@@ -108,14 +108,22 @@ Format pengisian:
   - Temuan / Feedback: Berhasil. Dokumen KTP & KK tersimpan dan tampil live preview.
 - [x] **4.1.2 Detail Warga & Anggota Keluarga (`ResidentDetailModal` & `FamilyMemberModal`)**
   - Aksi: Buka detail warga (`Eye` icon) -> Tampil rincian demografi, pratinjau dokumen ukuran penuh, dan daftar anggota keluarga. Tambah, edit, dan hapus anggota keluarga.
-  - Verifikasi: Full CRUD anggota keluarga (POST, GET, PUT, DELETE) berjalan dengan enkripsi NIK di backend. E2E test CRUD anggota keluarga dan modal detail lulus.
+  - Verifikasi: Full CRUD anggota keluarga (POST, GET, PUT, DELETE) berjalan dengan enkripsi NIK di backend. NIK opsional untuk anak di bawah 17 tahun. E2E test CRUD anggota keluarga dan modal detail lulus.
   - Temuan / Feedback: Berhasil. Modal detail warga dan CRUD anggota keluarga lengkap.
-- [x] **4.1.3 Edit & Hapus Warga**
-  - Verifikasi: Edit informasi warga terupdate dan persisten setelah reload; tombol hapus menampilkan dialog konfirmasi sebelum data dihapus. E2E test lulus.
-  - Temuan / Feedback: Berhasil.
+- [x] **4.1.3 Edit & Hapus Warga serta Soft-Delete Architecture**
+  - Verifikasi: Edit informasi warga terupdate dan persisten setelah reload. Hapus warga dan anggota keluarga menerapkan soft-delete menyeluruh (`deleted_at IS NULL`) di seluruh tabel relasi demografi, keuangan, dan aset warga. E2E test lulus.
+  - Temuan / Feedback: Berhasil. Data yang dihapus tidak lagi muncul di daftar aktif namun jejak historis dan referensi database tetap aman.
 - [x] **4.1.4 Filter & Pencarian Warga**
-  - Verifikasi: Kolom input pencarian cepat dan akurat berdasarkan Nama, NIK, atau No KK. Dropdown filter redundan dihilangkan sesuai preferensi. E2E test lulus.
-  - Temuan / Feedback: Berhasil. Input pencarian tunggal lebih bersih dan responsif.
+  - Verifikasi: Kolom input pencarian cepat dan akurat berdasarkan Nama Kepala Keluarga, NIK, No KK, Alamat, Nomor Telepon, hingga Nama Anggota Keluarga di dalam KK. E2E test lulus.
+  - Temuan / Feedback: Berhasil. Input pencarian tunggal (unified search) responsif dan mendukung pencarian nama anak/anggota keluarga.
+- [x] **4.1.5 Mutasi Status Warga & Promosi Kepala Keluarga (`Jadikan KK`)**
+  - Aksi:
+    1. Pengubahan status kependudukan (Aktif, Pindah, Meninggal, Menunggu, Ditolak) langsung dari tabel dengan indikator badge warna yang jelas.
+    2. Tombol "Jadikan KK" pada baris anggota keluarga (anak laki-laki, anak perempuan, tua, maupun muda) untuk menggantikan kepala keluarga yang meninggal atau pindah.
+  - Verifikasi:
+    - Backend endpoint `POST /api/v1/residents/{id}/family/{member_id}/promote` berjalan transaksional: anggota keluarga dipromosikan menjadi record resident kepala keluarga baru, seluruh anggota keluarga dipindahkan, FK dues payments dan data rumah di-relink dengan aman, dan mantan kepala keluarga diarsipkan otomatis sebagai `"Mantan Kepala Keluarga (Almarhum)"` atau `"Mantan Kepala Keluarga (Pindah)"`.
+    - E2E Playwright suite (`tests/e2e/residents/residents.spec.ts`) memverifikasi alur penggantian kepala keluarga oleh anak perempuan muda serta mutasi status meninggal secara deterministik (8/8 skenario passed).
+  - Temuan / Feedback: Berhasil. Sesuai kebutuhan pergantian kepala keluarga ketika terjadi musibah atau mutasi warga.
 
 ### 4.2 Tab Data Rumah & QR Code Warga (`HousesPage`)
 - [ ] **4.2.1 Tambah & Edit Data Rumah**
