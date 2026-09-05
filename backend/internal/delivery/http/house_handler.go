@@ -45,6 +45,38 @@ func (h *HouseHandler) ClaimToken(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(res)
 }
 
+// MyHouse mengembalikan data rumah dan kepala keluarga milik pengguna login saat ini
+func (h *HouseHandler) MyHouse(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	tenant := middleware.GetTenantFromContext(r.Context())
+	if tenant == nil {
+		http.Error(w, `{"error":"tenant context missing"}`, http.StatusBadRequest)
+		return
+	}
+
+	userID := middleware.GetUserIDFromContext(r.Context())
+	if userID == uuid.Nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	house, headResident, err := h.houseUC.GetMyHouse(r.Context(), tenant.ID, userID)
+	if err != nil || house == nil {
+		http.Error(w, `{"error":"data rumah tidak ditemukan"}`, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"house":         house,
+		"head_resident": headResident,
+	})
+}
+
 // ListAdmin menampilkan daftar rumah warga di tenant saat ini
 func (h *HouseHandler) ListAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -258,6 +290,9 @@ func (h *HouseHandler) ResetPinAdmin(w http.ResponseWriter, r *http.Request) {
 func (h *HouseHandler) RegisterRoutes(mux *http.ServeMux, tenantMw, authMw, adminMw func(http.Handler) http.Handler) {
 	// Public endpoint for QR claiming
 	mux.HandleFunc("/api/v1/house-access/claim", h.ClaimToken)
+
+	// Resident endpoint for accessing personal house details
+	mux.Handle("/api/v1/house-access/me", authMw(tenantMw(http.HandlerFunc(h.MyHouse))))
 
 	// Admin RT endpoints
 	adminProtected := authMw(adminMw(tenantMw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -13,6 +13,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  house_id?: string;
   role: Role;
   tenants: Tenant[];
 }
@@ -23,5 +25,6 @@ export interface AuthState {
   activeTenant: Tenant | null;
   setAuth: (token: string, user: User, activeTenant?: Tenant | null) => void;
   setActiveTenant: (tenant: Tenant | null) => void;
+  updateUser: (partialUser: Partial<User>) => void;
   logout: () => void;
 }

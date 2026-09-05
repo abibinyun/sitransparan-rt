@@ -265,3 +265,45 @@ func TestAuthUsecase_TenantCRUD(t *testing.T) {
 		t.Errorf("expected len 1, got %d", len(tenants))
 	}
 }
+
+func TestAuthUsecase_UpdateProfile(t *testing.T) {
+	tuRepo := newMockTenantUserRepo()
+	uc, _, _ := newAuthUsecase(tuRepo)
+
+	ctx := context.Background()
+	user, err := uc.Register(ctx, "Budi Santoso", "budi@warga.local", "pass123", nil)
+	if err != nil {
+		t.Fatalf("Register failed: %v", err)
+	}
+
+	// 1. Update nama dan no HP tanpa ubah password
+	phone := "08123456789"
+	updated, err := uc.UpdateProfile(ctx, user.ID, "Budi S.", &phone, nil, nil)
+	if err != nil {
+		t.Fatalf("UpdateProfile failed: %v", err)
+	}
+	if updated.Name != "Budi S." || updated.Phone == nil || *updated.Phone != "08123456789" {
+		t.Errorf("expected name and phone updated, got %s, %v", updated.Name, updated.Phone)
+	}
+
+	// 2. Ganti password dengan password lama salah (harus gagal)
+	wrongOld := "wrongpass"
+	newPass := "newsecret123"
+	_, err = uc.UpdateProfile(ctx, user.ID, "Budi S.", nil, &wrongOld, &newPass)
+	if err == nil {
+		t.Fatal("expected error when old password is incorrect")
+	}
+
+	// 3. Ganti password dengan password lama benar (harus sukses)
+	correctOld := "pass123"
+	_, err = uc.UpdateProfile(ctx, user.ID, "Budi S.", nil, &correctOld, &newPass)
+	if err != nil {
+		t.Fatalf("expected password change to succeed: %v", err)
+	}
+
+	// 4. Verifikasi login dengan password baru
+	_, loggedUser, _, err := uc.Login(ctx, "budi@warga.local", "newsecret123", nil)
+	if err != nil || loggedUser == nil {
+		t.Fatalf("login with new password failed: %v", err)
+	}
+}

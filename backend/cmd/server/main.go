@@ -160,6 +160,7 @@ func main() {
 	// Authenticated routes
 	authMux := http.NewServeMux()
 	authMux.HandleFunc("GET /api/v1/auth/me", authHandler.Me)
+	authMux.HandleFunc("PUT /api/v1/auth/me", authHandler.Me)
 	authMux.HandleFunc("GET /api/v1/auth/tenants", authHandler.UserTenants)
 	authMux.HandleFunc("POST /api/v1/auth/switch-tenant", authHandler.SwitchTenant)
 
@@ -211,6 +212,7 @@ func main() {
 	superAdminMux.HandleFunc("/api/v1/superadmin/tenants/", authHandler.SuperAdminTenants)
 
 	// Mount protected handlers with middleware chain
+	mux.Handle("/api/v1/auth/me", authMw(tenantMw(authMux)))
 	mux.Handle("/api/v1/auth/tenants", authMw(tenantMw(authMux)))
 	mux.Handle("/api/v1/auth/switch-tenant", authMw(tenantMw(authMux)))
 	mux.Handle("/api/v1/superadmin/tenants", authMw(superAdminMw(tenantMw(superAdminMux))))

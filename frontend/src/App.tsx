@@ -20,6 +20,7 @@ const PublicAnnouncementsPage = lazy(() => import('./pages/PublicAnnouncementsPa
 const PublicEventsPage = lazy(() => import('./pages/PublicEventsPage').then(m => ({ default: m.PublicEventsPage })));
 const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage').then(m => ({ default: m.AnnouncementsPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const MeetingPage = lazy(() => import('./pages/MeetingPage').then(m => ({ default: m.MeetingPage })));
 const UsersPage = lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })));
 const PollsPage = lazy(() => import('./pages/PollsPage').then(m => ({ default: m.PollsPage })));
@@ -96,6 +97,7 @@ export function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
                 <Route path="/admin" element={<DashboardPage />} />
+                <Route path="/admin/profile" element={<ProfilePage />} />
                 <Route path="/admin/residents" element={<ResidentsPage />} />
                 <Route path="/admin/financial" element={<FinancialPage />} />
                 <Route path="/admin/events" element={<EventsPage />} />
@@ -104,6 +106,7 @@ export function App() {
                 <Route path="/admin/announcements" element={<AnnouncementsPage />} />
                 <Route path="/admin/polls" element={<PollsPage />} />
                 <Route path="/admin/karang-taruna" element={<KarangTarunaPage />} />
+                <Route path="/admin/programs" element={<Navigate to="/admin/karang-taruna" replace />} />
                 <Route path="/admin/waste-bank" element={<WasteBankPage />} />
                 <Route path="/admin/houses" element={<HousesPage />} />
                 <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RT_ADMIN']} />}>
@@ -125,9 +128,11 @@ export function App() {
                 <Route path="/announcements" element={<Navigate to="/admin/announcements" replace />} />
                 <Route path="/polls" element={<Navigate to="/admin/polls" replace />} />
                 <Route path="/karang-taruna" element={<Navigate to="/admin/karang-taruna" replace />} />
+                <Route path="/programs" element={<Navigate to="/admin/karang-taruna" replace />} />
                 <Route path="/waste-bank" element={<Navigate to="/admin/waste-bank" replace />} />
                 <Route path="/bank-sampah" element={<Navigate to="/admin/waste-bank" replace />} />
                 <Route path="/houses" element={<Navigate to="/admin/houses" replace />} />
+                <Route path="/profile" element={<Navigate to="/admin/profile" replace />} />
                 <Route path="/users" element={<Navigate to="/admin/users" replace />} />
               </Route>
             </Route>

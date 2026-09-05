@@ -313,6 +313,43 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
+
+	if r.Method == http.MethodPut {
+		var req struct {
+			Name        string  `json:"name"`
+			Phone       *string `json:"phone"`
+			OldPassword *string `json:"old_password"`
+			NewPassword *string `json:"new_password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, `{"error":"payload tidak valid"}`, http.StatusBadRequest)
+			return
+		}
+
+		updatedUser, err := h.authUsecase.UpdateProfile(r.Context(), userID, req.Name, req.Phone, req.OldPassword, req.NewPassword)
+		if err != nil {
+			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "Profil berhasil diperbarui",
+			"user": map[string]interface{}{
+				"id":    updatedUser.ID,
+				"name":  updatedUser.Name,
+				"email": updatedUser.Email,
+				"phone": updatedUser.Phone,
+			},
+		})
+		return
+	}
+
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
 	user, role, tenantID, err := h.authUsecase.GetMe(r.Context(), userID)
 	if err != nil {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)

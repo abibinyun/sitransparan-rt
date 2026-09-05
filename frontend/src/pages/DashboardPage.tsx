@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useDashboardMetrics, exportFinancialReport } from '../services/dashboard';
 import { useAuthStore } from '../store/useAuthStore';
+import { ResidentDashboardView } from './ResidentDashboardView';
 
 const formatRupiah = (val: number) =>
   new Intl.NumberFormat('id-ID', {
@@ -56,10 +57,18 @@ const StatCard: React.FC<{
 
 export const DashboardPage: React.FC = () => {
   const { user, activeTenant } = useAuthStore();
+  const isResident =
+    user?.role === 'RESIDENT' ||
+    String(user?.role).toLowerCase() === 'resident';
+
   const { data: metrics, isLoading } = useDashboardMetrics();
 
   const [exporting, setExporting] = React.useState<'csv' | 'pdf' | null>(null);
   const [exportError, setExportError] = React.useState('');
+
+  if (isResident) {
+    return <ResidentDashboardView />;
+  }
 
   const exportCSV = async () => {
     setExportError('');

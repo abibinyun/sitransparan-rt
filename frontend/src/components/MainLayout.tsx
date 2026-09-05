@@ -14,6 +14,7 @@ import {
   Shield,
   ShieldCheck,
   Users,
+  UserCircle,
   WalletCards,
   X,
   type LucideIcon,
@@ -68,7 +69,7 @@ const baseNavItems: NavItem[] = [
     to: '/admin/karang-taruna', 
     label: 'Pemberdayaan RT', 
     icon: Flame,
-    matchPrefixes: ['/admin/karang-taruna', '/admin/waste-bank']
+    matchPrefixes: ['/admin/karang-taruna', '/admin/waste-bank', '/admin/programs']
   },
   { 
     to: '/admin/users', 
@@ -321,8 +322,19 @@ export const MainLayout: React.FC = () => {
 
           <div className="mt-auto p-4 shrink-0">
             <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-4">
-              <p className="text-sm font-bold text-white">{user?.name || 'Pengguna'}</p>
-              <p className="mt-1 text-xs font-medium text-slate-400">{user?.role || 'ROLE'}</p>
+              <div className="flex items-center justify-between">
+                <div className="min-w-0 pr-2">
+                  <p className="text-sm font-bold text-white truncate">{user?.name || 'Pengguna'}</p>
+                  <p className="mt-0.5 text-xs font-medium text-slate-400">{user?.role || 'ROLE'}</p>
+                </div>
+                <NavLink
+                  to="/admin/profile"
+                  className="rounded-xl p-2 text-indigo-200 hover:bg-white/10 hover:text-white transition"
+                  title="Edit Profil"
+                >
+                  <UserCircle className="h-5 w-5" />
+                </NavLink>
+              </div>
               <button
                 onClick={handleLogout}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500/10 px-4 py-2.5 text-sm font-bold text-rose-100 transition hover:bg-rose-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
@@ -355,10 +367,17 @@ export const MainLayout: React.FC = () => {
               <div className="hidden sm:block">
                 <TenantSwitcher />
               </div>
-              <div className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm md:block">
-                <p className="text-xs font-medium text-slate-500">Masuk sebagai</p>
-                <p className="text-sm font-bold text-slate-900">{user?.name} · {user?.role}</p>
-              </div>
+              <NavLink
+                to="/admin/profile"
+                className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm md:flex items-center gap-2.5 hover:border-indigo-200 hover:shadow transition"
+                title="Kelola Profil Saya"
+              >
+                <div>
+                  <p className="text-xs font-medium text-slate-500">Masuk sebagai</p>
+                  <p className="text-sm font-bold text-slate-900">{user?.name} · {user?.role}</p>
+                </div>
+                <UserCircle className="h-5 w-5 text-slate-400" />
+              </NavLink>
             </div>
           </div>
           <div className="mt-3 sm:hidden">

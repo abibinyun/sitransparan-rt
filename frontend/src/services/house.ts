@@ -125,3 +125,25 @@ export async function claimHouseToken(slug: string, token: string): Promise<Clai
   });
   return res.data;
 }
+
+export interface MyHouseResponse {
+  house: House;
+  head_resident?: {
+    id: string;
+    full_name: string;
+    nik?: string;
+    phone?: string;
+    status?: string;
+  };
+}
+
+export function useMyHouseQuery() {
+  return useQuery<MyHouseResponse, Error>({
+    queryKey: ['my-house'],
+    queryFn: async () => {
+      const res = await api.get<MyHouseResponse>('/house-access/me');
+      return res.data;
+    },
+    retry: false,
+  });
+}

@@ -43,6 +43,7 @@ type HouseRepository interface {
 	Create(ctx context.Context, tenantID uuid.UUID, house *House) error
 	GetByID(ctx context.Context, tenantID, id uuid.UUID) (*House, error)
 	GetByToken(ctx context.Context, tenantID uuid.UUID, token string) (*House, error)
+	GetByUserID(ctx context.Context, tenantID, userID uuid.UUID) (*House, error)
 	List(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]House, int, error)
 	Update(ctx context.Context, tenantID uuid.UUID, house *House) error
 	RevokeAndRegenerateToken(ctx context.Context, tenantID, id uuid.UUID, newToken, newPin string) error
@@ -52,6 +53,7 @@ type HouseRepository interface {
 
 type HouseUsecase interface {
 	ClaimAccessToken(ctx context.Context, tenantSlug, token string) (*HouseAccessClaimResponse, error)
+	GetMyHouse(ctx context.Context, tenantID, userID uuid.UUID) (*House, *Resident, error)
 	ListHouses(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]House, int, error)
 	CreateHouse(ctx context.Context, tenantID uuid.UUID, house *House) (*House, error)
 	UpdateHouse(ctx context.Context, tenantID uuid.UUID, house *House) (*House, error)

@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 
 export interface WasteCategory {
@@ -123,3 +124,10 @@ export const wasteBankService = {
     return res.data;
   },
 };
+
+export function useHouseholdAccumulationsQuery(page = 1, limit = 50) {
+  return useQuery({
+    queryKey: ['waste-bank-households', page, limit],
+    queryFn: () => wasteBankService.getHouseholdAccumulations(page, limit),
+  });
+}

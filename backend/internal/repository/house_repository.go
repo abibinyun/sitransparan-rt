@@ -133,6 +133,43 @@ func (r *houseRepository) GetByToken(ctx context.Context, tenantID uuid.UUID, to
 	return &h, nil
 }
 
+func (r *houseRepository) GetByUserID(ctx context.Context, tenantID, userID uuid.UUID) (*domain.House, error) {
+	schema, err := r.schema(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id, block_number, address, head_resident_id, user_id, access_token, token_status, COALESCE(pin_code, ''), COALESCE(token_version, 1), created_at, updated_at
+		FROM %s.houses
+		WHERE user_id = $1 AND deleted_at IS NULL
+		LIMIT 1
+	`, schema)
+
+	var h domain.House
+	var headID sql.NullString
+	var uID sql.NullString
+	var addr sql.NullString
+	err = r.db.QueryRowContext(ctx, query, userID).Scan(
+		&h.ID, &h.BlockNumber, &addr, &headID, &uID, &h.AccessToken, &h.TokenStatus, &h.PinCode, &h.TokenVersion, &h.CreatedAt, &h.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if addr.Valid {
+		h.Address = &addr.String
+	}
+	if headID.Valid {
+		u, _ := uuid.Parse(headID.String)
+		h.HeadResidentID = &u
+	}
+	if uID.Valid {
+		u, _ := uuid.Parse(uID.String)
+		h.UserID = &u
+	}
+	return &h, nil
+}
+
 func (r *houseRepository) List(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]domain.House, int, error) {
 	schema, err := r.schema(ctx, tenantID)
 	if err != nil {

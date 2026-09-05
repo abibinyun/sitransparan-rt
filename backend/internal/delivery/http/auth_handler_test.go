@@ -35,6 +35,15 @@ func (m *mockAuthUsecase) GetMe(ctx context.Context, userID uuid.UUID) (*domain.
 	}
 	return m.user, domain.RoleResident, uuid.Nil, nil
 }
+func (m *mockAuthUsecase) UpdateProfile(ctx context.Context, userID uuid.UUID, name string, phone *string, oldPassword, newPassword *string) (*domain.User, error) {
+	if m.user == nil {
+		m.user = &domain.User{ID: userID, Name: name, Email: "mock@test.local", Phone: phone}
+	} else {
+		m.user.Name = name
+		m.user.Phone = phone
+	}
+	return m.user, nil
+}
 func (m *mockAuthUsecase) GetUserTenants(ctx context.Context, userID uuid.UUID) ([]*domain.Tenant, error) {
 	return m.tenants, nil
 }

@@ -195,6 +195,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ activeTenant });
   },
 
+  updateUser: (partialUser: Partial<User>) => {
+    set((state) => {
+      if (!state.user) return state;
+      const updated = { ...state.user, ...partialUser };
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+      setCookie(USER_KEY, JSON.stringify(updated));
+      return { user: updated };
+    });
+  },
+
   logout: () => {
     queryClient.clear();
     clearServiceWorkerCaches();

@@ -41,6 +41,15 @@ func (m *houseMockHouseRepo) GetByToken(ctx context.Context, tenantID uuid.UUID,
 	return m.tokens[token], nil
 }
 
+func (m *houseMockHouseRepo) GetByUserID(ctx context.Context, tenantID, userID uuid.UUID) (*domain.House, error) {
+	for _, h := range m.houses {
+		if h.UserID != nil && *h.UserID == userID {
+			return h, nil
+		}
+	}
+	return nil, nil
+}
+
 func (m *houseMockHouseRepo) List(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]domain.House, int, error) {
 	var list []domain.House
 	for _, h := range m.houses {

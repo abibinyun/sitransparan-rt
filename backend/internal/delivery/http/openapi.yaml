@@ -1053,6 +1053,10 @@ paths:
                   type: array
                   description: URL foto galeri feed (objek MinIO tenant)
                   items: { type: string }
+                file_urls:
+                  type: array
+                  description: URL berkas dokumen lampiran (PDF/arsip)
+                  items: { type: string }
                 target: { type: string, enum: [all, residents_only] }
       responses:
         '201':

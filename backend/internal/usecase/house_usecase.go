@@ -226,6 +226,24 @@ func (u *houseUsecase) ClaimAccessToken(ctx context.Context, tenantSlug, token s
 	}, nil
 }
 
+func (u *houseUsecase) GetMyHouse(ctx context.Context, tenantID, userID uuid.UUID) (*domain.House, *domain.Resident, error) {
+	house, err := u.houseRepo.GetByUserID(ctx, tenantID, userID)
+	if err != nil || house == nil {
+		return nil, nil, errors.New("rumah tidak ditemukan untuk akun ini")
+	}
+
+	var headResident *domain.Resident
+	if house.HeadResidentID != nil {
+		hr, err := u.residentRepo.GetByID(ctx, tenantID, *house.HeadResidentID)
+		if err == nil && hr != nil {
+			headResident = hr
+			house.HeadResident = hr
+		}
+	}
+
+	return house, headResident, nil
+}
+
 func (u *houseUsecase) ListHouses(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]domain.House, int, error) {
 	houses, total, err := u.houseRepo.List(ctx, tenantID, limit, offset)
 	if err != nil {

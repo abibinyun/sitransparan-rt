@@ -27,6 +27,7 @@ type AuthUsecase interface {
 	Login(ctx context.Context, email, password string, tenantID *uuid.UUID) (string, *domain.User, domain.RoleName, error)
 	Register(ctx context.Context, name, email, password string, phone *string) (*domain.User, error)
 	GetMe(ctx context.Context, userID uuid.UUID) (*domain.User, domain.RoleName, uuid.UUID, error)
+	UpdateProfile(ctx context.Context, userID uuid.UUID, name string, phone *string, oldPassword, newPassword *string) (*domain.User, error)
 	GetUserTenants(ctx context.Context, userID uuid.UUID) ([]*domain.Tenant, error)
 	// SwitchTenant re-issues a JWT scoped to a tenant the user is explicitly
 	// mapped to. This is the only sanctioned way for a multi-tenant user to
@@ -320,6 +321,56 @@ func (u *authUsecase) GetMe(ctx context.Context, userID uuid.UUID) (*domain.User
 	}
 	sel := tus[0]
 	return user, sel.RoleName, sel.TenantID, nil
+}
+
+func (u *authUsecase) UpdateProfile(ctx context.Context, userID uuid.UUID, name string, phone *string, oldPassword, newPassword *string) (*domain.User, error) {
+	if userID == uuid.Nil {
+		return nil, ErrUnauthorized
+	}
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	name = strings.TrimSpace(name)
+	if name != "" {
+		user.Name = name
+	}
+
+	if phone != nil {
+		cleanedPhone := strings.TrimSpace(*phone)
+		user.Phone = &cleanedPhone
+	}
+
+	// Ubah password jika diminta
+	if newPassword != nil && strings.TrimSpace(*newPassword) != "" {
+		newPass := strings.TrimSpace(*newPassword)
+		if len(newPass) < 4 {
+			return nil, errors.New("password baru minimal 4 karakter")
+		}
+		// Wajib verifikasi password lama jika user sebelumnya punya password hash
+		if user.PasswordHash != "" {
+			if oldPassword == nil || *oldPassword == "" {
+				return nil, errors.New("password saat ini (lama) wajib diisi untuk mengganti password")
+			}
+			if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(*oldPassword)); err != nil {
+				return nil, errors.New("password saat ini tidak sesuai")
+			}
+		}
+
+		hashed, err := bcrypt.GenerateFromPassword([]byte(newPass), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
+		user.PasswordHash = string(hashed)
+	}
+
+	user.UpdatedAt = time.Now()
+	if err := u.userRepo.Update(ctx, user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (u *authUsecase) GetUserTenants(ctx context.Context, userID uuid.UUID) ([]*domain.Tenant, error) {

@@ -71,6 +71,27 @@ export const useSwitchTenantMutation = () => {
   });
 };
 
+export interface UpdateProfilePayload {
+  name?: string;
+  phone?: string;
+  old_password?: string;
+  new_password?: string;
+}
+
+export interface UpdateProfileResponse {
+  message: string;
+  user: User;
+}
+
+export const useUpdateProfileMutation = () => {
+  return useMutation<UpdateProfileResponse, Error, UpdateProfilePayload>({
+    mutationFn: async (payload) => {
+      const res = await api.put<UpdateProfileResponse>('/auth/me', payload);
+      return res.data;
+    },
+  });
+};
+
 // Fetches the user's tenants using an explicit token (used right after login,
 // before the token is stored in the auth store).
 export async function fetchUserTenantsWithToken(token: string): Promise<Tenant[]> {
