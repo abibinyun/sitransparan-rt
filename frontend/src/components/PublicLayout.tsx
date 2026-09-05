@@ -9,17 +9,14 @@ import {
   Recycle,
   LogIn,
   ShieldCheck,
-  Bell,
   Menu,
   X,
-  Check,
   Landmark,
   User
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { usePublicTenantQuery } from '../services/public_tenant';
 import { usePublicFinancialSummary, formatRupiah } from '../services/public_transparency';
-import { enablePushNotifications } from '../services/push';
 import { PublicBottomNav } from './PublicBottomNav';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { TenantNotFoundPage } from './TenantNotFoundPage';
@@ -40,8 +37,6 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
   const isAuthenticated = Boolean(user);
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const [pushStatus, setPushStatus] = React.useState<'idle' | 'loading' | 'enabled' | 'error'>('idle');
-  const [pushMsg, setPushMsg] = React.useState('');
 
   const tenantName = tenantInfo?.name || 'Portal RT';
 
@@ -49,21 +44,6 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
   if (!isTenantLoading && (isTenantError || tenantInfo === null)) {
     return <TenantNotFoundPage />;
   }
-
-  const handleEnablePush = async () => {
-    setPushStatus('loading');
-    setPushMsg('');
-    const res = await enablePushNotifications();
-    if (res.ok) {
-      setPushStatus('enabled');
-      setPushMsg('Notifikasi warga aktif!');
-      setTimeout(() => setPushMsg(''), 4000);
-    } else {
-      setPushStatus('error');
-      setPushMsg(res.reason || 'Gagal mengaktifkan notifikasi');
-      setTimeout(() => setPushMsg(''), 4000);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-950 pb-16 md:pb-0">
@@ -81,26 +61,11 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
 
           <div className="flex items-center gap-4 shrink-0 text-xs">
             {kas && (
-              <span className="hidden sm:inline-flex items-center gap-1.5 tabular-nums">
+              <span className="inline-flex items-center gap-1.5 tabular-nums">
                 <Landmark className="w-3.5 h-3.5 text-emerald-400" />
-                Saldo Kas Kasbon/Iuran: <strong className="text-white font-bold">{formatRupiah(kas.current_balance)}</strong>
+                Saldo Kas: <strong className="text-white font-bold">{formatRupiah(kas.current_balance)}</strong>
               </span>
             )}
-            <button
-              onClick={handleEnablePush}
-              disabled={pushStatus === 'loading' || pushStatus === 'enabled'}
-              className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-bold"
-            >
-              {pushStatus === 'enabled' ? (
-                <>
-                  <Check className="w-3 h-3 text-emerald-400" /> Notif Aktif
-                </>
-              ) : (
-                <>
-                  <Bell className="w-3 h-3" /> Bunyikan Notif
-                </>
-              )}
-            </button>
           </div>
         </div>
       </div>
@@ -223,17 +188,6 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
           </div>
         )}
       </header>
-
-      {pushMsg && (
-        <div
-          role="alert"
-          className={`px-4 py-2 text-center text-xs font-semibold ${
-            pushStatus === 'enabled' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
-          }`}
-        >
-          {pushMsg}
-        </div>
-      )}
 
       {/* Main Container */}
       <main className="flex-1">

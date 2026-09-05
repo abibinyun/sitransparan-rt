@@ -35,14 +35,23 @@ export const PublicAnnouncementsPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [shareTarget, setShareTarget] = useState<ShareableAnnouncement | null>(null);
   const [pushStatus, setPushStatus] = useState<'idle' | 'loading' | 'enabled' | 'error'>('idle');
+  const [pushErrorMsg, setPushErrorMsg] = useState<string>('');
+
+  React.useEffect(() => {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      setPushStatus('enabled');
+    }
+  }, []);
 
   const handleEnablePush = async () => {
     setPushStatus('loading');
+    setPushErrorMsg('');
     const res = await enablePushNotifications();
     if (res.ok) {
       setPushStatus('enabled');
     } else {
       setPushStatus('error');
+      setPushErrorMsg(res.reason || 'Gagal mengaktifkan notifikasi');
     }
   };
 
@@ -124,11 +133,11 @@ export const PublicAnnouncementsPage: React.FC = () => {
             <button
               onClick={handleEnablePush}
               disabled={pushStatus === 'loading' || pushStatus === 'enabled'}
-              className="w-full inline-flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all shadow-xs"
+              className="w-full inline-flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all shadow-xs disabled:opacity-80"
             >
               {pushStatus === 'enabled' ? (
                 <>
-                  <Check className="w-4 h-4" /> Notifikasi Aktif
+                  <Check className="w-4 h-4 text-emerald-300" /> Notifikasi Aktif
                 </>
               ) : pushStatus === 'loading' ? (
                 <>
@@ -140,6 +149,11 @@ export const PublicAnnouncementsPage: React.FC = () => {
                 </>
               )}
             </button>
+            {pushErrorMsg && (
+              <p className="text-[11px] text-rose-700 font-medium text-center bg-rose-50 border border-rose-200 rounded-lg p-2">
+                {pushErrorMsg}
+              </p>
+            )}
           </div>
 
           {/* Widget Kas Lingkungan Terbuka */}

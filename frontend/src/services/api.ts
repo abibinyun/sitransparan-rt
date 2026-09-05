@@ -30,7 +30,8 @@ api.interceptors.response.use(
     const isAuthRoute =
       error.config?.url?.includes('/auth/login') ||
       error.config?.url?.includes('/auth/register') ||
-      error.config?.url?.includes('/house-access/claim');
+      error.config?.url?.includes('/house-access/claim') ||
+      error.config?.url?.includes('/push/subscribe');
     if (error.response?.status === 401 && !isAuthRoute) {
       useAuthStore.getState().logout();
       if (window.location.pathname !== '/login') {

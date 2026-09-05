@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BellRing, Award, QrCode } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
-import { enablePushNotifications, getBadge, ParticipationBadgeInfo } from '../services/push';
+import { getBadge, ParticipationBadgeInfo } from '../services/push';
 
 /**
  * Kartu partisipasi warga:
@@ -11,8 +11,7 @@ import { enablePushNotifications, getBadge, ParticipationBadgeInfo } from '../se
 export const ParticipationCard: React.FC = () => {
   const { user } = useAuthStore();
   const [badge, setBadge] = useState<ParticipationBadgeInfo | null>(null);
-  const [pushState, setPushState] = useState<'idle' | 'enabling' | 'enabled' | 'unsupported'>('idle');
-  const [note, setNote] = useState('');
+  const [pushState, setPushState] = useState<'idle' | 'enabled' | 'unsupported'>('idle');
   const [badgeError, setBadgeError] = useState(false);
 
   useEffect(() => {
@@ -32,18 +31,6 @@ export const ParticipationCard: React.FC = () => {
       setPushState('enabled');
     }
   }, [user]);
-
-  const enable = async () => {
-    setPushState('enabling');
-    const res = await enablePushNotifications();
-    if (res.ok) {
-      setPushState('enabled');
-      setNote('');
-    } else {
-      setPushState('idle');
-      setNote(res.reason || 'Gagal mengaktifkan notifikasi.');
-    }
-  };
 
   return (
     <section aria-label="Partisipasi Warga" className="civic-card p-5 sm:p-6 space-y-3">
@@ -73,23 +60,11 @@ export const ParticipationCard: React.FC = () => {
           <div className="mt-4 border-t border-slate-100 pt-3">
             {pushState === 'enabled' ? (
               <p className="text-xs font-semibold text-emerald-700 flex items-center gap-1.5">
-                <BellRing className="w-3.5 h-3.5" /> Notifikasi aktif
+                <BellRing className="w-3.5 h-3.5" /> Notifikasi perangkat aktif
               </p>
             ) : pushState === 'unsupported' ? (
-              <p className="text-xs text-slate-400">Peramban tidak mendukung notifikasi.</p>
-            ) : (
-              <>
-                <button
-                  onClick={enable}
-                  disabled={pushState === 'enabling'}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 border border-slate-300 hover:border-slate-400 hover:text-slate-900 px-3 py-1.5 rounded-lg disabled:opacity-50"
-                >
-                  <BellRing className="w-3.5 h-3.5" />
-                  {pushState === 'enabling' ? 'Mengaktifkan…' : 'Aktifkan Notifikasi'}
-                </button>
-                {note && <p className="mt-1.5 text-[11px] text-rose-600">{note}</p>}
-              </>
-            )}
+              <p className="text-xs text-slate-400">Peramban tidak mendukung notifikasi web.</p>
+            ) : null}
           </div>
         </>
       ) : (

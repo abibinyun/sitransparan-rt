@@ -37,7 +37,7 @@ export async function enablePushNotifications(): Promise<{ ok: boolean; reason?:
   }
   const cfg = await getPushConfig();
   if (!cfg?.enabled || !cfg.public_key) {
-    return { ok: false, reason: 'Notifikasi belum aktif di server.' };
+    return { ok: false, reason: 'Layanan notifikasi belum aktif di server.' };
   }
 
   try {
@@ -67,6 +67,9 @@ export async function enablePushNotifications(): Promise<{ ok: boolean; reason?:
     });
     return { ok: true };
   } catch (err: any) {
+    if (err?.response?.status === 401) {
+      return { ok: false, reason: 'Masuk akun atau scan QR rumah untuk mengaktifkan notifikasi.' };
+    }
     return { ok: false, reason: err?.response?.data?.error || err.message || 'Gagal mengaktifkan notifikasi' };
   }
 }

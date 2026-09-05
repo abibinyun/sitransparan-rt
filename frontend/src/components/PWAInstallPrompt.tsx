@@ -9,23 +9,69 @@ interface BeforeInstallPromptEvent extends Event {
 
 const DISMISS_KEY = 'sitransparan_pwa_dismissed';
 
+function checkIsAppInstalled(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  // 1. Standard CSS display-mode standalone or fullscreen or minimal-ui
+  const isStandaloneMedia =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.matchMedia('(display-mode: minimal-ui)').matches;
+  if (isStandaloneMedia) return true;
+
+  // 2. iOS Safari standalone property
+  if ((window.navigator as any).standalone === true) return true;
+
+  // 3. Android TWA / app referrer
+  if (document.referrer.startsWith('android-app://')) return true;
+
+  return false;
+}
+
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Check if running in standalone mode (already installed)
-    const isAppStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-    setIsStandalone(isAppStandalone);
-
-    if (isAppStandalone) {
+    // Check if app is running in installed mode
+    if (checkIsAppInstalled()) {
+      setIsInstalled(true);
       setIsVisible(false);
       return;
     }
+
+    // Check getInstalledRelatedApps API if supported by modern browser
+    if ('getInstalledRelatedApps' in navigator) {
+      (navigator as any)
+        .getInstalledRelatedApps()
+        .then((relatedApps: any[]) => {
+          if (Array.isArray(relatedApps) && relatedApps.length > 0) {
+            setIsInstalled(true);
+            setIsVisible(false);
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Listen for display-mode change (e.g. user opens in standalone)
+    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        setIsInstalled(true);
+        setIsVisible(false);
+      }
+    };
+    mediaQuery.addEventListener('change', handleMediaChange);
+
+    // Listen for successful install event
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setIsVisible(false);
+      setDeferredPrompt(null);
+    };
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     // Check if user previously dismissed prompt
     const dismissedAt = localStorage.getItem(DISMISS_KEY);
@@ -34,7 +80,10 @@ export function PWAInstallPrompt() {
       // Don't show again for 7 days if user dismissed it
       if (hoursSinceDismiss < 168) {
         setIsVisible(false);
-        return;
+        return () => {
+          mediaQuery.removeEventListener('change', handleMediaChange);
+          window.removeEventListener('appinstalled', handleAppInstalled);
+        };
       }
     }
 
@@ -45,6 +94,12 @@ export function PWAInstallPrompt() {
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      // Double check before showing
+      if (checkIsAppInstalled()) {
+        setIsInstalled(true);
+        setIsVisible(false);
+        return;
+      }
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsVisible(true);
     };
@@ -52,6 +107,8 @@ export function PWAInstallPrompt() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     return () => {
+      mediaQuery.removeEventListener('change', handleMediaChange);
+      window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
@@ -61,6 +118,7 @@ export function PWAInstallPrompt() {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
+        setIsInstalled(true);
         setIsVisible(false);
       }
       setDeferredPrompt(null);
@@ -72,7 +130,7 @@ export function PWAInstallPrompt() {
     localStorage.setItem(DISMISS_KEY, Date.now().toString());
   };
 
-  if (!isVisible || isStandalone) return null;
+  if (!isVisible || isInstalled) return null;
 
   return (
     <aside
