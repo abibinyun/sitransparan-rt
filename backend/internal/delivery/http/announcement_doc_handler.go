@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -211,10 +212,15 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 			}
 			if h.pushUC != nil {
 				go func(tID uuid.UUID, title string) {
-					broadcastCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+					log.Printf("announcement: memicu push broadcast untuk tenant %s, judul: %s", tID, title)
+					broadcastCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 					defer cancel()
-					_ = h.pushUC.BroadcastTenant(broadcastCtx, tID, "Pengumuman Baru", title, "/kabar")
+					if err := h.pushUC.BroadcastTenant(broadcastCtx, tID, "Pengumuman Baru", title, "/kabar"); err != nil {
+						log.Printf("announcement: error broadcast push: %v", err)
+					}
 				}(tenant.ID, req.Title)
+			} else {
+				log.Printf("announcement: pushUC nil, broadcast diabaikan")
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)

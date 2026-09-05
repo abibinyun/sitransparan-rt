@@ -46,17 +46,21 @@ func (u *pushUsecase) Config(ctx context.Context) (string, bool) {
 // langganan yang sudah kedaluwarsa (404/410) dihapus.
 func (u *pushUsecase) BroadcastTenant(ctx context.Context, tenantID uuid.UUID, title, body, url string) error {
 	if !u.pushEnabled() {
+		log.Printf("push: BroadcastTenant diabaikan karena pushEnabled=false (VAPID key kosong)")
 		return nil // push disabled — no-op, bukan error
 	}
 	subs, err := u.repo.ListByTenant(ctx, tenantID)
 	if err != nil {
+		log.Printf("push: gagal ambil subs tenant %s: %v", tenantID, err)
 		return err
 	}
+	log.Printf("push: broadcast ke %d subscriber untuk tenant %s (title=%s)", len(subs), tenantID, title)
 	payload, _ := json.Marshal(map[string]string{"title": title, "body": body, "url": url})
 
 	for _, sub := range subs {
 		s := &webpush.Subscription{Endpoint: sub.Endpoint, Keys: webpush.Keys{P256dh: sub.P256DH, Auth: sub.Auth}}
 		resp, err := webpush.SendNotification([]byte(payload), s, &webpush.Options{
+			VAPIDPublicKey:  u.cfg.VAPIDPublicKey,
 			VAPIDPrivateKey: u.cfg.VAPIDPrivateKey,
 			Subscriber:      u.cfg.VAPIDSubject,
 			TTL:             3600,
@@ -65,6 +69,7 @@ func (u *pushUsecase) BroadcastTenant(ctx context.Context, tenantID uuid.UUID, t
 			log.Printf("push: gagal kirim ke %s: %v", sub.Endpoint, err)
 			continue
 		}
+		log.Printf("push: sukses kirim ke %s (HTTP %d)", sub.Endpoint, resp.StatusCode)
 		if resp.StatusCode == 404 || resp.StatusCode == 410 {
 			_ = u.repo.DeleteByEndpoint(ctx, sub.Endpoint)
 		}
