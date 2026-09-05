@@ -81,6 +81,13 @@ func (u *residentUsecase) AddFamilyMember(ctx context.Context, tenantID uuid.UUI
 	return u.repo.AddFamilyMember(ctx, member)
 }
 
+func (u *residentUsecase) UpdateFamilyMember(ctx context.Context, tenantID, residentID uuid.UUID, member *domain.FamilyMember) error {
+	if tenantID == uuid.Nil || residentID == uuid.Nil || member.ID == uuid.Nil {
+		return ErrInvalidInput
+	}
+	return u.repo.UpdateFamilyMember(ctx, tenantID, residentID, member)
+}
+
 func (u *residentUsecase) RemoveFamilyMember(ctx context.Context, tenantID, residentID, memberID uuid.UUID) error {
 	if tenantID == uuid.Nil || residentID == uuid.Nil || memberID == uuid.Nil {
 		return ErrInvalidInput

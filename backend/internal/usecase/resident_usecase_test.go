@@ -79,6 +79,21 @@ func (m *mockResidentRepo) AddFamilyMember(ctx context.Context, member *domain.F
 	return nil
 }
 
+func (m *mockResidentRepo) UpdateFamilyMember(ctx context.Context, tenantID, residentID uuid.UUID, member *domain.FamilyMember) error {
+	res, ok := m.residents[residentID]
+	if !ok || res.TenantID != tenantID {
+		return usecase.ErrResidentNotFound
+	}
+	list := m.members[residentID]
+	for i, mem := range list {
+		if mem.ID == member.ID {
+			list[i] = member
+			return nil
+		}
+	}
+	return usecase.ErrResidentNotFound
+}
+
 func (m *mockResidentRepo) RemoveFamilyMember(ctx context.Context, tenantID, residentID, memberID uuid.UUID) error {
 	res, ok := m.residents[residentID]
 	if !ok || res.TenantID != tenantID {

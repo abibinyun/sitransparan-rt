@@ -2,12 +2,14 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"backend/internal/delivery/http/middleware"
 	"backend/internal/domain"
+	"backend/internal/repository"
 	"github.com/google/uuid"
 )
 
@@ -81,6 +83,16 @@ func (h *ResidentHandler) handleResidents(w http.ResponseWriter, r *http.Request
 
 	if len(parts) == 2 && parts[1] == "family" && r.Method == http.MethodPost {
 		h.addFamilyMember(w, r, tenant.ID, id)
+		return
+	}
+
+	if len(parts) == 3 && parts[1] == "family" && r.Method == http.MethodPut {
+		memberID, err := uuid.Parse(parts[2])
+		if err != nil {
+			http.Error(w, `{"error":"invalid family member id"}`, http.StatusBadRequest)
+			return
+		}
+		h.updateFamilyMember(w, r, tenant.ID, id, memberID)
 		return
 	}
 
@@ -236,6 +248,33 @@ func (h *ResidentHandler) addFamilyMember(w http.ResponseWriter, r *http.Request
 	_ = json.NewEncoder(w).Encode(member)
 }
 
+func (h *ResidentHandler) updateFamilyMember(w http.ResponseWriter, r *http.Request, tenantID, residentID, memberID uuid.UUID) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
+	var member domain.FamilyMember
+	if err := json.NewDecoder(r.Body).Decode(&member); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
+	member.ID = memberID
+	member.ResidentID = residentID
+
+	if err := h.usecase.UpdateFamilyMember(r.Context(), tenantID, residentID, &member); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			http.Error(w, `{"error":"family member not found"}`, http.StatusNotFound)
+			return
+		}
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(member)
+}
+
 func (h *ResidentHandler) removeFamilyMember(w http.ResponseWriter, r *http.Request, tenantID, residentID, memberID uuid.UUID) {
 	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
 		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
@@ -315,6 +354,7 @@ func (h *ResidentHandler) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := map[string]string{
+		"url":      fileURL,
 		"file_url": fileURL,
 		"type":     docType,
 	}

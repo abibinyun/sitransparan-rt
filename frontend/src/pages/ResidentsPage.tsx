@@ -1,46 +1,64 @@
 import React, { useState } from 'react';
-import { useResidents, useDeleteResident } from '../services/resident';
-import { Resident } from '../types/resident';
+import { useResidents, useDeleteResident, useDeleteFamilyMember } from '../services/resident';
+import { Resident, FamilyMember } from '../types/resident';
 import { ResidentModal } from '../components/ResidentModal';
+import { ResidentDetailModal } from '../components/ResidentDetailModal';
 import { FamilyMemberModal } from '../components/FamilyMemberModal';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Select } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent } from '../components/ui/card';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
-import { Plus, Search, UserPlus, Trash2, Edit3, ChevronDown, ChevronUp, UserCheck, ShieldAlert, Users, QrCode } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  UserPlus,
+  Trash2,
+  Edit3,
+  ChevronDown,
+  ChevronUp,
+  UserCheck,
+  ShieldAlert,
+  Users,
+  QrCode,
+  Eye,
+} from 'lucide-react';
 
 export const ResidentsPage: React.FC = () => {
   const [search, setSearch] = useState('');
-  const [headFilter, setHeadFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const limit = 10;
 
   const [isResidentModalOpen, setIsResidentModalOpen] = useState(false);
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
 
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailResident, setDetailResident] = useState<Resident | null>(null);
+
   const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
   const [familyResidentId, setFamilyResidentId] = useState<string | null>(null);
+  const [selectedFamilyMember, setSelectedFamilyMember] = useState<FamilyMember | null>(null);
 
   const [expandedKK, setExpandedKK] = useState<string | null>(null);
 
-  const isHeadOfFamilyParam =
-    headFilter === 'true' ? true : headFilter === 'false' ? false : undefined;
-
   const { data, isLoading, isError, error } = useResidents({
     search: search || undefined,
-    is_head_of_family: isHeadOfFamilyParam,
     page,
     limit,
   });
 
   const deleteMutation = useDeleteResident();
+  const deleteFamilyMutation = useDeleteFamilyMember();
 
   const residents = data?.data || [];
   const total = data?.total || 0;
   const totalPages = Math.ceil(total / limit) || 1;
+
+  const handleViewDetail = (resident: Resident) => {
+    setDetailResident(resident);
+    setIsDetailModalOpen(true);
+  };
 
   const handleEdit = (resident: Resident) => {
     setSelectedResident(resident);
@@ -60,7 +78,20 @@ export const ResidentsPage: React.FC = () => {
 
   const handleOpenAddFamily = (residentId: string) => {
     setFamilyResidentId(residentId);
+    setSelectedFamilyMember(null);
     setIsFamilyModalOpen(true);
+  };
+
+  const handleOpenEditFamily = (residentId: string, member: FamilyMember) => {
+    setFamilyResidentId(residentId);
+    setSelectedFamilyMember(member);
+    setIsFamilyModalOpen(true);
+  };
+
+  const handleDeleteFamily = async (residentId: string, memberId: string, name: string) => {
+    if (confirm(`Hapus anggota keluarga ${name}?`)) {
+      await deleteFamilyMutation.mutateAsync({ residentId, memberId });
+    }
   };
 
   const toggleDetailKK = (id: string) => {
@@ -86,10 +117,10 @@ export const ResidentsPage: React.FC = () => {
         }
       />
 
-      {/* Filters */}
+      {/* Search Bar Tunggal Tanpa Dropdown */}
       <Card>
-        <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
-          <div className="relative flex-1 w-full">
+        <CardContent className="p-4">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
             <Input
               type="text"
@@ -101,19 +132,6 @@ export const ResidentsPage: React.FC = () => {
               }}
               className="pl-9"
             />
-          </div>
-          <div className="w-full sm:w-56">
-            <Select
-              value={headFilter}
-              onChange={(e) => {
-                setHeadFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="all">Semua Warga</option>
-              <option value="true">Kepala Keluarga Saja</option>
-              <option value="false">Anggota Keluarga Saja</option>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -164,6 +182,15 @@ export const ResidentsPage: React.FC = () => {
                       <Badge variant="success">Aktif</Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewDetail(r)}
+                        title="Lihat Detail Lengkap & Dokumen"
+                        className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       {r.is_head_of_family && (
                         <Button
                           variant="ghost"
@@ -216,7 +243,7 @@ export const ResidentsPage: React.FC = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => handleOpenAddFamily(r.id)}
-                              className="gap-1"
+                              className="gap-1 text-xs"
                             >
                               <UserPlus className="h-3.5 w-3.5" /> Tambah Anggota
                             </Button>
@@ -230,15 +257,34 @@ export const ResidentsPage: React.FC = () => {
                                   <TableHead>NIK</TableHead>
                                   <TableHead>Hubungan</TableHead>
                                   <TableHead>Jenis Kelamin</TableHead>
+                                  <TableHead className="text-right">Aksi</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {r.family_members.map((fm) => (
                                   <TableRow key={fm.id}>
                                     <TableCell className="font-medium">{fm.full_name}</TableCell>
-                                    <TableCell className="font-mono text-xs">{fm.nik}</TableCell>
+                                    <TableCell className="font-mono text-xs">{fm.nik || '-'}</TableCell>
                                     <TableCell><Badge variant="outline">{fm.relation}</Badge></TableCell>
-                                    <TableCell>{fm.gender}</TableCell>
+                                    <TableCell>{fm.gender || '-'}</TableCell>
+                                    <TableCell className="text-right space-x-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleOpenEditFamily(r.id, fm)}
+                                        title="Edit Anggota Keluarga"
+                                      >
+                                        <Edit3 className="h-3.5 w-3.5 text-slate-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteFamily(r.id, fm.id, fm.full_name)}
+                                        title="Hapus Anggota Keluarga"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                                      </Button>
+                                    </TableCell>
                                   </TableRow>
                                 ))}
                               </TableBody>
@@ -285,21 +331,38 @@ export const ResidentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modals */}
+      {/* Modal Tambah / Edit Warga */}
       <ResidentModal
         isOpen={isResidentModalOpen}
         onClose={() => setIsResidentModalOpen(false)}
         resident={selectedResident}
       />
 
+      {/* Modal Detail Lengkap Warga */}
+      <ResidentDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        resident={detailResident}
+        onEdit={(res) => {
+          setIsDetailModalOpen(false);
+          handleEdit(res);
+        }}
+        onAddFamily={(resId) => {
+          setIsDetailModalOpen(false);
+          handleOpenAddFamily(resId);
+        }}
+      />
+
+      {/* Modal Tambah / Edit Anggota Keluarga */}
       {familyResidentId && (
         <FamilyMemberModal
           isOpen={isFamilyModalOpen}
           onClose={() => {
             setIsFamilyModalOpen(false);
-            setFamilyResidentId(null);
+            setSelectedFamilyMember(null);
           }}
           residentId={familyResidentId}
+          member={selectedFamilyMember}
         />
       )}
     </div>

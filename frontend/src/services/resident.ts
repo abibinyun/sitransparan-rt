@@ -110,6 +110,41 @@ export function useAddFamilyMember() {
   });
 }
 
+export function useUpdateFamilyMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      residentId,
+      memberId,
+      payload,
+    }: {
+      residentId: string;
+      memberId: string;
+      payload: CreateFamilyMemberPayload;
+    }) => {
+      const res = await api.put<FamilyMember>(`/residents/${residentId}/family/${memberId}`, payload);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['residents'] });
+      queryClient.invalidateQueries({ queryKey: ['residents', variables.residentId] });
+    },
+  });
+}
+
+export function useDeleteFamilyMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ residentId, memberId }: { residentId: string; memberId: string }) => {
+      await api.delete(`/residents/${residentId}/family/${memberId}`);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['residents'] });
+      queryClient.invalidateQueries({ queryKey: ['residents', variables.residentId] });
+    },
+  });
+}
+
 // Upload KTP / KK document
 export function useUploadResidentDoc() {
   return useMutation({
@@ -117,12 +152,13 @@ export function useUploadResidentDoc() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type', type);
-      const res = await api.post<{ url: string }>('/residents/upload', formData, {
+      const res = await api.post<{ url?: string; file_url?: string }>('/residents/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      return res.data;
+      const finalUrl = res.data.url || res.data.file_url || '';
+      return { url: finalUrl, file_url: finalUrl };
     },
   });
 }

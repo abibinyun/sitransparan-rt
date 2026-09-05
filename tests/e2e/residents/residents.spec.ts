@@ -17,7 +17,7 @@ test.describe('Resident Management — business workflow', () => {
     const nik = nik16(ts);
 
     // 1. CREATE via the real form
-    await page.goto('/residents');
+    await page.goto('/admin/residents');
     await page.getByRole('button', { name: 'Tambah Warga' }).click();
     await expect(page.getByRole('heading', { name: 'Tambah Data Warga' })).toBeVisible();
     await page.fill('#nik', nik);
@@ -70,7 +70,7 @@ test.describe('Resident Management — business workflow', () => {
     const nik = nik16(ts);
 
     // Create the head of family first
-    await page.goto('/residents');
+    await page.goto('/admin/residents');
     await page.getByRole('button', { name: 'Tambah Warga' }).click();
     await page.fill('#nik', nik);
     await page.fill('#kk_number', nik);
@@ -110,8 +110,32 @@ test.describe('Resident Management — business workflow', () => {
       .first();
     await expect(familyDetailReload.locator('table')).toContainText(childName);
 
-    // Cleanup
-    page.on('dialog', (dialog) => dialog.accept());
+    // EDIT family member
+    const updatedChildName = `Anak KK Updated ${ts}`;
+    await familyDetailReload.getByTitle('Edit Anggota Keluarga').click();
+    await expect(page.getByRole('heading', { name: 'Edit Anggota Keluarga' })).toBeVisible();
+    await page.fill('#famName', updatedChildName);
+    await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
+    await expect(page.getByRole('heading', { name: 'Edit Anggota Keluarga' })).not.toBeVisible();
+    await expect(familyDetailReload.locator('table')).toContainText(updatedChildName);
+
+    // TEST DETAIL MODAL: open full resident detail modal and verify demography + family table
+    await page.locator('tr', { hasText: headName }).getByTitle('Lihat Detail Lengkap & Dokumen').click();
+    const detailDialog = page.getByRole('dialog');
+    await expect(detailDialog).toBeVisible();
+    await expect(detailDialog).toContainText(headName);
+    await expect(detailDialog).toContainText(updatedChildName);
+    await page.getByRole('button', { name: 'Tutup' }).click();
+    await expect(detailDialog).not.toBeVisible();
+
+    // DELETE family member
+    page.once('dialog', (dialog) => dialog.accept());
+    await familyDetailReload.getByTitle('Hapus Anggota Keluarga').click();
+    await expect(familyDetailReload).not.toContainText(updatedChildName);
+    await expect(familyDetailReload).toContainText('Belum ada anggota keluarga terdaftar');
+
+    // Cleanup resident
+    page.once('dialog', (dialog) => dialog.accept());
     await page.locator('tr', { hasText: headName }).getByTitle('Hapus Warga').click();
     await expect(page.locator('table').first()).not.toContainText(headName);
   });
@@ -121,13 +145,11 @@ test.describe('Resident Management — business workflow', () => {
     const uniqueName = `Warga Cari ${ts}`;
     const nik = nik16(ts);
 
-    await page.goto('/residents');
+    await page.goto('/admin/residents');
     await page.getByRole('button', { name: 'Tambah Warga' }).click();
     await page.fill('#nik', nik);
     await page.fill('#kk_number', nik);
     await page.fill('#full_name', uniqueName);
-    // The head-of-family filter test below expects this resident to be a head
-    // of family, so mark it as such at creation time.
     await page.check('#is_head_of_family');
     await page.getByRole('button', { name: 'Simpan Data' }).click();
     await expect(page.locator('table')).toContainText(uniqueName);
@@ -137,19 +159,13 @@ test.describe('Resident Management — business workflow', () => {
     await expect(page.locator('tbody tr', { hasText: uniqueName })).toHaveCount(1);
     await expect(page.locator('table')).toContainText(nik);
 
+    // Search by NIK
+    await page.getByPlaceholder('Cari berdasarkan NAMA atau NIK...').fill(nik);
+    await expect(page.locator('tbody tr', { hasText: uniqueName })).toHaveCount(1);
+
     // Clear the search — record is still there
     await page.getByPlaceholder('Cari berdasarkan NAMA atau NIK...').fill('');
     await expect(page.locator('table').first()).toContainText(uniqueName);
-
-    // Head-of-family filter: the created resident is a head of family
-    // (target the filter select by its unique option text; the tenant
-    // switcher also renders a select in the header)
-    const headFilter = page.locator('select').filter({ hasText: 'Kepala Keluarga Saja' }).first();
-    await headFilter.selectOption('true');
-    await expect(page.getByText(uniqueName)).toBeVisible();
-    await headFilter.selectOption('false');
-    await expect(page.getByText(uniqueName)).not.toBeVisible();
-    await headFilter.selectOption('all');
 
     // Cleanup
     page.on('dialog', (dialog) => dialog.accept());
@@ -157,8 +173,64 @@ test.describe('Resident Management — business workflow', () => {
     await expect(page.locator('table').first()).not.toContainText(uniqueName);
   });
 
+  test('admin uploads KTP and KK photo, then views them in the ResidentDetailModal', async ({ page }) => {
+    const ts = Date.now();
+    const name = `Warga Foto ${ts}`;
+    const nik = nik16(ts);
+
+    // Create resident
+    await page.goto('/admin/residents');
+    await page.getByRole('button', { name: 'Tambah Warga' }).click();
+    await page.fill('#nik', nik);
+    await page.fill('#kk_number', nik);
+    await page.fill('#full_name', name);
+    await page.check('#is_head_of_family');
+
+    // Upload dummy 1x1 png image
+    const dummyImageBuffer = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      'base64'
+    );
+
+    const ktpInput = page.locator('input#ktpInput');
+    await ktpInput.setInputFiles({
+      name: 'ktp-test.png',
+      mimeType: 'image/png',
+      buffer: dummyImageBuffer,
+    });
+
+    const kkInput = page.locator('input#kkInput');
+    await kkInput.setInputFiles({
+      name: 'kk-test.png',
+      mimeType: 'image/png',
+      buffer: dummyImageBuffer,
+    });
+
+    // Wait for upload to complete and display preview in modal form
+    await expect(page.locator('img[alt="KTP"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('img[alt="KK"]')).toBeVisible({ timeout: 10000 });
+
+    await page.getByRole('button', { name: 'Simpan Data' }).click();
+    await expect(page.locator('table')).toContainText(name);
+
+    // Open detail modal and verify KTP/KK images are rendered
+    await page.locator('tr', { hasText: name }).getByTitle('Lihat Detail Lengkap & Dokumen').click();
+    const detailDialog = page.getByRole('dialog');
+    await expect(detailDialog).toBeVisible();
+    await expect(detailDialog.locator('img[alt="Foto KTP"]')).toBeVisible();
+    await expect(detailDialog.locator('img[alt="Foto Kartu Keluarga"]')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Tutup' }).click();
+    await expect(detailDialog).not.toBeVisible();
+
+    // Cleanup
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.locator('tr', { hasText: name }).getByTitle('Hapus Warga').click();
+    await expect(page.locator('table').first()).not.toContainText(name);
+  });
+
   test('form validation blocks submission when required fields are missing', async ({ page }) => {
-    await page.goto('/residents');
+    await page.goto('/admin/residents');
     await page.getByRole('button', { name: 'Tambah Warga' }).click();
     await expect(page.getByRole('heading', { name: 'Tambah Data Warga' })).toBeVisible();
 

@@ -372,6 +372,39 @@ func (r *residentRepository) AddFamilyMember(ctx context.Context, member *domain
 	).Scan(&member.CreatedAt, &member.UpdatedAt)
 }
 
+func (r *residentRepository) UpdateFamilyMember(ctx context.Context, tenantID, residentID uuid.UUID, member *domain.FamilyMember) error {
+	var encNIK *string
+	if member.NIK != nil && *member.NIK != "" {
+		enc, err := crypto.EncryptAESGCM(*member.NIK)
+		if err == nil {
+			encNIK = &enc
+		} else {
+			encNIK = member.NIK
+		}
+	}
+
+	query := fmt.Sprintf(`
+		UPDATE %s
+		SET full_name = $1, nik = $2, relation = $3, birth_date = $4, gender = $5, updated_at = NOW()
+		WHERE id = $6 AND resident_id IN (SELECT id FROM %s WHERE id = $7 AND tenant_id = $8)
+		RETURNING updated_at
+	`, TenantTable(ctx, "family_members"), TenantTable(ctx, "residents"))
+	err := r.db.QueryRowContext(ctx, query,
+		member.FullName,
+		encNIK,
+		member.Relation,
+		member.BirthDate,
+		member.Gender,
+		member.ID,
+		residentID,
+		tenantID,
+	).Scan(&member.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrNotFound
+	}
+	return err
+}
+
 func (r *residentRepository) RemoveFamilyMember(ctx context.Context, tenantID, residentID, memberID uuid.UUID) error {
 	query := fmt.Sprintf(`
 		DELETE FROM %s

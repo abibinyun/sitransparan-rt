@@ -34,6 +34,8 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
     rt_rw: '',
     phone: '',
     is_head_of_family: false,
+    ktp_url: '',
+    kk_url: '',
   });
 
   useEffect(() => {
@@ -49,6 +51,8 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
         rt_rw: resident.rt_rw || '',
         phone: resident.phone || '',
         is_head_of_family: resident.is_head_of_family || false,
+        ktp_url: resident.ktp_url || '',
+        kk_url: resident.kk_url || '',
       });
     } else {
       setFormData({
@@ -62,6 +66,8 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
         rt_rw: '',
         phone: '',
         is_head_of_family: false,
+        ktp_url: '',
+        kk_url: '',
       });
     }
   }, [resident, isOpen]);
@@ -280,9 +286,32 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
               />
               <label htmlFor="ktpInput" className="cursor-pointer flex flex-col items-center justify-center gap-1">
                 {formData.ktp_url ? (
-                  <div className="flex items-center gap-2 text-emerald-600 font-semibold text-xs truncate max-w-full">
-                    <FileText className="w-4 h-4 shrink-0" />
-                    <span className="truncate">KTP Terunggah</span>
+                  <div className="flex flex-col items-center gap-2 w-full">
+                    {formData.ktp_url.match(/\.(jpeg|jpg|png|webp|gif)/i) ? (
+                      <img
+                        src={formData.ktp_url}
+                        alt="KTP"
+                        className="h-28 w-auto max-w-full object-contain rounded-lg border border-slate-200"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 text-emerald-600 font-semibold text-xs truncate max-w-full">
+                        <FileText className="w-4 h-4 shrink-0" />
+                        <span className="truncate">Dokumen KTP Terunggah</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 text-xs">
+                      <a
+                        href={formData.ktp_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-indigo-600 hover:underline font-semibold"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Buka Foto
+                      </a>
+                      <span className="text-slate-300">|</span>
+                      <span className="text-slate-500 font-medium">Klik untuk ganti</span>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -324,9 +353,32 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
               />
               <label htmlFor="kkInput" className="cursor-pointer flex flex-col items-center justify-center gap-1">
                 {formData.kk_url ? (
-                  <div className="flex items-center gap-2 text-emerald-600 font-semibold text-xs truncate max-w-full">
-                    <FileText className="w-4 h-4 shrink-0" />
-                    <span className="truncate">KK Terunggah</span>
+                  <div className="flex flex-col items-center gap-2 w-full">
+                    {formData.kk_url.match(/\.(jpeg|jpg|png|webp|gif)/i) ? (
+                      <img
+                        src={formData.kk_url}
+                        alt="KK"
+                        className="h-28 w-auto max-w-full object-contain rounded-lg border border-slate-200"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 text-emerald-600 font-semibold text-xs truncate max-w-full">
+                        <FileText className="w-4 h-4 shrink-0" />
+                        <span className="truncate">Dokumen KK Terunggah</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 text-xs">
+                      <a
+                        href={formData.kk_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-indigo-600 hover:underline font-semibold"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Buka Foto
+                      </a>
+                      <span className="text-slate-300">|</span>
+                      <span className="text-slate-500 font-medium">Klik untuk ganti</span>
+                    </div>
                   </div>
                 ) : (
                   <>

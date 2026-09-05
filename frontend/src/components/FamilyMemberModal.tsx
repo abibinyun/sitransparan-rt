@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { CreateFamilyMemberPayload } from '../types/resident';
-import { useAddFamilyMember } from '../services/resident';
+import React, { useState, useEffect } from 'react';
+import { CreateFamilyMemberPayload, FamilyMember } from '../types/resident';
+import { useAddFamilyMember, useUpdateFamilyMember } from '../services/resident';
 import { dateOnlyToISO } from '../utils/date';
 import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
@@ -12,14 +12,17 @@ interface FamilyMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   residentId: string;
+  member?: FamilyMember | null;
 }
 
 export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
   isOpen,
   onClose,
   residentId,
+  member,
 }) => {
   const addFamilyMemberMutation = useAddFamilyMember();
+  const updateFamilyMemberMutation = useUpdateFamilyMember();
 
   const [formData, setFormData] = useState<CreateFamilyMemberPayload>({
     full_name: '',
@@ -29,28 +32,52 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
     gender: 'Laki-laki',
   });
 
+  useEffect(() => {
+    if (member) {
+      setFormData({
+        full_name: member.full_name || '',
+        nik: member.nik || '',
+        relation: member.relation || 'Anak',
+        birth_date: member.birth_date ? member.birth_date.split('T')[0] : '',
+        gender: member.gender || 'Laki-laki',
+      });
+    } else {
+      setFormData({
+        full_name: '',
+        nik: '',
+        relation: 'Anak',
+        birth_date: '',
+        gender: 'Laki-laki',
+      });
+    }
+  }, [member, isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addFamilyMemberMutation.mutateAsync({
-      residentId,
-      payload: { ...formData, birth_date: dateOnlyToISO(formData.birth_date) },
-    });
-    setFormData({
-      full_name: '',
-      nik: '',
-      relation: 'Anak',
-      birth_date: '',
-      gender: 'Laki-laki',
-    });
+    const payload = { ...formData, birth_date: dateOnlyToISO(formData.birth_date) };
+    if (member) {
+      await updateFamilyMemberMutation.mutateAsync({
+        residentId,
+        memberId: member.id,
+        payload,
+      });
+    } else {
+      await addFamilyMemberMutation.mutateAsync({
+        residentId,
+        payload,
+      });
+    }
     onClose();
   };
+
+  const isPending = addFamilyMemberMutation.isPending || updateFamilyMemberMutation.isPending;
 
   return (
     <Dialog
       isOpen={isOpen}
       onClose={onClose}
-      title="Tambah Anggota Keluarga"
-      description="Tambahkan susunan anggota keluarga dalam Kartu Keluarga"
+      title={member ? 'Edit Anggota Keluarga' : 'Tambah Anggota Keluarga'}
+      description="Kelola susunan anggota keluarga dalam Kartu Keluarga"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -86,6 +113,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
               <option value="Suami">Suami</option>
               <option value="Anak">Anak</option>
               <option value="Orang Tua">Orang Tua</option>
+              <option value="Famili Lain">Famili Lain</option>
               <option value="Lainnya">Lainnya</option>
             </Select>
           </div>
@@ -115,8 +143,8 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
           <Button type="button" variant="outline" onClick={onClose}>
             Batal
           </Button>
-          <Button type="submit" disabled={addFamilyMemberMutation.isPending}>
-            {addFamilyMemberMutation.isPending ? 'Menyimpan...' : 'Tambah Anggota'}
+          <Button type="submit" disabled={isPending}>
+            {isPending ? 'Menyimpan...' : member ? 'Simpan Perubahan' : 'Tambah Anggota'}
           </Button>
         </div>
       </form>

@@ -49,6 +49,7 @@ type ResidentRepository interface {
 	Delete(ctx context.Context, tenantID, id uuid.UUID) error
 	List(ctx context.Context, tenantID uuid.UUID, query string, isHead *bool, limit, offset int) ([]*Resident, int64, error)
 	AddFamilyMember(ctx context.Context, member *FamilyMember) error
+	UpdateFamilyMember(ctx context.Context, tenantID, residentID uuid.UUID, member *FamilyMember) error
 	RemoveFamilyMember(ctx context.Context, tenantID, residentID, memberID uuid.UUID) error
 	GetFamilyMembers(ctx context.Context, residentID uuid.UUID) ([]*FamilyMember, error)
 	UpdateStatus(ctx context.Context, tenantID, id uuid.UUID, status string) error
@@ -63,6 +64,7 @@ type ResidentUsecase interface {
 	Delete(ctx context.Context, tenantID, id uuid.UUID) error
 	List(ctx context.Context, tenantID uuid.UUID, query string, isHead *bool, limit, offset int) ([]*Resident, int64, error)
 	AddFamilyMember(ctx context.Context, tenantID uuid.UUID, member *FamilyMember) error
+	UpdateFamilyMember(ctx context.Context, tenantID, residentID uuid.UUID, member *FamilyMember) error
 	RemoveFamilyMember(ctx context.Context, tenantID, residentID, memberID uuid.UUID) error
 	Approve(ctx context.Context, tenantID, id, adminUserID uuid.UUID) error
 	Reject(ctx context.Context, tenantID, id, adminUserID uuid.UUID) error
