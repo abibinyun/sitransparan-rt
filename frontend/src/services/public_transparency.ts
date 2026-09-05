@@ -56,7 +56,7 @@ export function usePublicFinancialSummary() {
         return null;
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000, // 30 detik
   });
 }
 
@@ -113,7 +113,7 @@ export function usePublicFeeCategories() {
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 }
 
@@ -142,6 +142,6 @@ export function usePublicTransactions(params?: { fund_id?: string; category?: st
         return [];
       }
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 }

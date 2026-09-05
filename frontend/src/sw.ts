@@ -27,24 +27,6 @@ const navigationRoute = new NavigationRoute(
 );
 registerRoute(navigationRoute);
 
-// Cache API requests with NetworkFirst for main RT endpoints
-registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/') || url.pathname.includes('/public/'),
-  new NetworkFirst({
-    cacheName: 'api-cache',
-    networkTimeoutSeconds: 2,
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-      new ExpirationPlugin({
-        maxEntries: 50,
-        maxAgeSeconds: 10 * 60, // 10 menit cadangan offline, jangan 24 jam
-      }),
-    ],
-  })
-);
-
 // Cache static assets (images, fonts, styles, scripts)
 registerRoute(
   ({ request }) =>
@@ -85,7 +67,12 @@ self.addEventListener('skipWaiting', () => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    Promise.all([
+      caches.delete('api-cache'),
+      self.clients.claim(),
+    ])
+  );
 });
 
 // ---------- Web Push (Fase 4) ----------
