@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface AspirationFormProps {
   onSubmit: (payload: CreateAspirationPayload) => Promise<void>;
@@ -19,17 +20,20 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
   onClose,
   isOpen = true,
 }) => {
+  const { user } = useAuthStore();
   const [title, setTitle] = useState('');
-  const [authorName, setAuthorName] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<AspirationCategory>('suggestion');
+
+  // Nama pengusul murni diambil dari akun login saat ini
+  const displayName = user?.name || user?.email || 'Warga RT';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
     await onSubmit({
       title: title.trim(),
-      author_name: authorName.trim() || 'Warga RT',
+      author_name: displayName,
       content: content.trim(),
       category,
       is_anonymous: false,
@@ -49,6 +53,13 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
       description="Sampaikan aspirasi Anda untuk kemajuan lingkungan RT"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Identitas pengusul otomatis dari akun login */}
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+          <span className="text-xs text-slate-500 block">Pengusul Aspirasi (Akun Terdaftar)</span>
+          <span className="text-sm font-bold text-slate-800">{displayName}</span>
+          {user?.email && <span className="text-xs text-slate-400 block">{user.email}</span>}
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="aspTitle">Judul</Label>
           <Input
@@ -58,17 +69,6 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Judul aspirasi..."
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="aspAuthor">Nama Warga / Akun</Label>
-          <Input
-            id="aspAuthor"
-            type="text"
-            value={authorName}
-            onChange={(e) => setAuthorName(e.target.value)}
-            placeholder="Nama lengkap atau identitas warga (misal: Budi RT 03)..."
           />
         </div>
 

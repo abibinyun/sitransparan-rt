@@ -5,34 +5,40 @@ test.describe('Aspirations & Community Needs — business workflows', () => {
   test('public submit → admin responds → public sees status and official response', async ({ page }) => {
     const ts = Date.now();
     const title = `ASPIRASI E2E ${ts}`;
-    const authorName = `Budi E2E ${ts}`;
     const responderName = `Ketua RT Bambang ${ts}`;
     const content = `Isi aspirasi E2E ${ts} tentang lingkungan`;
     const responseText = `Terima kasih atas masukannya (E2E ${ts})`;
 
-    // 1. Public (unauthenticated) submits an aspiration
+    // 1. Unauthenticated user gets redirected to login when clicking submit
     await page.goto('/public/aspirations');
-    await page.getByRole('button', { name: 'Sampaikan Aspirasi' }).click();
+    await page.getByRole('button', { name: /Sampaikan Aspirasi/i }).click();
+    await expect(page).toHaveURL(/\/login/);
+
+    // 2. Login as resident/admin to submit aspiration with verified user identity
+    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await page.goto('/public/aspirations');
+    await page.getByRole('button', { name: /Sampaikan Aspirasi/i }).click();
     await expect(page.getByRole('heading', { name: 'Kirim Aspirasi / Usulan / Keluhan' })).toBeVisible();
+
+    // Verify user identity is displayed from active login and cannot be manually edited
+    await expect(page.getByText('Pengusul Aspirasi (Akun Terdaftar)')).toBeVisible();
+    await expect(page.getByText(ADMIN_EMAIL)).toBeVisible();
+
     await page.fill('#aspTitle', title);
-    await page.fill('#aspAuthor', authorName);
     await page.selectOption('#aspCategory', 'suggestion');
     await page.fill('#aspContent', content);
     await page.getByRole('button', { name: 'Kirim Aspirasi' }).click();
 
-    // The aspiration shows up in the public list as "Terkirim" and has author name
+    // The aspiration shows up in the public list as "Terkirim" and has user's account name
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
     await expect(page.getByText('Terkirim').first()).toBeVisible();
-    await expect(page.getByText(authorName)).toBeVisible();
 
-    // 2. Admin logs in and processes the aspiration (status transition + response)
-    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
+    // 3. Admin navigates to management page and processes the aspiration (status transition + response)
     await page.goto('/aspirations');
     await expect(page.getByRole('heading', { name: /Manajemen Aspirasi/i })).toBeVisible();
 
     const item = page.locator('div.p-6').filter({ hasText: title }).first();
     await expect(item).toBeVisible();
-    await expect(item).toContainText(authorName);
     await item.getByRole('button', { name: 'Tanggapi' }).click();
     await expect(page.getByRole('heading', { name: 'Tanggapi Aspirasi Warga' })).toBeVisible();
 
@@ -49,7 +55,7 @@ test.describe('Aspirations & Community Needs — business workflows', () => {
     await expect(processed).toContainText(responderName);
     await expect(processed).toContainText(responseText);
 
-    // 3. Logout and verify the public portal reflects the resolved status + response + responder
+    // 4. Logout and verify the public portal reflects the resolved status + response + responder
     await page.getByRole('button', { name: 'Logout' }).click();
     await page.goto('/public/aspirations');
     const publicCard = page.locator('article').filter({ hasText: title }).first();

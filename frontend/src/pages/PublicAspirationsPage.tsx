@@ -1,21 +1,25 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usePublicAspirations, usePublicCommunityNeeds, useSubmitAspiration } from '../services/aspiration_need';
 import { AspirationFormModal } from '../components/AspirationFormModal';
 import { CreateAspirationPayload } from '../types/aspiration_need';
+import { useAuthStore } from '../store/useAuthStore';
 import {
   MessageSquareHeart,
   PlusCircle,
+  Building,
+  Search,
+  Check,
+  Lightbulb,
+  AlertTriangle,
   Clock,
   CheckCircle2,
-  AlertTriangle,
-  Lightbulb,
-  Building,
-  XCircle,
-  Search,
-  Check
+  XCircle
 } from 'lucide-react';
 
 export const PublicAspirationsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'aspirations' | 'needs'>('aspirations');
   const [showFormModal, setShowFormModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,6 +27,14 @@ export const PublicAspirationsPage: React.FC = () => {
   const { data: aspirationsData, isLoading: loadingAspirations } = usePublicAspirations();
   const { data: needsData, isLoading: loadingNeeds } = usePublicCommunityNeeds();
   const submitAspirationMutation = useSubmitAspiration();
+
+  const handleOpenSubmitModal = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setShowFormModal(true);
+  };
 
   const handleSubmitAspiration = async (payload: CreateAspirationPayload) => {
     await submitAspirationMutation.mutateAsync(payload);
@@ -113,7 +125,7 @@ export const PublicAspirationsPage: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setShowFormModal(true)}
+            onClick={handleOpenSubmitModal}
             className="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95 shrink-0"
           >
             <PlusCircle className="w-5 h-5" /> Sampaikan Aspirasi Baru

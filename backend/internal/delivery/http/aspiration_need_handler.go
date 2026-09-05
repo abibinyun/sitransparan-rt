@@ -115,6 +115,12 @@ func (h *AspirationNeedHandler) publicSubmitAspiration(w http.ResponseWriter, r 
 	// unauthenticated, so any resident_id supplied in the body is ignored.
 	req.ResidentID = nil
 
+	// Pastikan author_name terisi dari payload (yang dikirim otomatis oleh frontend akun login)
+	// atau fallback aman jika kosong
+	if strings.TrimSpace(req.AuthorName) == "" {
+		req.AuthorName = "Warga RT"
+	}
+
 	if err := h.usecase.SubmitAspiration(r.Context(), tenantID, &req); err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 		return
