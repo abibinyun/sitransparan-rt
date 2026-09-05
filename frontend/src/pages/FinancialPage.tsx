@@ -455,32 +455,39 @@ export const FinancialPage: React.FC = () => {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header & Quick Action */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Transparansi Keuangan RT</h2>
-          <p className="text-sm text-gray-500">Pemisahan tegas Iuran Warga vs Arus Kas Buku Utama</p>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 mb-1.5">
+            <Wallet className="h-3.5 w-3.5 text-indigo-600" />
+            Pembukuan & Kas Warga
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Transparansi Keuangan RT</h1>
+          <p className="text-sm text-slate-500">Tata kelola iuran warga dan arus kas operasional berbasis kantong dana (multi-fund).</p>
         </div>
-        {/* Top Action Buttons */}
-        <div className="flex flex-wrap gap-2">
+
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             onClick={() => setIsDuesModalOpen(true)}
-            className="bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 gap-1.5"
+            className="h-9 gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs font-medium text-xs"
           >
-            <Coins className="h-4 w-4" /> + Bayar / Catat Iuran
+            <Coins className="h-3.5 w-3.5" />
+            Catat Iuran Warga
           </Button>
           <Button
             onClick={() => setIsTxModalOpen(true)}
-            className="bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 gap-1.5"
+            className="h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-medium text-xs"
           >
-            <Wallet className="h-4 w-4" /> + Transaksi Kas RT
+            <Plus className="h-3.5 w-3.5" />
+            Transaksi Kas RT
           </Button>
           <Button
             onClick={() => setIsFundModalOpen(true)}
             variant="outline"
-            className="border-indigo-300 bg-indigo-50/50 text-indigo-700 hover:bg-indigo-100 gap-1.5"
+            className="h-9 gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-xs"
           >
-            <Plus className="h-4 w-4" /> + Kantong Kas Baru
+            <Wallet className="h-3.5 w-3.5 text-slate-500" />
+            Kantong Kas Baru
           </Button>
           <Button
             onClick={async () => {
@@ -493,163 +500,169 @@ export const FinancialPage: React.FC = () => {
                 }
               }
             }}
-            variant="outline"
+            variant="ghost"
             disabled={resetFinancialData.isPending}
-            className="border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 gap-1.5"
-            title="Reset seluruh transaksi dan iuran warga ke Rp 0 untuk keperluan testing"
+            className="h-9 px-2.5 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+            title="Reset data transaksi & iuran (Testing only)"
           >
-            <RotateCcw className="h-4 w-4" /> {resetFinancialData.isPending ? 'Mereset...' : 'Reset Data Keuangan'}
+            <RotateCcw className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Total Masuk (Income)</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Gabungan Kas & Iuran Warga</p>
+      {/* Primary KPI Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Saldo Kas</span>
+            <div className="rounded-lg bg-indigo-50 p-2 text-indigo-600">
+              <Wallet className="h-4 w-4" />
             </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700">Global</span>
           </div>
-          <p className="mt-2 text-2xl font-bold text-green-600">
-            {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_income || 0).toLocaleString('id-ID')}`}
-          </p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tracking-tight text-slate-900">
+              {isSummaryLoading ? '...' : `Rp ${(summary?.current_balance || 0).toLocaleString('id-ID')}`}
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-slate-400">Total likuiditas seluruh kantong dana aktif</p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Total Keluar (Expense)</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Pengeluaran Operasional & Acara</p>
+
+        <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Arus Masuk (Income)</span>
+            <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600">
+              <ArrowDownRight className="h-4 w-4 rotate-180" />
             </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700">Global</span>
           </div>
-          <p className="mt-2 text-2xl font-bold text-red-600">
-            {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_expense || 0).toLocaleString('id-ID')}`}
-          </p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tracking-tight text-emerald-600">
+              {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_income || 0).toLocaleString('id-ID')}`}
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-slate-400">Akumulasi iuran terverifikasi & pemasukan kas</p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Total Dana</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Total Kas Semua Kantong Termasuk Iuran</p>
+
+        <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Arus Keluar (Expense)</span>
+            <div className="rounded-lg bg-rose-50 p-2 text-rose-600">
+              <ArrowUpRight className="h-4 w-4" />
             </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700">Global</span>
           </div>
-          <p className="mt-2 text-2xl font-bold text-indigo-600">
-            {isSummaryLoading ? '...' : `Rp ${(summary?.current_balance || 0).toLocaleString('id-ID')}`}
-          </p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tracking-tight text-slate-700">
+              {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_expense || 0).toLocaleString('id-ID')}`}
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-slate-400">Pengeluaran operasional & belanja pos kegiatan</p>
         </div>
       </div>
 
-      {/* Dynamic Cards: Multi-Fund Overview Cards */}
-      {fundList.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <Wallet className="h-4 w-4 text-indigo-600" /> Saldo Real-Time Kantong Kas
-            </h3>
+      {/* Allocation Overview: Split Section between Kas Kantong and Pos Iuran */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Kolom Kiri: Kantong Kas RT (Funds) */}
+        <div className="lg:col-span-5 rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col">
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-indigo-500" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Kantong Kas RT</h2>
+              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">
+                {fundList.length}
+              </span>
+            </div>
             <button
               onClick={() => setActiveTab('funds')}
               className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
             >
-              Buka Manajemen Kantong Kas →
+              Kelola →
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {fundList.map((f: any) => (
-              <div
-                key={f.id}
-                className={`p-3.5 rounded-lg border bg-white shadow-xs transition-all ${
-                  f.is_default ? 'border-indigo-300 ring-1 ring-indigo-200 bg-indigo-50/10' : 'border-slate-200'
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-xs font-semibold text-slate-800">{f.name}</span>
-                    {f.is_default && (
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">
-                        Default
-                      </span>
-                    )}
-                    <p className="text-[11px] text-slate-400 mt-0.5">{f.description || f.type}</p>
+
+          <div className="p-3 divide-y divide-slate-100 flex-1 overflow-y-auto max-h-[280px]">
+            {fundList.length === 0 ? (
+              <p className="py-6 text-center text-xs text-slate-400">Belum ada kantong kas</p>
+            ) : (
+              fundList.map((f: any) => (
+                <div key={f.id} className="py-2.5 first:pt-1 last:pb-1 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-semibold text-slate-800 truncate">{f.name}</p>
+                      {f.is_default && (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">
+                          Utama
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400 truncate mt-0.5">{f.description || f.type}</p>
                   </div>
-                  <span
-                    className={`text-sm font-bold ${
-                      (f.balance || 0) >= 0 ? 'text-slate-900' : 'text-rose-600'
-                    }`}
-                  >
+                  <span className={`text-xs font-bold whitespace-nowrap ${(f.balance || 0) >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>
                     Rp {(f.balance || 0).toLocaleString('id-ID')}
                   </span>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
-      )}
 
-      {/* Dynamic Cards: Real-Time Saldo per Kategori Iuran */}
-      {catList.length > 0 && (
-        <div className="rounded-xl border border-emerald-100 bg-emerald-50/30 p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-emerald-900 flex items-center gap-1.5">
-                <Coins className="h-4 w-4 text-emerald-600" /> Saldo & Alokasi per Pos Iuran Warga
-              </h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">Saldo bersih = Total iuran masuk dikurangi pengeluaran/penyaluran iuran terkait</p>
+        {/* Kolom Kanan: Pos Iuran & Penyaluran */}
+        <div className="lg:col-span-7 rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col">
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Saldo Pos Iuran Warga</h2>
+              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">
+                {catList.length}
+              </span>
             </div>
             <button
               onClick={() => {
                 setActiveTab('categories');
                 setCategorySubTab('dues');
               }}
-              className="text-xs text-emerald-700 hover:text-emerald-900 font-medium"
+              className="text-xs text-slate-500 hover:text-slate-800 font-medium"
             >
-              Master Pos Iuran →
+              Master Iuran →
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {catList.map((c: any) => {
-              const b = duesCategoryBalances[c.id] || { collected: 0, spent: 0, balance: 0, verifiedCount: 0, pendingCount: 0 };
-              return (
-                <div key={c.id} className="p-3.5 rounded-lg border border-emerald-200 bg-white shadow-xs space-y-2.5">
-                  <div className="flex justify-between items-start">
+
+          <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 flex-1 overflow-y-auto max-h-[280px]">
+            {catList.length === 0 ? (
+              <p className="col-span-full py-6 text-center text-xs text-slate-400">Belum ada pos iuran</p>
+            ) : (
+              catList.map((c: any) => {
+                const b = duesCategoryBalances[c.id] || { collected: 0, spent: 0, balance: 0, verifiedCount: 0, pendingCount: 0 };
+                return (
+                  <div key={c.id} className="p-3 rounded-lg border border-slate-100 bg-slate-50/40 hover:bg-slate-50 transition-colors flex flex-col justify-between gap-2">
                     <div>
-                      <span className="text-xs font-semibold text-slate-800">{c.name}</span>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        Tarif: Rp {Number(c.amount).toLocaleString('id-ID')} ({c.period === 'monthly' ? 'Bln' : '1x'})
-                      </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-xs font-semibold text-slate-800 leading-tight">{c.name}</span>
+                        <span className={`text-xs font-bold ${b.balance >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                          Rp {b.balance.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
+                        <span>Masuk: Rp {b.collected.toLocaleString('id-ID')}</span>
+                        <span>Keluar: Rp {b.spent.toLocaleString('id-ID')}</span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className={`text-sm font-bold ${b.balance >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
-                        Rp {b.balance.toLocaleString('id-ID')}
-                      </span>
-                      <p className="text-[9px] text-slate-400">Sisa Saldo</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] pt-1.5 border-t border-slate-100 text-slate-500">
-                    <span>Masuk: <strong className="text-emerald-600">Rp {b.collected.toLocaleString('id-ID')}</strong></span>
-                    <span>Keluar: <strong className="text-rose-600">Rp {b.spent.toLocaleString('id-ID')}</strong></span>
-                  </div>
-                  <div className="pt-1">
+
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedDisburseCatId(c.id);
                         setIsDisburseModalOpen(true);
                       }}
-                      className="w-full py-1 text-[11px] font-semibold rounded bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors"
+                      className="w-full py-1 text-[11px] font-medium rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition-colors text-center"
                     >
-                      Keluarkan / Salurkan Dana →
+                      Salurkan Dana
                     </button>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Tabs Navigasi Utama (Scrollable on Mobile) */}
       <div className="border-b border-gray-200 -mx-4 px-4 sm:mx-0 sm:px-0">
