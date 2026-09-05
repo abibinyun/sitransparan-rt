@@ -18,7 +18,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
-import { Plus, Trash2, Wallet, Coins, Search, Users, History, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Wallet, Coins, Search, Users, History, ChevronRight, Edit2 } from 'lucide-react';
 import { FeePeriod, FundType } from '../types/financial';
 import { getFileUrl } from '../utils/file';
 import { useResidents } from '../services/resident';
@@ -33,17 +33,28 @@ export const FinancialPage: React.FC = () => {
   // Sub-tab for categories: iuran vs kas
   const [categorySubTab, setCategorySubTab] = useState<'dues' | 'cash'>('dues');
 
-  // Master Kategori Kas (Client-side / local storage list with standard defaults)
-  const defaultCashIncomeCats = ['IURAN_WARGA', 'DONASI', 'DANA_DESA', 'LAINNYA_PEMASUKAN'];
-  const defaultCashExpenseCats = ['OPERASIONAL_RT', 'KEBERSIHAN', 'KEGIATAN_WARGA', 'PERBAIKAN_FASILITAS', 'LAINNYA_PENGELUARAN'];
-  const [customCashCats, setCustomCashCats] = useState<{ id: string; name: string; type: 'income' | 'expense'; desc?: string }[]>(() => {
+  // Master Kategori Kas (Fully editable & deletable CRUD)
+  const initialCashCategories = [
+    { id: 'cat_in_1', name: 'IURAN_WARGA', type: 'income' as const, desc: 'Pemasukan dari iuran warga' },
+    { id: 'cat_in_2', name: 'DONASI', type: 'income' as const, desc: 'Donasi & sumbangan sukarela' },
+    { id: 'cat_in_3', name: 'DANA_DESA', type: 'income' as const, desc: 'Bantuan dana pemerintah/desa' },
+    { id: 'cat_in_4', name: 'LAINNYA_PEMASUKAN', type: 'income' as const, desc: 'Pemasukan insidental lain' },
+    { id: 'cat_out_1', name: 'OPERASIONAL_RT', type: 'expense' as const, desc: 'Operasional rutin & keamanan' },
+    { id: 'cat_out_2', name: 'KEBERSIHAN', type: 'expense' as const, desc: 'Pengangkutan sampah & kebersihan' },
+    { id: 'cat_out_3', name: 'KEGIATAN_WARGA', type: 'expense' as const, desc: 'Acara warga, rapat & perlombaan' },
+    { id: 'cat_out_4', name: 'PERBAIKAN_FASILITAS', type: 'expense' as const, desc: 'Perbaikan jalan, pos satpam & lampu' },
+    { id: 'cat_out_5', name: 'LAINNYA_PENGELUARAN', type: 'expense' as const, desc: 'Pengeluaran insidental lain' },
+  ];
+
+  const [cashCats, setCashCats] = useState<{ id: string; name: string; type: 'income' | 'expense'; desc?: string }[]>(() => {
     try {
       const saved = localStorage.getItem('sitransparan_custom_cash_categories');
-      return saved ? JSON.parse(saved) : [];
+      return saved ? JSON.parse(saved) : initialCashCategories;
     } catch {
-      return [];
+      return initialCashCategories;
     }
   });
+  const [editingCashCat, setEditingCashCat] = useState<{ id: string; name: string; type: 'income' | 'expense'; desc?: string } | null>(null);
   const [newCashCatName, setNewCashCatName] = useState('');
   const [newCashCatType, setNewCashCatType] = useState<'income' | 'expense'>('income');
   const [newCashCatDesc, setNewCashCatDesc] = useState('');
@@ -284,33 +295,62 @@ export const FinancialPage: React.FC = () => {
     }
   };
 
-  const handleAddCustomCashCategory = (e: React.FormEvent) => {
+  const handleSaveCashCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCashCatName.trim()) return;
-    const catObj = {
-      id: 'custom_' + Date.now(),
-      name: newCashCatName.trim().toUpperCase().replace(/\s+/g, '_'),
-      type: newCashCatType,
-      desc: newCashCatDesc.trim() || undefined,
-    };
-    const updated = [...customCashCats, catObj];
-    setCustomCashCats(updated);
-    try {
-      localStorage.setItem('sitransparan_custom_cash_categories', JSON.stringify(updated));
-    } catch {}
-    setNewCashCatName('');
-    setNewCashCatDesc('');
-    showFeedback('success', 'Kategori master kas berhasil ditambahkan.');
-  };
+    const formattedName = newCashCatName.trim().toUpperCase().replace(/\s+/g, '_');
 
-  const handleDeleteCustomCashCat = (id: string) => {
-    if (confirm('Hapus kategori master kas ini?')) {
-      const updated = customCashCats.filter((c) => c.id !== id);
-      setCustomCashCats(updated);
+    if (editingCashCat) {
+      const updated = cashCats.map((c) =>
+        c.id === editingCashCat.id
+          ? { ...c, name: formattedName, type: newCashCatType, desc: newCashCatDesc.trim() || undefined }
+          : c
+      );
+      setCashCats(updated);
       try {
         localStorage.setItem('sitransparan_custom_cash_categories', JSON.stringify(updated));
       } catch {}
-      showFeedback('success', 'Kategori master kas berhasil dihapus.');
+      setEditingCashCat(null);
+      showFeedback('success', `Kategori kas ${formattedName} berhasil diperbarui.`);
+    } else {
+      const catObj = {
+        id: 'cash_cat_' + Date.now(),
+        name: formattedName,
+        type: newCashCatType,
+        desc: newCashCatDesc.trim() || undefined,
+      };
+      const updated = [...cashCats, catObj];
+      setCashCats(updated);
+      try {
+        localStorage.setItem('sitransparan_custom_cash_categories', JSON.stringify(updated));
+      } catch {}
+      showFeedback('success', `Kategori kas ${formattedName} berhasil ditambahkan.`);
+    }
+    setNewCashCatName('');
+    setNewCashCatDesc('');
+    setNewCashCatType('income');
+  };
+
+  const handleEditCashCat = (cat: { id: string; name: string; type: 'income' | 'expense'; desc?: string }) => {
+    setEditingCashCat(cat);
+    setNewCashCatName(cat.name);
+    setNewCashCatType(cat.type);
+    setNewCashCatDesc(cat.desc || '');
+  };
+
+  const handleDeleteCashCat = (id: string, name: string) => {
+    if (confirm(`Hapus kategori kas "${name}" ini?`)) {
+      const updated = cashCats.filter((c) => c.id !== id);
+      setCashCats(updated);
+      try {
+        localStorage.setItem('sitransparan_custom_cash_categories', JSON.stringify(updated));
+      } catch {}
+      if (editingCashCat?.id === id) {
+        setEditingCashCat(null);
+        setNewCashCatName('');
+        setNewCashCatDesc('');
+      }
+      showFeedback('success', `Kategori kas "${name}" berhasil dihapus.`);
     }
   };
 
@@ -422,7 +462,7 @@ export const FinancialPage: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-500">Saldo Kas RT (Total)</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Akumulasi Seluruh Kantong Kas</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Total Kas Semua Kantong Termasuk Iuran</p>
             </div>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700">Total Riil</span>
           </div>
@@ -1128,7 +1168,7 @@ export const FinancialPage: React.FC = () => {
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
-              2. Master Kategori Kas Masuk & Keluar ({defaultCashIncomeCats.length + defaultCashExpenseCats.length + customCashCats.length})
+              2. Master Kategori Kas Masuk & Keluar ({cashCats.length})
             </button>
           </div>
 
@@ -1193,100 +1233,129 @@ export const FinancialPage: React.FC = () => {
           {categorySubTab === 'cash' && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Standard Pemasukan */}
+                {/* Kategori Pemasukan */}
                 <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-                  <h4 className="font-semibold text-sm text-emerald-800 flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500"></span> Kategori Kas Masuk (Income)
-                  </h4>
-                  <ul className="divide-y divide-slate-100 text-xs text-slate-700">
-                    <li className="py-2 flex justify-between">
-                      <span className="font-semibold">IURAN_WARGA</span>
-                      <span className="text-slate-400">Default Sistem</span>
-                    </li>
-                    <li className="py-2 flex justify-between">
-                      <span className="font-semibold">DONASI</span>
-                      <span className="text-slate-400">Default Sistem</span>
-                    </li>
-                    <li className="py-2 flex justify-between">
-                      <span className="font-semibold">DANA_DESA</span>
-                      <span className="text-slate-400">Default Sistem</span>
-                    </li>
-                    <li className="py-2 flex justify-between">
-                      <span className="font-semibold">LAINNYA_PEMASUKAN</span>
-                      <span className="text-slate-400">Default Sistem</span>
-                    </li>
-                    {customCashCats.filter((c) => c.type === 'income').map((c) => (
-                      <li key={c.id} className="py-2 flex justify-between items-center text-emerald-950 font-medium">
-                        <div>
-                          <span>{c.name}</span>
-                          {c.desc && <p className="text-[10px] text-slate-400 font-normal">{c.desc}</p>}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteCustomCashCat(c.id)}
-                          className="text-rose-600 hover:text-rose-800 h-6 w-6 p-0"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </li>
-                    ))}
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-semibold text-sm text-emerald-800 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500"></span> Kategori Kas Masuk (Income)
+                    </h4>
+                    <span className="text-xs text-slate-400">
+                      {cashCats.filter((c) => c.type === 'income').length} kategori
+                    </span>
+                  </div>
+                  <ul className="divide-y divide-slate-100 text-xs text-slate-700 max-h-72 overflow-y-auto">
+                    {cashCats.filter((c) => c.type === 'income').length === 0 ? (
+                      <li className="py-4 text-center text-slate-400 italic">Belum ada kategori pemasukan.</li>
+                    ) : (
+                      cashCats.filter((c) => c.type === 'income').map((c) => (
+                        <li key={c.id} className="py-2.5 flex justify-between items-center hover:bg-slate-50 px-1 rounded">
+                          <div>
+                            <span className="font-semibold text-emerald-950">{c.name}</span>
+                            {c.desc && <p className="text-[10px] text-slate-400 font-normal">{c.desc}</p>}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditCashCat(c)}
+                              className="text-indigo-600 hover:text-indigo-800 h-7 w-7 p-0"
+                              title="Edit Kategori"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteCashCat(c.id, c.name)}
+                              className="text-rose-600 hover:text-rose-800 h-7 w-7 p-0"
+                              title="Hapus Kategori"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))
+                    )}
                   </ul>
                 </div>
 
-                {/* Standard Pengeluaran */}
+                {/* Kategori Pengeluaran */}
                 <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-                  <h4 className="font-semibold text-sm text-rose-800 flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-rose-500"></span> Kategori Kas Keluar (Expense)
-                  </h4>
-                  <ul className="divide-y divide-slate-100 text-xs text-slate-700">
-                    <li className="py-2 flex justify-between">
-                      <span className="font-semibold">OPERASIONAL_RT</span>
-                      <span className="text-slate-400">Default Sistem</span>
-                    </li>
-                    <li className="py-2 flex justify-between">
-                      <span className="font-semibold">KEBERSIHAN</span>
-                      <span className="text-slate-400">Default Sistem</span>
-                    </li>
-                    <li className="py-2 flex justify-between">
-                      <span className="font-semibold">KEGIATAN_WARGA</span>
-                      <span className="text-slate-400">Default Sistem</span>
-                    </li>
-                    <li className="py-2 flex justify-between">
-                      <span className="font-semibold">PERBAIKAN_FASILITAS</span>
-                      <span className="text-slate-400">Default Sistem</span>
-                    </li>
-                    <li className="py-2 flex justify-between">
-                      <span className="font-semibold">LAINNYA_PENGELUARAN</span>
-                      <span className="text-slate-400">Default Sistem</span>
-                    </li>
-                    {customCashCats.filter((c) => c.type === 'expense').map((c) => (
-                      <li key={c.id} className="py-2 flex justify-between items-center text-rose-950 font-medium">
-                        <div>
-                          <span>{c.name}</span>
-                          {c.desc && <p className="text-[10px] text-slate-400 font-normal">{c.desc}</p>}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteCustomCashCat(c.id)}
-                          className="text-rose-600 hover:text-rose-800 h-6 w-6 p-0"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </li>
-                    ))}
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-semibold text-sm text-rose-800 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-rose-500"></span> Kategori Kas Keluar (Expense)
+                    </h4>
+                    <span className="text-xs text-slate-400">
+                      {cashCats.filter((c) => c.type === 'expense').length} kategori
+                    </span>
+                  </div>
+                  <ul className="divide-y divide-slate-100 text-xs text-slate-700 max-h-72 overflow-y-auto">
+                    {cashCats.filter((c) => c.type === 'expense').length === 0 ? (
+                      <li className="py-4 text-center text-slate-400 italic">Belum ada kategori pengeluaran.</li>
+                    ) : (
+                      cashCats.filter((c) => c.type === 'expense').map((c) => (
+                        <li key={c.id} className="py-2.5 flex justify-between items-center hover:bg-slate-50 px-1 rounded">
+                          <div>
+                            <span className="font-semibold text-rose-950">{c.name}</span>
+                            {c.desc && <p className="text-[10px] text-slate-400 font-normal">{c.desc}</p>}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditCashCat(c)}
+                              className="text-indigo-600 hover:text-indigo-800 h-7 w-7 p-0"
+                              title="Edit Kategori"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteCashCat(c.id, c.name)}
+                              className="text-rose-600 hover:text-rose-800 h-7 w-7 p-0"
+                              title="Hapus Kategori"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))
+                    )}
                   </ul>
                 </div>
               </div>
 
-              {/* Form Tambah Kategori Kas Baru */}
+              {/* Form Tambah / Edit Kategori Kas */}
               <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
-                <div className="mb-4">
-                  <h4 className="font-semibold text-sm text-slate-900">Tambah Master Kategori Kas Baru</h4>
-                  <p className="text-xs text-slate-500">Buat pos kategori baru untuk transaksi kas buku besar RT</p>
+                <div className="mb-4 flex justify-between items-center">
+                  <div>
+                    <h4 className="font-semibold text-sm text-slate-900">
+                      {editingCashCat ? `Edit Kategori Kas: ${editingCashCat.name}` : 'Tambah Master Kategori Kas Baru'}
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      {editingCashCat
+                        ? 'Perbarui nama atau keterangan kategori kas yang dipilih'
+                        : 'Buat pos kategori baru untuk transaksi kas buku besar RT'}
+                    </p>
+                  </div>
+                  {editingCashCat && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingCashCat(null);
+                        setNewCashCatName('');
+                        setNewCashCatDesc('');
+                        setNewCashCatType('income');
+                      }}
+                      className="text-xs h-8"
+                    >
+                      Batal Edit
+                    </Button>
+                  )}
                 </div>
-                <form onSubmit={handleAddCustomCashCategory} className="space-y-4">
+                <form onSubmit={handleSaveCashCategory} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                       <Label htmlFor="newCashCatName" className="text-xs font-medium text-slate-700">Nama Kategori *</Label>
@@ -1324,7 +1393,15 @@ export const FinancialPage: React.FC = () => {
                   </div>
                   <div className="flex justify-end pt-2">
                     <Button type="submit" size="sm" className="gap-1.5 px-4 h-9 font-medium">
-                      <Plus className="h-4 w-4" /> Simpan Kategori Kas
+                      {editingCashCat ? (
+                        <>
+                          <Edit2 className="h-4 w-4" /> Simpan Perubahan Kategori
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4" /> Simpan Kategori Kas
+                        </>
+                      )}
                     </Button>
                   </div>
                 </form>

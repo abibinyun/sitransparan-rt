@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useCreateFinancialTransaction, useUploadProof, useFunds } from '../services/financial';
+import { useCreateFinancialTransaction, useUploadProof, useFunds, useFeeCategories } from '../services/financial';
 import { TransactionType } from '../types/financial';
 import { dateOnlyToISO } from '../utils/date';
 import { Dialog } from './ui/dialog';
@@ -18,7 +18,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
   const createTx = useCreateFinancialTransaction();
   const uploadProof = useUploadProof();
   const { data: rawFunds } = useFunds();
+  const { data: rawCats } = useFeeCategories();
   const funds = Array.isArray(rawFunds) ? rawFunds : (rawFunds as any)?.data || [];
+  const feeCategories = Array.isArray(rawCats) ? rawCats : (rawCats as any)?.data || [];
 
   const [type, setType] = useState<TransactionType>('income');
   const [fundId, setFundId] = useState<string>('');
@@ -32,6 +34,18 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
       const saved = localStorage.getItem('sitransparan_custom_cash_categories');
       if (saved) {
         setCustomOptions(JSON.parse(saved));
+      } else {
+        setCustomOptions([
+          { id: 'cat_in_1', name: 'IURAN_WARGA', type: 'income' },
+          { id: 'cat_in_2', name: 'DONASI', type: 'income' },
+          { id: 'cat_in_3', name: 'DANA_DESA', type: 'income' },
+          { id: 'cat_in_4', name: 'LAINNYA_PEMASUKAN', type: 'income' },
+          { id: 'cat_out_1', name: 'OPERASIONAL_RT', type: 'expense' },
+          { id: 'cat_out_2', name: 'KEBERSIHAN', type: 'expense' },
+          { id: 'cat_out_3', name: 'KEGIATAN_WARGA', type: 'expense' },
+          { id: 'cat_out_4', name: 'PERBAIKAN_FASILITAS', type: 'expense' },
+          { id: 'cat_out_5', name: 'LAINNYA_PENGELUARAN', type: 'expense' },
+        ]);
       }
     } catch {}
   }, [isOpen]);
@@ -166,24 +180,29 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onCl
                 <option value="">-- Pilih Kategori --</option>
                 {type === 'income' ? (
                   <>
-                    <option value="IURAN_WARGA">Iuran Warga</option>
-                    <option value="DONASI">Donasi / Sumbangan</option>
-                    <option value="DANA_DESA">Dana Bantuan Desa/Pemerintah</option>
-                    <option value="LAINNYA_PEMASUKAN">Pemasukan Lain-lain</option>
-                    {customOptions.filter((c) => c.type === 'income').map((c) => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
-                    ))}
+                    {/* Master Iuran Warga yang Terdaftar */}
+                    {feeCategories.length > 0 && (
+                      <optgroup label="Pos / Tarif Iuran Warga">
+                        {feeCategories.map((fc: any) => (
+                          <option key={fc.id} value={`IURAN: ${fc.name}`}>
+                            {fc.name} (Iuran Warga)
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    <optgroup label="Pos Pemasukan Kas">
+                      {customOptions.filter((c) => c.type === 'income').map((c) => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                    </optgroup>
                   </>
                 ) : (
                   <>
-                    <option value="OPERASIONAL_RT">Operasional & Keamanan</option>
-                    <option value="KEBERSIHAN">Kebersihan & Sampah</option>
-                    <option value="KEGIATAN_WARGA">Kegiatan & Acara RT</option>
-                    <option value="PERBAIKAN_FASILITAS">Perbaikan Fasilitas</option>
-                    <option value="LAINNYA_PENGELUARAN">Pengeluaran Lain-lain</option>
-                    {customOptions.filter((c) => c.type === 'expense').map((c) => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
-                    ))}
+                    <optgroup label="Pos Pengeluaran Kas">
+                      {customOptions.filter((c) => c.type === 'expense').map((c) => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                    </optgroup>
                   </>
                 )}
                 <option value="__CUSTOM__">+ Buat Kategori Kustom / Baru...</option>
