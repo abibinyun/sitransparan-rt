@@ -403,7 +403,48 @@ export const MeetingPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex items-start justify-between gap-4 mt-2">
-                    <h2 className="text-xl font-bold text-gray-900">{selectedMeeting.title}</h2>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">{selectedMeeting.title}</h2>
+                      {/* Quick Status Updater */}
+                      {isAdmin && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs font-semibold text-slate-500">Ubah Status:</span>
+                          <select
+                            value={selectedMeeting.status}
+                            onChange={async (e) => {
+                              const newStatus = e.target.value;
+                              await updateMeetingMutation.mutateAsync({
+                                id: selectedMeeting.id,
+                                dto: {
+                                  title: selectedMeeting.title,
+                                  agenda: selectedMeeting.agenda,
+                                  meeting_date: selectedMeeting.meeting_date,
+                                  location: selectedMeeting.location,
+                                  meeting_type: selectedMeeting.meeting_type,
+                                  visibility: selectedMeeting.visibility,
+                                  status: newStatus,
+                                  notes: selectedMeeting.notes || '',
+                                },
+                              });
+                            }}
+                            className={`text-xs font-semibold px-2.5 py-1 rounded-lg border outline-none cursor-pointer transition ${
+                              selectedMeeting.status === 'completed'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                : selectedMeeting.status === 'ongoing'
+                                ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                : selectedMeeting.status === 'cancelled'
+                                ? 'bg-rose-50 text-rose-800 border-rose-300'
+                                : 'bg-blue-50 text-blue-800 border-blue-300'
+                            }`}
+                          >
+                            <option value="scheduled">Akan Datang</option>
+                            <option value="ongoing">Sedang Berlangsung</option>
+                            <option value="completed">Selesai</option>
+                            <option value="cancelled">Dibatalkan</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
                     {isAdmin && (
                       <div className="flex items-center gap-2 shrink-0">
                         <button
@@ -702,6 +743,20 @@ export const MeetingPage: React.FC = () => {
                     <option value="confidential">Khusus Pengurus</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Status Rapat</label>
+                <select
+                  value={meetingForm.status}
+                  onChange={(e) => setMeetingForm({ ...meetingForm, status: e.target.value })}
+                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                >
+                  <option value="scheduled">Akan Datang (Scheduled)</option>
+                  <option value="ongoing">Sedang Berlangsung (Ongoing)</option>
+                  <option value="completed">Selesai (Completed)</option>
+                  <option value="cancelled">Dibatalkan (Cancelled)</option>
+                </select>
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t">
