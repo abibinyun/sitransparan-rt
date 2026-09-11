@@ -4,39 +4,17 @@ import { useUpdateProfileMutation } from '../services/auth';
 import { Shield, User as UserIcon, Phone, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
-  const { user, updateUser, activeTenant } = useAuthStore();
+  const { user, activeTenant } = useAuthStore();
   const updateProfileMutation = useUpdateProfileMutation();
 
-  const [name, setName] = useState(user?.name || '');
-  const [phone, setPhone] = useState(user?.phone || '');
+  const name = user?.name || '';
+  const phone = user?.phone || '';
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-
-  const handleUpdateInfo = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
-
-    if (!name.trim()) {
-      setErrorMsg('Nama tidak boleh kosong');
-      return;
-    }
-
-    try {
-      const res = await updateProfileMutation.mutateAsync({
-        name: name.trim(),
-        phone: phone.trim() || undefined,
-      });
-      updateUser({ name: res.user.name, phone: res.user.phone });
-      setSuccessMsg('Informasi profil berhasil diperbarui!');
-    } catch (err: any) {
-      setErrorMsg(err?.response?.data?.error || err?.message || 'Gagal memperbarui profil');
-    }
-  };
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,49 +87,55 @@ export const ProfilePage: React.FC = () => {
               </div>
             </div>
 
-            <form onSubmit={handleUpdateInfo} className="space-y-4">
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                  Nama Lengkap
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                    Nama Lengkap
+                  </label>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                    <Lock className="w-3 h-3 text-slate-400" /> Terkunci
+                  </span>
+                </div>
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Nama Lengkap"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
+                  readOnly
+                  disabled
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-sm font-medium cursor-not-allowed select-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                  Nomor HP / WhatsApp
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                    Nomor HP / WhatsApp
+                  </label>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                    <Lock className="w-3 h-3 text-slate-400" /> Terkunci
+                  </span>
+                </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <Phone className="w-4 h-4" />
                   </div>
                   <input
                     type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="081234567890"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={phone || '-'}
+                    readOnly
+                    disabled
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-sm font-medium cursor-not-allowed select-none"
                   />
                 </div>
               </div>
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={updateProfileMutation.isPending}
-                  className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 text-white text-sm font-bold shadow-md shadow-indigo-200 hover:bg-indigo-700 transition disabled:opacity-50"
-                >
-                  {updateProfileMutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan Profil'}
-                </button>
+              <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-900 text-xs leading-relaxed flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p>
+                  <strong>Perhatian:</strong> Nama lengkap dan kontak WhatsApp merupakan tanda pengenal resmi warga yang didaftarkan oleh pengurus RT. Jika terdapat kesalahan penulisan atau perubahan nomor, hubungi pengurus RT Anda.
+                </p>
               </div>
-            </form>
+            </div>
           </div>
 
           {/* Akun Read-Only Box */}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"backend/internal/delivery/http/middleware"
+	"backend/internal/domain"
 	"backend/internal/usecase"
 
 	"github.com/google/uuid"
@@ -324,6 +325,14 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, `{"error":"payload tidak valid"}`, http.StatusBadRequest)
 			return
+		}
+
+		role := middleware.GetRoleFromContext(r.Context())
+		if role == domain.RoleResident {
+			if strings.TrimSpace(req.Name) != "" || req.Phone != nil {
+				http.Error(w, `{"error":"nama lengkap dan kontak WhatsApp warga terkunci oleh pengurus RT dan tidak dapat diubah sendiri"}`, http.StatusForbidden)
+				return
+			}
 		}
 
 		updatedUser, err := h.authUsecase.UpdateProfile(r.Context(), userID, req.Name, req.Phone, req.OldPassword, req.NewPassword)
