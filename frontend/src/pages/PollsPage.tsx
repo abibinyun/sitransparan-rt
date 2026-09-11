@@ -164,7 +164,7 @@ export const PollsPage: React.FC = () => {
         onClose={() => setIsCreateOpen(false)}
         title="Buat Polling Baru"
         description="Pertanyaan + 2 sampai 6 opsi. Hanya admin yang bisa membuat."
-        className="max-w-xl sm:max-w-2xl"
+        className="max-w-2xl"
       >
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="space-y-2">

@@ -338,7 +338,7 @@ export const AspirationsPage: React.FC = () => {
         onClose={() => setSelectedAspiration(null)}
         title="Tanggapi Aspirasi Warga"
         description={selectedAspiration?.title}
-        className="max-w-xl sm:max-w-2xl"
+        className="max-w-3xl"
       >
         <form onSubmit={handleSaveAspirationResponse} className="space-y-4">
           <div className="space-y-2">
@@ -401,7 +401,7 @@ export const AspirationsPage: React.FC = () => {
         onClose={() => setShowNeedModal(false)}
         title={editingNeed ? 'Edit Kebutuhan Lingkungan' : 'Tambah Kebutuhan Lingkungan'}
         description="Kelola usulan dan progres kebutuhan fasilitas lingkungan RT/RW"
-        className="max-w-xl sm:max-w-2xl"
+        className="max-w-3xl"
       >
         <form onSubmit={handleSaveNeed} className="space-y-4">
           <div className="space-y-2">

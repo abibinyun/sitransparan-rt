@@ -132,7 +132,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       onClose={onClose}
       title={initialData ? 'Edit Pengumuman' : 'Tambah Pengumuman Baru'}
       description="Buat pengumuman resmi untuk warga RT lengkap dengan multi foto dan berkas lampiran"
-      className="max-w-2xl sm:max-w-3xl"
+      className="max-w-4xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] sm:max-h-[78vh] overflow-y-auto px-0.5 sm:px-1">
         <div className="space-y-1.5">

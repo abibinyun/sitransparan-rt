@@ -51,7 +51,7 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
       onClose={handleClose}
       title="Kirim Aspirasi / Usulan / Keluhan"
       description="Sampaikan aspirasi Anda untuk kemajuan lingkungan RT"
-      className="max-w-xl sm:max-w-2xl"
+      className="max-w-3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Identitas pengusul otomatis dari akun login */}

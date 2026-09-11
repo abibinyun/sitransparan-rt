@@ -62,7 +62,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       onClose={onClose}
       title={initialData ? 'Edit Dokumen' : 'Upload Dokumen Baru'}
       description="Unggah berkas atau laporan resmi warga"
-      className="max-w-xl sm:max-w-2xl"
+      className="max-w-3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto px-0.5 sm:px-1">
         <div className="space-y-1.5">
