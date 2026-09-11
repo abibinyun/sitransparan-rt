@@ -521,7 +521,7 @@ export const KarangTarunaPage: React.FC = () => {
         onClose={() => setIsPeriodModalOpen(false)}
         title={editingPeriod ? 'Edit Masa Bakti Karang Taruna' : 'Buat Masa Bakti Baru'}
         description="Atur nama periode, rentang tanggal kepengurusan, dan nomor SK."
-        className="max-w-xl sm:max-w-2xl"
+        className="max-w-3xl"
       >
         <form onSubmit={handlePeriodSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -596,7 +596,7 @@ export const KarangTarunaPage: React.FC = () => {
         onClose={() => setIsMemberModalOpen(false)}
         title={editingMember ? 'Edit Data Pengurus' : 'Tambah Pengurus / Anggota Pemuda'}
         description={`Menugaskan warga ke dalam struktur kepengurusan ${currentPeriod?.name || ''}`}
-        className="max-w-xl sm:max-w-2xl"
+        className="max-w-3xl"
       >
         <form onSubmit={handleMemberSubmit} className="space-y-4">
           {!editingMember && (

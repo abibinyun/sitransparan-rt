@@ -314,7 +314,7 @@ export const EventsPage: React.FC = () => {
         onClose={() => setIsFormModalOpen(false)}
         title={editingEvent ? 'Edit Kegiatan' : 'Tambah Kegiatan Baru'}
         description="Kelola jadwal dan agenda kegiatan warga RT/RW"
-        className="max-w-xl sm:max-w-2xl"
+        className="max-w-3xl"
       >
         <form onSubmit={handleFormSubmit} className="space-y-4">
           <div className="space-y-2">

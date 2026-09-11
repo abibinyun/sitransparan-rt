@@ -264,7 +264,7 @@ export function AuditLogsPage() {
           onClose={() => setSelectedLog(null)}
           title="Rincian Rekam Jejak (Audit Log)"
           description={`ID: ${selectedLog.id}`}
-          className="max-w-xl sm:max-w-2xl"
+          className="max-w-3xl"
         >
           <div className="space-y-4 text-xs sm:text-sm">
             <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">

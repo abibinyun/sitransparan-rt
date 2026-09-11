@@ -583,7 +583,7 @@ const DepositModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl max-w-xl sm:max-w-2xl w-full p-5 sm:p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-slate-800 mb-4">Catat Setoran Bank Sampah</h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -795,7 +795,7 @@ const CategoryModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl max-w-lg sm:max-w-xl w-full p-5 sm:p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-xl sm:max-w-2xl w-full p-5 sm:p-7 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-slate-800 mb-4">
           {isEditing ? 'Ubah Kategori Sampah' : 'Tambah Kategori Sampah'}
         </h2>

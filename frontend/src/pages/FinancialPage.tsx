@@ -1728,7 +1728,7 @@ export const FinancialPage: React.FC = () => {
         isOpen={isCatModalOpen}
         onClose={() => setIsCatModalOpen(false)}
         title="Tambah Jenis / Kategori Iuran"
-        className="max-w-xl sm:max-w-2xl"
+        className="max-w-3xl"
       >
         <form onSubmit={handleCreateCategory} className="space-y-4">
           <div className="space-y-1.5">
@@ -1789,7 +1789,7 @@ export const FinancialPage: React.FC = () => {
         isOpen={isFundModalOpen}
         onClose={() => setIsFundModalOpen(false)}
         title="Tambah Kantong Kas Baru"
-        className="max-w-xl sm:max-w-2xl"
+        className="max-w-3xl"
       >
         <form onSubmit={handleCreateFund} className="space-y-4">
           <div className="space-y-1.5">

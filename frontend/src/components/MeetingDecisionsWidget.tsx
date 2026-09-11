@@ -87,7 +87,7 @@ export const MeetingDecisionsWidget: React.FC = () => {
       {/* Modal Detail Notulen & Keputusan Musyawarah Publik */}
       {selectedMeeting && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-xl sm:max-w-2xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+          <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/50">
               <div className="space-y-1">

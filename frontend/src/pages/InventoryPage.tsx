@@ -593,7 +593,7 @@ export const InventoryPage: React.FC = () => {
       {/* Modal Form Tambah/Edit Barang (Admin Only) */}
       {isItemModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-xl sm:max-w-2xl w-full p-5 sm:p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="font-semibold text-slate-900 text-base">
                 {selectedItem ? 'Edit Barang Inventaris' : 'Tambah Barang Inventaris'}
@@ -881,7 +881,7 @@ export const InventoryPage: React.FC = () => {
       {/* Modal Pengembalian Barang (Admin Only) */}
       {isReturnModalOpen && selectedBorrowing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-lg sm:max-w-xl w-full p-5 sm:p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl sm:max-w-2xl w-full p-5 sm:p-7 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="font-semibold text-slate-900 text-base">Proses Pengembalian Barang</h3>
               <button

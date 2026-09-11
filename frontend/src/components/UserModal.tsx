@@ -95,7 +95,7 @@ export const UserModal: React.FC<UserModalProps> = ({
       onClose={onClose}
       title={user ? 'Edit Pengguna' : 'Tambah Pengguna'}
       description={user ? 'Ubah informasi pengguna dan peran.' : 'Tambahkan pengguna baru ke sistem.'}
-      className="max-w-xl sm:max-w-2xl"
+      className="max-w-3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4 pt-2">
         {error && (

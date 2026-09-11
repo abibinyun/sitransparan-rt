@@ -29,7 +29,7 @@ export const ResidentDetailModal: React.FC<ResidentDetailModalProps> = ({
       onClose={onClose}
       title="Detail Informasi Warga"
       description="Rincian data kependudukan, kartu keluarga, dan dokumen identitas"
-      className="max-w-3xl"
+      className="max-w-4xl"
     >
       <div className="space-y-6 pt-2">
         {/* Header Profil Singkat */}

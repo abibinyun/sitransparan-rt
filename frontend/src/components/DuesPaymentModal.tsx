@@ -81,7 +81,7 @@ export const DuesPaymentModal: React.FC<DuesPaymentModalProps> = ({ isOpen, onCl
       onClose={onClose}
       title="Catat / Bayar Iuran Warga"
       description="Pencatatan transaksi iuran warga perumahan/RT"
-      className="max-w-xl sm:max-w-2xl"
+      className="max-w-3xl"
     >
       {error && <div className="mb-4 rounded-lg bg-rose-50 p-3 text-xs text-rose-600 border border-rose-200">{error}</div>}
 

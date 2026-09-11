@@ -398,7 +398,7 @@ export const HousesPage: React.FC = () => {
       {/* Modal Tambah / Edit Rumah */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 sm:p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg sm:max-w-xl w-full p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Home className="w-5 h-5 text-emerald-600" />

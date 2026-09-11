@@ -66,7 +66,7 @@ export const EventBudgetModal: React.FC<Props> = ({ isOpen, onClose, event, onSa
       onClose={onClose}
       title={`Rincian Anggaran: ${event?.title || ''}`}
       description="Kelola rancangan anggaran biaya (RAB) kegiatan"
-      className="max-w-xl sm:max-w-2xl"
+      className="max-w-3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">

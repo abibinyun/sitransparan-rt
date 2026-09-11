@@ -82,7 +82,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
       onClose={onClose}
       title={member ? 'Edit Anggota Keluarga' : 'Tambah Anggota Keluarga'}
       description="Kelola susunan anggota keluarga dalam Kartu Keluarga"
-      className="max-w-xl sm:max-w-2xl"
+      className="max-w-3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">

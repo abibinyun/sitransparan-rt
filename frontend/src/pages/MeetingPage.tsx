@@ -665,7 +665,7 @@ export const MeetingPage: React.FC = () => {
       {/* Modal: Create Meeting */}
       {isCreateMeetingOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className="bg-white rounded-2xl max-w-xl sm:max-w-2xl w-full p-5 sm:p-6 space-y-4 shadow-xl max-h-[88vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold text-gray-900">
               {editingMeeting ? 'Edit Arsip Rapat' : 'Catat Rapat Baru'}
             </h2>
@@ -787,7 +787,7 @@ export const MeetingPage: React.FC = () => {
       {/* Modal: Create Action Item */}
       {isCreateActionOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className="bg-white rounded-2xl max-w-lg sm:max-w-xl w-full p-5 sm:p-6 space-y-4 shadow-xl max-h-[88vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold text-gray-900">Tambah Tugas Tindak Lanjut</h2>
             <form onSubmit={handleCreateActionItem} className="space-y-4">
               <div>
@@ -864,7 +864,7 @@ export const MeetingPage: React.FC = () => {
       {/* Modal: Add Decision */}
       {isAddDecisionOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className="bg-white rounded-2xl max-w-lg sm:max-w-xl w-full p-5 sm:p-6 space-y-4 shadow-xl max-h-[88vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold text-gray-900">Tambah Keputusan Bersama</h2>
             <form onSubmit={handleAddDecision} className="space-y-4">
               <div>
@@ -911,7 +911,7 @@ export const MeetingPage: React.FC = () => {
       {/* Modal: Add Attendee */}
       {isAddAttendeeOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className="bg-white rounded-2xl max-w-lg sm:max-w-xl w-full p-5 sm:p-6 space-y-4 shadow-xl max-h-[88vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold text-gray-900">Tambah Peserta Hadir</h2>
             <form onSubmit={handleAddAttendee} className="space-y-4">
               <div>
