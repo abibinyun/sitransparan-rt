@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"time"
 
 	"backend/internal/domain"
 	"github.com/google/uuid"
@@ -191,4 +192,53 @@ func (u *announcementDocUsecase) DeleteDocument(ctx context.Context, tenantID, i
 		return errors.New("tenant_id and id are required")
 	}
 	return u.repo.DeleteDocument(ctx, tenantID, id)
+}
+
+func (u *announcementDocUsecase) CreateComment(ctx context.Context, tenantID uuid.UUID, c *domain.AnnouncementComment) error {
+	if tenantID == uuid.Nil || c.AnnouncementID == uuid.Nil || c.UserID == uuid.Nil {
+		return errors.New("identitas pengumuman dan pengguna diperlukan")
+	}
+
+	// 1. Cek apakah pengumuman ada dan mengizinkan komentar
+	ann, err := u.repo.GetAnnouncementByID(ctx, tenantID, c.AnnouncementID)
+	if err != nil || ann == nil {
+		return errors.New("pengumuman tidak ditemukan")
+	}
+	if !ann.AllowComments {
+		return errors.New("kolom komentar dinonaktifkan untuk pengumuman ini")
+	}
+
+	// 2. Validasi konten komentar (maks 250 karakter, tidak kosong)
+	content := strings.TrimSpace(c.Content)
+	if content == "" {
+		return errors.New("isi komentar tidak boleh kosong")
+	}
+	if len([]rune(content)) > 250 {
+		return errors.New("komentar maksimal 250 karakter")
+	}
+	c.Content = content
+
+	// 3. Rate limiting per-user per-announcement: 1 menit cooldown untuk anti spam
+	lastTime, err := u.repo.GetLastCommentTime(ctx, c.AnnouncementID, c.UserID)
+	if err == nil && lastTime != nil {
+		if time.Since(*lastTime) < 1*time.Minute {
+			return errors.New("harap tunggu 1 menit sebelum mengirim komentar berikutnya")
+		}
+	}
+
+	return u.repo.CreateComment(ctx, c)
+}
+
+func (u *announcementDocUsecase) ListComments(ctx context.Context, tenantID, announcementID uuid.UUID) ([]*domain.AnnouncementComment, error) {
+	if tenantID == uuid.Nil || announcementID == uuid.Nil {
+		return nil, errors.New("tenant_id dan announcement_id diperlukan")
+	}
+	return u.repo.ListComments(ctx, announcementID)
+}
+
+func (u *announcementDocUsecase) DeleteComment(ctx context.Context, tenantID, id uuid.UUID) error {
+	if tenantID == uuid.Nil || id == uuid.Nil {
+		return errors.New("id komentar diperlukan")
+	}
+	return u.repo.DeleteComment(ctx, id)
 }

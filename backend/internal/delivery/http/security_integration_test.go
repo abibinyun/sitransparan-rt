@@ -81,7 +81,7 @@ func buildSecurityMux(db *sql.DB) http.Handler {
 	aspirationNeedHandler := delivery.NewAspirationNeedHandler(aspirationNeedUC, tenantRepo, "openrt.local")
 
 	announcementDocUC := usecase.NewAnnouncementDocUsecase(announcementDocRepo)
-	announcementDocHandler := delivery.NewAnnouncementDocHandler(announcementDocUC, tenantRepo, "openrt.local", nil)
+	announcementDocHandler := delivery.NewAnnouncementDocHandler(announcementDocUC, tenantRepo, nil, nil, "openrt.local", nil)
 
 	dashboardUC := usecase.NewDashboardUsecase(dashboardRepo)
 	dashboardHandler := delivery.NewDashboardHandler(dashboardUC)

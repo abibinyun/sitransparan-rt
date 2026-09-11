@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"backend/internal/domain"
 	"backend/internal/usecase"
@@ -116,6 +117,22 @@ func (m *mockAnnouncementDocRepo) DeleteDocument(ctx context.Context, tenantID, 
 
 func (m *mockAnnouncementDocRepo) UploadFile(ctx context.Context, filename string, content io.Reader, contentType string) (string, error) {
 	return "/uploads/documents/test_" + filename, nil
+}
+
+func (m *mockAnnouncementDocRepo) CreateComment(ctx context.Context, comment *domain.AnnouncementComment) error {
+	return nil
+}
+
+func (m *mockAnnouncementDocRepo) ListComments(ctx context.Context, announcementID uuid.UUID) ([]*domain.AnnouncementComment, error) {
+	return []*domain.AnnouncementComment{}, nil
+}
+
+func (m *mockAnnouncementDocRepo) DeleteComment(ctx context.Context, id uuid.UUID) error {
+	return nil
+}
+
+func (m *mockAnnouncementDocRepo) GetLastCommentTime(ctx context.Context, announcementID, userID uuid.UUID) (*time.Time, error) {
+	return nil, nil
 }
 
 func TestAnnouncementDocUsecase(t *testing.T) {

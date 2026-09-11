@@ -7,6 +7,7 @@ import {
   Document,
   CreateDocumentPayload,
   UpdateDocumentPayload,
+  AnnouncementComment,
 } from '../types/announcement_doc';
 
 import { getTenantSlugOrFallback } from '../utils/tenant';
@@ -150,6 +151,45 @@ export function useDeleteDocument() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
       queryClient.invalidateQueries({ queryKey: ['public-documents'] });
+    },
+  });
+}
+
+// Comments
+export function useAnnouncementComments(announcementId: string | null) {
+  const tenantSlug = getTenantSlugOrFallback();
+  return useQuery({
+    queryKey: ['announcement-comments', tenantSlug, announcementId],
+    queryFn: async () => {
+      if (!announcementId) return [];
+      const res = await api.get<{ data: AnnouncementComment[] }>(`/t/${tenantSlug}/announcements/${announcementId}/comments`);
+      return res.data.data ?? [];
+    },
+    enabled: Boolean(announcementId),
+  });
+}
+
+export function useCreateAnnouncementComment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ announcementId, content }: { announcementId: string; content: string }) => {
+      const res = await api.post<{ data: AnnouncementComment; message: string }>(`/announcements/${announcementId}/comments`, { content });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['announcement-comments'] });
+    },
+  });
+}
+
+export function useDeleteAnnouncementComment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ announcementId, commentId }: { announcementId: string; commentId: string }) => {
+      await api.delete(`/announcements/${announcementId}/comments/${commentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['announcement-comments'] });
     },
   });
 }

@@ -17,9 +17,22 @@ type Announcement struct {
 	MediaURLs     []string   `json:"media_urls,omitempty"` // galeri foto feed (Fase 2)
 	FileURLs      []string   `json:"file_urls,omitempty"`  // lampiran file/dokumen multi
 	Target        string     `json:"target"`               // 'all', 'residents_only'
+	AllowComments bool       `json:"allow_comments"`       // Sakelar komentar warga per-kabar
 	CreatedBy     *uuid.UUID `json:"created_by,omitempty"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
+}
+
+type AnnouncementComment struct {
+	ID             uuid.UUID  `json:"id"`
+	AnnouncementID uuid.UUID  `json:"announcement_id"`
+	UserID         uuid.UUID  `json:"user_id"`
+	AuthorName     string     `json:"author_name"`
+	HouseBlock     *string    `json:"house_block,omitempty"`
+	Content        string     `json:"content"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+	DeletedAt      *time.Time `json:"deleted_at,omitempty"`
 }
 
 type Document struct {
@@ -46,6 +59,12 @@ type AnnouncementDocRepository interface {
 	UpdateDocument(ctx context.Context, doc *Document) error
 	DeleteDocument(ctx context.Context, tenantID, id uuid.UUID) error
 	UploadFile(ctx context.Context, filename string, content io.Reader, contentType string) (string, error)
+
+	// Comments
+	CreateComment(ctx context.Context, comment *AnnouncementComment) error
+	ListComments(ctx context.Context, announcementID uuid.UUID) ([]*AnnouncementComment, error)
+	DeleteComment(ctx context.Context, id uuid.UUID) error
+	GetLastCommentTime(ctx context.Context, announcementID, userID uuid.UUID) (*time.Time, error)
 }
 
 type AnnouncementDocUsecase interface {
@@ -60,4 +79,9 @@ type AnnouncementDocUsecase interface {
 	ListDocuments(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*Document, int64, error)
 	UpdateDocument(ctx context.Context, tenantID uuid.UUID, doc *Document) error
 	DeleteDocument(ctx context.Context, tenantID, id uuid.UUID) error
+
+	// Comments
+	CreateComment(ctx context.Context, tenantID uuid.UUID, comment *AnnouncementComment) error
+	ListComments(ctx context.Context, tenantID, announcementID uuid.UUID) ([]*AnnouncementComment, error)
+	DeleteComment(ctx context.Context, tenantID, id uuid.UUID) error
 }

@@ -2,9 +2,28 @@ import React, { useState } from 'react';
 import { Announcement } from '../types/announcement_doc';
 import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
-import { Megaphone, Calendar, FileText, Download, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Megaphone,
+  Calendar,
+  FileText,
+  Download,
+  Share2,
+  ChevronLeft,
+  ChevronRight,
+  MessageCircle,
+  Send,
+  Trash2,
+  AlertCircle,
+  Lock,
+} from 'lucide-react';
 import { getFileUrl } from '../utils/file';
 import { ReactionButton } from './ReactionButton';
+import { useAuthStore } from '../store/useAuthStore';
+import {
+  useAnnouncementComments,
+  useCreateAnnouncementComment,
+  useDeleteAnnouncementComment,
+} from '../services/announcement_doc';
 
 interface AnnouncementDetailModalProps {
   isOpen: boolean;
@@ -19,9 +38,55 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
   announcement,
   onShare,
 }) => {
+  const { user } = useAuthStore();
+  const roleLower = String(user?.role || '').toLowerCase();
+  const isAdmin = roleLower === 'rt_admin' || roleLower === 'superadmin' || roleLower === 'super_admin';
+  const isResident = roleLower === 'resident' || isAdmin;
+
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [commentText, setCommentText] = useState('');
+  const [commentError, setCommentError] = useState('');
+
+  const { data: comments = [], isLoading: isLoadingComments } = useAnnouncementComments(
+    announcement?.allow_comments ? announcement.id : null
+  );
+  const createCommentMutation = useCreateAnnouncementComment();
+  const deleteCommentMutation = useDeleteAnnouncementComment();
 
   if (!announcement) return null;
+
+  const handleSendComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCommentError('');
+    const trimmed = commentText.trim();
+    if (!trimmed) return;
+    if (trimmed.length > 250) {
+      setCommentError('Maksimal 250 karakter.');
+      return;
+    }
+
+    try {
+      await createCommentMutation.mutateAsync({
+        announcementId: announcement.id,
+        content: trimmed,
+      });
+      setCommentText('');
+    } catch (err: any) {
+      setCommentError(err?.response?.data?.error || err?.message || 'Gagal mengirim komentar');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm('Hapus komentar ini?')) return;
+    try {
+      await deleteCommentMutation.mutateAsync({
+        announcementId: announcement.id,
+        commentId,
+      });
+    } catch (err: any) {
+      alert(err?.response?.data?.error || 'Gagal menghapus komentar');
+    }
+  };
 
   const isImage = (url: string) =>
     /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(url) ||
@@ -201,6 +266,109 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
             </div>
           </div>
         )}
+
+        {/* Kolom Komentar Warga (Jika Diaktifkan) */}
+        {announcement.allow_comments ? (
+          <div className="space-y-4 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <MessageCircle className="w-4 h-4 text-emerald-600" />
+                Komentar Warga ({comments.length})
+              </h4>
+              <span className="text-[11px] text-slate-400">Terbuka &amp; Transparan</span>
+            </div>
+
+            {/* List Komentar Datar (Flat) */}
+            {isLoadingComments ? (
+              <p className="text-xs text-slate-400 py-2">Memuat komentar...</p>
+            ) : comments.length === 0 ? (
+              <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                Belum ada komentar warga. Jadilah yang pertama memberikan tanggapan.
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                {comments.map((c) => (
+                  <div key={c.id} className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/80 text-xs space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-slate-900">{c.author_name}</span>
+                        {c.house_block && (
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 font-semibold text-[10px] border border-emerald-200">
+                            {c.house_block}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(c.created_at).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteComment(c.id)}
+                          className="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50 transition"
+                          title="Hapus komentar (moderasi)"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-slate-700 leading-relaxed break-words">{c.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Form Input Komentar (Warga Login) */}
+            {isResident ? (
+              <form onSubmit={handleSendComment} className="space-y-2 pt-2 border-t border-slate-100">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    maxLength={250}
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Tulis tanggapan singkat warga (maks 250 karakter)..."
+                    className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white"
+                  />
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={createCommentMutation.isPending || !commentText.trim()}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 text-xs px-3"
+                  >
+                    <Send className="w-3.5 h-3.5 mr-1" /> Kirim
+                  </Button>
+                </div>
+                {commentError && (
+                  <p className="text-[11px] text-rose-600 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" /> {commentError}
+                  </p>
+                )}
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <span>Nama &amp; blok rumah Anda akan ditampilkan terbuka.</span>
+                  <span>{commentText.length}/250</span>
+                </div>
+              </form>
+            ) : (
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center justify-between gap-3">
+                <span className="flex items-center gap-1.5">
+                  <Lock className="w-4 h-4 text-slate-400" /> Masuk dengan akun warga untuk ikut berkomentar.
+                </span>
+                <a
+                  href={`/login?returnTo=${encodeURIComponent(window.location.pathname)}`}
+                  className="font-bold text-emerald-700 hover:underline shrink-0"
+                >
+                  Masuk Akun
+                </a>
+              </div>
+            )}
+          </div>
+        ) : null}
 
         {/* Footer: Reaksi Sosial Warga & Tombol Tutup */}
         <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">

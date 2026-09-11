@@ -56,6 +56,7 @@ func main() {
 	announcementDocRepo := repository.NewAnnouncementDocRepository(db, storageClient)
 	dashboardRepo := repository.NewDashboardRepository(db)
 	meetingRepo := repository.NewMeetingRepository(db)
+	houseRepo := repository.NewHouseRepository(db)
 
 	jwtSecret := cfg.JWTSecret
 	jwtDuration := 24 * time.Hour
@@ -83,7 +84,7 @@ func main() {
 	pushUC := usecase.NewPushUsecase(pushRepo, cfg)
 
 	announcementDocUC := usecase.NewAnnouncementDocUsecase(announcementDocRepo)
-	announcementDocHandler := delivery.NewAnnouncementDocHandler(announcementDocUC, tenantRepo, cfg.TenantBaseDomain, pushUC)
+	announcementDocHandler := delivery.NewAnnouncementDocHandler(announcementDocUC, tenantRepo, houseRepo, userRepo, cfg.TenantBaseDomain, pushUC)
 
 	dashboardUC := usecase.NewDashboardUsecase(dashboardRepo)
 	dashboardHandler := delivery.NewDashboardHandler(dashboardUC)
@@ -110,7 +111,6 @@ func main() {
 	wasteBankHandler := delivery.NewWasteBankHandler(wasteBankUC, tenantRepo, cfg.TenantBaseDomain)
 
 	// House QR Access (1 Rumah = 1 Token)
-	houseRepo := repository.NewHouseRepository(db)
 	houseUC := usecase.NewHouseUsecase(houseRepo, tenantRepo, residentRepo, userRepo, tuRepo, roleRepo, jwtSecret, jwtDuration)
 	houseHandler := delivery.NewHouseHandler(houseUC)
 

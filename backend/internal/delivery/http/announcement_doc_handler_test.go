@@ -161,13 +161,25 @@ func (m *mockAnnDocUsecase) DeleteDocument(ctx context.Context, tenantID, id uui
 	return repository.ErrNotFound
 }
 
+func (m *mockAnnDocUsecase) CreateComment(ctx context.Context, tenantID uuid.UUID, comment *domain.AnnouncementComment) error {
+	return nil
+}
+
+func (m *mockAnnDocUsecase) ListComments(ctx context.Context, tenantID, announcementID uuid.UUID) ([]*domain.AnnouncementComment, error) {
+	return []*domain.AnnouncementComment{}, nil
+}
+
+func (m *mockAnnDocUsecase) DeleteComment(ctx context.Context, tenantID, id uuid.UUID) error {
+	return nil
+}
+
 func TestAnnouncementDocHandler(t *testing.T) {
 	tenantID := uuid.New()
 	tenant := &domain.Tenant{ID: tenantID, Name: "RT 01", Slug: "rt01"}
 	tenantRepo := &mockTenantRepoForAnnDoc{tenant: tenant}
 	uc := &mockAnnDocUsecase{}
 
-	handler := delivery.NewAnnouncementDocHandler(uc, tenantRepo, "openrt.local", nil)
+	handler := delivery.NewAnnouncementDocHandler(uc, tenantRepo, nil, nil, "openrt.local", nil)
 	mux := http.NewServeMux()
 
 	tenantMw := func(next http.Handler) http.Handler {

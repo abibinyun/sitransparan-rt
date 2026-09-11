@@ -17,14 +17,18 @@ import (
 type AnnouncementDocHandler struct {
 	usecase    domain.AnnouncementDocUsecase
 	tenantRepo domain.TenantRepository
+	houseRepo  domain.HouseRepository
+	userRepo   domain.UserRepository
 	baseDomain string
 	pushUC     domain.PushUsecase // opsional (nil = broadcast dinonaktifkan)
 }
 
-func NewAnnouncementDocHandler(usecase domain.AnnouncementDocUsecase, tenantRepo domain.TenantRepository, baseDomain string, pushUC domain.PushUsecase) *AnnouncementDocHandler {
+func NewAnnouncementDocHandler(usecase domain.AnnouncementDocUsecase, tenantRepo domain.TenantRepository, houseRepo domain.HouseRepository, userRepo domain.UserRepository, baseDomain string, pushUC domain.PushUsecase) *AnnouncementDocHandler {
 	return &AnnouncementDocHandler{
 		usecase:    usecase,
 		tenantRepo: tenantRepo,
+		houseRepo:  houseRepo,
+		userRepo:   userRepo,
 		baseDomain: baseDomain,
 		pushUC:     pushUC,
 	}
@@ -42,6 +46,12 @@ func (h *AnnouncementDocHandler) RegisterRoutes(mux *http.ServeMux, tenantMw fun
 	protectedAnnouncements := http.HandlerFunc(h.handlePrivateAnnouncements)
 	mux.Handle("/api/v1/announcements", authMw(tenantMw(protectedAnnouncements)))
 	mux.Handle("/api/v1/announcements/", authMw(tenantMw(protectedAnnouncements)))
+
+	// Explicit Announcement Comments routes
+	mux.HandleFunc("/api/v1/t/{slug}/announcements/{id}/comments", h.handlePublicAnnouncementComments)
+	mux.Handle("GET /api/v1/announcements/{id}/comments", authMw(tenantMw(http.HandlerFunc(h.handleGetCommentsPrivate))))
+	mux.Handle("POST /api/v1/announcements/{id}/comments", authMw(tenantMw(http.HandlerFunc(h.handleCreateComment))))
+	mux.Handle("DELETE /api/v1/announcements/{id}/comments/{commentId}", authMw(tenantMw(http.HandlerFunc(h.handleDeleteComment))))
 
 	// Private Document routes: /api/v1/documents
 	protectedDocuments := http.HandlerFunc(h.handlePrivateDocuments)
@@ -138,6 +148,160 @@ func (h *AnnouncementDocHandler) handlePublicTenantRoutes(w http.ResponseWriter,
 	}
 }
 
+func (h *AnnouncementDocHandler) handleGetCommentsPrivate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+	tenant := middleware.GetTenantFromContext(r.Context())
+	if tenant == nil {
+		http.Error(w, `{"error":"tenant context missing"}`, http.StatusBadRequest)
+		return
+	}
+	announcementID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, `{"error":"invalid announcement id"}`, http.StatusBadRequest)
+		return
+	}
+
+	comments, err := h.usecase.ListComments(r.Context(), tenant.ID, announcementID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"data": comments})
+}
+
+func (h *AnnouncementDocHandler) handlePublicAnnouncementComments(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+	slug := r.PathValue("slug")
+	idStr := r.PathValue("id")
+	announcementID, err := uuid.Parse(idStr)
+	if slug == "" || err != nil {
+		http.Error(w, `{"error":"invalid parameters"}`, http.StatusBadRequest)
+		return
+	}
+
+	tenant, err := h.tenantRepo.GetBySlug(r.Context(), slug)
+	if err != nil || tenant == nil || !tenant.IsActive() {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	ctx := context.WithValue(r.Context(), domain.TenantContextKey, tenant)
+	comments, err := h.usecase.ListComments(ctx, tenant.ID, announcementID)
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"data": comments})
+}
+
+func (h *AnnouncementDocHandler) handleCreateComment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+	tenant := middleware.GetTenantFromContext(r.Context())
+	if tenant == nil {
+		http.Error(w, `{"error":"tenant context missing"}`, http.StatusBadRequest)
+		return
+	}
+	userID := middleware.GetUserIDFromContext(r.Context())
+	if userID == uuid.Nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	authorName := "Warga RT"
+	if h.userRepo != nil {
+		if u, err := h.userRepo.GetByID(r.Context(), userID); err == nil && u != nil && u.Name != "" {
+			authorName = u.Name
+		}
+	}
+
+	announcementID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, `{"error":"invalid announcement id"}`, http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Content string `json:"content"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid payload"}`, http.StatusBadRequest)
+		return
+	}
+
+	var houseBlock *string
+	if h.houseRepo != nil {
+		if house, err := h.houseRepo.GetByUserID(r.Context(), tenant.ID, userID); err == nil && house != nil {
+			b := house.BlockNumber
+			houseBlock = &b
+		}
+	}
+
+	comment := &domain.AnnouncementComment{
+		AnnouncementID: announcementID,
+		UserID:         userID,
+		AuthorName:     authorName,
+		HouseBlock:     houseBlock,
+		Content:        req.Content,
+	}
+
+	if err := h.usecase.CreateComment(r.Context(), tenant.ID, comment); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"data":    comment,
+		"message": "Komentar berhasil dikirim",
+	})
+}
+
+func (h *AnnouncementDocHandler) handleDeleteComment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+	tenant := middleware.GetTenantFromContext(r.Context())
+	if tenant == nil {
+		http.Error(w, `{"error":"tenant context missing"}`, http.StatusBadRequest)
+		return
+	}
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+		http.Error(w, `{"error":"forbidden: hanya pengurus RT yang dapat menghapus komentar"}`, http.StatusForbidden)
+		return
+	}
+
+	commentID, err := uuid.Parse(r.PathValue("commentId"))
+	if err != nil {
+		http.Error(w, `{"error":"invalid comment id"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.usecase.DeleteComment(r.Context(), tenant.ID, commentID); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "Komentar berhasil dihapus"})
+}
+
 func (h *AnnouncementDocHandler) publicListAnnouncements(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
@@ -203,7 +367,13 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 		return
 	}
 
-	path := strings.TrimPrefix(r.URL.Path, "/api/v1/announcements")
+	reqPath := r.URL.Path
+	var path string
+	if idx := strings.Index(reqPath, "/announcements"); idx != -1 {
+		path = reqPath[idx+len("/announcements"):]
+	} else {
+		path = strings.TrimPrefix(reqPath, "/api/v1/announcements")
+	}
 	path = strings.TrimPrefix(path, "/")
 
 	if path == "" {
@@ -325,6 +495,87 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 			http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
 		}
 		return
+	}
+
+	if len(parts) >= 2 && parts[1] == "comments" {
+		if len(parts) == 2 {
+			switch r.Method {
+			case http.MethodGet:
+				comments, err := h.usecase.ListComments(r.Context(), tenant.ID, id)
+				if err != nil {
+					http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"data": comments})
+			case http.MethodPost:
+				userID := middleware.GetUserIDFromContext(r.Context())
+				if userID == uuid.Nil {
+					http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+					return
+				}
+				authorName := "Warga RT"
+				if h.userRepo != nil {
+					if u, err := h.userRepo.GetByID(r.Context(), userID); err == nil && u != nil && u.Name != "" {
+						authorName = u.Name
+					}
+				}
+				var req struct {
+					Content string `json:"content"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					http.Error(w, `{"error":"invalid payload"}`, http.StatusBadRequest)
+					return
+				}
+				var houseBlock *string
+				if h.houseRepo != nil {
+					if house, err := h.houseRepo.GetByUserID(r.Context(), tenant.ID, userID); err == nil && house != nil {
+						b := house.BlockNumber
+						houseBlock = &b
+					}
+				}
+				comment := &domain.AnnouncementComment{
+					AnnouncementID: id,
+					UserID:         userID,
+					AuthorName:     authorName,
+					HouseBlock:     houseBlock,
+					Content:        req.Content,
+				}
+				if err := h.usecase.CreateComment(r.Context(), tenant.ID, comment); err != nil {
+					http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"data":    comment,
+					"message": "Komentar berhasil dikirim",
+				})
+			default:
+				http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+			}
+			return
+		}
+		if len(parts) == 3 && r.Method == http.MethodDelete {
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: hanya pengurus RT yang dapat menghapus komentar"}`, http.StatusForbidden)
+				return
+			}
+			commentID, err := uuid.Parse(parts[2])
+			if err != nil {
+				http.Error(w, `{"error":"invalid comment id"}`, http.StatusBadRequest)
+				return
+			}
+			if err := h.usecase.DeleteComment(r.Context(), tenant.ID, commentID); err != nil {
+				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "Komentar berhasil dihapus"})
+			return
+		}
 	}
 
 	http.Error(w, `{"error":"not found"}`, http.StatusNotFound)

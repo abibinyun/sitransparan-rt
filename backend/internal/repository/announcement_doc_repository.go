@@ -53,13 +53,13 @@ func scanMedia(dest interface{}) ([]string, error) {
 	return urls, nil
 }
 
-const announcementCols = `id, tenant_id, title, content, attachment_url, media_urls, file_urls, target, created_by, created_at, updated_at`
+const announcementCols = `id, tenant_id, title, content, attachment_url, media_urls, file_urls, target, allow_comments, created_by, created_at, updated_at`
 
 func scanAnnouncement(scan func(dest ...interface{}) error) (*domain.Announcement, error) {
 	a := &domain.Announcement{}
 	var mediaRaw []byte
 	var fileRaw []byte
-	if err := scan(&a.ID, &a.TenantID, &a.Title, &a.Content, &a.AttachmentURL, &mediaRaw, &fileRaw, &a.Target, &a.CreatedBy, &a.CreatedAt, &a.UpdatedAt); err != nil {
+	if err := scan(&a.ID, &a.TenantID, &a.Title, &a.Content, &a.AttachmentURL, &mediaRaw, &fileRaw, &a.Target, &a.AllowComments, &a.CreatedBy, &a.CreatedAt, &a.UpdatedAt); err != nil {
 		return nil, err
 	}
 	a.MediaURLs, _ = scanMedia(mediaRaw)
@@ -83,11 +83,11 @@ func (r *announcementDocRepository) CreateAnnouncement(ctx context.Context, a *d
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, tenant_id, title, content, attachment_url, media_urls, file_urls, target, created_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO %s (id, tenant_id, title, content, attachment_url, media_urls, file_urls, target, allow_comments, created_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`, TenantTable(ctx, "announcements"))
 	_, err := r.db.ExecContext(ctx, query,
-		a.ID, a.TenantID, a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.CreatedBy, a.CreatedAt, a.UpdatedAt,
+		a.ID, a.TenantID, a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.AllowComments, a.CreatedBy, a.CreatedAt, a.UpdatedAt,
 	)
 	return err
 }
@@ -177,11 +177,11 @@ func (r *announcementDocRepository) UpdateAnnouncement(ctx context.Context, a *d
 
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET title = $1, content = $2, attachment_url = $3, media_urls = $4, file_urls = $5, target = $6, updated_at = $7
-		WHERE id = $8 AND tenant_id = $9 AND deleted_at IS NULL
+		SET title = $1, content = $2, attachment_url = $3, media_urls = $4, file_urls = $5, target = $6, allow_comments = $7, updated_at = $8
+		WHERE id = $9 AND tenant_id = $10 AND deleted_at IS NULL
 	`, TenantTable(ctx, "announcements"))
 	res, err := r.db.ExecContext(ctx, query,
-		a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.UpdatedAt, a.ID, a.TenantID,
+		a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.AllowComments, a.UpdatedAt, a.ID, a.TenantID,
 	)
 	if err != nil {
 		return err
@@ -342,4 +342,103 @@ func (r *announcementDocRepository) UploadFile(ctx context.Context, filename str
 		return "", err
 	}
 	return r.minioClient.Upload(ctx, objectKey, bytes.NewReader(data), int64(len(data)), contentType)
+}
+
+func (r *announcementDocRepository) CreateComment(ctx context.Context, c *domain.AnnouncementComment) error {
+	if r.db == nil {
+		return nil
+	}
+	if c.ID == uuid.Nil {
+		c.ID = uuid.New()
+	}
+	now := time.Now()
+	c.CreatedAt = now
+	c.UpdatedAt = now
+
+	query := fmt.Sprintf(`
+		INSERT INTO %s (id, announcement_id, user_id, author_name, house_block, content, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`, TenantTable(ctx, "announcement_comments"))
+	_, err := r.db.ExecContext(ctx, query,
+		c.ID, c.AnnouncementID, c.UserID, c.AuthorName, c.HouseBlock, c.Content, c.CreatedAt, c.UpdatedAt,
+	)
+	return err
+}
+
+func (r *announcementDocRepository) ListComments(ctx context.Context, announcementID uuid.UUID) ([]*domain.AnnouncementComment, error) {
+	if r.db == nil {
+		return []*domain.AnnouncementComment{}, nil
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id, announcement_id, user_id, author_name, house_block, content, created_at, updated_at
+		FROM %s
+		WHERE announcement_id = $1 AND deleted_at IS NULL
+		ORDER BY created_at ASC
+	`, TenantTable(ctx, "announcement_comments"))
+
+	rows, err := r.db.QueryContext(ctx, query, announcementID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comments []*domain.AnnouncementComment
+	for rows.Next() {
+		var c domain.AnnouncementComment
+		if err := rows.Scan(
+			&c.ID, &c.AnnouncementID, &c.UserID, &c.AuthorName, &c.HouseBlock, &c.Content, &c.CreatedAt, &c.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		comments = append(comments, &c)
+	}
+	if comments == nil {
+		comments = []*domain.AnnouncementComment{}
+	}
+	return comments, nil
+}
+
+func (r *announcementDocRepository) DeleteComment(ctx context.Context, id uuid.UUID) error {
+	if r.db == nil {
+		return nil
+	}
+
+	query := fmt.Sprintf(`
+		UPDATE %s SET deleted_at = NOW(), updated_at = NOW()
+		WHERE id = $1 AND deleted_at IS NULL
+	`, TenantTable(ctx, "announcement_comments"))
+	res, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err == nil && rows == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (r *announcementDocRepository) GetLastCommentTime(ctx context.Context, announcementID, userID uuid.UUID) (*time.Time, error) {
+	if r.db == nil {
+		return nil, nil
+	}
+
+	query := fmt.Sprintf(`
+		SELECT created_at
+		FROM %s
+		WHERE announcement_id = $1 AND user_id = $2 AND deleted_at IS NULL
+		ORDER BY created_at DESC
+		LIMIT 1
+	`, TenantTable(ctx, "announcement_comments"))
+
+	var t time.Time
+	err := r.db.QueryRowContext(ctx, query, announcementID, userID).Scan(&t)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
 }

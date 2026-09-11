@@ -33,6 +33,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [fileUrls, setFileUrls] = useState<string[]>([]);
   const [target, setTarget] = useState<AnnouncementTarget>(initialData?.target || 'all');
+  const [allowComments, setAllowComments] = useState<boolean>(initialData?.allow_comments ?? false);
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [customFileUrl, setCustomFileUrl] = useState('');
 
@@ -44,6 +45,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       setMediaUrls(initialData?.media_urls || []);
       setFileUrls(initialData?.file_urls || []);
       setTarget(initialData?.target || 'all');
+      setAllowComments(initialData?.allow_comments ?? false);
       setCustomImageUrl('');
       setCustomFileUrl('');
     }
@@ -122,6 +124,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       media_urls: mediaUrls,
       file_urls: fileUrls,
       target,
+      allow_comments: allowComments,
     });
     onClose();
   };
@@ -350,6 +353,24 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
             <option value="all">Semua (Publik & Warga)</option>
             <option value="residents_only">Khusus Warga RT</option>
           </Select>
+        </div>
+
+        {/* Sakelar Kolom Komentar */}
+        <div className="pt-2 border-t border-slate-100">
+          <label className="flex items-start gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={allowComments}
+              onChange={(e) => setAllowComments(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <div>
+              <span className="text-xs font-bold text-slate-800 block">Buka Kolom Komentar untuk Warga</span>
+              <span className="text-[11px] text-slate-500 block">
+                Jika diaktifkan, warga yang telah login dapat memberikan tanggapan resmi (nama &amp; blok rumah ditampilkan terbuka).
+              </span>
+            </div>
+          </label>
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4 border-t border-slate-100">

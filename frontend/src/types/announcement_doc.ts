@@ -10,6 +10,7 @@ export interface Announcement {
   media_urls?: string[];
   file_urls?: string[];
   target: AnnouncementTarget;
+  allow_comments?: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -22,6 +23,7 @@ export interface CreateAnnouncementPayload {
   media_urls?: string[];
   file_urls?: string[];
   target?: AnnouncementTarget;
+  allow_comments?: boolean;
 }
 
 export interface UpdateAnnouncementPayload {
@@ -31,6 +33,18 @@ export interface UpdateAnnouncementPayload {
   media_urls?: string[];
   file_urls?: string[];
   target?: AnnouncementTarget;
+  allow_comments?: boolean;
+}
+
+export interface AnnouncementComment {
+  id: string;
+  announcement_id: string;
+  user_id: string;
+  author_name: string;
+  house_block?: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Lowercase values match the backend/DB enum (financial_report|minutes|letter|other).
