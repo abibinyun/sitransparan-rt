@@ -22,16 +22,16 @@ func NewInventoryHandler(inventoryUsecase domain.InventoryUsecase) *InventoryHan
 
 func (h *InventoryHandler) RegisterRoutes(mux *http.ServeMux, tenantMw func(http.Handler) http.Handler, authMw func(http.Handler) http.Handler) {
 	// Warga / resident can view items and list of borrowings, but only admin can create/update/delete
-	mux.Handle("GET /api/v1/inventory/items", tenantMw(authMw(http.HandlerFunc(h.ListItems))))
-	mux.Handle("GET /api/v1/inventory/items/{id}", tenantMw(authMw(http.HandlerFunc(h.GetItem))))
-	mux.Handle("POST /api/v1/inventory/items", tenantMw(authMw(http.HandlerFunc(h.CreateItem))))
-	mux.Handle("PUT /api/v1/inventory/items/{id}", tenantMw(authMw(http.HandlerFunc(h.UpdateItem))))
-	mux.Handle("DELETE /api/v1/inventory/items/{id}", tenantMw(authMw(http.HandlerFunc(h.DeleteItem))))
+	mux.Handle("GET /api/v1/inventory/items", authMw(tenantMw(http.HandlerFunc(h.ListItems))))
+	mux.Handle("GET /api/v1/inventory/items/{id}", authMw(tenantMw(http.HandlerFunc(h.GetItem))))
+	mux.Handle("POST /api/v1/inventory/items", authMw(tenantMw(http.HandlerFunc(h.CreateItem))))
+	mux.Handle("PUT /api/v1/inventory/items/{id}", authMw(tenantMw(http.HandlerFunc(h.UpdateItem))))
+	mux.Handle("DELETE /api/v1/inventory/items/{id}", authMw(tenantMw(http.HandlerFunc(h.DeleteItem))))
 
 	// Borrowings
-	mux.Handle("GET /api/v1/inventory/borrowings", tenantMw(authMw(http.HandlerFunc(h.ListBorrowings))))
-	mux.Handle("POST /api/v1/inventory/borrowings", tenantMw(authMw(http.HandlerFunc(h.CreateBorrowing))))
-	mux.Handle("PATCH /api/v1/inventory/borrowings/{id}/status", tenantMw(authMw(http.HandlerFunc(h.UpdateBorrowingStatus))))
+	mux.Handle("GET /api/v1/inventory/borrowings", authMw(tenantMw(http.HandlerFunc(h.ListBorrowings))))
+	mux.Handle("POST /api/v1/inventory/borrowings", authMw(tenantMw(http.HandlerFunc(h.CreateBorrowing))))
+	mux.Handle("PATCH /api/v1/inventory/borrowings/{id}/status", authMw(tenantMw(http.HandlerFunc(h.UpdateBorrowingStatus))))
 }
 
 func (h *InventoryHandler) ListItems(w http.ResponseWriter, r *http.Request) {
@@ -61,6 +61,9 @@ func (h *InventoryHandler) ListItems(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return
+	}
+	if items == nil {
+		items = []domain.InventoryItem{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -341,6 +344,9 @@ func (h *InventoryHandler) ListBorrowings(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return
+	}
+	if list == nil {
+		list = []domain.InventoryBorrowing{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

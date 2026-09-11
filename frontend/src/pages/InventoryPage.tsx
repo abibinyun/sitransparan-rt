@@ -379,7 +379,7 @@ export const InventoryPage: React.FC = () => {
           {/* Grid Barang */}
           {isItemsLoading ? (
             <div className="py-12 text-center text-slate-500">Memuat data inventaris...</div>
-          ) : itemsData?.data?.length === 0 ? (
+          ) : (itemsData?.data?.length === 0 || !itemsData?.data) ? (
             <div className="py-12 text-center bg-white rounded-xl border border-slate-200">
               <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
               <p className="text-slate-700 font-medium">Belum ada barang inventaris</p>
@@ -387,7 +387,7 @@ export const InventoryPage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {itemsData?.data?.map((item) => (
+              {(itemsData?.data || []).map((item) => (
                 <div
                   key={item.id}
                   className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col justify-between hover:shadow-sm transition"
@@ -540,7 +540,7 @@ export const InventoryPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {borrowingsData?.data?.map((b) => (
+                  {(borrowingsData?.data || []).map((b) => (
                     <tr key={b.id} className="hover:bg-slate-50 transition">
                       <td className="py-3 px-4">
                         <div className="font-medium text-slate-900">{b.borrower_name}</div>
