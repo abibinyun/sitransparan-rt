@@ -169,4 +169,56 @@ func TestHouseAutoProvisionRealUser(t *testing.T) {
 	if claims["house_id"] != createdHouse.ID.String() {
 		t.Errorf("JWT house_id (%v) != house ID (%s)", claims["house_id"], createdHouse.ID)
 	}
+
+	// 3. Test Edge Cases & Failure Modes in ClaimAccessToken
+	// 3a. Invalid tenant slug
+	if _, err := uc.ClaimAccessToken(ctx, "nonexistent-slug", createdHouse.AccessToken); err == nil {
+		t.Fatal("expected error for invalid tenant slug")
+	}
+
+	// 3b. Invalid or expired house token
+	if _, err := uc.ClaimAccessToken(ctx, "rt-05", "invalid_token_12345"); err == nil {
+		t.Fatal("expected error for invalid house access token")
+	}
+
+	// 4. Test GetMyHouse: successfully retrieves house and resident
+	myHouse, headRes, err := uc.GetMyHouse(ctx, tenantID, user.ID)
+	if err != nil {
+		t.Fatalf("GetMyHouse failed: %v", err)
+	}
+	if myHouse.ID != createdHouse.ID {
+		t.Errorf("expected house ID %s, got %s", createdHouse.ID, myHouse.ID)
+	}
+	if headRes != nil {
+		t.Errorf("expected nil head resident since none was assigned")
+	}
+
+	// 4b. Failure mode: non-existent user
+	if _, _, err := uc.GetMyHouse(ctx, tenantID, uuid.New()); err == nil {
+		t.Fatal("expected error when user has no linked house")
+	}
+
+	// 5. Test RegenerateToken: old token rejected, new token works
+	oldToken := createdHouse.AccessToken
+	newHouseData, err := uc.RegenerateToken(ctx, tenantID, createdHouse.ID)
+	if err != nil {
+		t.Fatalf("RegenerateToken failed: %v", err)
+	}
+	if newHouseData.AccessToken == oldToken {
+		t.Fatal("expected token to change after regeneration")
+	}
+
+	// Old token should fail
+	if _, err := uc.ClaimAccessToken(ctx, "rt-05", oldToken); err == nil {
+		t.Fatal("expected claim with revoked old token to fail")
+	}
+
+	// New token should succeed
+	newClaim, err := uc.ClaimAccessToken(ctx, "rt-05", newHouseData.AccessToken)
+	if err != nil {
+		t.Fatalf("claim with new token failed: %v", err)
+	}
+	if newClaim.User.ID != user.ID {
+		t.Errorf("expected same User ID retained after token regen, got %s vs %s", newClaim.User.ID, user.ID)
+	}
 }

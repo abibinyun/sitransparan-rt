@@ -8,6 +8,9 @@ providers:
   docker:
     exposedByDefault: false
     httpClientTimeout: 0
+  file:
+    directory: "/etc/traefik/dynamic"
+    watch: true
 
 api:
   dashboard: true

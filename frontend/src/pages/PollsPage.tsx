@@ -6,8 +6,11 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { SimpleDialog } from '../components/ui/dialog';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const PollsPage: React.FC = () => {
+  const { user } = useAuthStore();
+  const isResident = String(user?.role || '').toLowerCase() === 'resident';
   const { data: polls, isLoading, isError, error, refetch } = useOpenPolls();
   const createPoll = useCreatePoll();
   const closePoll = useClosePoll();
@@ -67,9 +70,11 @@ export const PollsPage: React.FC = () => {
         description="Pusat informasi resmi RT, publikasi berkas, penampungan usulan, dan polling suara warga."
         tabs={commTabs}
         actions={
-          <Button onClick={() => setIsCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Buat Polling
-          </Button>
+          !isResident ? (
+            <Button onClick={() => setIsCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Buat Polling
+            </Button>
+          ) : undefined
         }
       />
 
@@ -95,26 +100,35 @@ export const PollsPage: React.FC = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-slate-900 leading-snug">{poll.question}</p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-1.5">
                       {poll.status === 'open' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">Buka</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-[11px]">
+                          Sedang Berlangsung
+                        </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border font-semibold">Ditutup</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-semibold text-[11px]">
+                          Ditutup
+                        </span>
                       )}
-                      {' '}· {total} suara
-                    </p>
+                      <span>·</span>
+                      <span>{total} suara terkumpul</span>
+                      {poll.status !== 'open' && (
+                        <span className="text-slate-400 text-[11px]">(hasil voting final)</span>
+                      )}
+                    </div>
                   </div>
-                  {poll.status === 'open' && (
+                  {!isResident && poll.status === 'open' && (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-rose-600 border-rose-200 hover:bg-rose-50 shrink-0"
+                      className="text-rose-600 border-rose-200 hover:bg-rose-50 shrink-0 text-xs"
                       disabled={closePoll.isPending}
                       onClick={() => {
-                        if (confirm('Tutup polling ini? Tidak bisa dibuka lagi.')) closePoll.mutate(poll.id);
+                        if (confirm('Tutup polling ini? Tidak bisa dibuka lagi dan warga tidak bisa vote lagi.')) closePoll.mutate(poll.id);
                       }}
                     >
-                      <X className="h-4 w-4 mr-1" /> Tutup
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      {closePoll.isPending ? 'Menutup...' : 'Tutup Polling'}
                     </Button>
                   )}
                 </div>
@@ -150,6 +164,7 @@ export const PollsPage: React.FC = () => {
         onClose={() => setIsCreateOpen(false)}
         title="Buat Polling Baru"
         description="Pertanyaan + 2 sampai 6 opsi. Hanya admin yang bisa membuat."
+        className="max-w-xl sm:max-w-2xl"
       >
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="space-y-2">

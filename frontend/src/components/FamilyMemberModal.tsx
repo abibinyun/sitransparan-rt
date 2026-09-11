@@ -82,6 +82,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
       onClose={onClose}
       title={member ? 'Edit Anggota Keluarga' : 'Tambah Anggota Keluarga'}
       description="Kelola susunan anggota keluarga dalam Kartu Keluarga"
+      className="max-w-xl sm:max-w-2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -108,7 +109,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
             onChange={(e) => setFormData({ ...formData, nik: e.target.value })}
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="famRelation">Hubungan Keluarga</Label>
             <Select

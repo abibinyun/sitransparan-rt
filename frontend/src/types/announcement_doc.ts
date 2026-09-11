@@ -8,6 +8,7 @@ export interface Announcement {
   content: string;
   attachment_url?: string;
   media_urls?: string[];
+  file_urls?: string[];
   target: AnnouncementTarget;
   created_by: string;
   created_at: string;
@@ -19,6 +20,7 @@ export interface CreateAnnouncementPayload {
   content: string;
   attachment_url?: string;
   media_urls?: string[];
+  file_urls?: string[];
   target?: AnnouncementTarget;
 }
 
@@ -26,6 +28,8 @@ export interface UpdateAnnouncementPayload {
   title?: string;
   content?: string;
   attachment_url?: string;
+  media_urls?: string[];
+  file_urls?: string[];
   target?: AnnouncementTarget;
 }
 

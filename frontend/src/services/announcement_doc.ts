@@ -23,6 +23,19 @@ export function usePublicAnnouncements(params?: { limit?: number; offset?: numbe
   });
 }
 
+export function usePublicAnnouncementDetail(id: string | null) {
+  const tenantSlug = getTenantSlugOrFallback();
+  return useQuery({
+    queryKey: ['public-announcement-detail', tenantSlug, id],
+    queryFn: async () => {
+      if (!id) return null;
+      const res = await api.get<Announcement>(`/t/${tenantSlug}/announcements/${id}`);
+      return res.data;
+    },
+    enabled: !!id,
+  });
+}
+
 export function usePublicDocuments(params?: { limit?: number; offset?: number }) {
   const tenantSlug = getTenantSlugOrFallback();
   return useQuery({

@@ -62,10 +62,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       onClose={onClose}
       title={initialData ? 'Edit Dokumen' : 'Upload Dokumen Baru'}
       description="Unggah berkas atau laporan resmi warga"
+      className="max-w-xl sm:max-w-2xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="docTitle">Judul Dokumen</Label>
+      <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto px-0.5 sm:px-1">
+        <div className="space-y-1.5">
+          <Label htmlFor="docTitle" className="text-xs sm:text-sm font-semibold">Judul Dokumen</Label>
           <Input
             id="docTitle"
             type="text"
@@ -73,15 +74,17 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Contoh: Laporan Keuangan Kas RT Bulan Juli 2026"
+            className="text-xs sm:text-sm"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="docCategory">Kategori Dokumen</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="docCategory" className="text-xs sm:text-sm font-semibold">Kategori Dokumen</Label>
           <Select
             id="docCategory"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+            className="text-xs sm:text-sm"
           >
             <option value="financial_report">Laporan Keuangan</option>
             <option value="minutes">Notulen Rapat</option>
@@ -91,7 +94,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="docFileInput">Pilih File Dokumen</Label>
+          <Label htmlFor="docFileInput" className="text-xs sm:text-sm font-semibold">Pilih File Dokumen</Label>
           <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-indigo-400 transition-colors bg-slate-50/50">
             <input
               id="docFileInput"
@@ -109,29 +112,29 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
               className="cursor-pointer flex flex-col items-center justify-center gap-2"
             >
               {file ? (
-                <div className="flex items-center gap-2 text-indigo-600 font-semibold text-sm">
-                  <FileText className="w-5 h-5" />
-                  <span>{file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
+                <div className="flex items-center gap-2 text-indigo-600 font-semibold text-xs sm:text-sm max-w-full truncate px-2">
+                  <FileText className="w-5 h-5 shrink-0" />
+                  <span className="truncate">{file.name} ({(file.size / 1024).toFixed(0)} KB)</span>
                 </div>
               ) : (
                 <>
-                  <UploadCloud className="w-8 h-8 text-slate-400" />
-                  <span className="text-sm font-semibold text-slate-700">Pilih berkas dari perangkat</span>
-                  <span className="text-xs text-slate-400">PDF, Word, Excel, Gambar (max 10MB)</span>
+                  <UploadCloud className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400" />
+                  <span className="text-xs sm:text-sm font-semibold text-slate-700">Pilih berkas dari perangkat</span>
+                  <span className="text-[11px] sm:text-xs text-slate-400">PDF, Word, Excel, Gambar (max 10MB)</span>
                 </>
               )}
             </label>
           </div>
           {fileUrl && !file && (
-            <p className="text-xs text-slate-500 truncate">Berkas saat ini: {fileUrl}</p>
+            <p className="text-xs text-slate-500 break-all">Berkas saat ini: {fileUrl}</p>
           )}
         </div>
 
-        <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
-          <Button type="button" variant="outline" onClick={onClose}>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4 border-t border-slate-100">
+          <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
             Batal
           </Button>
-          <Button type="submit" disabled={isLoading || (!file && !fileUrl)}>
+          <Button type="submit" disabled={isLoading || (!file && !fileUrl)} className="w-full sm:w-auto">
             {isLoading ? 'Mengunggah...' : initialData ? 'Simpan Perubahan' : 'Upload Dokumen'}
           </Button>
         </div>

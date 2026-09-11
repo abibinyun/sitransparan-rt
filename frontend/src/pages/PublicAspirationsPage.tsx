@@ -137,7 +137,7 @@ export const PublicAspirationsPage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
         {/* Tab & Search Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setActiveTab('aspirations')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all ${

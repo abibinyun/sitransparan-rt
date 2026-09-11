@@ -148,8 +148,8 @@ Termasuk tabel inti tata kelola, transparansi kas, rapat warga, Karang Taruna (`
 ### community_needs
 `id`, `tenant_id`, `title`, `description`, `estimated_cost`, `status` (`proposed`/`approved`/`in_progress`/`completed`), `progress_notes`, `created_at`, `updated_at`.
 
-### announcements (media_urls 000019)
-`id`, `tenant_id`, `title`, `content`, `attachment_url`, `media_urls JSONB DEFAULT '[]'` (max 10, http/https), `target` (`all`/`residents_only`), `created_by`, `created_at`, `updated_at`.
+### announcements (media_urls 000019, file_urls 000034)
+`id`, `tenant_id`, `title`, `content`, `attachment_url`, `media_urls JSONB DEFAULT '[]'` (max 10), `file_urls JSONB DEFAULT '[]'` (max 10), `target` (`all`/`residents_only`), `created_by`, `created_at`, `updated_at`.
 
 ### documents
 `id`, `tenant_id`, `title`, `category` (`financial_report`/`minutes`/`letter`/`other`), `file_url`, `uploaded_by`, `created_at`, `updated_at`.
@@ -198,6 +198,8 @@ Termasuk tabel inti tata kelola, transparansi kas, rapat warga, Karang Taruna (`
 | 000025_add_fund_categories | Kategori multi-kantong kas |
 | 000026_ensure_tenant_default_funds | 4 kantong kas standar: `operational`, `youth`, `social`, `infrastructure` |
 | 000027_create_waste_bank | `waste_categories`, `waste_deposits`, `waste_deposit_items` (Bank Sampah) |
+| 000033_add_event_attachments | `event_attachments` |
+| 000034_announcement_file_urls | `file_urls JSONB` pada `announcements` |
 | 000019_announcement_media | `announcements.media_urls JSONB` + `portal_events` (KPI) |
 | 000020_push_subscriptions | `push_subscriptions` (public) |
 

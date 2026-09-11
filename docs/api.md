@@ -31,6 +31,7 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 | GET | `/api/v1/t/resolve` | Resolusi hostname/custom domain ke slug tenant aktif. Query: `host={domain}`. Response: `{"slug":"..."}`. |
 | GET | `/api/v1/t/{slug}/info` | Info tenant publik (id, name, slug, domain, logo_url). |
 | GET | `/api/v1/t/{slug}/announcements` | List pengumuman publik. Query: `limit`, `offset`. |
+| GET | `/api/v1/t/{slug}/announcements/{id}` | Detail pengumuman publik (target `all`). |
 | GET | `/api/v1/t/{slug}/documents` | List dokumen publik. |
 | GET | `/api/v1/t/{slug}/aspirations` | List aspirasi publik (tanpa identitas resident). |
 | POST | `/api/v1/t/{slug}/aspirations` | Submit aspirasi publik anonim (`resident_id` diabaikan). |
@@ -187,7 +188,7 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 | Metode | Path | Akses | Keterangan |
 |---|---|---|---|
 | GET | `/api/v1/announcements` | AUTH | List pengumuman. |
-| POST | `/api/v1/announcements` | ADMIN | Terbitkan. Body: `{title, content, attachment_url?, media_urls?: string[<=10] (http/https), target: all\|residents_only}`. |
+| POST | `/api/v1/announcements` | ADMIN | Terbitkan. Body: `{title, content, attachment_url?, media_urls?: string[<=10], file_urls?: string[<=10], target: all\|residents_only}`. |
 | GET | `/api/v1/announcements/{id}` | AUTH | Detail. |
 | PUT | `/api/v1/announcements/{id}` | ADMIN | Update. |
 | DELETE | `/api/v1/announcements/{id}` | ADMIN | Hapus. |

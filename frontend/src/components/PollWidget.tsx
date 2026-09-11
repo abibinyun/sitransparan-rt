@@ -42,7 +42,14 @@ export const PollWidget: React.FC = () => {
           const total = poll.total_votes ?? votes.reduce((a, b) => a + b, 0);
           return (
             <div key={poll.id}>
-              <p className="text-sm font-bold text-slate-900 leading-snug">{poll.question}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-bold text-slate-900 leading-snug">{poll.question}</p>
+                {poll.status !== 'open' && (
+                  <span className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    Ditutup
+                  </span>
+                )}
+              </div>
               <ul className="mt-2 space-y-1.5">
                 {poll.options.map((opt, i) => {
                   const n = votes[i] ?? 0;
@@ -52,6 +59,7 @@ export const PollWidget: React.FC = () => {
                     <li key={i}>
                       <button
                         onClick={() => {
+                          if (poll.status !== 'open') return;
                           if (!user) {
                             const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
                             window.location.href = `/login?returnTo=${returnUrl}`;
@@ -64,6 +72,8 @@ export const PollWidget: React.FC = () => {
                         className={`w-full text-left rounded-lg border px-3 py-2 text-xs transition-colors ${
                           mine
                             ? 'border-emerald-600 bg-emerald-50'
+                            : poll.status !== 'open'
+                            ? 'border-slate-200 bg-slate-50/70 text-slate-600 cursor-default'
                             : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                         }`}
                         aria-label={`${opt}${mine ? ' — pilihan Anda' : ''}`}
@@ -76,7 +86,7 @@ export const PollWidget: React.FC = () => {
                           <span className="shrink-0 tabular-nums text-slate-500">{pct}%</span>
                         </span>
                         <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-slate-100">
-                          <span className="block h-full rounded-full bg-emerald-600" style={{ width: `${pct}%` }} />
+                          <span className={`block h-full rounded-full ${poll.status !== 'open' ? 'bg-slate-500' : 'bg-emerald-600'}`} style={{ width: `${pct}%` }} />
                         </span>
                       </button>
                     </li>
@@ -86,7 +96,9 @@ export const PollWidget: React.FC = () => {
               {voteError && <p className="mt-2 text-[11px] text-rose-600">{voteError}</p>}
               <p className="mt-1 text-[11px] text-slate-400">
                 {total} suara
-                {user ? (
+                {poll.status !== 'open' ? (
+                  <> · Polling telah ditutup (tidak menerima suara lagi)</>
+                ) : user ? (
                   poll.my_vote != null ? (
                     <> · suara Anda tercatat (klik opsi lain untuk mengubah)</>
                   ) : (

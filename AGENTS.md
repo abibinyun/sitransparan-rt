@@ -1466,12 +1466,12 @@ tests/e2e/                      Playwright regression suite
 | Finance | **funds** (multi-kantong, `is_default`), fee categories, dues (record & verify, `status` filter), cash transactions (**append-only**), summary, CSV/PDF export via backend blob |
 | Events | event CRUD (budget `budget` on list), RAB/budget (RAB card visible + toast), attachments/reports (proposal & LPJ), committee roles, sponsors, donation receipts, timeline transparency view |
 | Aspirations | submit (public anonymous & internal), status + response (admin), community needs CRUD |
-| Announcements & Documents | announcement CRUD (with `media_urls` gallery), document CRUD (create/read/update/delete, PUT `/documents/{id}`) |
+| Announcements & Documents | announcement CRUD (with multi-image `media_urls` & multi-file `file_urls`, detail modal on click, public endpoint `GET /t/{slug}/announcements/{id}`), document CRUD (create/read/update/delete, PUT `/documents/{id}`) |
 | Dashboard | summary metrics, financial report export via `GET /dashboard/reports/financial/export?format=csv|pdf` (blob) |
-| Public Portal | `/kabar` (announcements), `/usulan` (aspirations), `/agenda` (events), `/karang-taruna`, `/bank-sampah` + legacy `/public/*` redirects; `/api/v1/t/{slug}/...` + KPI `feed_view/share_opened` |
+| Public Portal | `/kabar` (announcements & detail modal), `/usulan` (aspirations), `/agenda` (events), `/karang-taruna`, `/bank-sampah` + legacy `/public/*` redirects; `/api/v1/t/{slug}/...` + KPI `feed_view/share_opened` |
 | Social | reactions (`support/like/applause` 1-1) + polls (2–6 opsi) + `PollsPage` `/admin/polls` (create/close) + badge `Warga Baru → Utusan Warga` |
 | Meetings | CRUD, visibility `public/internal/confidential` enforced, attendees/decisions/action-items |
-| PWA | offline caching via Workbox + IndexedDB |
+| PWA | offline caching via Workbox + IndexedDB; navigasi HTML NetworkOnly tanpa index.html precache untuk mencegah stale view saat hard-refresh |
 | Push | Web Push `push_subscriptions` (VAPID) — `GET /push/config`, `POST /push/subscribe` via `api` auth |
 
 ## 46.6 Routes & API
@@ -1521,12 +1521,12 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
 - Backend security suite: `TestSecurity_*` in
   `backend/internal/delivery/http/security_integration_test.go` (cross-tenant matrix,
   role escalation, RBAC enforcement, superadmin account protection, public sanitization).
-- E2E suite (`tests/e2e/`): **62 tests** — `auth/`, `public/`
+- E2E suite (`tests/e2e/`): **65 tests** — `auth/`, `public/`
   (termasuk `public-transparency`: endpoint publik meetings/financial-summary +
   share card modal), `admin/`
   (termasuk `dashboard-metrics`: koherensi angka + export CSV + window.print PDF),
   `announcements/` (termasuk `announcements-crud`: CRUD penuh + sinkronisasi portal
-  publik + penyembunyian `residents_only` dari anonim), `aspirations/` (termasuk
+  publik + penyembunyian `residents_only` dari anonim; dan `multi-attachment`: multi-foto, multi-file, detail modal publik, batasan 10 items), `aspirations/` (termasuk
   `workflow.spec.ts`), `events/` (termasuk `events-workflow`: create → RAB persist via
   API → delete; filter status terverifikasi end-to-end), `meetings/`
   (termasuk `meetings-authz`: warga ditolak tulis, `visibility=confidential`

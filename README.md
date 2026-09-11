@@ -11,10 +11,10 @@ Platform SaaS PWA multi-tenant untuk transparansi tata kelola lingkungan RT/RW: 
 - **Kegiatan & RAB** — events (budget ter-embed di list), RAB/budget, panitia, RSVP (toast), sponsor, kuitansi donasi, transparansi.
 - **Notulen rapat** — meetings + attendees + decisions + action-items, visibilitas `public|internal|confidential` ditegakkan server-side.
 - **Aspirasi & kebutuhan** — aspirasi (anonim publik & internal) + respons admin, community_needs.
-- **Pengumuman & dokumen** — pengumuman dengan `media_urls` galeri (max 10, http/https) + dokumen (`PUT /documents/{id}`).
+- **Pengumuman & dokumen** — pengumuman dengan multi-foto galeri (`media_urls` max 10), multi-file lampiran dokumen (`file_urls` max 10), modal interaktif publik, serta dokumen publik (`PUT /documents/{id}`).
 - **Sosial** — reaksi `support|like|applause` (1 user 1 reaksi per target) + polling 2–6 opsi (1 user 1 suara) + badge partisipasi.
-- **Portal transparansi publik** — `/kabar` (announcements), `/usulan` (aspirations), `/agenda` (events) tanpa login; legacy `/public/*` redirect; endpoint publik `GET /t/{slug}/info|announcements|documents|aspirations|needs|meetings|events|financial-summary|polls/{id}` + KPI `feed_view/share_opened`.
-- **PWA + Push** — service worker Workbox + IndexedDB offline cache; Web Push VAPID (`GET /push/config`, `POST /push/subscribe` via `api` auth, graceful disable jika keys kosong).
+- **Portal transparansi publik** — `/kabar` (announcements & detail modal), `/usulan` (aspirations), `/agenda` (events) tanpa login; legacy `/public/*` redirect; endpoint publik `GET /t/{slug}/info|announcements|announcements/{id}|documents|aspirations|needs|meetings|events|financial-summary|polls/{id}` + KPI `feed_view/share_opened`.
+- **PWA + Push** — service worker Workbox (navigasi HTML NetworkOnly tanpa cache usang, asset StaleWhileRevalidate) + IndexedDB; Web Push VAPID (`GET /push/config`, `POST /push/subscribe` via `api` auth, graceful disable jika keys kosong).
 - **Keamanan** — NIK AES-GCM+HMAC (panic di prod jika `NIK_ENCRYPTION_KEY` ≠32), rate-limit per-IP (1000/100, auth 20/5, `TRUSTED_PROXY_IPS`), no token revocation.
 
 ## Tech Stack

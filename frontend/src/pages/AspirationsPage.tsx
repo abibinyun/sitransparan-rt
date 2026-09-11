@@ -233,10 +233,10 @@ export const AspirationsPage: React.FC = () => {
           ) : (
             <div className="divide-y divide-slate-100">
               {aspirations.map((item) => (
-                <div key={item.id} className="p-6 hover:bg-slate-50/50 transition-colors space-y-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
+                <div key={item.id} className="p-4 sm:p-6 hover:bg-slate-50/50 transition-colors space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
                         <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
                           {item.category || 'Umum'}
                         </span>
@@ -247,30 +247,32 @@ export const AspirationsPage: React.FC = () => {
                           Pengusul: {item.author_name || 'Warga RT'}
                         </span>
                       </div>
-                      <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
+                      <h3 className="text-base font-bold text-slate-900 break-words">{item.title}</h3>
                     </div>
                     {!isResident && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenResponseModal(item)}
-                      >
-                        Tanggapi
-                      </Button>
+                      <div className="self-start sm:self-auto shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenResponseModal(item)}
+                        >
+                          Tanggapi
+                        </Button>
+                      </div>
                     )}
                   </div>
-                  <p className="text-sm text-slate-600">{item.content || (item as any).description || ''}</p>
+                  <p className="text-sm text-slate-600 break-words whitespace-pre-wrap">{item.content || (item as any).description || ''}</p>
                   {item.response && (
                     <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 space-y-1">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                         <p className="font-semibold text-slate-900">Tanggapan Pengurus:</p>
                         {item.responder_name && (
-                          <span className="text-[11px] font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
+                          <span className="text-[11px] font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded self-start sm:self-auto">
                             Dijawab oleh: {item.responder_name}
                           </span>
                         )}
                       </div>
-                      <p>{item.response}</p>
+                      <p className="break-words whitespace-pre-wrap">{item.response}</p>
                     </div>
                   )}
                 </div>
@@ -304,15 +306,17 @@ export const AspirationsPage: React.FC = () => {
                     </p>
                   )}
                 </div>
-                <div className="pt-2">
-                  <Button
-                    variant="outline"
-                    className="w-full text-xs"
-                    onClick={() => handleOpenNeedModal(need)}
-                  >
-                    Edit / Update Status
-                  </Button>
-                </div>
+                {!isResident && (
+                  <div className="pt-2">
+                    <Button
+                      variant="outline"
+                      className="w-full text-xs"
+                      onClick={() => handleOpenNeedModal(need)}
+                    >
+                      Edit / Update Status
+                    </Button>
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -334,6 +338,7 @@ export const AspirationsPage: React.FC = () => {
         onClose={() => setSelectedAspiration(null)}
         title="Tanggapi Aspirasi Warga"
         description={selectedAspiration?.title}
+        className="max-w-xl sm:max-w-2xl"
       >
         <form onSubmit={handleSaveAspirationResponse} className="space-y-4">
           <div className="space-y-2">
@@ -396,6 +401,7 @@ export const AspirationsPage: React.FC = () => {
         onClose={() => setShowNeedModal(false)}
         title={editingNeed ? 'Edit Kebutuhan Lingkungan' : 'Tambah Kebutuhan Lingkungan'}
         description="Kelola usulan dan progres kebutuhan fasilitas lingkungan RT/RW"
+        className="max-w-xl sm:max-w-2xl"
       >
         <form onSubmit={handleSaveNeed} className="space-y-4">
           <div className="space-y-2">

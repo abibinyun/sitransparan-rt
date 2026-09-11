@@ -53,15 +53,17 @@ func scanMedia(dest interface{}) ([]string, error) {
 	return urls, nil
 }
 
-const announcementCols = `id, tenant_id, title, content, attachment_url, media_urls, target, created_by, created_at, updated_at`
+const announcementCols = `id, tenant_id, title, content, attachment_url, media_urls, file_urls, target, created_by, created_at, updated_at`
 
 func scanAnnouncement(scan func(dest ...interface{}) error) (*domain.Announcement, error) {
 	a := &domain.Announcement{}
 	var mediaRaw []byte
-	if err := scan(&a.ID, &a.TenantID, &a.Title, &a.Content, &a.AttachmentURL, &mediaRaw, &a.Target, &a.CreatedBy, &a.CreatedAt, &a.UpdatedAt); err != nil {
+	var fileRaw []byte
+	if err := scan(&a.ID, &a.TenantID, &a.Title, &a.Content, &a.AttachmentURL, &mediaRaw, &fileRaw, &a.Target, &a.CreatedBy, &a.CreatedAt, &a.UpdatedAt); err != nil {
 		return nil, err
 	}
 	a.MediaURLs, _ = scanMedia(mediaRaw)
+	a.FileURLs, _ = scanMedia(fileRaw)
 	return a, nil
 }
 
@@ -81,11 +83,11 @@ func (r *announcementDocRepository) CreateAnnouncement(ctx context.Context, a *d
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, tenant_id, title, content, attachment_url, media_urls, target, created_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		INSERT INTO %s (id, tenant_id, title, content, attachment_url, media_urls, file_urls, target, created_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`, TenantTable(ctx, "announcements"))
 	_, err := r.db.ExecContext(ctx, query,
-		a.ID, a.TenantID, a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), a.Target, a.CreatedBy, a.CreatedAt, a.UpdatedAt,
+		a.ID, a.TenantID, a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.CreatedBy, a.CreatedAt, a.UpdatedAt,
 	)
 	return err
 }
@@ -175,11 +177,11 @@ func (r *announcementDocRepository) UpdateAnnouncement(ctx context.Context, a *d
 
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET title = $1, content = $2, attachment_url = $3, media_urls = $4, target = $5, updated_at = $6
-		WHERE id = $7 AND tenant_id = $8 AND deleted_at IS NULL
+		SET title = $1, content = $2, attachment_url = $3, media_urls = $4, file_urls = $5, target = $6, updated_at = $7
+		WHERE id = $8 AND tenant_id = $9 AND deleted_at IS NULL
 	`, TenantTable(ctx, "announcements"))
 	res, err := r.db.ExecContext(ctx, query,
-		a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), a.Target, a.UpdatedAt, a.ID, a.TenantID,
+		a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.UpdatedAt, a.ID, a.TenantID,
 	)
 	if err != nil {
 		return err

@@ -35,6 +35,7 @@ func (h *AnnouncementDocHandler) RegisterRoutes(mux *http.ServeMux, tenantMw fun
 	// Use method-specific wildcard patterns so these routes can coexist with
 	// other public tenant resources without colliding on /api/v1/t/.
 	mux.HandleFunc("GET /api/v1/t/{slug}/announcements", h.handlePublicTenantRoutes)
+	mux.HandleFunc("GET /api/v1/t/{slug}/announcements/{id}", h.handlePublicTenantAnnouncementDetail)
 	mux.HandleFunc("GET /api/v1/t/{slug}/documents", h.handlePublicTenantRoutes)
 
 	// Private Announcement routes: /api/v1/announcements
@@ -46,6 +47,47 @@ func (h *AnnouncementDocHandler) RegisterRoutes(mux *http.ServeMux, tenantMw fun
 	protectedDocuments := http.HandlerFunc(h.handlePrivateDocuments)
 	mux.Handle("/api/v1/documents", authMw(tenantMw(protectedDocuments)))
 	mux.Handle("/api/v1/documents/", authMw(tenantMw(protectedDocuments)))
+}
+
+func (h *AnnouncementDocHandler) handlePublicTenantAnnouncementDetail(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+	slug := r.PathValue("slug")
+	idStr := r.PathValue("id")
+	if slug == "" || idStr == "" {
+		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		return
+	}
+
+	if hostSlug, matched := middleware.HostnameSlug(r.Host, h.baseDomain); matched && hostSlug != slug {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	tenant, err := h.tenantRepo.GetBySlug(r.Context(), slug)
+	if err != nil || tenant == nil || !tenant.IsActive() {
+		http.Error(w, `{"error":"tenant not found"}`, http.StatusNotFound)
+		return
+	}
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		http.Error(w, `{"error":"invalid announcement id"}`, http.StatusBadRequest)
+		return
+	}
+
+	r = r.WithContext(context.WithValue(r.Context(), domain.TenantContextKey, tenant))
+	item, err := h.usecase.GetAnnouncement(r.Context(), tenant.ID, id)
+	if err != nil || item == nil || item.Target != "all" {
+		http.Error(w, `{"error":"announcement not found"}`, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(item)
 }
 
 func (h *AnnouncementDocHandler) handlePublicTenantRoutes(w http.ResponseWriter, r *http.Request) {

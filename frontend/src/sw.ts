@@ -1,31 +1,22 @@
 /// <reference lib="webworker" />
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
-import { registerRoute, NavigationRoute } from 'workbox-routing';
-import { NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { registerRoute } from 'workbox-routing';
+import { StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
 declare const self: ServiceWorkerGlobalScope;
 
+// Langsung aktifkan service worker baru segera setelah terinstall
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST || []);
 
-// Cache HTML navigation with NetworkFirst, except /login to prevent stale session redirects
-const navigationRoute = new NavigationRoute(
-  new NetworkFirst({
-    cacheName: 'pages-cache',
-    networkTimeoutSeconds: 2,
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-    ],
-  }),
-  {
-    denylist: [/^\/login/],
-  }
-);
-registerRoute(navigationRoute);
+// Navigasi HTML tidak di-cache oleh SW runtime untuk mencegah index.html usang
+// saat hard-refresh / pull-to-refresh. Navigasi langsung ke jaringan (NetworkOnly).
 
 // Cache static assets (images, fonts, styles, scripts)
 registerRoute(
@@ -55,10 +46,15 @@ registerRoute(
 // session on the same origin. The precache is left intact: it only holds
 // immutable static assets, never tenant-scoped data.
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'CLEAR_CACHES') {
-    event.waitUntil(
-      Promise.all(['api-cache', 'pages-cache'].map((name) => caches.delete(name)))
-    );
+  if (event.data) {
+    if (event.data.type === 'CLEAR_CACHES') {
+      event.waitUntil(
+        Promise.all(['api-cache', 'pages-cache'].map((name) => caches.delete(name)))
+      );
+    }
+    if (event.data.type === 'SKIP_WAITING' || event.data === 'SKIP_WAITING') {
+      self.skipWaiting();
+    }
   }
 });
 
@@ -68,10 +64,17 @@ self.addEventListener('skipWaiting', () => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    Promise.all([
-      caches.delete('api-cache'),
-      self.clients.claim(),
-    ])
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          // Hapus semua pages-cache atau cache lama yang mengandung index.html
+          if (key.includes('pages-cache') || key.includes('api-cache')) {
+            return caches.delete(key);
+          }
+          return Promise.resolve(true);
+        })
+      );
+    }).then(() => self.clients.claim())
   );
 });
 

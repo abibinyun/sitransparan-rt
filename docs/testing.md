@@ -55,6 +55,7 @@ Suite `tests/e2e/` — **64 tests** (62 + `polls-ui` + dashboard blob), mencakup
 - `finance/` — funds (is_default guard), categories, dues `status` filter + verify, transactions append-only, summary, upload
 - `events/events-workflow` — create → RAB budget persist via API → RSVP → delete; filter `status` backend terverifikasi
 - `announcements/announcements-crud` — CRUD + sync portal publik + `residents_only` hidden dari anonim
+- `announcements/multi-attachment` — Unggah multi-gambar (`media_urls`) & multi-file berkas (`file_urls`), pratinjau, buka modal detail publik, dan validasi batas maksimal (10 items)
 - `meetings/meetings-authz` — warga ditolak tulis, `visibility=confidential` server-side, isolasi lintas-hostname
 - `admin/dashboard-metrics` — saldo = income−expense, API summary match, export CSV blob + PDF blob
 - `polls-ui` — create poll 2–6 opsi, vote, close, public agregat

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/url"
+	"strings"
 
 	"backend/internal/domain"
 	"github.com/google/uuid"
@@ -23,9 +24,28 @@ func validateMediaURLs(urls []string) error {
 		return errors.New("media_urls exceeds 10 items")
 	}
 	for _, s := range urls {
+		if strings.HasPrefix(s, "/api/v1/files/") || strings.HasPrefix(s, "/uploads/") {
+			continue
+		}
 		u, err := url.Parse(s)
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-			return errors.New("media_urls must be http/https URLs")
+			return errors.New("media_urls must be valid URLs")
+		}
+	}
+	return nil
+}
+
+func validateFileURLs(urls []string) error {
+	if len(urls) > 10 {
+		return errors.New("file_urls exceeds 10 items")
+	}
+	for _, s := range urls {
+		if strings.HasPrefix(s, "/api/v1/files/") || strings.HasPrefix(s, "/uploads/") {
+			continue
+		}
+		u, err := url.Parse(s)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return errors.New("file_urls must be valid URLs")
 		}
 	}
 	return nil
@@ -42,6 +62,9 @@ func (u *announcementDocUsecase) CreateAnnouncement(ctx context.Context, tenantI
 		return errors.New("content is required")
 	}
 	if err := validateMediaURLs(a.MediaURLs); err != nil {
+		return err
+	}
+	if err := validateFileURLs(a.FileURLs); err != nil {
 		return err
 	}
 
@@ -83,6 +106,9 @@ func (u *announcementDocUsecase) UpdateAnnouncement(ctx context.Context, tenantI
 		return errors.New("content is required")
 	}
 	if err := validateMediaURLs(a.MediaURLs); err != nil {
+		return err
+	}
+	if err := validateFileURLs(a.FileURLs); err != nil {
 		return err
 	}
 

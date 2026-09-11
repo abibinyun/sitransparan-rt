@@ -35,7 +35,8 @@ import {
 } from 'lucide-react';
 
 export const HousesPage: React.FC = () => {
-  const { activeTenant } = useAuthStore();
+  const { activeTenant, user } = useAuthStore();
+  const isResident = String(user?.role || '').toLowerCase() === 'resident';
   const [search, setSearch] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingHouse, setEditingHouse] = useState<House | null>(null);
@@ -172,23 +173,25 @@ export const HousesPage: React.FC = () => {
         description="Kelola data induk kependudukan warga, kartu keluarga, dan penomoran stiker rumah."
         tabs={demographyTabs}
         actions={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setIsPrintStickerModalOpen(true)}
-              className="flex items-center gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-            >
-              <Printer className="w-4 h-4" />
-              Cetak Lembar Stiker
-            </Button>
-            <Button
-              onClick={openCreateModal}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Tambah Rumah
-            </Button>
-          </>
+          !isResident ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setIsPrintStickerModalOpen(true)}
+                className="flex items-center gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+              >
+                <Printer className="w-4 h-4" />
+                Cetak Lembar Stiker
+              </Button>
+              <Button
+                onClick={openCreateModal}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Tambah Rumah
+              </Button>
+            </>
+          ) : undefined
         }
       />
 
@@ -348,35 +351,39 @@ export const HousesPage: React.FC = () => {
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => openEditModal(house)}
-                            title="Edit Rumah"
-                            className="text-slate-500 hover:text-indigo-600 p-2 h-8 w-8"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleRegenerate(house)}
-                            disabled={regenerateMutation.isPending}
-                            title="Generate Ulang Token (Reset QR)"
-                            className="text-slate-500 hover:text-amber-600 p-2 h-8 w-8"
-                          >
-                            <RefreshCw className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(house)}
-                            disabled={deleteMutation.isPending}
-                            title="Hapus Rumah"
-                            className="text-slate-500 hover:text-rose-600 p-2 h-8 w-8"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          {!isResident && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => openEditModal(house)}
+                                title="Edit Rumah"
+                                className="text-slate-500 hover:text-indigo-600 p-2 h-8 w-8"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRegenerate(house)}
+                                disabled={regenerateMutation.isPending}
+                                title="Generate Ulang Token (Reset QR)"
+                                className="text-slate-500 hover:text-amber-600 p-2 h-8 w-8"
+                              >
+                                <RefreshCw className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDelete(house)}
+                                disabled={deleteMutation.isPending}
+                                title="Hapus Rumah"
+                                className="text-slate-500 hover:text-rose-600 p-2 h-8 w-8"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -390,8 +397,8 @@ export const HousesPage: React.FC = () => {
 
       {/* Modal Tambah / Edit Rumah */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg sm:max-w-xl w-full p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Home className="w-5 h-5 text-emerald-600" />

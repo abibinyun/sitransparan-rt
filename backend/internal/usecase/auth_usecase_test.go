@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"backend/internal/domain"
 	"backend/internal/usecase"
@@ -305,5 +306,93 @@ func TestAuthUsecase_UpdateProfile(t *testing.T) {
 	_, loggedUser, _, err := uc.Login(ctx, "budi@warga.local", "newsecret123", nil)
 	if err != nil || loggedUser == nil {
 		t.Fatalf("login with new password failed: %v", err)
+	}
+}
+
+func TestAuthUsecase_GetMe(t *testing.T) {
+	tuRepo := newMockTenantUserRepo()
+	uc, userRepo, _ := newAuthUsecase(tuRepo)
+	ctx := context.Background()
+
+	// 1. Unauthorized when nil UUID
+	_, _, _, err := uc.GetMe(ctx, uuid.Nil)
+	if !errors.Is(err, usecase.ErrUnauthorized) {
+		t.Fatalf("expected ErrUnauthorized for nil UUID, got %v", err)
+	}
+
+	// 2. Unauthorized when user does not exist in repo
+	_, _, _, err = uc.GetMe(ctx, uuid.New())
+	if !errors.Is(err, usecase.ErrUnauthorized) {
+		t.Fatalf("expected ErrUnauthorized for non-existent user, got %v", err)
+	}
+
+	// 3. User without tenant mapping falls back to resident role and uuid.Nil tenant
+	user, err := uc.Register(ctx, "Siti Aminah", "siti@warga.local", "pass123", nil)
+	if err != nil {
+		t.Fatalf("Register failed: %v", err)
+	}
+
+	meUser, role, tenantID, err := uc.GetMe(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("GetMe failed: %v", err)
+	}
+	if meUser.ID != user.ID {
+		t.Errorf("expected user ID %s, got %s", user.ID, meUser.ID)
+	}
+	if role != domain.RoleResident {
+		t.Errorf("expected default role resident, got %s", role)
+	}
+	if tenantID != uuid.Nil {
+		t.Errorf("expected nil tenantID, got %s", tenantID)
+	}
+
+	// 4. User assigned to tenant with active admin_rt role
+	assignedTenantID := uuid.New()
+	adminRoleID := uuid.New()
+	_ = tuRepo.Create(ctx, &domain.TenantUser{
+		ID:        uuid.New(),
+		TenantID:  assignedTenantID,
+		UserID:    user.ID,
+		RoleID:    adminRoleID,
+		RoleName:  domain.RoleAdminRT,
+		Status:    "active",
+		CreatedAt: time.Now(),
+	})
+
+	meUserWithTenant, assignedRole, gotTenantID, err := uc.GetMe(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("GetMe with tenant failed: %v", err)
+	}
+	if assignedRole != domain.RoleAdminRT {
+		t.Errorf("expected role admin_rt, got %s", assignedRole)
+	}
+	if gotTenantID != assignedTenantID {
+		t.Errorf("expected tenantID %s, got %s", assignedTenantID, gotTenantID)
+	}
+	if meUserWithTenant.Name != "Siti Aminah" {
+		t.Errorf("expected user name 'Siti Aminah', got %s", meUserWithTenant.Name)
+	}
+
+	// 5. Global SuperAdmin user without tenant user mapping
+	superUser := &domain.User{
+		ID:             uuid.New(),
+		Name:           "Platform Admin",
+		Email:          "super@platform.local",
+		GlobalRoleName: "SUPER_ADMIN",
+	}
+	_ = userRepo.Create(ctx, superUser)
+
+	superMe, sRole, sTenantID, err := uc.GetMe(ctx, superUser.ID)
+	if err != nil {
+		t.Fatalf("GetMe superadmin failed: %v", err)
+	}
+	if superMe.Name != "Platform Admin" {
+		t.Errorf("expected name 'Platform Admin', got %s", superMe.Name)
+	}
+	if sRole != domain.RoleSuperAdmin {
+		t.Errorf("expected role superadmin, got %s", sRole)
+	}
+	if sTenantID != uuid.Nil {
+		t.Errorf("expected nil tenant ID for superadmin without tenant user, got %s", sTenantID)
 	}
 }

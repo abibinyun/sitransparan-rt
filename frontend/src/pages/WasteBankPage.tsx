@@ -25,8 +25,11 @@ import {
 } from 'lucide-react';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { formatRupiah } from '../services/public_transparency';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const WasteBankPage: React.FC = () => {
+  const { user } = useAuthStore();
+  const isResident = String(user?.role || '').toLowerCase() === 'resident';
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'deposits' | 'households' | 'categories'>('deposits');
   const [search, setSearch] = useState('');
@@ -74,9 +77,26 @@ export const WasteBankPage: React.FC = () => {
     },
   });
 
-  const depositsList = depositsData?.data || [];
-  const householdsList = householdsData?.data || [];
+  const rawDepositsList = depositsData?.data || [];
+  const rawHouseholdsList = householdsData?.data || [];
   const categoriesList = categories || [];
+
+  const depositsList = isResident
+    ? rawDepositsList.filter((d: WasteDeposit) => {
+        const matchesUser = user?.id && (d as any).user_id === user.id;
+        const matchesHouse = user?.house_id && (d as any).house_id === user.house_id;
+        const matchesName = user?.name && d.family_head_name?.toLowerCase().includes(user.name.toLowerCase());
+        return matchesUser || matchesHouse || matchesName;
+      })
+    : rawDepositsList;
+
+  const householdsList = isResident
+    ? rawHouseholdsList.filter((h: HouseholdAccumulation) => {
+        const matchesHouse = user?.house_id && (h as any).house_id === user.house_id;
+        const matchesName = user?.name && h.family_head_name?.toLowerCase().includes(user.name.toLowerCase());
+        return matchesHouse || matchesName;
+      })
+    : rawHouseholdsList;
 
   const empowermentTabs = [
     { to: '/admin/karang-taruna', label: 'Karang Taruna & Pemuda', icon: Flame },
@@ -90,26 +110,28 @@ export const WasteBankPage: React.FC = () => {
         description="Kelola organisasi kepemudaan Karang Taruna dan program ekonomi sirkular Bank Sampah warga."
         tabs={empowermentTabs}
         actions={
-          activeTab === 'categories' ? (
-            <button
-              onClick={() => {
-                setEditingCategory(null);
-                setIsCategoryModalOpen(true);
-              }}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition shadow-sm shadow-emerald-200"
-            >
-              <Plus className="w-4 h-4" />
-              Tambah Kategori
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsDepositModalOpen(true)}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition shadow-sm shadow-emerald-200"
-            >
-              <Plus className="w-4 h-4" />
-              Catat Setoran Warga
-            </button>
-          )
+          !isResident ? (
+            activeTab === 'categories' ? (
+              <button
+                onClick={() => {
+                  setEditingCategory(null);
+                  setIsCategoryModalOpen(true);
+                }}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition shadow-sm shadow-emerald-200"
+              >
+                <Plus className="w-4 h-4" />
+                Tambah Kategori
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsDepositModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition shadow-sm shadow-emerald-200"
+              >
+                <Plus className="w-4 h-4" />
+                Catat Setoran Warga
+              </button>
+            )
+          ) : undefined
         }
       />
 
@@ -181,16 +203,18 @@ export const WasteBankPage: React.FC = () => {
               activeTab === 'households' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            Buku Tabungan KK
+            {isResident ? 'Tabungan Saya' : 'Buku Tabungan KK'}
           </button>
-          <button
-            onClick={() => setActiveTab('categories')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-              activeTab === 'categories' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            Master Kategori & Harga
-          </button>
+          {!isResident && (
+            <button
+              onClick={() => setActiveTab('categories')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
+                activeTab === 'categories' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Master Kategori & Harga
+            </button>
+          )}
         </div>
 
         {activeTab === 'deposits' && (
@@ -221,7 +245,7 @@ export const WasteBankPage: React.FC = () => {
                   <th className="py-3 px-4">Bagian Warga</th>
                   <th className="py-3 px-4">Kas Pemuda</th>
                   <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Aksi</th>
+                  {!isResident && <th className="py-3 px-4 text-right">Aksi</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
@@ -270,24 +294,26 @@ export const WasteBankPage: React.FC = () => {
                           {d.status === 'verified' ? 'Terverifikasi' : d.status === 'paid_out' ? 'Sudah Cair' : 'Menunggu'}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-right">
-                        {d.status === 'pending' && (
-                          <button
-                            onClick={() => updateStatusMutation.mutate({ id: d.id, status: 'verified' })}
-                            className="px-2.5 py-1 text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition"
-                          >
-                            Verifikasi
-                          </button>
-                        )}
-                        {d.status === 'verified' && (
-                          <button
-                            onClick={() => updateStatusMutation.mutate({ id: d.id, status: 'paid_out' })}
-                            className="px-2.5 py-1 text-xs font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition"
-                          >
-                            Tandai Cair
-                          </button>
-                        )}
-                      </td>
+                      {!isResident && (
+                        <td className="py-3.5 px-4 text-right">
+                          {d.status === 'pending' && (
+                            <button
+                              onClick={() => updateStatusMutation.mutate({ id: d.id, status: 'verified' })}
+                              className="px-2.5 py-1 text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition"
+                            >
+                              Verifikasi
+                            </button>
+                          )}
+                          {d.status === 'verified' && (
+                            <button
+                              onClick={() => updateStatusMutation.mutate({ id: d.id, status: 'paid_out' })}
+                              className="px-2.5 py-1 text-xs font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition"
+                            >
+                              Tandai Cair
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -556,8 +582,8 @@ const DepositModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl max-w-xl sm:max-w-2xl w-full p-5 sm:p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-slate-800 mb-4">Catat Setoran Bank Sampah</h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -609,7 +635,7 @@ const DepositModal: React.FC<{
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Kepala Keluarga (KK)</label>
               <input
@@ -634,7 +660,7 @@ const DepositModal: React.FC<{
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">RT</label>
               <input
@@ -768,8 +794,8 @@ const CategoryModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl max-w-lg sm:max-w-xl w-full p-5 sm:p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-slate-800 mb-4">
           {isEditing ? 'Ubah Kategori Sampah' : 'Tambah Kategori Sampah'}
         </h2>
@@ -787,7 +813,7 @@ const CategoryModal: React.FC<{
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Satuan</label>
               <input
@@ -812,7 +838,7 @@ const CategoryModal: React.FC<{
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Bagi Hasil Warga (%)</label>
               <input

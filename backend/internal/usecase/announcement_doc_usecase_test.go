@@ -171,6 +171,33 @@ func TestAnnouncementDocUsecase(t *testing.T) {
 		}
 	})
 
+	t.Run("Create Announcement file_urls validation", func(t *testing.T) {
+		a := &domain.Announcement{
+			Title:    "Valid Title",
+			Content:  "Valid Content",
+			FileURLs: []string{"invalid-url-scheme"},
+		}
+		if err := uc.CreateAnnouncement(ctx, tenantID, a); err == nil {
+			t.Fatal("expected error on invalid file URL, got nil")
+		}
+
+		// Valid relative prefixes
+		a.FileURLs = []string{"/api/v1/files/dokumen.pdf", "/uploads/lampiran.pdf", "https://example.com/file.docx"}
+		if err := uc.CreateAnnouncement(ctx, tenantID, a); err != nil {
+			t.Fatalf("expected valid file URLs to pass, got %v", err)
+		}
+
+		// Exceed 10 items
+		tooMany := make([]string, 11)
+		for i := range tooMany {
+			tooMany[i] = "/uploads/doc.pdf"
+		}
+		a.FileURLs = tooMany
+		if err := uc.CreateAnnouncement(ctx, tenantID, a); err == nil {
+			t.Fatal("expected error on >10 file_urls, got nil")
+		}
+	})
+
 	t.Run("Delete Announcement", func(t *testing.T) {
 		a := &domain.Announcement{Title: "ToDelete", Content: "Body"}
 		_ = uc.CreateAnnouncement(ctx, tenantID, a)

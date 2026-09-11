@@ -197,6 +197,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         title={editingTenant ? 'Edit Tenant RT' : 'Pendaftaran RT Baru'}
         description={editingTenant ? 'Perbarui informasi tenant RT' : 'Daftarkan tenant RT baru ke dalam sistem'}
+        className="max-w-xl sm:max-w-2xl"
       >
         <form id="tenant-form" onSubmit={handleSave} data-testid="tenant-form" className="space-y-4 pt-2">
           <div>

@@ -15,8 +15,11 @@ import { Announcement, CreateAnnouncementPayload, Document, CreateDocumentPayloa
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { FileText, MessageSquareHeart, Vote } from 'lucide-react';
 import { getFileUrl } from '../utils/file';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const AnnouncementsPage: React.FC = () => {
+  const { user } = useAuthStore();
+  const isResident = String(user?.role || '').toLowerCase() === 'resident';
   const [activeTab, setActiveTab] = useState<'announcements' | 'documents'>('announcements');
 
   // Announcement state & hooks
@@ -107,23 +110,25 @@ export const AnnouncementsPage: React.FC = () => {
         description="Pusat informasi resmi RT, publikasi berkas, penampungan usulan, dan polling suara warga."
         tabs={commTabs}
         actions={
-          <div>
-            {activeTab === 'announcements' ? (
-              <button
-                onClick={handleOpenCreateAnnouncement}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
-              >
-                + Tambah Pengumuman
-              </button>
-            ) : (
-              <button
-                onClick={handleOpenCreateDocument}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
-              >
-                + Upload Dokumen
-              </button>
-            )}
-          </div>
+          !isResident ? (
+            <div>
+              {activeTab === 'announcements' ? (
+                <button
+                  onClick={handleOpenCreateAnnouncement}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
+                >
+                  + Tambah Pengumuman
+                </button>
+              ) : (
+                <button
+                  onClick={handleOpenCreateDocument}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
+                >
+                  + Upload Dokumen
+                </button>
+              )}
+            </div>
+          ) : undefined
         }
       />
 
@@ -174,33 +179,82 @@ export const AnnouncementsPage: React.FC = () => {
                       </div>
                       <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
                       <p className="text-sm text-gray-700 whitespace-pre-line">{item.content}</p>
-                      {item.attachment_url && (
-                        <div className="pt-2">
-                          <a
-                            href={item.attachment_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-indigo-600 underline"
-                          >
-                            Lampiran File →
-                          </a>
-                        </div>
-                      )}
+                      {/* Foto & Lampiran Preview Bar */}
+                      {(() => {
+                        const photos = [
+                          ...(item.attachment_url ? [item.attachment_url] : []),
+                          ...(item.media_urls || []),
+                        ];
+                        const files = item.file_urls || [];
+                        return (
+                          <div className="pt-2 space-y-2">
+                            {photos.length > 0 && (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[11px] font-semibold text-slate-500">
+                                  Foto ({photos.length}):
+                                </span>
+                                {photos.slice(0, 4).map((p, idx) => (
+                                  <a
+                                    key={idx}
+                                    href={getFileUrl(p)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="block border border-slate-200 rounded overflow-hidden hover:opacity-80 transition-opacity"
+                                  >
+                                    <img
+                                      src={getFileUrl(p)}
+                                      alt={`Foto ${idx + 1}`}
+                                      className="w-10 h-10 object-cover"
+                                    />
+                                  </a>
+                                ))}
+                                {photos.length > 4 && (
+                                  <span className="text-[11px] text-slate-400 font-medium">
+                                    +{photos.length - 4} foto lainnya
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {files.length > 0 && (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[11px] font-semibold text-slate-500">
+                                  Berkas Lampiran ({files.length}):
+                                </span>
+                                {files.map((f, idx) => (
+                                  <a
+                                    key={idx}
+                                    href={getFileUrl(f)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded font-medium truncate max-w-[200px]"
+                                  >
+                                    <FileText className="w-3 h-3 text-indigo-600 shrink-0" />
+                                    <span className="truncate">{f.split('/').pop() || f}</span>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleOpenEditAnnouncement(item)}
-                        className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteAnnouncement(item.id)}
-                        className="rounded bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
-                      >
-                        Hapus
-                      </button>
-                    </div>
+                    {!isResident && (
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleOpenEditAnnouncement(item)}
+                          className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAnnouncement(item.id)}
+                          className="rounded bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -252,18 +306,22 @@ export const AnnouncementsPage: React.FC = () => {
                         >
                           Buka File
                         </a>
-                        <button
-                          onClick={() => handleOpenEditDocument(doc)}
-                          className="font-medium text-gray-600 hover:text-gray-900"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDocument(doc.id)}
-                          className="font-medium text-red-600 hover:text-red-900"
-                        >
-                          Hapus
-                        </button>
+                        {!isResident && (
+                          <>
+                            <button
+                              onClick={() => handleOpenEditDocument(doc)}
+                              className="font-medium text-gray-600 hover:text-gray-900"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              className="font-medium text-red-600 hover:text-red-900"
+                            >
+                              Hapus
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}

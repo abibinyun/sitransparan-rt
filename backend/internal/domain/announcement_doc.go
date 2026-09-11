@@ -15,6 +15,7 @@ type Announcement struct {
 	Content       string     `json:"content"`
 	AttachmentURL *string    `json:"attachment_url,omitempty"`
 	MediaURLs     []string   `json:"media_urls,omitempty"` // galeri foto feed (Fase 2)
+	FileURLs      []string   `json:"file_urls,omitempty"`  // lampiran file/dokumen multi
 	Target        string     `json:"target"`               // 'all', 'residents_only'
 	CreatedBy     *uuid.UUID `json:"created_by,omitempty"`
 	CreatedAt     time.Time  `json:"created_at"`

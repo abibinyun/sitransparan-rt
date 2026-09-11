@@ -300,7 +300,7 @@ func (u *authUsecase) GetMe(ctx context.Context, userID uuid.UUID) (*domain.User
 		return nil, "", uuid.Nil, ErrUnauthorized
 	}
 	user, err := u.userRepo.GetByID(ctx, userID)
-	if err != nil {
+	if err != nil || user == nil {
 		return nil, "", uuid.Nil, ErrUnauthorized
 	}
 	tus, err := u.tenantUserRepo.ListByUser(ctx, userID)

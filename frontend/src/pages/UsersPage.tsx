@@ -285,6 +285,7 @@ export const UsersPage: React.FC = () => {
         onClose={() => setDeleteUserId(null)}
         title="Hapus Pengguna"
         description="Apakah Anda yakin ingin menghapus pengguna ini? Tindakan ini tidak dapat dibatalkan."
+        className="max-w-md"
       >
         <div className="flex justify-end gap-3 pt-4">
           <Button variant="outline" onClick={() => setDeleteUserId(null)}>
@@ -295,7 +296,7 @@ export const UsersPage: React.FC = () => {
             onClick={handleDelete}
             disabled={deleteUser.isPending}
           >
-            {deleteUser.isPending ? 'Mengahpus...' : 'Hapus'}
+            {deleteUser.isPending ? 'Menghapus...' : 'Hapus'}
           </Button>
         </div>
       </SimpleDialog>

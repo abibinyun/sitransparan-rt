@@ -2,17 +2,13 @@ import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Recycle,
-  Trees,
-  CalendarCheck2,
   Users,
   Flame,
   Scale,
   Sparkles,
   Info,
   Calculator,
-  Coins,
-  CheckCircle2,
-  ArrowRight
+  Coins
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { wasteBankService, WasteCategory, WasteBankSummary } from '../services/wasteBank';
@@ -20,13 +16,13 @@ import { formatRupiah } from '../services/public_transparency';
 import { getTenantSlugOrFallback } from '../utils/tenant';
 import { PublicKarangTarunaPage } from './PublicKarangTarunaPage';
 
-type ProgramTab = 'waste' | 'environment' | 'upcoming';
+type ProgramTab = 'waste' | 'environment';
 
 export const PublicProgramsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as ProgramTab) || 'waste';
   const [activeTab, setActiveTab] = useState<ProgramTab>(
-    ['waste', 'environment', 'upcoming'].includes(initialTab) ? initialTab : 'waste'
+    ['waste', 'environment'].includes(initialTab) ? initialTab : 'waste'
   );
 
   const handleTabChange = (tab: ProgramTab) => {
@@ -94,16 +90,6 @@ export const PublicProgramsPage: React.FC = () => {
               }`}
             >
               <Flame className="w-4 h-4" /> Kepemudaan &amp; Organisasi
-            </button>
-            <button
-              onClick={() => handleTabChange('upcoming')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                activeTab === 'upcoming'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              <Trees className="w-4 h-4" /> Lingkungan &amp; Rencana
             </button>
           </div>
         </div>
@@ -275,61 +261,6 @@ export const PublicProgramsPage: React.FC = () => {
       {activeTab === 'environment' && (
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <PublicKarangTarunaPage />
-        </div>
-      )}
-
-      {/* Tab 3: Program Lingkungan & Rencana Mendatang */}
-      {activeTab === 'upcoming' && (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
-          <div className="civic-card p-6 sm:p-8 space-y-6">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <CalendarCheck2 className="w-5 h-5 text-emerald-700" />
-              <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
-                Peta Rencana &amp; Inisiatif Berkelanjutan
-              </h2>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Sedang Berjalan
-                  </span>
-                  <span className="text-xs text-slate-500">Rutin Tiap Minggu</span>
-                </div>
-                <h3 className="font-bold text-sm text-slate-900">Pilah Sampah Dari Dapur (Bank Sampah RT)</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Penimbangan sampah anorganik setiap akhir pekan di pos keamanan. Hasil saldo langsung dicatat ke buku tabungan digital keluarga masing-masing.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
-                    <ArrowRight className="w-3.5 h-3.5 text-indigo-600" /> Rencana Kuartal Berikutnya
-                  </span>
-                  <span className="text-xs text-slate-500">Fase Pengadaan</span>
-                </div>
-                <h3 className="font-bold text-sm text-slate-900">Komposter Komunal &amp; Hidroponik Lorong Warga</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Pemanfaatan lahan fasum lorong warga untuk budidaya sayuran hidroponik dan pengolahan sampah organik rumah tangga menjadi pupuk cair alami.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Usulan Warga
-                  </span>
-                  <span className="text-xs text-slate-500">Tahap Musyawarah</span>
-                </div>
-                <h3 className="font-bold text-sm text-slate-900">Pemasangan Sensor Keamanan &amp; Penerangan Gang Hemat Energi</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Kolaborasi pemuda dan pengurus RT untuk digitalisasi pemantauan lingkungan lorong malam hari dengan lampu tenaga surya hemat kas.
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>

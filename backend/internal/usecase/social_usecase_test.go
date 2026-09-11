@@ -121,7 +121,7 @@ func (m *mockSocialRepo) attachResults(p *domain.Poll, viewer, house *uuid.UUID,
 func (m *mockSocialRepo) ListOpenPolls(ctx context.Context, viewer, house *uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
 	var out []*domain.Poll
 	for _, p := range m.polls {
-		if p.Status == "open" {
+		if p.Status == "open" || p.Status == "closed" {
 			m.attachResults(p, viewer, house, includeViewer)
 			out = append(out, p)
 		}

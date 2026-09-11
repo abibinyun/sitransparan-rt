@@ -30,8 +30,11 @@ import {
   QrCode,
   Eye,
 } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const ResidentsPage: React.FC = () => {
+  const { user } = useAuthStore();
+  const isResident = String(user?.role || '').toLowerCase() === 'resident';
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -146,10 +149,12 @@ export const ResidentsPage: React.FC = () => {
         description="Kelola data induk kependudukan warga, kartu keluarga, dan penomoran stiker rumah."
         tabs={demographyTabs}
         actions={
-          <Button onClick={handleCreate} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Tambah Warga
-          </Button>
+          !isResident ? (
+            <Button onClick={handleCreate} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Tambah Warga
+            </Button>
+          ) : undefined
         }
       />
 
@@ -273,32 +278,36 @@ export const ResidentsPage: React.FC = () => {
                           {expandedKK === r.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
                       )}
-                      {r.is_head_of_family && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenAddFamily(r.id)}
-                          title="Tambah Anggota Keluarga"
-                        >
-                          <UserPlus className="h-4 w-4" />
-                        </Button>
+                      {!isResident && (
+                        <>
+                          {r.is_head_of_family && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenAddFamily(r.id)}
+                              title="Tambah Anggota Keluarga"
+                            >
+                              <UserPlus className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(r)}
+                            title="Edit Warga"
+                          >
+                            <Edit3 className="h-4 w-4 text-slate-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(r.id, r.full_name)}
+                            title="Hapus Warga"
+                          >
+                            <Trash2 className="h-4 w-4 text-rose-600" />
+                          </Button>
+                        </>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(r)}
-                        title="Edit Warga"
-                      >
-                        <Edit3 className="h-4 w-4 text-slate-600" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(r.id, r.full_name)}
-                        title="Hapus Warga"
-                      >
-                        <Trash2 className="h-4 w-4 text-rose-600" />
-                      </Button>
                     </TableCell>
                   </TableRow>
 
@@ -311,14 +320,16 @@ export const ResidentsPage: React.FC = () => {
                             <h4 className="text-sm font-bold text-slate-900">
                               Anggota Keluarga (KK: {r.kk_number})
                             </h4>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenAddFamily(r.id)}
-                              className="gap-1 text-xs"
-                            >
-                              <UserPlus className="h-3.5 w-3.5" /> Tambah Anggota
-                            </Button>
+                            {!isResident && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenAddFamily(r.id)}
+                                className="gap-1 text-xs"
+                              >
+                                <UserPlus className="h-3.5 w-3.5" /> Tambah Anggota
+                              </Button>
+                            )}
                           </div>
 
                           {r.family_members && r.family_members.length > 0 ? (
@@ -329,7 +340,7 @@ export const ResidentsPage: React.FC = () => {
                                   <TableHead>NIK</TableHead>
                                   <TableHead>Hubungan</TableHead>
                                   <TableHead>Jenis Kelamin</TableHead>
-                                  <TableHead className="text-right">Aksi</TableHead>
+                                  {!isResident && <TableHead className="text-right">Aksi</TableHead>}
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -345,33 +356,35 @@ export const ResidentsPage: React.FC = () => {
                                     </TableCell>
                                     <TableCell><Badge variant="outline">{fm.relation}</Badge></TableCell>
                                     <TableCell>{fm.gender || '-'}</TableCell>
-                                    <TableCell className="text-right space-x-1">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handlePromoteFamilyMember(r.id, fm.id, fm.full_name, r.status)}
-                                        title="Jadikan Kepala Keluarga Baru"
-                                        className="h-7 text-xs px-2 text-indigo-700 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-800 gap-1"
-                                      >
-                                        <UserCheck className="h-3 w-3" /> Jadikan KK
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleOpenEditFamily(r.id, fm)}
-                                        title="Edit Anggota Keluarga"
-                                      >
-                                        <Edit3 className="h-3.5 w-3.5 text-slate-600" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleDeleteFamily(r.id, fm.id, fm.full_name)}
-                                        title="Hapus Anggota Keluarga"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5 text-rose-600" />
-                                      </Button>
-                                    </TableCell>
+                                    {!isResident && (
+                                      <TableCell className="text-right space-x-1">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handlePromoteFamilyMember(r.id, fm.id, fm.full_name, r.status)}
+                                          title="Jadikan Kepala Keluarga Baru"
+                                          className="h-7 text-xs px-2 text-indigo-700 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-800 gap-1"
+                                        >
+                                          <UserCheck className="h-3 w-3" /> Jadikan KK
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleOpenEditFamily(r.id, fm)}
+                                          title="Edit Anggota Keluarga"
+                                        >
+                                          <Edit3 className="h-3.5 w-3.5 text-slate-600" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleDeleteFamily(r.id, fm.id, fm.full_name)}
+                                          title="Hapus Anggota Keluarga"
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                                        </Button>
+                                      </TableCell>
+                                    )}
                                   </TableRow>
                                 ))}
                               </TableBody>
@@ -430,14 +443,14 @@ export const ResidentsPage: React.FC = () => {
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         resident={detailResident}
-        onEdit={(res) => {
+        onEdit={!isResident ? (res) => {
           setIsDetailModalOpen(false);
           handleEdit(res);
-        }}
-        onAddFamily={(resId) => {
+        } : undefined}
+        onAddFamily={!isResident ? (resId) => {
           setIsDetailModalOpen(false);
           handleOpenAddFamily(resId);
-        }}
+        } : undefined}
       />
 
       {/* Modal Tambah / Edit Anggota Keluarga */}

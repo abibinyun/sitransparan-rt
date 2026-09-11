@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { usePublicAnnouncements, usePublicDocuments } from '../services/announcement_doc';
 import { usePublicTenantQuery } from '../services/public_tenant';
 import { ShareCardModal, ShareableAnnouncement } from '../components/ShareCardModal';
+import { AnnouncementDetailModal } from '../components/AnnouncementDetailModal';
 import { KasSummaryWidget } from '../components/KasSummaryWidget';
 import { MeetingDecisionsWidget } from '../components/MeetingDecisionsWidget';
 import { ReactionButton } from '../components/ReactionButton';
@@ -34,6 +35,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [shareTarget, setShareTarget] = useState<ShareableAnnouncement | null>(null);
+  const [detailAnnouncement, setDetailAnnouncement] = useState<any | null>(null);
   const [pushStatus, setPushStatus] = useState<'idle' | 'loading' | 'enabled' | 'error'>(() => {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       return 'enabled';
@@ -219,17 +221,20 @@ export const PublicAnnouncementsPage: React.FC = () => {
                     className="civic-card p-5 sm:p-6 space-y-4 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
+                      <div
+                        className="space-y-1 cursor-pointer flex-1 group"
+                        onClick={() => setDetailAnnouncement(item)}
+                      >
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-100">
                           <Megaphone className="w-3 h-3 text-emerald-600" /> {item.target === 'residents_only' ? 'Warga RT' : 'Umum'}
                         </span>
-                        <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors">
                           {item.title}
                         </h3>
                       </div>
                       <button
                         onClick={() => openShare(item)}
-                        className="p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                        className="p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors shrink-0"
                         aria-label="Bagikan ke WhatsApp"
                         title="Buat Kartu Share WhatsApp"
                       >
@@ -237,9 +242,17 @@ export const PublicAnnouncementsPage: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Konten teks */}
-                    <div className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                      {item.content}
+                    {/* Konten teks (dapat diklik untuk melihat detail penuh) */}
+                    <div
+                      className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line cursor-pointer"
+                      onClick={() => setDetailAnnouncement(item)}
+                    >
+                      {item.content.length > 280 ? `${item.content.slice(0, 280)}... ` : item.content}
+                      {item.content.length > 280 && (
+                        <span className="text-emerald-700 font-semibold inline-block hover:underline">
+                          Lihat Selengkapnya →
+                        </span>
+                      )}
                     </div>
 
                     {/* Media foto (attachment_url gambar + media_urls) */}
@@ -255,28 +268,43 @@ export const PublicAnnouncementsPage: React.FC = () => {
                         });
                       }
 
+                      // Kumpulkan berkas dokumen
+                      const allFiles: string[] = [];
+                      if (item.attachment_url && !isImage(item.attachment_url)) {
+                        allFiles.push(item.attachment_url);
+                      }
+                      if (item.file_urls && item.file_urls.length > 0) {
+                        item.file_urls.forEach((f) => {
+                          if (!allFiles.includes(f)) allFiles.push(f);
+                        });
+                      }
+
                       return (
-                        <>
+                        <div className="space-y-2">
                           {allPhotos.length > 0 && (
-                            <div className="pt-2">
+                            <div className="pt-2 cursor-pointer" onClick={() => setDetailAnnouncement(item)}>
                               <MediaCarousel urls={allPhotos} alt={item.title} />
                             </div>
                           )}
 
-                          {/* Jika attachment berupa dokumen/PDF non-gambar */}
-                          {item.attachment_url && !isImage(item.attachment_url) && (
-                            <div className="pt-2">
-                              <a
-                                href={getFileUrl(item.attachment_url)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
-                              >
-                                <FileText className="w-3.5 h-3.5" /> Unduh Dokumen Lampiran
-                              </a>
+                          {/* Lampiran berkas dokumen / PDF multi */}
+                          {allFiles.length > 0 && (
+                            <div className="pt-1 flex flex-wrap gap-2">
+                              {allFiles.map((fileUrl, fIdx) => (
+                                <a
+                                  key={fIdx}
+                                  href={getFileUrl(fileUrl)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                >
+                                  <FileText className="w-3.5 h-3.5 text-emerald-600" /> Unduh Dokumen {allFiles.length > 1 ? `#${fIdx + 1}` : 'Lampiran'}
+                                </a>
+                              ))}
                             </div>
                           )}
-                        </>
+                        </div>
                       );
                     })()}
 
@@ -373,6 +401,23 @@ export const PublicAnnouncementsPage: React.FC = () => {
           </section>
         </div>
       </div>
+
+      {/* Modal Detail Pengumuman Lengkap */}
+      {detailAnnouncement && (
+        <AnnouncementDetailModal
+          isOpen={Boolean(detailAnnouncement)}
+          onClose={() => setDetailAnnouncement(null)}
+          announcement={detailAnnouncement}
+          onShare={(item) => {
+            setDetailAnnouncement(null);
+            setShareTarget({
+              title: item.title,
+              content: item.content,
+              created_at: item.created_at,
+            });
+          }}
+        />
+      )}
 
       {/* Modal Share Generator WhatsApp */}
       {shareTarget && (

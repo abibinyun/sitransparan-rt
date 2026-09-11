@@ -159,7 +159,8 @@ Endpoint publik `/api/v1/t/{slug}/...` me-resolve tenant dari **slug di path** d
   - Public: `/` (tenant→feed `PublicAnnouncementsPage`, platform→`PlatformLandingPage`), `/kabar`, `/usulan`, `/agenda` (legacy `/public/*` redirects)
   - Protected (MainLayout): `/admin` (dashboard blob export), `/admin/residents|financial|events|meetings|aspirations|announcements|polls` + `/admin/users` (`SUPER_ADMIN|RT_ADMIN`) + `/admin/tenants` (`SUPER_ADMIN`); legacy `/residents` etc → `/admin/*` redirects
 - **Superadmin UX**: Tenant Aktif switcher + Masuk Tenant button di header; guard host mismatch.
-- **PWA**: Workbox (NetworkFirst untuk navigasi & `/api`, StaleWhileRevalidate untuk aset) + IndexedDB.
+- **PWA & Caching**: Workbox Service Worker (`sw.ts`). Navigasi HTML murni `NetworkOnly` (tanpa precache `index.html`) untuk menjamin kesegaran bundle saat hard-refresh / pull-to-refresh; aset statis (`js`, `css`, `fonts`, `images`) di-cache dengan `StaleWhileRevalidate`. Auto `skipWaiting()` dan pembersihan `pages-cache` saat aktivasi.
+- **Pengumuman & Lampiran**: Mendukung multi-gambar (`media_urls`) dan multi-file dokumen (`file_urls` PDF/Office). Portal publik dilengkapi modal detail interaktif (`AnnouncementDetailModal`).
 
 ## 7. Integrasi Storage (MinIO)
 

@@ -527,7 +527,7 @@ export const InventoryPage: React.FC = () => {
             </div>
           ) : (
             <div className="overflow-x-auto bg-white border border-slate-200 rounded-xl">
-              <table className="w-full text-left border-collapse text-sm">
+              <table className="w-full min-w-[650px] text-left border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
                     <th className="py-3 px-4">Peminjam</th>
@@ -592,8 +592,8 @@ export const InventoryPage: React.FC = () => {
 
       {/* Modal Form Tambah/Edit Barang (Admin Only) */}
       {isItemModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-xl sm:max-w-2xl w-full p-5 sm:p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="font-semibold text-slate-900 text-base">
                 {selectedItem ? 'Edit Barang Inventaris' : 'Tambah Barang Inventaris'}
@@ -621,7 +621,7 @@ export const InventoryPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Kode Barang (Opsional)
@@ -652,7 +652,7 @@ export const InventoryPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Jumlah Total *
@@ -681,7 +681,7 @@ export const InventoryPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Kondisi Awal
@@ -760,8 +760,8 @@ export const InventoryPage: React.FC = () => {
 
       {/* Modal Peminjaman Barang (Admin Only) */}
       {isBorrowModalOpen && targetItemForBorrow && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 border border-slate-200 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-lg sm:max-w-xl w-full p-5 sm:p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div>
                 <h3 className="font-semibold text-slate-900 text-base">Catat Peminjaman Barang</h3>
@@ -790,7 +790,7 @@ export const InventoryPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     No. WhatsApp / HP
@@ -832,7 +832,7 @@ export const InventoryPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Tanggal Pinjam
@@ -880,8 +880,8 @@ export const InventoryPage: React.FC = () => {
 
       {/* Modal Pengembalian Barang (Admin Only) */}
       {isReturnModalOpen && selectedBorrowing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 border border-slate-200 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-lg sm:max-w-xl w-full p-5 sm:p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="font-semibold text-slate-900 text-base">Proses Pengembalian Barang</h3>
               <button

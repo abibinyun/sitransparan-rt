@@ -16,8 +16,11 @@ import { Select } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { CalendarDays, ClipboardList, Plus, FileText, ExternalLink } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const EventsPage: React.FC = () => {
+  const { user } = useAuthStore();
+  const isResident = String(user?.role || '').toLowerCase() === 'resident';
   const [filterStatus, setFilterStatus] = useState<string>('');
   const { data, isLoading } = useEvents(filterStatus ? { status: filterStatus } : undefined);
 
@@ -170,10 +173,12 @@ export const EventsPage: React.FC = () => {
         description="Kelola agenda kepanitiaan, estimasi anggaran (RAB), RSVP warga, serta risalah musyawarah RT."
         tabs={eventTabs}
         actions={
-          <Button onClick={() => handleOpenForm()} className="gap-2">
-            <Plus className="h-4 w-4" />
-            + Tambah Kegiatan
-          </Button>
+          !isResident ? (
+            <Button onClick={() => handleOpenForm()} className="gap-2">
+              <Plus className="h-4 w-4" />
+              + Tambah Kegiatan
+            </Button>
+          ) : undefined
         }
       />
 
@@ -265,37 +270,39 @@ export const EventsPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="pt-2 border-t space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full text-xs"
-                  onClick={() => {
-                    setSelectedEvent(event);
-                    setIsBudgetModalOpen(true);
-                  }}
-                >
-                  RAB & Budget
-                </Button>
-
-                <div className="flex justify-end space-x-2 pt-2">
+              {!isResident && (
+                <div className="pt-2 border-t space-y-2">
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => handleOpenForm(event)}
+                    className="w-full text-xs"
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setIsBudgetModalOpen(true);
+                    }}
                   >
-                    Edit
+                    RAB & Budget
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => handleDelete(event.id)}
-                  >
-                    Hapus
-                  </Button>
+
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => handleOpenForm(event)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => handleDelete(event.id)}
+                    >
+                      Hapus
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ))}
         </div>
@@ -307,6 +314,7 @@ export const EventsPage: React.FC = () => {
         onClose={() => setIsFormModalOpen(false)}
         title={editingEvent ? 'Edit Kegiatan' : 'Tambah Kegiatan Baru'}
         description="Kelola jadwal dan agenda kegiatan warga RT/RW"
+        className="max-w-xl sm:max-w-2xl"
       >
         <form onSubmit={handleFormSubmit} className="space-y-4">
           <div className="space-y-2">

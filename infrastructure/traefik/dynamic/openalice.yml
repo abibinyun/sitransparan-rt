@@ -1,0 +1,14 @@
+http:
+  routers:
+    openalice:
+      rule: "Host(`openalice.iscube.web.id`) || Host(`openalice.cube.my.id`) || Host(`openalice.openrt.local`)"
+      priority: 500
+      entryPoints:
+        - web
+      service: openalice-service
+
+  services:
+    openalice-service:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.64.1:47330"

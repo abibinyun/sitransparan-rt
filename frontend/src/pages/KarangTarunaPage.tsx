@@ -32,8 +32,11 @@ import { Badge } from '../components/ui/badge';
 import { KarangTarunaPeriod, KarangTarunaMember } from '../types/karang_taruna';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { Flame, Recycle } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const KarangTarunaPage: React.FC = () => {
+  const { user } = useAuthStore();
+  const isResident = String(user?.role || '').toLowerCase() === 'resident';
   const [activeTab, setActiveTab] = useState<'structure' | 'periods' | 'config'>('structure');
 
   // Queries
@@ -230,18 +233,20 @@ export const KarangTarunaPage: React.FC = () => {
         description="Kelola organisasi kepemudaan Karang Taruna dan program ekonomi sirkular Bank Sampah warga."
         tabs={empowermentTabs}
         actions={
-          <div className="flex items-center gap-2">
-            {activeTab === 'structure' && (
-              <Button onClick={() => handleOpenMemberModal()} className="gap-2 bg-emerald-700 hover:bg-emerald-800">
-                <Plus className="h-4 w-4" /> Tambah Pengurus
-              </Button>
-            )}
-            {activeTab === 'periods' && (
-              <Button onClick={() => handleOpenPeriodModal()} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
-                <Plus className="h-4 w-4" /> Periode Baru
-              </Button>
-            )}
-          </div>
+          !isResident ? (
+            <div className="flex items-center gap-2">
+              {activeTab === 'structure' && (
+                <Button onClick={() => handleOpenMemberModal()} className="gap-2 bg-emerald-700 hover:bg-emerald-800">
+                  <Plus className="h-4 w-4" /> Tambah Pengurus
+                </Button>
+              )}
+              {activeTab === 'periods' && (
+                <Button onClick={() => handleOpenPeriodModal()} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                  <Plus className="h-4 w-4" /> Periode Baru
+                </Button>
+              )}
+            </div>
+          ) : undefined
         }
       />
 
@@ -267,16 +272,18 @@ export const KarangTarunaPage: React.FC = () => {
         >
           <Calendar className="h-4 w-4" /> Masa Bakti ({periods.length})
         </button>
-        <button
-          onClick={() => setActiveTab('config')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition ${
-            activeTab === 'config'
-              ? 'bg-slate-100 text-slate-900 border border-slate-300'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <Settings className="h-4 w-4" /> Konfigurasi Seksi & Peran
-        </button>
+        {!isResident && (
+          <button
+            onClick={() => setActiveTab('config')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition ${
+              activeTab === 'config'
+                ? 'bg-slate-100 text-slate-900 border border-slate-300'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Settings className="h-4 w-4" /> Konfigurasi Seksi & Peran
+          </button>
+        )}
       </div>
 
       {/* Period Selector Header on Structure Tab */}
@@ -331,9 +338,11 @@ export const KarangTarunaPage: React.FC = () => {
               <p className="text-xs text-slate-400 mt-1 mb-4">
                 Tambahkan warga sebagai ketua, pengurus inti, atau koordinator seksi.
               </p>
-              <Button onClick={() => handleOpenMemberModal()} size="sm">
-                <Plus className="h-4 w-4 mr-1" /> Tambah Pengurus Pertama
-              </Button>
+              {!isResident && (
+                <Button onClick={() => handleOpenMemberModal()} size="sm">
+                  <Plus className="h-4 w-4 mr-1" /> Tambah Pengurus Pertama
+                </Button>
+              )}
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -387,24 +396,26 @@ export const KarangTarunaPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleOpenMemberModal(m)}
-                        className="h-8 text-xs font-semibold"
-                      >
-                        <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteMember(m.id, m.resident_name || 'pengurus')}
-                        className="h-8 text-xs font-semibold text-rose-600 hover:bg-rose-50"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 mr-1" /> Hapus
-                      </Button>
-                    </div>
+                    {!isResident && (
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenMemberModal(m)}
+                          className="h-8 text-xs font-semibold"
+                        >
+                          <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteMember(m.id, m.resident_name || 'pengurus')}
+                          className="h-8 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-1" /> Hapus
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -439,11 +450,13 @@ export const KarangTarunaPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handleOpenPeriodModal(p)}>
-                    <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit Masa Bakti
-                  </Button>
-                </div>
+                {!isResident && (
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleOpenPeriodModal(p)}>
+                      <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit Masa Bakti
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -508,6 +521,7 @@ export const KarangTarunaPage: React.FC = () => {
         onClose={() => setIsPeriodModalOpen(false)}
         title={editingPeriod ? 'Edit Masa Bakti Karang Taruna' : 'Buat Masa Bakti Baru'}
         description="Atur nama periode, rentang tanggal kepengurusan, dan nomor SK."
+        className="max-w-xl sm:max-w-2xl"
       >
         <form onSubmit={handlePeriodSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -521,7 +535,7 @@ export const KarangTarunaPage: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="startDate">Mulai</Label>
               <Input
@@ -582,6 +596,7 @@ export const KarangTarunaPage: React.FC = () => {
         onClose={() => setIsMemberModalOpen(false)}
         title={editingMember ? 'Edit Data Pengurus' : 'Tambah Pengurus / Anggota Pemuda'}
         description={`Menugaskan warga ke dalam struktur kepengurusan ${currentPeriod?.name || ''}`}
+        className="max-w-xl sm:max-w-2xl"
       >
         <form onSubmit={handleMemberSubmit} className="space-y-4">
           {!editingMember && (
@@ -603,7 +618,7 @@ export const KarangTarunaPage: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="memberRole">Jabatan / Peran</Label>
               <Select

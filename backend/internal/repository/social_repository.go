@@ -172,7 +172,7 @@ func (r *socialRepository) GetPoll(ctx context.Context, id uuid.UUID, viewerID, 
 }
 
 func (r *socialRepository) ListOpenPolls(ctx context.Context, viewerID, houseID *uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
-	query := fmt.Sprintf(`SELECT %s FROM %s WHERE status = 'open' ORDER BY created_at DESC LIMIT 10`, pollCols, TenantTable(ctx, "polls"))
+	query := fmt.Sprintf(`SELECT %s FROM %s WHERE status IN ('open', 'closed') ORDER BY created_at DESC LIMIT 20`, pollCols, TenantTable(ctx, "polls"))
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err

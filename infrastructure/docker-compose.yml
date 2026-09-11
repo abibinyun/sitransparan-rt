@@ -21,6 +21,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
 
   postgres:
     image: postgres:16-alpine
@@ -133,7 +134,7 @@ services:
       - backend
     labels:
       - "traefik.enable=true"
-      - 'traefik.http.routers.frontend.rule=Host(`app.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`${TENANT_BASE_DOMAIN:-openrt.local}`) || HostRegexp(`^[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`) || Host(`app.iscube.web.id`) || Host(`iscube.web.id`) || HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`) || Host(`app.cube.my.id`) || Host(`cube.my.id`) || HostRegexp(`^[a-z0-9-]+\.cube\.my\.id$`)'
+      - 'traefik.http.routers.frontend.rule=(Host(`app.${TENANT_BASE_DOMAIN:-openrt.local}`) || Host(`${TENANT_BASE_DOMAIN:-openrt.local}`) || HostRegexp(`^[a-z0-9-]+\.${TENANT_BASE_DOMAIN:-openrt.local}$`) || Host(`app.iscube.web.id`) || Host(`iscube.web.id`) || HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`) || Host(`app.cube.my.id`) || Host(`cube.my.id`) || HostRegexp(`^[a-z0-9-]+\.cube\.my\.id$`)) && !Host(`openalice.iscube.web.id`) && !Host(`openalice.cube.my.id`) && !Host(`openalice.openrt.local`)'
       - "traefik.http.routers.frontend.entrypoints=web"
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
 

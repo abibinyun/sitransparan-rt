@@ -194,20 +194,23 @@ export const FinancialPage: React.FC = () => {
       items: any[];
     }> = {};
 
-    // First populate from registered residents if available
-    for (const r of residentList) {
-      resMap[r.id] = {
-        resident_id: r.id,
-        resident_name: r.full_name,
-        total_paid: 0,
-        pending_count: 0,
-        verified_count: 0,
-        categories: {},
-        items: [],
-      };
+    // For admin, populate from registered residents
+    // For resident, DO NOT pre-populate other residents' names!
+    if (!isResident) {
+      for (const r of residentList) {
+        resMap[r.id] = {
+          resident_id: r.id,
+          resident_name: r.full_name,
+          total_paid: 0,
+          pending_count: 0,
+          verified_count: 0,
+          categories: {},
+          items: [],
+        };
+      }
     }
 
-    // Populate from dues records
+    // Populate from dues records (which is already filtered for resident)
     for (const d of duesList) {
       const resId = d.resident_id || 'unknown';
       if (!resMap[resId]) {
@@ -602,12 +605,14 @@ export const FinancialPage: React.FC = () => {
                 {fundList.length}
               </span>
             </div>
-            <button
-              onClick={() => setActiveTab('funds')}
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-            >
-              Kelola →
-            </button>
+            {!isResident && (
+              <button
+                onClick={() => setActiveTab('funds')}
+                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                Kelola →
+              </button>
+            )}
           </div>
 
           <div className="p-3 divide-y divide-slate-100 flex-1 overflow-y-auto max-h-[280px]">
@@ -646,15 +651,17 @@ export const FinancialPage: React.FC = () => {
                 {catList.length}
               </span>
             </div>
-            <button
-              onClick={() => {
-                setActiveTab('categories');
-                setCategorySubTab('dues');
-              }}
-              className="text-xs text-slate-500 hover:text-slate-800 font-medium"
-            >
-              Master Iuran →
-            </button>
+            {!isResident && (
+              <button
+                onClick={() => {
+                  setActiveTab('categories');
+                  setCategorySubTab('dues');
+                }}
+                className="text-xs text-slate-500 hover:text-slate-800 font-medium"
+              >
+                Master Iuran →
+              </button>
+            )}
           </div>
 
           <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 flex-1 overflow-y-auto max-h-[280px]">
@@ -678,16 +685,18 @@ export const FinancialPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDisburseCatId(c.id);
-                        setIsDisburseModalOpen(true);
-                      }}
-                      className="w-full py-1 text-[11px] font-medium rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition-colors text-center"
-                    >
-                      Salurkan Dana
-                    </button>
+                    {!isResident && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDisburseCatId(c.id);
+                          setIsDisburseModalOpen(true);
+                        }}
+                        className="w-full py-1 text-[11px] font-medium rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition-colors text-center"
+                      >
+                        Salurkan Dana
+                      </button>
+                    )}
                   </div>
                 );
               })
@@ -708,41 +717,45 @@ export const FinancialPage: React.FC = () => {
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
             }`}
           >
-            Iuran Warga ({duesList.length})
+            {isResident ? 'Iuran Keluarga Saya' : `Iuran Warga (${duesList.length})`}
           </button>
-          <button
-            id="tab-transactions"
-            onClick={() => setActiveTab('transactions')}
-            className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
-              activeTab === 'transactions'
-                ? 'border-indigo-500 text-indigo-600 font-bold'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            Transaksi Kas RT ({txList.length})
-          </button>
-          <button
-            id="tab-funds"
-            onClick={() => setActiveTab('funds')}
-            className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
-              activeTab === 'funds'
-                ? 'border-indigo-500 text-indigo-600 font-bold'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            Kantong Kas ({fundList.length})
-          </button>
-          <button
-            id="tab-categories"
-            onClick={() => setActiveTab('categories')}
-            className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
-              activeTab === 'categories'
-                ? 'border-indigo-500 text-indigo-600 font-bold'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            Master Kategori Iuran & Kas
-          </button>
+          {!isResident && (
+            <>
+              <button
+                id="tab-transactions"
+                onClick={() => setActiveTab('transactions')}
+                className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
+                  activeTab === 'transactions'
+                    ? 'border-indigo-500 text-indigo-600 font-bold'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Transaksi Kas RT ({txList.length})
+              </button>
+              <button
+                id="tab-funds"
+                onClick={() => setActiveTab('funds')}
+                className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
+                  activeTab === 'funds'
+                    ? 'border-indigo-500 text-indigo-600 font-bold'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Kantong Kas ({fundList.length})
+              </button>
+              <button
+                id="tab-categories"
+                onClick={() => setActiveTab('categories')}
+                className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
+                  activeTab === 'categories'
+                    ? 'border-indigo-500 text-indigo-600 font-bold'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Master Kategori Iuran & Kas
+              </button>
+            </>
+          )}
         </nav>
       </div>
 
@@ -773,16 +786,18 @@ export const FinancialPage: React.FC = () => {
                 >
                   <ArrowDownRight className="h-3.5 w-3.5 text-emerald-600" /> Iuran Masuk ({duesList.length})
                 </button>
-                <button
-                  onClick={() => setDuesViewMode('disbursements')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
-                    duesViewMode === 'disbursements'
-                      ? 'bg-white text-indigo-700 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <ArrowUpRight className="h-3.5 w-3.5 text-rose-600" /> Pengeluaran / Penyaluran ({duesDisbursementList.length})
-                </button>
+                {!isResident && (
+                  <button
+                    onClick={() => setDuesViewMode('disbursements')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
+                      duesViewMode === 'disbursements'
+                        ? 'bg-white text-indigo-700 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <ArrowUpRight className="h-3.5 w-3.5 text-rose-600" /> Pengeluaran / Penyaluran ({duesDisbursementList.length})
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1713,6 +1728,7 @@ export const FinancialPage: React.FC = () => {
         isOpen={isCatModalOpen}
         onClose={() => setIsCatModalOpen(false)}
         title="Tambah Jenis / Kategori Iuran"
+        className="max-w-xl sm:max-w-2xl"
       >
         <form onSubmit={handleCreateCategory} className="space-y-4">
           <div className="space-y-1.5">
@@ -1773,6 +1789,7 @@ export const FinancialPage: React.FC = () => {
         isOpen={isFundModalOpen}
         onClose={() => setIsFundModalOpen(false)}
         title="Tambah Kantong Kas Baru"
+        className="max-w-xl sm:max-w-2xl"
       >
         <form onSubmit={handleCreateFund} className="space-y-4">
           <div className="space-y-1.5">
@@ -1829,6 +1846,7 @@ export const FinancialPage: React.FC = () => {
           setModalDuesCategoryFilter('all');
         }}
         title={`Buku Iuran: ${residentDuesSummary.find((r) => r.resident_id === selectedResidentId)?.resident_name || 'Warga'}`}
+        className="max-w-3xl sm:max-w-4xl"
       >
         {(() => {
           const res = residentDuesSummary.find((r) => r.resident_id === selectedResidentId);
