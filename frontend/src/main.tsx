@@ -2,15 +2,15 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
-import { registerSW } from 'virtual:pwa-register';
 
-// Register Service Worker for PWA installability & notifications without forced reloads
-registerSW({
-  immediate: false,
-  onOfflineReady() {
-    console.log('App ready to work offline.');
-  },
-});
+// Register standard Service Worker for PWA & Push Notifications without any auto-reload
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

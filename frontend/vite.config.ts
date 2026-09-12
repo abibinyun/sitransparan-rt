@@ -9,8 +9,7 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      registerType: 'prompt',
-      injectRegister: 'auto',
+      injectRegister: null,
       includeAssets: ['favicon.ico', 'pwa-icon.svg'],
       manifest: {
         name: 'SiTransparan RT/RW',
