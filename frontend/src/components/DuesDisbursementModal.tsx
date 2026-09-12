@@ -131,6 +131,7 @@ export const DuesDisbursementModal: React.FC<DuesDisbursementModalProps> = ({
       title="Salurkan / Keluarkan Dana Iuran"
       description="Penggunaan dana dari pos iuran warga (ke kantong kas atau langsung ke belanja/vendor)"
       className="max-w-3xl"
+      preventOutsideClose={true}
     >
       {error && <div className="mb-4 rounded-lg bg-rose-50 p-3 text-xs text-rose-600 border border-rose-200">{error}</div>}
 

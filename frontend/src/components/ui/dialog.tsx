@@ -26,11 +26,22 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, onInteractOutside, onPointerDownOutside, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      onPointerDownOutside={(e) => {
+        // Jangan auto-close jika target adalah input/file atau jika interaksi berasal dari dialog OS
+        if (onPointerDownOutside) {
+          onPointerDownOutside(e);
+        }
+      }}
+      onInteractOutside={(e) => {
+        if (onInteractOutside) {
+          onInteractOutside(e);
+        }
+      }}
       className={cn(
         "fixed left-[50%] top-[50%] z-50 grid w-[96vw] sm:w-[92vw] max-w-3xl translate-x-[-50%] translate-y-[-50%] gap-4 border border-slate-200 bg-white p-4 sm:p-7 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-2xl max-h-[94vh] overflow-y-auto",
         className
@@ -110,6 +121,7 @@ interface SimpleDialogProps {
   description?: string
   children: React.ReactNode
   className?: string
+  preventOutsideClose?: boolean
 }
 
 export const Dialog: React.FC<SimpleDialogProps> = ({
@@ -119,10 +131,23 @@ export const Dialog: React.FC<SimpleDialogProps> = ({
   description,
   children,
   className,
+  preventOutsideClose = false,
 }) => {
   return (
     <DialogRoot open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className={className}>
+      <DialogContent
+        className={className}
+        onPointerDownOutside={(e) => {
+          if (preventOutsideClose) {
+            e.preventDefault();
+          }
+        }}
+        onInteractOutside={(e) => {
+          if (preventOutsideClose) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}

@@ -597,6 +597,7 @@ export const KarangTarunaPage: React.FC = () => {
         title={editingMember ? 'Edit Data Pengurus' : 'Tambah Pengurus / Anggota Pemuda'}
         description={`Menugaskan warga ke dalam struktur kepengurusan ${currentPeriod?.name || ''}`}
         className="max-w-3xl"
+        preventOutsideClose={true}
       >
         <form onSubmit={handleMemberSubmit} className="space-y-4">
           {!editingMember && (

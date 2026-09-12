@@ -116,6 +116,7 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
       title={resident ? 'Edit Data Warga' : 'Tambah Data Warga'}
       description="Kelola profil kependudukan warga RT"
       className="max-w-4xl"
+      preventOutsideClose={true}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {submitError && (
