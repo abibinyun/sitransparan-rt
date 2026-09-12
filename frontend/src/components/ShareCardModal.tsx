@@ -190,7 +190,13 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ isOpen, onClose,
   };
 
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} title="Bagikan ke WhatsApp" description="Kartu siap-unduh untuk dibagikan ke grup RT">
+    <Dialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Bagikan ke WhatsApp"
+      description="Kartu siap-unduh untuk dibagikan ke grup RT"
+      className="w-[96vw] sm:w-[92vw] max-w-2xl"
+    >
       <div className="space-y-4">
         <canvas
           ref={attachCanvas}
