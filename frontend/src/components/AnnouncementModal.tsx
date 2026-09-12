@@ -234,7 +234,10 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
           )}
 
           {/* Upload Button Foto */}
-          <div className="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center hover:border-emerald-400 transition-colors bg-slate-50/50">
+          <div
+            className="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center hover:border-emerald-400 transition-colors bg-slate-50/50"
+            onClick={(e) => e.stopPropagation()}
+          >
             <input
               id="bannerInput"
               type="file"
@@ -244,7 +247,11 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
               disabled={uploadingImage}
               onChange={handleUploadImages}
             />
-            <label htmlFor="bannerInput" className="cursor-pointer flex flex-col items-center justify-center gap-1">
+            <label
+              htmlFor="bannerInput"
+              onClick={(e) => e.stopPropagation()}
+              className="cursor-pointer flex flex-col items-center justify-center gap-1"
+            >
               <UploadCloud className="w-5 h-5 text-slate-400" />
               <span className="text-xs font-semibold text-slate-700">
                 {uploadingImage ? 'Mengunggah foto...' : '+ Upload Foto (Pilih satu atau sekaligus)'}
@@ -305,7 +312,10 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
             </div>
           )}
 
-          <div className="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center hover:border-indigo-400 transition-colors bg-slate-50/50">
+          <div
+            className="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center hover:border-indigo-400 transition-colors bg-slate-50/50"
+            onClick={(e) => e.stopPropagation()}
+          >
             <input
               id="fileInput"
               type="file"
@@ -315,7 +325,11 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
               disabled={uploadingFile}
               onChange={handleUploadFiles}
             />
-            <label htmlFor="fileInput" className="cursor-pointer flex flex-col items-center justify-center gap-1">
+            <label
+              htmlFor="fileInput"
+              onClick={(e) => e.stopPropagation()}
+              className="cursor-pointer flex flex-col items-center justify-center gap-1"
+            >
               <UploadCloud className="w-5 h-5 text-slate-400" />
               <span className="text-xs font-semibold text-slate-700">
                 {uploadingFile ? 'Mengunggah berkas...' : '+ Upload Dokumen Lampiran (PDF/File)'}

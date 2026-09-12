@@ -26,7 +26,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, onInteractOutside, onPointerDownOutside, ...props }, ref) => (
+>(({ className, children, onInteractOutside, onPointerDownOutside, onEscapeKeyDown, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -40,6 +40,11 @@ const DialogContent = React.forwardRef<
       onInteractOutside={(e) => {
         if (onInteractOutside) {
           onInteractOutside(e);
+        }
+      }}
+      onEscapeKeyDown={(e) => {
+        if (onEscapeKeyDown) {
+          onEscapeKeyDown(e);
         }
       }}
       className={cn(
@@ -134,7 +139,14 @@ export const Dialog: React.FC<SimpleDialogProps> = ({
   preventOutsideClose = false,
 }) => {
   return (
-    <DialogRoot open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !preventOutsideClose) {
+          onClose();
+        }
+      }}
+    >
       <DialogContent
         className={className}
         onPointerDownOutside={(e) => {
@@ -143,6 +155,11 @@ export const Dialog: React.FC<SimpleDialogProps> = ({
           }
         }}
         onInteractOutside={(e) => {
+          if (preventOutsideClose) {
+            e.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={(e) => {
           if (preventOutsideClose) {
             e.preventDefault();
           }
