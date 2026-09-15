@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { MainLayout } from './components/MainLayout';
 import { PublicLayout } from './components/PublicLayout';
 import { Skeleton } from './components/ui/skeleton';
+import { useSeamlessUpdate } from './utils/useSeamlessUpdate';
 
 // Code splitting with React.lazy
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -61,88 +62,96 @@ function RootPortalRoute() {
   );
 }
 
+function AppRoutes() {
+  useSeamlessUpdate();
+
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/claim" element={<ClaimHouseTokenPage />} />
+        <Route path="/t/claim" element={<ClaimHouseTokenPage />} />
+
+        {/* Platform Root Landing Page (outside PublicLayout so no tenant header is shown) */}
+        <Route path="/" element={<RootPortalRoute />} />
+
+        {/* Public Portal Routes with PublicLayout for Tenant Subdomain */}
+        <Route element={<PublicLayout />}>
+          <Route path="/kabar" element={<PublicAnnouncementsPage />} />
+          <Route path="/usulan" element={<PublicAspirationsPage />} />
+          <Route path="/agenda" element={<PublicEventsPage />} />
+          <Route path="/program" element={<PublicProgramsPage />} />
+          <Route path="/karang-taruna" element={<PublicKarangTarunaPage />} />
+          <Route path="/pemuda" element={<Navigate to="/program?tab=environment" replace />} />
+          <Route path="/bank-sampah" element={<PublicWasteBankPage />} />
+          <Route path="/sampah" element={<Navigate to="/program" replace />} />
+
+          {/* Backward compatibility redirects for legacy /public/* paths */}
+          <Route path="/public/announcements" element={<Navigate to="/" replace />} />
+          <Route path="/public/aspirations" element={<Navigate to="/usulan" replace />} />
+          <Route path="/public/events" element={<Navigate to="/agenda" replace />} />
+          <Route path="/public/program" element={<Navigate to="/program" replace />} />
+          <Route path="/public/karang-taruna" element={<Navigate to="/program?tab=environment" replace />} />
+          <Route path="/public/bank-sampah" element={<Navigate to="/program" replace />} />
+        </Route>
+
+        {/* Protected Internal Routes (/admin namespace) */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<MainLayout />}>
+            <Route path="/admin" element={<DashboardPage />} />
+            <Route path="/admin/profile" element={<ProfilePage />} />
+            <Route path="/admin/residents" element={<ResidentsPage />} />
+            <Route path="/admin/financial" element={<FinancialPage />} />
+            <Route path="/admin/events" element={<EventsPage />} />
+            <Route path="/admin/meetings" element={<MeetingPage />} />
+            <Route path="/admin/aspirations" element={<AspirationsPage />} />
+            <Route path="/admin/announcements" element={<AnnouncementsPage />} />
+            <Route path="/admin/polls" element={<PollsPage />} />
+            <Route path="/admin/karang-taruna" element={<KarangTarunaPage />} />
+            <Route path="/admin/programs" element={<Navigate to="/admin/karang-taruna" replace />} />
+            <Route path="/admin/waste-bank" element={<WasteBankPage />} />
+            <Route path="/admin/inventory" element={<InventoryPage />} />
+            <Route path="/admin/houses" element={<HousesPage />} />
+            <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RT_ADMIN']} />}>
+              <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+              <Route path="/admin/users" element={<UsersPage />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']} />}>
+              <Route path="/admin/tenants" element={<SuperAdminTenantsPage />} />
+              {/* Alias for legacy path */}
+              <Route path="/superadmin/tenants" element={<Navigate to="/admin/tenants" replace />} />
+            </Route>
+
+            {/* Backward compatibility redirects for internal routes without /admin prefix */}
+            <Route path="/residents" element={<Navigate to="/admin/residents" replace />} />
+            <Route path="/financial" element={<Navigate to="/admin/financial" replace />} />
+            <Route path="/events" element={<Navigate to="/admin/events" replace />} />
+            <Route path="/meetings" element={<Navigate to="/admin/meetings" replace />} />
+            <Route path="/aspirations" element={<Navigate to="/admin/aspirations" replace />} />
+            <Route path="/announcements" element={<Navigate to="/admin/announcements" replace />} />
+            <Route path="/polls" element={<Navigate to="/admin/polls" replace />} />
+            <Route path="/karang-taruna" element={<Navigate to="/admin/karang-taruna" replace />} />
+            <Route path="/programs" element={<Navigate to="/admin/karang-taruna" replace />} />
+            <Route path="/waste-bank" element={<Navigate to="/admin/waste-bank" replace />} />
+            <Route path="/inventory" element={<Navigate to="/admin/inventory" replace />} />
+            <Route path="/bank-sampah" element={<Navigate to="/admin/waste-bank" replace />} />
+            <Route path="/houses" element={<Navigate to="/admin/houses" replace />} />
+            <Route path="/profile" element={<Navigate to="/admin/profile" replace />} />
+            <Route path="/users" element={<Navigate to="/admin/users" replace />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
+  );
+}
+
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/claim" element={<ClaimHouseTokenPage />} />
-            <Route path="/t/claim" element={<ClaimHouseTokenPage />} />
-
-            {/* Platform Root Landing Page (outside PublicLayout so no tenant header is shown) */}
-            <Route path="/" element={<RootPortalRoute />} />
-
-            {/* Public Portal Routes with PublicLayout for Tenant Subdomain */}
-            <Route element={<PublicLayout />}>
-              <Route path="/kabar" element={<PublicAnnouncementsPage />} />
-              <Route path="/usulan" element={<PublicAspirationsPage />} />
-              <Route path="/agenda" element={<PublicEventsPage />} />
-              <Route path="/program" element={<PublicProgramsPage />} />
-              <Route path="/karang-taruna" element={<PublicKarangTarunaPage />} />
-              <Route path="/pemuda" element={<Navigate to="/program?tab=environment" replace />} />
-              <Route path="/bank-sampah" element={<PublicWasteBankPage />} />
-              <Route path="/sampah" element={<Navigate to="/program" replace />} />
-
-              {/* Backward compatibility redirects for legacy /public/* paths */}
-              <Route path="/public/announcements" element={<Navigate to="/" replace />} />
-              <Route path="/public/aspirations" element={<Navigate to="/usulan" replace />} />
-              <Route path="/public/events" element={<Navigate to="/agenda" replace />} />
-              <Route path="/public/program" element={<Navigate to="/program" replace />} />
-              <Route path="/public/karang-taruna" element={<Navigate to="/program?tab=environment" replace />} />
-              <Route path="/public/bank-sampah" element={<Navigate to="/program" replace />} />
-            </Route>
-
-            {/* Protected Internal Routes (/admin namespace) */}
-            <Route element={<ProtectedRoute />}>
-              <Route element={<MainLayout />}>
-                <Route path="/admin" element={<DashboardPage />} />
-                <Route path="/admin/profile" element={<ProfilePage />} />
-                <Route path="/admin/residents" element={<ResidentsPage />} />
-                <Route path="/admin/financial" element={<FinancialPage />} />
-                <Route path="/admin/events" element={<EventsPage />} />
-                <Route path="/admin/meetings" element={<MeetingPage />} />
-                <Route path="/admin/aspirations" element={<AspirationsPage />} />
-                <Route path="/admin/announcements" element={<AnnouncementsPage />} />
-                <Route path="/admin/polls" element={<PollsPage />} />
-                <Route path="/admin/karang-taruna" element={<KarangTarunaPage />} />
-                <Route path="/admin/programs" element={<Navigate to="/admin/karang-taruna" replace />} />
-                <Route path="/admin/waste-bank" element={<WasteBankPage />} />
-                <Route path="/admin/inventory" element={<InventoryPage />} />
-                <Route path="/admin/houses" element={<HousesPage />} />
-                <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RT_ADMIN']} />}>
-                  <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
-                  <Route path="/admin/users" element={<UsersPage />} />
-                </Route>
-                <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']} />}>
-                  <Route path="/admin/tenants" element={<SuperAdminTenantsPage />} />
-                  {/* Alias for legacy path */}
-                  <Route path="/superadmin/tenants" element={<Navigate to="/admin/tenants" replace />} />
-                </Route>
-
-                {/* Backward compatibility redirects for internal routes without /admin prefix */}
-                <Route path="/residents" element={<Navigate to="/admin/residents" replace />} />
-                <Route path="/financial" element={<Navigate to="/admin/financial" replace />} />
-                <Route path="/events" element={<Navigate to="/admin/events" replace />} />
-                <Route path="/meetings" element={<Navigate to="/admin/meetings" replace />} />
-                <Route path="/aspirations" element={<Navigate to="/admin/aspirations" replace />} />
-                <Route path="/announcements" element={<Navigate to="/admin/announcements" replace />} />
-                <Route path="/polls" element={<Navigate to="/admin/polls" replace />} />
-                <Route path="/karang-taruna" element={<Navigate to="/admin/karang-taruna" replace />} />
-                <Route path="/programs" element={<Navigate to="/admin/karang-taruna" replace />} />
-                <Route path="/waste-bank" element={<Navigate to="/admin/waste-bank" replace />} />
-                <Route path="/inventory" element={<Navigate to="/admin/inventory" replace />} />
-                <Route path="/bank-sampah" element={<Navigate to="/admin/waste-bank" replace />} />
-                <Route path="/houses" element={<Navigate to="/admin/houses" replace />} />
-                <Route path="/profile" element={<Navigate to="/admin/profile" replace />} />
-                <Route path="/users" element={<Navigate to="/admin/users" replace />} />
-              </Route>
-            </Route>
-
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
+        <AppRoutes />
       </BrowserRouter>
     </QueryClientProvider>
   );
