@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { prefetchRoute } from '../utils/routePrefetch';
 import {
   Building2,
   FileText,
@@ -94,6 +95,8 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
                   key={to}
                   to={to}
                   end={end}
+                  onMouseEnter={() => prefetchRoute(to)}
+                  onFocus={() => prefetchRoute(to)}
                   className={({ isActive }) =>
                     `flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                       isActive
@@ -132,7 +135,17 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
 
       {/* Main Container */}
       <main className="flex-1">
-        {children || <Outlet />}
+        <Suspense
+          fallback={
+            <div className="max-w-6xl mx-auto px-4 py-8 space-y-4 animate-pulse">
+              <div className="h-8 w-48 rounded-xl bg-slate-200" />
+              <div className="h-44 rounded-2xl bg-slate-200" />
+              <div className="h-64 rounded-2xl bg-slate-200" />
+            </div>
+          }
+        >
+          {children || <Outlet />}
+        </Suspense>
       </main>
 
       {/* PWA Prompt & Mobile Bottom Navigation */}

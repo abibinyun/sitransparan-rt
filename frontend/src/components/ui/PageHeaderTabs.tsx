@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LucideIcon } from 'lucide-react';
+import { prefetchRoute } from '../../utils/routePrefetch';
 
 export interface PageTabItem {
   to: string;
@@ -40,6 +41,8 @@ export const PageHeaderTabs: React.FC<PageHeaderTabsProps> = ({
               <NavLink
                 key={tab.to}
                 to={tab.to}
+                onMouseEnter={() => prefetchRoute(tab.to)}
+                onFocus={() => prefetchRoute(tab.to)}
                 className={({ isActive }) =>
                   [
                     'inline-flex items-center gap-2 py-3 px-2 sm:px-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors duration-150',

@@ -5,7 +5,6 @@ import { queryClient } from './lib/queryClient';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { MainLayout } from './components/MainLayout';
 import { PublicLayout } from './components/PublicLayout';
-import { Skeleton } from './components/ui/skeleton';
 import { useSeamlessUpdate } from './utils/useSeamlessUpdate';
 
 // Code splitting with React.lazy
@@ -38,14 +37,8 @@ const ClaimHouseTokenPage = lazy(() => import('./pages/ClaimHouseTokenPage').the
 import { getTenantSlugFromHost } from './utils/tenant';
 
 const PageLoader = () => (
-  <div className="flex flex-col space-y-4 p-8 max-w-7xl mx-auto w-full">
-    <Skeleton className="h-10 w-64 rounded-xl" />
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <Skeleton className="h-32 rounded-xl" />
-      <Skeleton className="h-32 rounded-xl" />
-      <Skeleton className="h-32 rounded-xl" />
-    </div>
-    <Skeleton className="h-96 rounded-xl w-full" />
+  <div className="flex items-center justify-center min-h-[50vh] w-full">
+    <div className="h-8 w-8 rounded-full border-2 border-indigo-600/20 border-t-indigo-600 animate-spin" />
   </div>
 );
 

@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { prefetchRoute } from '../utils/routePrefetch';
 import {
   Bell,
   Building2,
@@ -290,6 +291,8 @@ export const MainLayout: React.FC = () => {
             key={to}
             to={to}
             end={end}
+            onMouseEnter={() => prefetchRoute(to)}
+            onFocus={() => prefetchRoute(to)}
             onClick={() => setSidebarOpen(false)}
             className={
               [
@@ -458,7 +461,21 @@ export const MainLayout: React.FC = () => {
         </header>
 
         <main className="mx-auto min-h-[calc(100vh-5rem)] w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="space-y-4 animate-pulse">
+                <div className="h-10 w-48 rounded-xl bg-slate-200/80" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="h-28 rounded-2xl bg-slate-200/80" />
+                  <div className="h-28 rounded-2xl bg-slate-200/80" />
+                  <div className="h-28 rounded-2xl bg-slate-200/80" />
+                </div>
+                <div className="h-72 rounded-2xl bg-slate-200/80" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
