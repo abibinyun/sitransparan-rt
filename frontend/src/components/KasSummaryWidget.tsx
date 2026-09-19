@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Layers,
   Landmark,
   PiggyBank,
   ChevronRight,
   Clock,
-  Info
+  Info,
+  Search,
+  ChevronLeft
 } from 'lucide-react';
 import {
   usePublicFinancialSummary,
@@ -16,6 +18,7 @@ import {
   PublicFeeCategory
 } from '../services/public_transparency';
 import { Dialog } from './ui/dialog';
+import { Select } from './ui/select';
 
 const FUND_TYPE_LABELS: Record<string, string> = {
   operational: 'Operasional',
@@ -33,9 +36,14 @@ const FUND_TYPE_BADGES: Record<string, { bg: string; text: string }> = {
   other: { bg: 'bg-[#f5f5f7] text-[#707070] border-[#d2d2d7]', text: 'Lainnya' },
 };
 
+const MONTH_NAMES = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
 /**
  * Modal detail arus kas transparan untuk satu kantong kas atau satu pos iuran.
- * Menampilkan ringkasan saldo serta riwayat mutasi masuk dan keluar.
+ * Dilengkapi dengan filter periode, tipe transaksi, pencarian, dan paginasi.
  */
 interface KasDetailModalProps {
   selectedFund: PublicFundSummary | null;
@@ -48,11 +56,31 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
   const title = isFund ? selectedFund?.name : selectedCategory?.name;
   const balance = isFund ? selectedFund?.balance || 0 : selectedCategory?.balance || 0;
 
-  const { data: transactions, isLoading } = usePublicTransactions({
+  // Filter & Pagination state
+  const [page, setPage] = useState<number>(1);
+  const [typeFilter, setTypeFilter] = useState<'income' | 'expense' | ''>('');
+  const [selectedMonth, setSelectedMonth] = useState<number | ''>('');
+  const [selectedYear, setSelectedYear] = useState<number | ''>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const limit = 8;
+
+  const currentYear = new Date().getFullYear();
+  const yearOptions = useMemo(() => [currentYear, currentYear - 1, currentYear - 2], [currentYear]);
+
+  const { data, isLoading } = usePublicTransactions({
     fund_id: selectedFund?.id,
     category: selectedCategory ? selectedCategory.name : undefined,
-    limit: 50,
+    type: typeFilter,
+    month: selectedMonth,
+    year: selectedYear,
+    search: searchQuery,
+    page,
+    limit,
   });
+
+  const transactions = data?.data || [];
+  const totalItems = data?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
   return (
     <Dialog
@@ -60,12 +88,12 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
       onClose={onClose}
       title={title || (isFund ? 'Kantong Kas RT' : 'Pos Iuran Warga')}
       description={`Saldo Bersih: ${formatRupiah(balance)}`}
-      className="w-[94vw] sm:w-[90vw] max-w-lg rounded-xl bg-white shadow-2xl border border-[#d2d2d7] p-0 text-[#1d1d1f]"
+      className="w-[96vw] sm:w-[92vw] max-w-2xl rounded-xl bg-white shadow-2xl border border-[#d2d2d7] p-0 text-[#1d1d1f]"
     >
-      <div className="flex flex-col max-h-[75vh] sm:max-h-[80vh]">
+      <div className="flex flex-col max-h-[82vh]">
         {/* Sub-badge Utama jika fund default */}
         {selectedFund?.is_default && (
-          <div className="px-4 pt-3">
+          <div className="px-3.5 sm:px-4 pt-2.5">
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
               Kantong Kas Utama
             </span>
@@ -74,7 +102,7 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
 
         {/* Modal Sub-Metrics if Category */}
         {selectedCategory && (
-          <div className="grid grid-cols-2 gap-2 p-3.5 bg-[#f4f8fb] border-b border-[#d2d2d7] text-xs">
+          <div className="grid grid-cols-2 gap-2 p-3 sm:p-3.5 bg-[#f4f8fb] border-b border-[#d2d2d7] text-xs">
             <div className="p-2.5 rounded-lg bg-white border border-[#d2d2d7]">
               <p className="text-[10px] font-medium text-[#707070]">Iuran Terkumpul</p>
               <p className="font-semibold text-[#0066cc] mt-0.5 tabular-nums">
@@ -90,30 +118,102 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
           </div>
         )}
 
+        {/* Filter Bar: Pencarian, Tipe (Masuk/Keluar), Bulan, dan Tahun */}
+        <div className="p-3 sm:p-3.5 border-b border-[#d2d2d7] bg-[#f5f5f7] space-y-2">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-[#858585] absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Cari keterangan mutasi atau pos..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-white rounded-lg border border-[#d2d2d7] text-[#1d1d1f] placeholder:text-[#858585] focus:outline-none focus:border-[#0071e3]"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            {/* Filter Arus */}
+            <div>
+              <Select
+                value={typeFilter}
+                onValueChange={(val) => {
+                  setTypeFilter(val as any);
+                  setPage(1);
+                }}
+              >
+                <option value="">Semua Arus</option>
+                <option value="income">Uang Masuk (+)</option>
+                <option value="expense">Uang Keluar (-)</option>
+              </Select>
+            </div>
+
+            {/* Filter Bulan */}
+            <div>
+              <Select
+                value={selectedMonth !== '' ? String(selectedMonth) : ''}
+                onValueChange={(val) => {
+                  setSelectedMonth(val ? Number(val) : '');
+                  setPage(1);
+                }}
+              >
+                <option value="">Semua Bulan</option>
+                {MONTH_NAMES.map((name, idx) => (
+                  <option key={idx + 1} value={String(idx + 1)}>
+                    {name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {/* Filter Tahun */}
+            <div>
+              <Select
+                value={selectedYear !== '' ? String(selectedYear) : ''}
+                onValueChange={(val) => {
+                  setSelectedYear(val ? Number(val) : '');
+                  setPage(1);
+                }}
+              >
+                <option value="">Semua Tahun</option>
+                {yearOptions.map((yr) => (
+                  <option key={yr} value={String(yr)}>
+                    {yr}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+        </div>
+
         {/* Transactions List */}
-        <div className="p-3.5 sm:p-4 space-y-2 flex-1 divide-y divide-[#d2d2d7] overflow-y-auto">
-          <div className="flex items-center justify-between pb-2">
-            <p className="text-xs font-semibold text-[#1d1d1f] uppercase tracking-wider flex items-center gap-1.5">
+        <div className="p-3 sm:p-4 space-y-2 flex-1 divide-y divide-[#d2d2d7] overflow-y-auto min-w-0">
+          <div className="flex items-center justify-between pb-1 text-xs">
+            <p className="font-semibold text-[#1d1d1f] flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-[#0071e3]" /> Riwayat Mutasi Buku Kas
             </p>
-            <span className="text-[10px] text-[#707070]">Terbuka untuk warga</span>
+            <span className="text-[11px] text-[#707070] tabular-nums">
+              Total {totalItems} transaksi
+            </span>
           </div>
 
           {isLoading ? (
-            <div className="space-y-2 pt-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-14 rounded-lg bg-[#f5f5f7] animate-pulse" />
+            <div className="space-y-2 pt-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-12 rounded-lg bg-[#f5f5f7] animate-pulse" />
               ))}
             </div>
-          ) : !transactions || transactions.length === 0 ? (
+          ) : transactions.length === 0 ? (
             <div className="py-10 text-center space-y-1 text-xs text-[#707070]">
               <Info className="w-5 h-5 mx-auto text-[#858585] mb-1 opacity-60" />
-              <p className="font-medium">Belum ada mutasi buku kas tercatat untuk pos ini.</p>
-              <p className="text-[11px] text-[#858585]">Mutasi akan otomatis tampil setelah pengurus membukukan kas.</p>
+              <p className="font-medium">Tidak ada data mutasi yang cocok dengan filter.</p>
+              <p className="text-[11px] text-[#858585]">Coba ubah kriteria pencarian, bulan, atau jenis arus.</p>
             </div>
           ) : (
             <div className="space-y-2 pt-2">
-              {transactions.map((t: any) => {
+              {transactions.map((t) => {
                 const isIncome = t.type === 'income';
                 const dateStr = t.transaction_date
                   ? new Date(t.transaction_date).toLocaleDateString('id-ID', {
@@ -156,17 +256,42 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
           )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="p-3 border-t border-[#d2d2d7] bg-[#f5f5f7] flex justify-between items-center shrink-0">
-          <p className="text-[11px] text-[#707070]">
-            Transparansi publik RT/RW • Seluruh warga berhak memverifikasi buku kas.
-          </p>
-          <button
-            onClick={onClose}
-            className="apple-btn-secondary text-xs px-4 py-1.5 shrink-0"
-          >
-            Tutup
-          </button>
+        {/* Modal Pagination & Footer */}
+        <div className="p-3 border-t border-[#d2d2d7] bg-[#f5f5f7] flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0 text-xs">
+          {/* Controls Paginasi */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || isLoading}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-[#d2d2d7] bg-white text-[#1d1d1f] disabled:opacity-40 hover:bg-[#e2e2e5] transition-colors font-medium text-[11px]"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Sebelumnya
+            </button>
+            <span className="text-[11px] text-[#707070] tabular-nums">
+              Halaman {page} dari {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || isLoading}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-[#d2d2d7] bg-white text-[#1d1d1f] disabled:opacity-40 hover:bg-[#e2e2e5] transition-colors font-medium text-[11px]"
+            >
+              Selanjutnya <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+            <span className="text-[10px] text-[#707070] hidden sm:inline">
+              Data kas dapat diaudit warga
+            </span>
+            <button
+              onClick={onClose}
+              className="apple-btn-secondary text-xs px-4 py-1.5 shrink-0 ml-auto"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
       </div>
     </Dialog>

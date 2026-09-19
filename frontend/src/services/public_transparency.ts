@@ -148,20 +148,49 @@ export interface PublicTransaction {
   description?: string;
 }
 
-export function usePublicTransactions(params?: { fund_id?: string; category?: string; limit?: number }) {
+export interface PublicTransactionsResponse {
+  data: PublicTransaction[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface PublicTransactionsFilter {
+  fund_id?: string;
+  category?: string;
+  type?: 'income' | 'expense' | '';
+  month?: number | '';
+  year?: number | '';
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export function usePublicTransactions(params?: PublicTransactionsFilter) {
   const slug = getTenantSlugOrFallback();
-  return useQuery<PublicTransaction[], Error>({
-    queryKey: ['public-transactions', slug, params?.fund_id, params?.category],
+  return useQuery<PublicTransactionsResponse, Error>({
+    queryKey: [
+      'public-transactions',
+      slug,
+      params?.fund_id,
+      params?.category,
+      params?.type,
+      params?.month,
+      params?.year,
+      params?.search,
+      params?.page,
+      params?.limit,
+    ],
     queryFn: async () => {
       try {
-        const res = await axios.get<{ data: PublicTransaction[] }>(`/api/v1/t/${slug}/financial/transactions`, {
+        const res = await axios.get<PublicTransactionsResponse>(`/api/v1/t/${slug}/financial/transactions`, {
           params,
         });
-        return res.data.data ?? [];
+        return res.data ?? { data: [], total: 0, page: 1, limit: 10 };
       } catch {
-        return [];
+        return { data: [], total: 0, page: 1, limit: 10 };
       }
     },
-    staleTime: 0,
+    staleTime: 30_000,
   });
 }

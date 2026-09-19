@@ -772,12 +772,21 @@ func (h *FinancialHandler) handlePublicTenantTransactions(w http.ResponseWriter,
 
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	if limit <= 0 || limit > 100 {
-		limit = 50
+		limit = 10
 	}
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page <= 0 {
+		page = 1
+	}
+
 	fundIDStr := r.URL.Query().Get("fund_id")
 	categoryQuery := strings.TrimSpace(r.URL.Query().Get("category"))
+	typeQuery := strings.TrimSpace(r.URL.Query().Get("type")) // "income", "expense", or empty
+	searchQuery := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("search")))
+	monthQuery, _ := strconv.Atoi(r.URL.Query().Get("month"))
+	yearQuery, _ := strconv.Atoi(r.URL.Query().Get("year"))
 
-	txs, _, err := h.usecase.ListFinancialTransactions(r.Context(), tenant.ID, "", 1000, 0)
+	txs, _, err := h.usecase.ListFinancialTransactions(r.Context(), tenant.ID, "", 2000, 0)
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return
@@ -790,7 +799,7 @@ func (h *FinancialHandler) handlePublicTenantTransactions(w http.ResponseWriter,
 		}
 	}
 
-	filtered := make([]publicTransactionView, 0, limit)
+	filtered := make([]publicTransactionView, 0, len(txs))
 	for _, t := range txs {
 		if targetFundID != nil && (t.FundID == nil || *t.FundID != *targetFundID) {
 			continue
@@ -802,6 +811,26 @@ func (h *FinancialHandler) handlePublicTenantTransactions(w http.ResponseWriter,
 				continue
 			}
 		}
+		if typeQuery != "" && string(t.Type) != typeQuery {
+			continue
+		}
+		if monthQuery >= 1 && monthQuery <= 12 && int(t.TransactionDate.Month()) != monthQuery {
+			continue
+		}
+		if yearQuery > 2000 && t.TransactionDate.Year() != yearQuery {
+			continue
+		}
+		if searchQuery != "" {
+			desc := ""
+			if t.Description != nil {
+				desc = strings.ToLower(*t.Description)
+			}
+			cat := strings.ToLower(t.Category)
+			if !strings.Contains(desc, searchQuery) && !strings.Contains(cat, searchQuery) {
+				continue
+			}
+		}
+
 		filtered = append(filtered, publicTransactionView{
 			ID:              t.ID,
 			FundID:          t.FundID,
@@ -812,15 +841,26 @@ func (h *FinancialHandler) handlePublicTenantTransactions(w http.ResponseWriter,
 			TransactionDate: t.TransactionDate,
 			Description:     t.Description,
 		})
-		if len(filtered) >= limit {
-			break
-		}
 	}
+
+	total := len(filtered)
+	start := (page - 1) * limit
+	if start > total {
+		start = total
+	}
+	end := start + limit
+	if end > total {
+		end = total
+	}
+	paged := filtered[start:end]
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"data": filtered,
+		"data":  paged,
+		"total": total,
+		"page":  page,
+		"limit": limit,
 	})
 }
 
