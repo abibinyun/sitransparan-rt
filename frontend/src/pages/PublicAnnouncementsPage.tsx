@@ -108,9 +108,6 @@ export const PublicAnnouncementsPage: React.FC = () => {
       {/* Hero Section Apple (Clean Frost Canvas with Apple Blue Accent) */}
       <section className="bg-white text-[#1d1d1f] px-4 sm:px-6 py-12 sm:py-16 border-b border-[#d2d2d7]">
         <div className="max-w-6xl mx-auto space-y-3">
-          <div className="apple-badge">
-            <Megaphone className="w-3.5 h-3.5 text-[#0071e3]" /> Saluran Komunikasi Resmi
-          </div>
           <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight leading-tight text-[#1d1d1f]">
             Pengumuman &amp; Dokumen Transparansi Warga
           </h1>

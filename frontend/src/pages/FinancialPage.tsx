@@ -538,7 +538,7 @@ export const FinancialPage: React.FC = () => {
               }}
               variant="ghost"
               disabled={resetFinancialData.isPending}
-              className="h-9 px-2.5 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+              className="h-9 px-2.5 text-xs text-[#858585] hover:text-rose-600 hover:bg-white"
               title="Reset data transaksi & iuran (Testing only)"
             >
               <RotateCcw className="h-3.5 w-3.5" />

@@ -68,11 +68,14 @@ export function useDeleteEvent() {
   });
 }
 
+import { compressImage } from '../utils/imageCompressor';
+
 export function useUploadEventFile() {
   return useMutation({
     mutationFn: async (file: File) => {
+      const compressed = await compressImage(file, { maxWidth: 1920, maxHeight: 1920, quality: 0.8 });
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', compressed);
       const res = await api.post<{ proof_url: string }>('/financial/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',

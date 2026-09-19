@@ -113,9 +113,6 @@ export const PublicAspirationsPage: React.FC = () => {
       <section className="bg-white text-[#1d1d1f] px-4 sm:px-6 py-12 sm:py-16 border-b border-[#d2d2d7]">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
-            <div className="apple-badge">
-              <MessageSquareHeart className="w-3.5 h-3.5 text-[#0071e3]" /> Ruang Dengar Warga
-            </div>
             <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight leading-tight text-[#1d1d1f]">
               Aspirasi &amp; Kebutuhan Lingkungan RT
             </h1>

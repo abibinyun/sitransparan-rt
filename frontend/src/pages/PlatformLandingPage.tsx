@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   Building2,
-  ShieldCheck,
   WalletCards,
   ArrowRight,
   Bell,
@@ -106,29 +105,24 @@ export const PlatformLandingPage: React.FC = () => {
         </div>
       )}
 
-      {/* Hero Section Apple */}
-      <section className="relative overflow-hidden pt-12 pb-16 sm:pt-20 sm:pb-24 border-b border-[#d2d2d7] bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10 text-center space-y-6">
-          <div className="apple-badge">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#0071e3]" /> Standar Baru Transparansi RT/RW Indonesia
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-semibold tracking-tight max-w-4xl mx-auto leading-[1.15] text-[#1d1d1f]">
-            Tata Kelola Lingkungan yang <span className="text-[#0071e3]">Terang, Jujur</span>, &amp; Berdaya Bersama.
+      {/* Hero Section: Editorial & Dignified Headline without AI Kicker Badge */}
+      <section className="relative overflow-hidden pt-16 pb-16 sm:pt-24 sm:pb-20 border-b border-[#d2d2d7] bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10 text-center space-y-6">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-[1.12] text-[#1d1d1f]">
+            Transparansi Nyata Kas &amp; Keputusan Rukun Tetangga
           </h1>
 
           <p className="max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-[#707070] leading-relaxed font-normal">
-            Platform tata kelola mandiri berbasis multi-tenant untuk setiap Rukun Tetangga (RT). Kas kasbon &amp; iuran terbuka real-time, partisipasi warga, pemuda Karang Taruna, dan Bank Sampah dalam satu sistem.
+            Platform tata kelola mandiri untuk RT/RW Indonesia. Pemisahan kas multi-kantong, arsip notula sah, dan tabungan bank sampah keluarga dalam satu kendali terbuka.
           </p>
 
-          {/* Tombol Aksi Utama */}
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
             {user ? (
               <Link
                 to={user.role === 'SUPER_ADMIN' || String(user.role).toLowerCase() === 'superadmin' ? '/admin/tenants' : '/admin'}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full apple-btn-primary text-sm shadow-2xs transition-all"
               >
-                Lanjut ke Dashboard Pengurus
+                Buka Dashboard Pengurus
               </Link>
             ) : (
               <Link
@@ -142,58 +136,130 @@ export const PlatformLandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4 Pilar Transparansi Lingkungan */}
+      {/* Asymmetrical Bento Grid (Impeccable Anti-Slop: Distinctive, Data-First, Varied Weights) */}
       <section className="py-16 sm:py-24 bg-[#f5f5f7]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs font-semibold text-[#0071e3] tracking-wider uppercase">Standar Tata Kelola Warga</span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-[#1d1d1f] tracking-tight">
-              Keterbukaan Total Tanpa Modus
-            </h2>
-            <p className="text-[#707070] text-sm sm:text-base">
-              Setiap rupiah iuran, keputusan musyawarah, dan suara warga tercatat jelas dalam sistem yang dapat diaudit bersama.
-            </p>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#d2d2d7] pb-4">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+                Pilar Utama Sistem Tata Kelola
+              </h2>
+              <p className="text-xs sm:text-sm text-[#707070] mt-0.5">
+                Setiap rupiah dan notula keputusan dapat diaudit langsung oleh warga RT.
+              </p>
+            </div>
+            <span className="text-xs font-mono font-medium text-[#707070] uppercase tracking-wider">
+              Arsitektur Multi-Tenant Terisolasi
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            <div className="apple-card p-6 space-y-3">
-              <div className="w-12 h-12 rounded-lg bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] flex items-center justify-center font-semibold">
-                <WalletCards className="w-6 h-6" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Bento Card 1: Kas Multi-Kantong (Featured Hero Tile, 8-col) */}
+            <div className="lg:col-span-8 apple-card p-6 sm:p-8 flex flex-col justify-between space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
+                    <WalletCards className="w-3.5 h-3.5" /> Buku Kas RT
+                  </span>
+                  <span className="text-xs font-mono text-[#707070]">Perpetual &amp; Append-Only</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-[#1d1d1f]">
+                  Pemisahan Kas Operasional, Sosial, &amp; Pembangunan
+                </h3>
+                <p className="text-xs sm:text-sm text-[#707070] max-w-xl leading-relaxed">
+                  Tidak ada dana yang tercampur. Iuran warga otomatis dialokasikan ke pos peruntukan masing-masing dengan riwayat mutasi yang tidak bisa diubah (immutable log).
+                </p>
               </div>
-              <h3 className="text-base font-semibold text-[#1d1d1f]">Kas Multi-Kantong</h3>
-              <p className="text-xs text-[#707070] leading-relaxed">
-                Pemisahan tegas saldo kas operasional, dana sosial kematian, pembangunan fisik, dan kas kepemudaan. Bebas manipulasi.
-              </p>
+
+              {/* Data Snapshot Mockup */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-[#f5f5f7] border border-[#d2d2d7] text-xs">
+                <div className="space-y-1">
+                  <span className="text-[10px] text-[#707070]">Kas Operasional RT</span>
+                  <p className="font-semibold text-[#1d1d1f] text-sm tabular-nums">Rp 12.450.000</p>
+                  <span className="text-[10px] text-[#0066cc] font-medium">98% Iuran Terkumpul</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] text-[#707070]">Dana Sosial / Duka</span>
+                  <p className="font-semibold text-[#1d1d1f] text-sm tabular-nums">Rp 4.800.000</p>
+                  <span className="text-[10px] text-emerald-700 font-medium">Siap Salur Kapanpun</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] text-[#707070]">Kas Pembangunan</span>
+                  <p className="font-semibold text-[#1d1d1f] text-sm tabular-nums">Rp 8.150.000</p>
+                  <span className="text-[10px] text-[#707070]">Pos Renovasi Pintu Portal</span>
+                </div>
+              </div>
             </div>
 
-            <div className="apple-card p-6 space-y-3">
-              <div className="w-12 h-12 rounded-lg bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] flex items-center justify-center font-semibold">
-                <FileSpreadsheet className="w-6 h-6" />
+            {/* Bento Card 2: Musyawarah & Notula Sah (Compact Vertical Tile, 4-col) */}
+            <div className="lg:col-span-4 apple-card p-6 sm:p-7 flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
+                  <FileSpreadsheet className="w-3.5 h-3.5" /> Musyawarah
+                </span>
+                <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f]">
+                  Notula &amp; Keputusan Sah
+                </h3>
+                <p className="text-xs text-[#707070] leading-relaxed">
+                  Hasil rapat warga, daftar hadir, dan lembar keputusan ber-SK tersimpan permanen dan dapat diunduh kapan saja.
+                </p>
               </div>
-              <h3 className="text-base font-semibold text-[#1d1d1f]">Musyawarah &amp; Notula Sah</h3>
-              <p className="text-xs text-[#707070] leading-relaxed">
-                Dokumen SK, notula rapat RT, serta LPJ keuangan bulanan diunggah rapi dan dapat diunduh langsung oleh warga.
-              </p>
+
+              <div className="p-3.5 rounded-lg bg-[#f5f5f7] border border-[#d2d2d7] space-y-1.5 text-xs">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-semibold text-[#1d1d1f]">Rapat Pleno RT 003</span>
+                  <span className="text-[10px] text-[#707070]">Juli 2026</span>
+                </div>
+                <p className="text-[11px] text-[#707070]">
+                  Kesepakatan jadwal ronda malam &amp; penyesuaian tarif iuran sampah.
+                </p>
+              </div>
             </div>
 
-            <div className="apple-card p-6 space-y-3">
-              <div className="w-12 h-12 rounded-lg bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] flex items-center justify-center font-semibold">
-                <Recycle className="w-6 h-6" />
+            {/* Bento Card 3: Bank Sampah Terintegrasi (6-col) */}
+            <div className="lg:col-span-6 apple-card p-6 sm:p-7 flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
+                  <Recycle className="w-3.5 h-3.5" /> Bank Sampah
+                </span>
+                <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f]">
+                  Bagi Hasil Sampah Terpilah
+                </h3>
+                <p className="text-xs text-[#707070] leading-relaxed">
+                  Setoran sampah anorganik tercatat per nomor rumah warga dengan pembagian hasil otomatis ke buku tabungan KK dan kas Karang Taruna.
+                </p>
               </div>
-              <h3 className="text-base font-semibold text-[#1d1d1f]">Bank Sampah Bagi Hasil</h3>
-              <p className="text-xs text-[#707070] leading-relaxed">
-                Pencatatan setoran sampah anorganik keluarga dengan saldo tabungan warga langsung dan porsi operasional Karang Taruna.
-              </p>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#f5f5f7] border border-[#d2d2d7] text-xs">
+                <div>
+                  <span className="text-[10px] text-[#707070] block">Rasio Bagi Hasil Baku</span>
+                  <strong className="text-sm font-semibold text-[#1d1d1f]">80% Warga · 20% Pemuda</strong>
+                </div>
+                <span className="text-[11px] font-semibold text-[#0066cc]">Transparan Otomatis</span>
+              </div>
             </div>
 
-            <div className="apple-card p-6 space-y-3">
-              <div className="w-12 h-12 rounded-lg bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] flex items-center justify-center font-semibold">
-                <Flame className="w-6 h-6" />
+            {/* Bento Card 4: Saluran Aspirasi & Pemuda (6-col) */}
+            <div className="lg:col-span-6 apple-card p-6 sm:p-7 flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
+                  <Flame className="w-3.5 h-3.5" /> Aspirasi Warga
+                </span>
+                <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f]">
+                  Partisipasi Bebas Hambatan
+                </h3>
+                <p className="text-xs text-[#707070] leading-relaxed">
+                  Warga dapat menyampaikan usulan perbaikan fasilitas, aduan lampu jalan, atau ide kegiatan kepemudaan yang terpantau status tindak lanjutnya.
+                </p>
               </div>
-              <h3 className="text-base font-semibold text-[#1d1d1f]">Pemuda &amp; Aspirasi</h3>
-              <p className="text-xs text-[#707070] leading-relaxed">
-                Wadah resmi struktur Karang Taruna dan formulir aspirasi lingkungan terverifikasi yang langsung dipantau pengurus RT.
-              </p>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#f5f5f7] border border-[#d2d2d7] text-xs">
+                <div>
+                  <span className="text-[10px] text-[#707070] block">Status Tindak Lanjut</span>
+                  <strong className="text-sm font-semibold text-emerald-700">Terverifikasi &amp; Terbuka</strong>
+                </div>
+                <span className="text-[11px] font-semibold text-[#707070]">Tanpa Birokrasi Rumit</span>
+              </div>
             </div>
           </div>
         </div>

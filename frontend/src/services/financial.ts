@@ -188,12 +188,15 @@ export function useCreateFinancialTransaction() {
   });
 }
 
+import { compressImage } from '../utils/imageCompressor';
+
 // Upload Bukti Transfer / Proof
 export function useUploadProof() {
   return useMutation({
     mutationFn: async (file: File) => {
+      const compressed = await compressImage(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.8 });
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', compressed);
       const res = await api.post<{ proof_url: string }>('/financial/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',

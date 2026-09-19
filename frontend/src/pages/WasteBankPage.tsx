@@ -404,18 +404,18 @@ export const WasteBankPage: React.FC = () => {
 
                   <div className="mt-4 grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl">
                     <div>
-                      <p className="text-[11px] text-slate-400 font-medium">Bagi Hasil Warga</p>
+                      <p className="text-[11px] text-[#707070] font-medium">Bagi Hasil Warga</p>
                       <p className="text-sm font-bold text-amber-600">{cat.resident_share_pct}%</p>
                     </div>
                     <div>
-                      <p className="text-[11px] text-slate-400 font-medium">Kas Karang Taruna</p>
-                      <p className="text-sm font-bold text-purple-600">{cat.karang_taruna_share_pct}%</p>
+                      <p className="text-[11px] text-[#707070] font-medium">Kas Karang Taruna</p>
+                      <p className="text-sm font-bold text-[#0066cc]">{cat.karang_taruna_share_pct}%</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${cat.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                <div className="mt-4 pt-3 border-t border-[#d2d2d7] flex items-center justify-between">
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${cat.is_active ? 'bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7]' : 'bg-gray-50 text-[#707070] border-[#d2d2d7]'}`}>
                     {cat.is_active ? 'Aktif' : 'Non-aktif'}
                   </span>
                   
@@ -425,7 +425,7 @@ export const WasteBankPage: React.FC = () => {
                         setEditingCategory(cat);
                         setIsCategoryModalOpen(true);
                       }}
-                      className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                      className="p-1.5 text-[#707070] hover:text-[#0066cc] hover:bg-[#f5f5f7] rounded-lg transition"
                       title="Edit Kategori"
                     >
                       <Edit2 className="w-4 h-4" />
@@ -436,7 +436,7 @@ export const WasteBankPage: React.FC = () => {
                           deleteCategoryMutation.mutate(cat.id);
                         }
                       }}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                      className="p-1.5 text-[#707070] hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
                       title="Hapus Kategori"
                     >
                       <Trash2 className="w-4 h-4" />

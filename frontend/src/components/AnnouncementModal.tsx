@@ -10,6 +10,7 @@ import { Checkbox } from './ui/checkbox';
 import { Textarea } from './ui/textarea';
 import { UploadCloud, Image as ImageIcon, FileText, Trash2, Plus } from 'lucide-react';
 import { getFileUrl } from '../utils/file';
+import { compressImage } from '../utils/imageCompressor';
 
 interface AnnouncementModalProps {
   isOpen: boolean;
@@ -59,7 +60,8 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
     try {
       const files = Array.from(e.target.files);
       for (const file of files) {
-        const res = await uploadMutation.mutateAsync(file);
+        const compressed = await compressImage(file, { maxWidth: 1920, maxHeight: 1920, quality: 0.8 });
+        const res = await uploadMutation.mutateAsync(compressed);
         if (!attachmentUrl) {
           setAttachmentUrl(res.proof_url);
         } else {

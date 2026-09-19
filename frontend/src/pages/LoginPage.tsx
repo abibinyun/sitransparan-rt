@@ -56,8 +56,8 @@ export const LoginPage: React.FC = () => {
   if (hostTenantSlug) {
     if (isTenantLoading) {
       return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500"></div>
+        <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+          <div className="h-8 w-8 rounded-full border-2 border-[#0071e3]/20 border-t-[#0071e3] animate-spin"></div>
         </div>
       );
     }

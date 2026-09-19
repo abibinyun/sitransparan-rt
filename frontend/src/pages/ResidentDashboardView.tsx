@@ -91,10 +91,6 @@ export const ResidentDashboardView: React.FC = () => {
       <section className="apple-card p-5 sm:p-7 border-[#d2d2d7] bg-white">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
           <div className="space-y-2">
-            <div className="apple-badge">
-              <Home className="h-3.5 w-3.5 text-[#0071e3]" />
-              <span>Portal Mandiri Warga RT</span>
-            </div>
             <h1 className="text-xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f]">
               Selamat Datang, {user?.name || 'Warga'}
             </h1>

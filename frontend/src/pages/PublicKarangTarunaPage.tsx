@@ -1,7 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Flame,
   Users,
   Award,
   Layers,
@@ -120,9 +119,6 @@ export const PublicKarangTarunaPage: React.FC = () => {
       {/* Hero Section Apple */}
       <section className="bg-white text-[#1d1d1f] px-4 sm:px-6 py-12 sm:py-16 border-b border-[#d2d2d7]">
         <div className="max-w-6xl mx-auto space-y-4">
-          <div className="apple-badge">
-            <Flame className="w-3.5 h-3.5 text-amber-600" /> Energi Generasi Muda
-          </div>
           <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight leading-tight text-[#1d1d1f]">
             Karang Taruna &amp; Kepemudaan Lingkungan
           </h1>

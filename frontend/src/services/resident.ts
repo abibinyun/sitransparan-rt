@@ -145,12 +145,15 @@ export function useDeleteFamilyMember() {
   });
 }
 
+import { compressImage } from '../utils/imageCompressor';
+
 // Upload KTP / KK document
 export function useUploadResidentDoc() {
   return useMutation({
     mutationFn: async ({ file, type }: { file: File; type: 'ktp' | 'kk' }) => {
+      const compressed = await compressImage(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.8 });
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', compressed);
       formData.append('type', type);
       const res = await api.post<{ url?: string; file_url?: string }>('/residents/upload', formData, {
         headers: {

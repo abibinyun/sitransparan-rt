@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
 import { UploadCloud, FileText } from 'lucide-react';
+import { compressImage } from '../utils/imageCompressor';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
@@ -41,10 +42,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (file) {
+      const compressedFile = await compressImage(file, { maxWidth: 1920, maxHeight: 1920, quality: 0.8 });
       const formData = new FormData();
       formData.append('title', title);
       formData.append('category', category);
-      formData.append('file', file);
+      formData.append('file', compressedFile);
       await onSubmit(formData);
     } else {
       await onSubmit({
