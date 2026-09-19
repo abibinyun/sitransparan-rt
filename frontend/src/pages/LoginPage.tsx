@@ -226,8 +226,8 @@ export const LoginPage: React.FC = () => {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Mode Switcher: sembunyikan pendaftaran mandiri warga (akun dibuat pengurus RT) */}
-          {false && !pendingAuth && (
+          {/* Mode Switcher: Tab Masuk & Daftar Akun */}
+          {!pendingAuth && (
             <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-1 text-sm font-medium">
               <button
                 type="button"

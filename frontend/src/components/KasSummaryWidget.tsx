@@ -57,30 +57,30 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-3 sm:p-4 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="w-full max-w-2xl sm:max-w-3xl rounded-2xl bg-white shadow-2xl border border-slate-200 flex flex-col max-h-[88vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-4 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="w-full max-w-2xl sm:max-w-3xl rounded-lg bg-white shadow-2xl border border-[#d2d2d7] flex flex-col max-h-[88vh] overflow-hidden text-[#1d1d1f]">
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between bg-slate-50/50">
+        <div className="p-4 sm:p-5 border-b border-[#d2d2d7] flex items-start justify-between bg-[#f5f5f7]">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border bg-slate-100 text-slate-700 border-slate-200">
+              <span className="apple-badge">
                 {isFund ? 'Kantong Kas RT' : 'Pos Iuran Warga'}
               </span>
               {selectedFund?.is_default && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#e2e2e5] text-[#1d1d1f] border border-[#d2d2d7]">
                   Utama
                 </span>
               )}
             </div>
-            <h3 className="text-base sm:text-lg font-extrabold text-slate-900 mt-1">{title}</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] mt-1">{title}</h3>
+            <p className="text-xs text-[#707070] mt-0.5">
               Saldo Bersih Tersedia:{' '}
-              <span className="font-extrabold text-slate-900 tabular-nums">{formatRupiah(balance)}</span>
+              <span className="font-semibold text-[#1d1d1f] tabular-nums">{formatRupiah(balance)}</span>
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="rounded-full p-1.5 text-[#707070] hover:text-[#1d1d1f] hover:bg-[#e2e2e5] transition-colors"
             aria-label="Tutup rincian"
           >
             <X className="h-5 w-5" />
@@ -89,16 +89,16 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
 
         {/* Modal Sub-Metrics if Category */}
         {selectedCategory && (
-          <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 border-b border-slate-100 text-xs">
-            <div className="p-2.5 rounded-xl bg-white border border-slate-200/80">
-              <p className="text-[10px] font-semibold text-slate-500">Iuran Terkumpul</p>
-              <p className="font-black text-emerald-700 mt-0.5 tabular-nums">
+          <div className="grid grid-cols-2 gap-2 p-3 bg-[#f4f8fb] border-b border-[#d2d2d7] text-xs">
+            <div className="p-2.5 rounded-lg bg-white border border-[#d2d2d7]">
+              <p className="text-[10px] font-medium text-[#707070]">Iuran Terkumpul</p>
+              <p className="font-semibold text-[#0066cc] mt-0.5 tabular-nums">
                 {formatRupiah(selectedCategory.collected)}
               </p>
             </div>
-            <div className="p-2.5 rounded-xl bg-white border border-slate-200/80">
-              <p className="text-[10px] font-semibold text-slate-500">Disalurkan / Terpakai</p>
-              <p className="font-black text-rose-700 mt-0.5 tabular-nums">
+            <div className="p-2.5 rounded-lg bg-white border border-[#d2d2d7]">
+              <p className="text-[10px] font-medium text-[#707070]">Disalurkan / Terpakai</p>
+              <p className="font-semibold text-rose-600 mt-0.5 tabular-nums">
                 {formatRupiah(selectedCategory.spent)}
               </p>
             </div>
@@ -106,29 +106,29 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
         )}
 
         {/* Transactions List */}
-        <div className="p-4 overflow-y-auto space-y-2 flex-1 divide-y divide-slate-100">
+        <div className="p-4 overflow-y-auto space-y-2 flex-1 divide-y divide-[#d2d2d7]">
           <div className="flex items-center justify-between pb-2">
-            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-slate-400" /> Riwayat Mutasi Buku Kas
+            <p className="text-xs font-semibold text-[#1d1d1f] uppercase tracking-wider flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-[#0071e3]" /> Riwayat Mutasi Buku Kas
             </p>
-            <span className="text-[10px] text-slate-400">Terbuka untuk warga</span>
+            <span className="text-[10px] text-[#707070]">Terbuka untuk warga</span>
           </div>
 
           {isLoading ? (
             <div className="space-y-2 pt-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-14 rounded-xl bg-slate-100 animate-pulse" />
+                <div key={i} className="h-14 rounded-lg bg-[#f5f5f7] animate-pulse" />
               ))}
             </div>
           ) : !transactions || transactions.length === 0 ? (
-            <div className="py-10 text-center space-y-1 text-xs text-slate-400">
-              <Info className="w-5 h-5 mx-auto text-slate-300 mb-1" />
+            <div className="py-10 text-center space-y-1 text-xs text-[#707070]">
+              <Info className="w-5 h-5 mx-auto text-[#858585] mb-1 opacity-60" />
               <p className="font-medium">Belum ada mutasi buku kas tercatat untuk pos ini.</p>
-              <p className="text-[11px] text-slate-400">Mutasi akan otomatis tampil setelah pengurus membukukan kas.</p>
+              <p className="text-[11px] text-[#858585]">Mutasi akan otomatis tampil setelah pengurus membukukan kas.</p>
             </div>
           ) : (
             <div className="space-y-2 pt-2">
-              {transactions.map((t) => {
+              {transactions.map((t: any) => {
                 const isIncome = t.type === 'income';
                 const dateStr = t.transaction_date
                   ? new Date(t.transaction_date).toLocaleDateString('id-ID', {
@@ -140,25 +140,25 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
                 return (
                   <div
                     key={t.id}
-                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/70 hover:bg-slate-50 transition-colors text-xs"
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] transition-colors text-xs"
                   >
                     <div className="min-w-0 pr-3">
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
-                            isIncome ? 'bg-emerald-500' : 'bg-rose-500'
+                            isIncome ? 'bg-[#0071e3]' : 'bg-rose-500'
                           }`}
                         />
-                        <p className="font-bold text-slate-900 truncate">
+                        <p className="font-semibold text-[#1d1d1f] truncate">
                           {t.description || t.category}
                         </p>
                       </div>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{dateStr} • {t.category}</p>
+                      <p className="text-[10px] text-[#707070] mt-0.5">{dateStr} • {t.category}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p
-                        className={`font-black tabular-nums ${
-                          isIncome ? 'text-emerald-700' : 'text-rose-700'
+                        className={`font-semibold tabular-nums ${
+                          isIncome ? 'text-[#0066cc]' : 'text-rose-600'
                         }`}
                       >
                         {isIncome ? '+' : '-'} {formatRupiah(t.amount)}
@@ -172,10 +172,16 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50 text-center">
-          <p className="text-[11px] text-slate-400">
-            Transparansi publik RT/RW • Seluruh warga berhak memverifikasi buku kas lingkungan.
+        <div className="p-3 border-t border-[#d2d2d7] bg-[#f5f5f7] flex justify-between items-center">
+          <p className="text-[11px] text-[#707070]">
+            Transparansi publik RT/RW • Seluruh warga berhak memverifikasi buku kas.
           </p>
+          <button
+            onClick={onClose}
+            className="apple-btn-secondary text-xs px-4 py-1.5"
+          >
+            Tutup Rincian
+          </button>
         </div>
       </div>
     </div>
@@ -195,7 +201,7 @@ export const KasSummaryWidget: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<PublicFeeCategory | null>(null);
 
   if (isKasLoading) {
-    return <div className="h-48 animate-pulse rounded-2xl bg-slate-100" aria-label="Memuat ringkasan kas" />;
+    return <div className="h-48 animate-pulse rounded-lg bg-[#e2e2e5]" aria-label="Memuat ringkasan kas" />;
   }
 
   if (!kas) return null;
@@ -205,36 +211,36 @@ export const KasSummaryWidget: React.FC = () => {
 
   return (
     <>
-      <section aria-label="Ringkasan kas transparansi" className="civic-card p-5 sm:p-6 space-y-4">
+      <section aria-label="Ringkasan kas transparansi" className="apple-card p-5 sm:p-6 space-y-4">
         <div className="flex items-baseline justify-between gap-4">
-          <h2 className="flex items-center gap-2 text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-800">
-            <Landmark className="h-4 w-4 text-emerald-600" /> Kas &amp; Saldo Lingkungan
+          <h2 className="flex items-center gap-2 text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#1d1d1f]">
+            <Landmark className="h-4 w-4 text-[#0071e3]" /> Kas &amp; Saldo Lingkungan
           </h2>
-          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+          <span className="apple-badge">
             Terbuka
           </span>
         </div>
 
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Total Saldo Gabungan</p>
-            <p className="mt-1 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 tabular-nums">
+            <p className="text-xs font-medium text-[#707070]">Total Saldo Gabungan</p>
+            <p className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] tabular-nums">
               {formatRupiah(kas.current_balance)}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 text-xs border-t border-slate-100 pt-3">
-            <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-100">
-              <p className="flex items-center gap-1 text-[11px] font-bold text-emerald-800">
-                <ArrowUpRight className="h-3.5 w-3.5" /> Masuk Bulan Ini
+          <div className="grid grid-cols-2 gap-2.5 text-xs border-t border-[#d2d2d7] pt-3">
+            <div className="bg-[#f4f8fb] p-3 rounded-lg border border-[#d2d2d7]">
+              <p className="flex items-center gap-1 text-[11px] font-medium text-[#0066cc]">
+                <ArrowUpRight className="h-3.5 w-3.5 text-[#0066cc]" /> Masuk Bulan Ini
               </p>
-              <p className="mt-1 font-black text-slate-900 tabular-nums text-xs sm:text-sm">{formatRupiah(kas.monthly_income)}</p>
+              <p className="mt-1 font-semibold text-[#1d1d1f] tabular-nums text-xs sm:text-sm">{formatRupiah(kas.monthly_income)}</p>
             </div>
-            <div className="bg-rose-50/70 p-3 rounded-xl border border-rose-100">
-              <p className="flex items-center gap-1 text-[11px] font-bold text-rose-800">
-                <ArrowDownRight className="h-3.5 w-3.5" /> Keluar Bulan Ini
+            <div className="bg-[#f5f5f7] p-3 rounded-lg border border-[#d2d2d7]">
+              <p className="flex items-center gap-1 text-[11px] font-medium text-[#707070]">
+                <ArrowDownRight className="h-3.5 w-3.5 text-[#707070]" /> Keluar Bulan Ini
               </p>
-              <p className="mt-1 font-black text-slate-900 tabular-nums text-xs sm:text-sm">{formatRupiah(kas.monthly_expense)}</p>
+              <p className="mt-1 font-semibold text-[#1d1d1f] tabular-nums text-xs sm:text-sm">{formatRupiah(kas.monthly_expense)}</p>
             </div>
           </div>
         </div>

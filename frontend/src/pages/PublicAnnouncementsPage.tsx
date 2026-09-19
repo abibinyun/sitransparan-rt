@@ -104,30 +104,30 @@ export const PublicAnnouncementsPage: React.FC = () => {
   });
 
   return (
-    <div className="pb-16">
-      {/* Hero Section Civic */}
-      <section className="bg-slate-900 text-white px-4 sm:px-6 py-10 sm:py-14 border-b border-slate-800">
-        <div className="max-w-6xl mx-auto space-y-5">
-          <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-3 py-1 rounded-full">
-            <Megaphone className="w-3.5 h-3.5" /> Saluran Komunikasi Resmi
+    <div className="pb-16 bg-[#f5f5f7] text-[#1d1d1f]">
+      {/* Hero Section Apple (Clean Frost Canvas with Apple Blue Accent) */}
+      <section className="bg-white text-[#1d1d1f] px-4 sm:px-6 py-12 sm:py-16 border-b border-[#d2d2d7]">
+        <div className="max-w-6xl mx-auto space-y-3">
+          <div className="apple-badge">
+            <Megaphone className="w-3.5 h-3.5 text-[#0071e3]" /> Saluran Komunikasi Resmi
           </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight leading-tight text-[#1d1d1f]">
             Pengumuman &amp; Dokumen Transparansi Warga
           </h1>
-          <p className="max-w-2xl text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+          <p className="max-w-2xl text-xs sm:text-sm text-[#707070] leading-relaxed font-normal">
             Edaran resmi pengurus {tenantName}, arsip notula musyawarah, dan keterbukaan kas lingkungan tanpa perantara.
           </p>
 
-          {/* Search bar */}
-          <div className="relative max-w-xl">
-            <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" aria-hidden />
+          {/* Search bar (Apple Form Input Style) */}
+          <div className="relative max-w-xl pt-2">
+            <Search className="w-4 h-4 absolute left-3.5 top-5 text-[#858585]" aria-hidden />
             <input
               type="text"
               placeholder="Cari kabar, edaran, atau berkas RT..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Cari kabar atau berkas RT"
-              className="w-full bg-white text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              className="w-full bg-[#f5f5f7] text-[#1d1d1f] placeholder-[#858585] border border-[#d2d2d7] rounded-full pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#0071e3] focus:bg-white transition-colors"
             />
           </div>
         </div>
@@ -137,29 +137,29 @@ export const PublicAnnouncementsPage: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* Sidebar Kanan (Desktop) / Atas (Mobile) */}
         <aside className="space-y-6 lg:order-2" aria-label="Ringkasan transparansi">
-          {/* Card Notifikasi Langsung */}
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 space-y-3 shadow-xs">
-            <div className="flex items-center gap-3 text-emerald-950 font-bold text-sm">
-              <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
-                <Bell className="w-5 h-5" />
+          {/* Card Notifikasi Langsung (Apple Style Card) */}
+          <div className="apple-card p-5 space-y-3">
+            <div className="flex items-center gap-3 text-[#1d1d1f] font-semibold text-sm">
+              <div className="w-9 h-9 rounded-full bg-[#f4f8fb] flex items-center justify-center text-[#0071e3] shrink-0 border border-[#d2d2d7]">
+                <Bell className="w-4.5 h-4.5 text-[#0071e3]" />
               </div>
               <div>
                 <h3 className="leading-snug">Notifikasi Pengumuman</h3>
-                <p className="text-[11px] font-normal text-emerald-800">Dapatkan broadcast langsung di HP Anda</p>
+                <p className="text-[11px] font-normal text-[#707070]">Dapatkan broadcast langsung di HP Anda</p>
               </div>
             </div>
             <button
               onClick={handleEnablePush}
               disabled={pushStatus === 'loading' || pushStatus === 'enabled'}
-              className="w-full inline-flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all shadow-xs disabled:opacity-80"
+              className="w-full inline-flex items-center justify-center gap-2 apple-btn-primary text-xs py-2.5 px-4 disabled:opacity-75"
             >
               {pushStatus === 'enabled' ? (
                 <>
-                  <Check className="w-4 h-4 text-emerald-300" /> Notifikasi Aktif
+                  <Check className="w-4 h-4 text-white" /> Notifikasi Aktif
                 </>
               ) : pushStatus === 'loading' ? (
                 <>
-                  <BellRing className="w-4 h-4 animate-spin" /> Mendaftarkan...
+                  <BellRing className="w-4 h-4 animate-spin text-white" /> Mendaftarkan...
                 </>
               ) : (
                 <>
@@ -214,27 +214,36 @@ export const PublicAnnouncementsPage: React.FC = () => {
                 <p className="text-xs text-slate-500">Kabar terbaru dari pengurus RT akan muncul di sini.</p>
               </div>
             ) : (
-              <div className="space-y-5">
+              <div className="space-y-4">
                 {filteredAnnouncements.map((item) => (
                   <article
                     key={item.id}
-                    className="civic-card p-5 sm:p-6 space-y-4 hover:shadow-md transition-shadow"
+                    className="apple-card p-5 sm:p-6 space-y-3.5"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div
-                        className="space-y-1 cursor-pointer flex-1 group"
+                        className="space-y-1.5 cursor-pointer flex-1 group"
                         onClick={() => setDetailAnnouncement(item)}
                       >
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-100">
-                          <Megaphone className="w-3 h-3 text-emerald-600" /> {item.target === 'residents_only' ? 'Warga RT' : 'Umum'}
-                        </span>
-                        <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors">
+                        <div className="flex items-center gap-2">
+                          <span className="apple-badge">
+                            <Megaphone className="w-2.5 h-2.5 text-[#0071e3]" /> {item.target === 'residents_only' ? 'Warga RT' : 'Umum'}
+                          </span>
+                          <span className="text-[11px] text-[#707070] font-normal">
+                            {new Date(item.created_at).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                        <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] leading-snug group-hover:text-[#0071e3] transition-colors">
                           {item.title}
                         </h3>
                       </div>
                       <button
                         onClick={() => openShare(item)}
-                        className="p-2 rounded-xl text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors shrink-0"
+                        className="p-2 rounded-full text-[#707070] hover:text-[#0071e3] hover:bg-[#f5f5f7] transition-colors shrink-0"
                         aria-label="Bagikan ke WhatsApp"
                         title="Buat Kartu Share WhatsApp"
                       >
@@ -242,14 +251,14 @@ export const PublicAnnouncementsPage: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Konten teks (dapat diklik untuk melihat detail penuh) */}
+                    {/* Konten teks */}
                     <div
-                      className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line cursor-pointer"
+                      className="text-xs sm:text-sm text-[#333333] leading-relaxed whitespace-pre-line cursor-pointer"
                       onClick={() => setDetailAnnouncement(item)}
                     >
                       {item.content.length > 280 ? `${item.content.slice(0, 280)}... ` : item.content}
                       {item.content.length > 280 && (
-                        <span className="text-emerald-700 font-semibold inline-block hover:underline">
+                        <span className="text-[#0066cc] font-medium inline-block hover:underline ml-1">
                           Lihat Selengkapnya →
                         </span>
                       )}
@@ -329,23 +338,23 @@ export const PublicAnnouncementsPage: React.FC = () => {
           </section>
 
           {/* Section Dokumen & Notula Transparansi */}
-          <section className="space-y-5 pt-6 border-t border-slate-200/80" aria-label="Dokumen Publik">
+          <section className="space-y-5 pt-6 border-t border-[#d2d2d7]" aria-label="Dokumen Publik">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <FileCheck className="w-5 h-5 text-emerald-700" />
-                <h2 className="text-lg font-extrabold text-slate-900">Arsip &amp; Dokumen Warga</h2>
+                <FileCheck className="w-5 h-5 text-[#0071e3]" />
+                <h2 className="text-xl font-semibold tracking-tight text-[#1d1d1f]">Arsip &amp; Dokumen Warga</h2>
               </div>
 
               {/* Filter Kategori Dokumen */}
-              <div className="flex items-center gap-1 overflow-x-auto pb-1 max-w-full">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
                 {['ALL', 'financial_report', 'minutes', 'letter', 'other'].map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs transition-colors ${
                       selectedCategory === cat
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                        ? 'bg-[#1d1d1f] text-white font-medium shadow-xs'
+                        : 'bg-white text-[#707070] border border-[#d2d2d7] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]'
                     }`}
                   >
                     {cat === 'ALL' ? 'Semua Berkas' : cat.replace('_', ' ').toUpperCase()}
@@ -357,41 +366,41 @@ export const PublicAnnouncementsPage: React.FC = () => {
             {loadingDocuments ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[1, 2].map((i) => (
-                  <div key={i} className="h-28 rounded-2xl bg-slate-100 animate-pulse" />
+                  <div key={i} className="h-28 rounded-lg bg-[#e2e2e5] animate-pulse" />
                 ))}
               </div>
             ) : filteredDocuments.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center bg-white space-y-1">
-                <FileText className="w-7 h-7 text-slate-400 mx-auto" />
-                <p className="font-bold text-xs text-slate-700">Tidak ada dokumen pada kategori ini</p>
+              <div className="rounded-lg border border-dashed border-[#d2d2d7] p-8 text-center bg-white space-y-1">
+                <FileText className="w-7 h-7 text-[#858585] mx-auto" />
+                <p className="font-semibold text-xs text-[#1d1d1f]">Tidak ada dokumen pada kategori ini</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredDocuments.map((doc) => (
                   <div
                     key={doc.id}
-                    className="civic-card p-4 sm:p-5 flex flex-col justify-between hover:shadow-sm transition-all"
+                    className="apple-card p-4 sm:p-5 flex flex-col justify-between"
                   >
                     <div className="space-y-2">
-                      <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-bold uppercase tracking-wider">
+                      <span className="inline-block px-2.5 py-0.5 bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] rounded-full text-[10px] font-semibold uppercase tracking-wider">
                         {doc.category.replace('_', ' ')}
                       </span>
-                      <h4 className="font-bold text-sm text-slate-900 leading-snug line-clamp-2">
+                      <h4 className="font-semibold text-sm text-[#1d1d1f] leading-snug line-clamp-2">
                         {doc.title}
                       </h4>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-400 font-mono">
+                    <div className="mt-4 pt-3 border-t border-[#d2d2d7] flex items-center justify-between">
+                      <span className="text-[11px] text-[#707070] font-normal">
                         {new Date(doc.created_at).toLocaleDateString('id-ID')}
                       </span>
                       <a
                         href={getFileUrl(doc.file_url)}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200/60"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0066cc] hover:text-[#0071e3] bg-[#f4f8fb] hover:bg-[#e2e2e5] px-3 py-1.5 rounded-full border border-[#d2d2d7] transition-colors"
                       >
-                        <Download className="w-3.5 h-3.5" /> Unduh Dokumen
+                        <Download className="w-3.5 h-3.5 text-[#0066cc]" /> Unduh Dokumen
                       </a>
                     </div>
                   </div>

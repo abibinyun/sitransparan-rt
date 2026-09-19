@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { CreateAspirationPayload, AspirationCategory } from '../types/aspiration_need';
 import { Dialog } from './ui/dialog';
-import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
@@ -51,18 +50,18 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
       onClose={handleClose}
       title="Kirim Aspirasi / Usulan / Keluhan"
       description="Sampaikan aspirasi Anda untuk kemajuan lingkungan RT"
-      className="w-[96vw] sm:w-[92vw] max-w-3xl p-4 sm:p-7"
+      className="w-[96vw] sm:w-[92vw] max-w-3xl p-4 sm:p-7 bg-white border border-[#d2d2d7] text-[#1d1d1f] rounded-lg shadow-2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Identitas pengusul otomatis dari akun login */}
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-          <span className="text-xs text-slate-500 block">Pengusul Aspirasi (Akun Terdaftar)</span>
-          <span className="text-sm font-bold text-slate-800">{displayName}</span>
-          {user?.email && <span className="text-xs text-slate-400 block">{user.email}</span>}
+        <div className="bg-[#f5f5f7] border border-[#d2d2d7] rounded-lg p-3.5">
+          <span className="text-xs text-[#707070] block">Pengusul Aspirasi (Akun Terdaftar)</span>
+          <span className="text-sm font-semibold text-[#1d1d1f]">{displayName}</span>
+          {user?.email && <span className="text-xs text-[#707070] block">{user.email}</span>}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="aspTitle">Judul</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="aspTitle" className="text-[#1d1d1f] text-xs font-semibold">Judul</Label>
           <Input
             id="aspTitle"
             type="text"
@@ -70,15 +69,17 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Judul aspirasi..."
+            className="bg-[#f5f5f7] border border-[#d2d2d7] text-[#1d1d1f] placeholder-[#858585] rounded-lg focus:border-[#0071e3] focus:bg-white"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="aspCategory">Kategori</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="aspCategory" className="text-[#1d1d1f] text-xs font-semibold">Kategori</Label>
           <Select
             id="aspCategory"
             value={category}
             onChange={(e) => setCategory(e.target.value as AspirationCategory)}
+            className="bg-[#f5f5f7] border border-[#d2d2d7] text-[#1d1d1f] rounded-lg focus:border-[#0071e3] focus:bg-white"
           >
             <option value="suggestion">Usulan</option>
             <option value="complaint">Keluhan</option>
@@ -86,28 +87,36 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="aspContent">Isi Aspirasi</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="aspContent" className="text-[#1d1d1f] text-xs font-semibold">Isi Aspirasi</Label>
           <textarea
             id="aspContent"
             required
             rows={4}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="flex w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="flex w-full rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] px-3 py-2 text-sm text-[#1d1d1f] placeholder-[#858585] focus:outline-none focus:border-[#0071e3] focus:bg-white"
             placeholder="Jelaskan aspirasi atau keluhan Anda..."
           />
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+        <div className="flex justify-end gap-2 pt-4 border-t border-[#d2d2d7]">
           {onClose && (
-            <Button type="button" variant="outline" onClick={onClose}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="apple-btn-secondary text-xs px-4 py-1.5"
+            >
               Batal
-            </Button>
+            </button>
           )}
-          <Button type="submit" disabled={isLoading}>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="apple-btn-primary text-xs px-5 py-1.5 disabled:opacity-50"
+          >
             {isLoading ? 'Mengirim...' : 'Kirim Aspirasi'}
-          </Button>
+          </button>
         </div>
       </form>
     </Dialog>

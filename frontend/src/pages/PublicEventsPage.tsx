@@ -120,38 +120,37 @@ export const PublicEventsPage: React.FC = () => {
   }, [events]);
 
   return (
-    <div className="pb-20 space-y-8 bg-slate-50/50 min-h-screen">
-      {/* Hero Header */}
-      <section className="bg-slate-900 text-white px-4 sm:px-6 py-10 sm:py-14 border-b border-slate-800 relative overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="max-w-5xl mx-auto space-y-4 relative z-10">
-          <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-3 py-1 rounded-full">
-            <Sparkles className="w-3.5 h-3.5" /> Kalender &amp; Rencana Kegiatan Lingkungan
+    <div className="pb-20 space-y-8 bg-[#f5f5f7] text-[#1d1d1f] min-h-screen">
+      {/* Hero Header Apple */}
+      <section className="bg-white text-[#1d1d1f] px-4 sm:px-6 py-12 sm:py-16 border-b border-[#d2d2d7]">
+        <div className="max-w-5xl mx-auto space-y-4">
+          <div className="apple-badge">
+            <Sparkles className="w-3.5 h-3.5 text-[#0071e3]" /> Kalender &amp; Rencana Kegiatan Lingkungan
           </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight leading-tight text-[#1d1d1f]">
             Agenda Kegiatan &amp; Program Warga
           </h1>
-          <p className="max-w-2xl text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+          <p className="max-w-2xl text-xs sm:text-sm text-[#707070] leading-relaxed font-normal">
             Informasi terbuka seluruh agenda lingkungan RT/RW: program kerja tahunan, kegiatan gotong royong berkala, hingga agenda insidentil/dadakan beserta transparansi estimasi anggarannya.
           </p>
 
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3">
-            <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3">
-              <span className="text-slate-400 text-[11px] block font-medium">Total Agenda</span>
-              <span className="text-lg font-bold text-white tabular-nums">{stats.total}</span>
+          {/* Quick Metrics Bar (Apple Cards) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div className="bg-[#f5f5f7] border border-[#d2d2d7] rounded-lg p-3.5 shadow-2xs">
+              <span className="text-[#707070] text-[11px] block font-normal">Total Agenda</span>
+              <span className="text-xl font-semibold text-[#1d1d1f] tabular-nums">{stats.total}</span>
             </div>
-            <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3">
-              <span className="text-blue-400 text-[11px] block font-medium">Rencana / Terjadwal</span>
-              <span className="text-lg font-bold text-blue-300 tabular-nums">{stats.planned}</span>
+            <div className="bg-[#f5f5f7] border border-[#d2d2d7] rounded-lg p-3.5 shadow-2xs">
+              <span className="text-[#0066cc] text-[11px] block font-normal">Rencana / Terjadwal</span>
+              <span className="text-xl font-semibold text-[#0066cc] tabular-nums">{stats.planned}</span>
             </div>
-            <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3">
-              <span className="text-amber-400 text-[11px] block font-medium">Sedang Berlangsung</span>
-              <span className="text-lg font-bold text-amber-300 tabular-nums">{stats.ongoing}</span>
+            <div className="bg-[#f5f5f7] border border-[#d2d2d7] rounded-lg p-3.5 shadow-2xs">
+              <span className="text-amber-700 text-[11px] block font-normal">Sedang Berlangsung</span>
+              <span className="text-xl font-semibold text-amber-700 tabular-nums">{stats.ongoing}</span>
             </div>
-            <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3">
-              <span className="text-emerald-400 text-[11px] block font-medium">Telah Terlaksana</span>
-              <span className="text-lg font-bold text-emerald-300 tabular-nums">{stats.completed}</span>
+            <div className="bg-[#f5f5f7] border border-[#d2d2d7] rounded-lg p-3.5 shadow-2xs">
+              <span className="text-emerald-700 text-[11px] block font-normal">Telah Terlaksana</span>
+              <span className="text-xl font-semibold text-emerald-700 tabular-nums">{stats.completed}</span>
             </div>
           </div>
         </div>
@@ -160,29 +159,29 @@ export const PublicEventsPage: React.FC = () => {
       {/* Main Content Area */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
         {/* Controls: Search, Tabs & Year Selection */}
-        <div className="civic-card p-4 space-y-3">
+        <div className="apple-card p-4 space-y-3">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             {/* Search Box */}
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#858585] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Cari nama agenda, kegiatan, atau lokasi..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                className="w-full pl-10 pr-3 py-2 text-xs sm:text-sm rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#d2d2d7] placeholder-[#858585] focus:outline-none focus:border-[#0071e3]"
               />
             </div>
 
             {/* Filter Tahun */}
             {availableYears.length > 0 && (
               <div className="flex items-center gap-2 shrink-0">
-                <Filter className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-xs font-semibold text-slate-600">Tahun:</span>
+                <Filter className="w-3.5 h-3.5 text-[#707070]" />
+                <span className="text-xs font-normal text-[#707070]">Tahun:</span>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  className="text-xs font-medium bg-white text-[#1d1d1f] border border-[#d2d2d7] rounded-full px-3 py-1.5 focus:outline-none focus:border-[#0071e3]"
                 >
                   <option value="all">Semua Tahun</option>
                   {availableYears.map((yr) => (
@@ -196,7 +195,7 @@ export const PublicEventsPage: React.FC = () => {
           </div>
 
           {/* Timeline Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#d2d2d7]">
             {[
               { id: 'all', label: 'Semua Agenda' },
               { id: 'upcoming', label: 'Mendatang & Rencana' },
@@ -206,16 +205,16 @@ export const PublicEventsPage: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setTimelineTab(tab.id as FilterTimeline)}
-                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                className={`text-xs px-3.5 py-1.5 rounded-full transition-colors ${
                   timelineTab === tab.id
-                    ? 'bg-emerald-700 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-[#1d1d1f] text-white font-medium shadow-2xs'
+                    : 'text-[#707070] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]'
                 }`}
               >
                 {tab.label}
               </button>
             ))}
-            <span className="ml-auto text-[11px] font-semibold text-slate-400">
+            <span className="ml-auto text-[11px] text-[#707070] font-mono">
               Menampilkan {filteredEvents.length} agenda
             </span>
           </div>
@@ -225,29 +224,29 @@ export const PublicEventsPage: React.FC = () => {
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="h-36 animate-pulse rounded-2xl bg-white border border-slate-200/80" />
+              <div key={n} className="h-36 animate-pulse rounded-lg bg-[#e2e2e5] border border-[#d2d2d7]" />
             ))}
           </div>
         ) : filteredEvents.length === 0 ? (
-          <div className="civic-card p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+          <div className="apple-card p-12 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-[#f5f5f7] flex items-center justify-center mx-auto text-[#858585]">
               <AlertCircle className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-bold text-slate-800">Tidak Ditemukan Agenda</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            <h3 className="text-sm font-semibold text-[#1d1d1f]">Tidak Ditemukan Agenda</h3>
+            <p className="text-xs text-[#707070] max-w-sm mx-auto">
               {searchQuery || selectedYear !== 'all' || timelineTab !== 'all'
                 ? 'Tidak ada agenda yang cocok dengan filter pencarian Anda.'
                 : 'Belum ada agenda lingkungan yang tercatat di sistem.'}
             </p>
           </div>
         ) : (
-          <div className="relative border-l-2 border-slate-200 ml-4 sm:ml-6 pl-4 sm:pl-6 space-y-6">
+          <div className="relative border-l-2 border-[#d2d2d7] ml-4 sm:ml-6 pl-4 sm:pl-6 space-y-6">
             {filteredEvents.map((evt) => {
               const cfg = STATUS_CONFIG[evt.status] || {
                 label: evt.status,
-                badge: 'bg-slate-100 text-slate-700 border-slate-200',
-                border: 'border-l-slate-400',
-                dot: 'bg-slate-400',
+                badge: 'bg-[#f5f5f7] text-[#1d1d1f] border-[#d2d2d7]',
+                border: 'border-l-[#d2d2d7]',
+                dot: 'bg-[#858585]',
               };
 
               let dateFormatted = 'Jadwal Menyesuaikan (Insidentil)';
@@ -268,23 +267,23 @@ export const PublicEventsPage: React.FC = () => {
                 <div key={evt.id} className="relative group">
                   {/* Timeline Dot Indicator */}
                   <div
-                    className={`absolute -left-[23px] sm:-left-[31px] top-6 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ring-2 ring-slate-100 ${cfg.dot}`}
+                    className={`absolute -left-[23px] sm:-left-[31px] top-6 w-3.5 h-3.5 rounded-full border-2 border-white shadow-2xs ring-2 ring-[#d2d2d7] ${cfg.dot}`}
                   />
 
                   {/* Card Event */}
-                  <article className="civic-card p-5 sm:p-6 space-y-4 hover:shadow-md transition-all border border-slate-200/80 bg-white">
+                  <article className="apple-card p-5 sm:p-6 space-y-4">
                     {/* Header: Title & Badges */}
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
                       <div className="space-y-1.5 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span
-                            className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-md border ${cfg.badge}`}
+                            className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${cfg.badge}`}
                           >
                             {cfg.label}
                           </span>
                           {isPast && evt.status !== 'completed' && evt.status !== 'cancelled' && (
-                            <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
-                              <CalendarCheck className="w-3 h-3" /> Tanggal Telah Lewat
+                            <span className="text-[11px] font-normal text-[#707070] flex items-center gap-1">
+                              <CalendarCheck className="w-3 h-3 text-[#0071e3]" /> Tanggal Telah Lewat
                             </span>
                           )}
                           {evt.status === 'completed' && (
@@ -294,12 +293,12 @@ export const PublicEventsPage: React.FC = () => {
                           )}
                         </div>
 
-                        <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+                        <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] leading-snug">
                           {evt.title}
                         </h3>
 
                         {evt.description && (
-                          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed pt-1 whitespace-pre-line">
+                          <p className="text-xs sm:text-sm text-[#474747] leading-relaxed pt-1 whitespace-pre-line">
                             {evt.description}
                           </p>
                         )}
@@ -307,19 +306,19 @@ export const PublicEventsPage: React.FC = () => {
                     </div>
 
                     {/* Metadata Waktu & Lokasi */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 border-t border-slate-100 text-xs text-slate-600 font-medium">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 border-t border-[#d2d2d7] text-xs text-[#707070] font-normal">
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <Clock className="w-4 h-4 text-[#0071e3] shrink-0" />
                         <span>{dateFormatted}</span>
                       </div>
 
                       {evt.location ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 text-[#1d1d1f]">
                           <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
                           <span>{evt.location}</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-slate-400">
+                        <div className="flex items-center gap-2 text-[#858585]">
                           <MapPin className="w-4 h-4 shrink-0" />
                           <span>Lokasi akan diinformasikan kemudian</span>
                         </div>
@@ -328,24 +327,24 @@ export const PublicEventsPage: React.FC = () => {
 
                     {/* Transparansi Estimasi Anggaran & Biaya (RAB) */}
                     {(Boolean(evt.estimated_cost) || Boolean(evt.actual_cost)) && (
-                      <div className="mt-2 bg-slate-50 border border-slate-200/70 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-                        <div className="flex items-center gap-2 text-slate-700 font-semibold">
-                          <Coins className="w-4 h-4 text-amber-600" />
+                      <div className="mt-2 bg-[#f4f8fb] border border-[#d2d2d7] rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2 text-[#1d1d1f] font-semibold">
+                          <Coins className="w-4 h-4 text-[#0071e3]" />
                           <span>Transparansi Anggaran Kegiatan:</span>
                         </div>
-                        <div className="flex items-center gap-4 text-xs font-bold tabular-nums">
+                        <div className="flex items-center gap-4 text-xs font-semibold tabular-nums">
                           {Boolean(evt.estimated_cost) && (
-                            <span className="text-slate-600">
+                            <span className="text-[#707070]">
                               RAB Rencana:{' '}
-                              <span className="text-slate-900 font-extrabold">
+                              <span className="text-[#1d1d1f] font-semibold">
                                 {formatRupiah(evt.estimated_cost || 0)}
                               </span>
                             </span>
                           )}
                           {Boolean(evt.actual_cost) && (
-                            <span className="text-emerald-700">
+                            <span className="text-[#0066cc]">
                               Realisasi:{' '}
-                              <span className="text-emerald-900 font-extrabold">
+                              <span className="text-[#0066cc] font-semibold">
                                 {formatRupiah(evt.actual_cost || 0)}
                               </span>
                             </span>
@@ -362,9 +361,9 @@ export const PublicEventsPage: React.FC = () => {
                             href={evt.attachment_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-medium transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f5f5f7] text-[#0066cc] hover:bg-[#e2e2e5] border border-[#d2d2d7] font-medium transition-colors"
                           >
-                            <FileText className="w-3.5 h-3.5 text-blue-600" />
+                            <FileText className="w-3.5 h-3.5 text-[#0071e3]" />
                             <span>Unduh Proposal / Tor</span>
                             <ExternalLink className="w-3 h-3 opacity-60" />
                           </a>
@@ -374,7 +373,7 @@ export const PublicEventsPage: React.FC = () => {
                             href={evt.report_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-medium transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-medium transition-colors"
                           >
                             <FileText className="w-3.5 h-3.5 text-emerald-600" />
                             <span>Laporan Pertanggungjawaban (LPJ)</span>

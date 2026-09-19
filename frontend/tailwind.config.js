@@ -10,6 +10,21 @@ export default {
         sans: ['Plus Jakarta Sans', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
+        apple: {
+          blue: '#0071e3',
+          'link-blue': '#0066cc',
+          'signal-blue': '#2997ff',
+          carbon: '#1d1d1f',
+          frost: '#f5f5f7',
+          ice: '#f4f8fb',
+          smoke: '#333333',
+          graphite: '#474747',
+          ash: '#707070',
+          mist: '#858585',
+          onyx: '#000000',
+          pebble: '#e2e2e5',
+          border: '#d2d2d7',
+        },
         civic: {
           50: '#f8fafc',
           100: '#f1f5f9',

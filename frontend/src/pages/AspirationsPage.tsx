@@ -182,7 +182,7 @@ export const AspirationsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeaderTabs
-        title={isResident ? 'Aspirasi & Usulan Saya' : 'Manajemen Aspirasi & Kebutuhan Lingkungan'}
+        title={isResident ? 'Manajemen Aspirasi & Kebutuhan Lingkungan (Warga)' : 'Manajemen Aspirasi & Kebutuhan Lingkungan'}
         description={isResident ? 'Pantau tindak lanjut pengurus RT atas aspirasi yang Anda ajukan.' : 'Pusat informasi resmi RT, publikasi berkas, penampungan usulan, dan polling suara warga.'}
         tabs={commTabs}
         actions={

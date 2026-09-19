@@ -68,17 +68,77 @@
   }
 }
 
-/* Civic custom components & badges */
-.civic-card {
-  @apply bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all duration-200;
+/* Apple Design System Tokens (white room with a single blue switch) */
+:root {
+  --color-apple-blue: #0071e3;
+  --color-link-blue: #0066cc;
+  --color-signal-blue: #2997ff;
+  --color-carbon: #1d1d1f;
+  --color-frost: #f5f5f7;
+  --color-ice: #f4f8fb;
+  --color-smoke: #333333;
+  --color-graphite: #474747;
+  --color-ash: #707070;
+  --color-mist: #858585;
+  --color-onyx: #000000;
+  --color-pebble: #e2e2e5;
+  --color-border: #d2d2d7;
 }
 
-.civic-badge {
-  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold;
+/* Apple Component Utilities */
+.apple-canvas {
+  background-color: #f5f5f7;
+  color: #1d1d1f;
 }
 
-.civic-gradient-hero {
-  background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+.apple-card {
+  background-color: #ffffff;
+  border: 1px solid #d2d2d7;
+  border-radius: 8px;
+  box-shadow: none;
+  transition: border-color 0.15s ease-out;
+}
+
+.apple-card:hover {
+  border-color: #858585;
+}
+
+.apple-btn-primary {
+  background-color: #0071e3;
+  color: #ffffff;
+  font-weight: 500;
+  border-radius: 980px;
+  padding: 8px 16px;
+  transition: background-color 0.15s ease-out;
+}
+.apple-btn-primary:hover {
+  background-color: #0077ed;
+}
+
+.apple-btn-secondary {
+  background-color: transparent;
+  color: #0066cc;
+  border: 1px solid #0066cc;
+  font-weight: 500;
+  border-radius: 980px;
+  padding: 8px 16px;
+  transition: background-color 0.15s ease-out;
+}
+.apple-btn-secondary:hover {
+  background-color: rgba(0, 102, 204, 0.05);
+}
+
+.apple-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 980px;
+  font-size: 11px;
+  font-weight: 600;
+  background-color: #f4f8fb;
+  border: 1px solid #d2d2d7;
+  color: #0066cc;
 }
 
 .hide-scrollbar::-webkit-scrollbar {

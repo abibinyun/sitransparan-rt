@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { Dialog } from './ui/dialog';
-import { Button } from './ui/button';
 import { Download, MessageCircle } from 'lucide-react';
 
 export interface ShareableAnnouncement {
@@ -195,26 +194,29 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ isOpen, onClose,
       onClose={onClose}
       title="Bagikan ke WhatsApp"
       description="Kartu siap-unduh untuk dibagikan ke grup RT"
-      className="w-[96vw] sm:w-[92vw] max-w-2xl"
+      className="w-[96vw] sm:w-[92vw] max-w-2xl bg-white border border-[#d2d2d7] text-[#1d1d1f] rounded-lg shadow-2xl"
     >
       <div className="space-y-4">
         <canvas
           ref={attachCanvas}
           width={W}
           height={H}
-          className="w-full rounded-xl border border-slate-200"
+          className="w-full rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]"
           aria-label={`Pratinjau kartu pengumuman: ${announcement.title}`}
         />
         <div className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={downloadPng} className="flex-1">
-            <Download className="w-4 h-4 mr-2" /> Unduh PNG
-          </Button>
-          <Button
-            onClick={shareWhatsApp}
-            className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white"
+          <button
+            onClick={downloadPng}
+            className="flex-1 apple-btn-secondary text-xs py-2.5 px-4 flex items-center justify-center gap-2"
           >
-            <MessageCircle className="w-4 h-4 mr-2" /> Buka WhatsApp
-          </Button>
+            <Download className="w-4 h-4 text-[#0066cc]" /> Unduh PNG
+          </button>
+          <button
+            onClick={shareWhatsApp}
+            className="flex-1 apple-btn-primary text-xs py-2.5 px-4 flex items-center justify-center gap-2"
+          >
+            <MessageCircle className="w-4 h-4 text-white" /> Buka WhatsApp
+          </button>
         </div>
       </div>
     </Dialog>

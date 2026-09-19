@@ -142,7 +142,7 @@ export const Dialog: React.FC<SimpleDialogProps> = ({
     <DialogRoot
       open={isOpen}
       onOpenChange={(open) => {
-        if (!open && !preventOutsideClose) {
+        if (!open) {
           onClose();
         }
       }}

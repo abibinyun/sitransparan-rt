@@ -27,12 +27,12 @@ export const PollWidget: React.FC = () => {
   if (!polls || polls.length === 0) return null;
 
   return (
-    <section aria-label="Polling warga" className="civic-card p-5 sm:p-6 space-y-4">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-        <h2 className="flex items-center gap-2 text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-800">
-          <BarChart3 className="h-4 w-4 text-emerald-600" /> Jajak Pendapat / Polling Warga
+    <section aria-label="Polling warga" className="apple-card p-5 sm:p-6 space-y-4">
+      <div className="flex items-center justify-between border-b border-[#d2d2d7] pb-2.5">
+        <h2 className="flex items-center gap-2 text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#1d1d1f]">
+          <BarChart3 className="h-4 w-4 text-[#0071e3]" /> Jajak Pendapat / Polling Warga
         </h2>
-        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+        <span className="apple-badge">
           1 Warga 1 Suara
         </span>
       </div>
@@ -43,9 +43,9 @@ export const PollWidget: React.FC = () => {
           return (
             <div key={poll.id}>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-bold text-slate-900 leading-snug">{poll.question}</p>
+                <p className="text-sm font-semibold text-[#1d1d1f] leading-snug">{poll.question}</p>
                 {poll.status !== 'open' && (
-                  <span className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                  <span className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#707070] border border-[#d2d2d7]">
                     Ditutup
                   </span>
                 )}
@@ -71,22 +71,22 @@ export const PollWidget: React.FC = () => {
                         disabled={vote.isPending || poll.status !== 'open'}
                         className={`w-full text-left rounded-lg border px-3 py-2 text-xs transition-colors ${
                           mine
-                            ? 'border-emerald-600 bg-emerald-50'
+                            ? 'border-[#0071e3] bg-[#f4f8fb] text-[#0066cc]'
                             : poll.status !== 'open'
-                            ? 'border-slate-200 bg-slate-50/70 text-slate-600 cursor-default'
-                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                            ? 'border-[#d2d2d7] bg-[#f5f5f7] text-[#707070] cursor-default'
+                            : 'border-[#d2d2d7] bg-white hover:border-[#0071e3] hover:bg-[#f5f5f7] text-[#1d1d1f]'
                         }`}
                         aria-label={`${opt}${mine ? ' — pilihan Anda' : ''}`}
                       >
-                        <span className="flex items-center justify-between gap-2 font-semibold text-slate-700">
+                        <span className="flex items-center justify-between gap-2 font-medium">
                           <span className="flex items-center gap-1.5 min-w-0">
-                            {mine && <Check className="w-3.5 h-3.5 shrink-0 text-emerald-700" aria-hidden />}
+                            {mine && <Check className="w-3.5 h-3.5 shrink-0 text-[#0066cc]" aria-hidden />}
                             <span className="truncate">{opt}</span>
                           </span>
-                          <span className="shrink-0 tabular-nums text-slate-500">{pct}%</span>
+                          <span className="shrink-0 tabular-nums font-semibold text-[#1d1d1f]">{pct}%</span>
                         </span>
-                        <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-slate-100">
-                          <span className={`block h-full rounded-full ${poll.status !== 'open' ? 'bg-slate-500' : 'bg-emerald-600'}`} style={{ width: `${pct}%` }} />
+                        <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-[#e2e2e5]">
+                          <span className={`block h-full rounded-full ${poll.status !== 'open' ? 'bg-[#858585]' : 'bg-[#0071e3]'}`} style={{ width: `${pct}%` }} />
                         </span>
                       </button>
                     </li>
@@ -94,7 +94,7 @@ export const PollWidget: React.FC = () => {
                 })}
               </ul>
               {voteError && <p className="mt-2 text-[11px] text-rose-600">{voteError}</p>}
-              <p className="mt-1 text-[11px] text-slate-400">
+              <p className="mt-1 text-[11px] text-[#707070]">
                 {total} suara
                 {poll.status !== 'open' ? (
                   <> · Polling telah ditutup (tidak menerima suara lagi)</>
