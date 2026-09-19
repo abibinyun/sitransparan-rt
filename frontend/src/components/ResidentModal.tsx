@@ -8,6 +8,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
+import { Checkbox } from './ui/checkbox';
 import { UploadCloud, FileText, Home } from 'lucide-react';
 import { getFileUrl } from '../utils/file';
 
@@ -245,12 +246,10 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
             />
           </div>
           <div className="flex items-center space-x-2 pt-6">
-            <input
-              type="checkbox"
+            <Checkbox
               id="is_head_of_family"
               checked={formData.is_head_of_family}
-              onChange={(e) => setFormData({ ...formData, is_head_of_family: e.target.checked })}
-              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              onCheckedChange={(checked) => setFormData({ ...formData, is_head_of_family: Boolean(checked) })}
             />
             <Label htmlFor="is_head_of_family" className="cursor-pointer select-none">
               Kepala Keluarga

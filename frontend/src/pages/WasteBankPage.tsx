@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { Select } from '../components/ui/select';
+import { Checkbox } from '../components/ui/checkbox';
+import { Dialog } from '../components/ui/dialog';
 import { formatRupiah } from '../services/public_transparency';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -583,11 +585,13 @@ const DepositModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-bold text-slate-800 mb-4">Catat Setoran Bank Sampah</h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Dialog
+      isOpen={true}
+      onClose={onClose}
+      title="Catat Setoran Bank Sampah"
+      description="Input berat dan jenis sampah terpilah warga"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {/* Integrasi Pilihan Rumah (Stiker QR) */}
           <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-2">
             <label className="block text-xs font-bold text-emerald-900 flex items-center gap-1.5">
@@ -751,8 +755,7 @@ const DepositModal: React.FC<{
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Dialog>
   );
 };
 
@@ -794,12 +797,12 @@ const CategoryModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl max-w-xl sm:max-w-2xl w-full p-5 sm:p-7 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-bold text-slate-800 mb-4">
-          {isEditing ? 'Ubah Kategori Sampah' : 'Tambah Kategori Sampah'}
-        </h2>
-        
+    <Dialog
+      isOpen={true}
+      onClose={onClose}
+      title={isEditing ? 'Ubah Kategori Sampah' : 'Tambah Kategori Sampah'}
+      description="Atur harga per unit dan persentase bagi hasil"
+    >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Kategori</label>
@@ -874,14 +877,12 @@ const CategoryModal: React.FC<{
           </div>
 
           <div className="flex items-center gap-2 pt-2">
-            <input
-              type="checkbox"
+            <Checkbox
               id="category_is_active"
               checked={isActive}
-              onChange={e => setIsActive(e.target.checked)}
-              className="w-4 h-4 text-emerald-600 rounded"
+              onCheckedChange={(checked) => setIsActive(Boolean(checked))}
             />
-            <label htmlFor="category_is_active" className="text-xs text-slate-700 font-medium cursor-pointer">
+            <label htmlFor="category_is_active" className="text-xs text-slate-700 font-medium cursor-pointer select-none">
               Status Kategori Aktif (Dapat dipilih saat penimbangan)
             </label>
           </div>
@@ -903,8 +904,7 @@ const CategoryModal: React.FC<{
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Dialog>
   );
 };
 

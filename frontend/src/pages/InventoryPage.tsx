@@ -10,11 +10,12 @@ import {
   AlertCircle,
   Tag,
   MapPin,
-  X,
 } from 'lucide-react';
 import { inventoryService, InventoryItem, InventoryBorrowing } from '../services/inventory';
 import { useAuthStore } from '../store/useAuthStore';
 import { Select } from '../components/ui/select';
+import { Checkbox } from '../components/ui/checkbox';
+import { Dialog } from '../components/ui/dialog';
 
 export const InventoryPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -589,22 +590,13 @@ export const InventoryPage: React.FC = () => {
       )}
 
       {/* Modal Form Tambah/Edit Barang (Admin Only) */}
-      {isItemModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <h3 className="font-semibold text-slate-900 text-base">
-                {selectedItem ? 'Edit Barang Inventaris' : 'Tambah Barang Inventaris'}
-              </h3>
-              <button
-                onClick={() => setIsItemModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveItem} className="space-y-4 mt-4">
+      <Dialog
+        isOpen={isItemModalOpen}
+        onClose={() => setIsItemModalOpen(false)}
+        title={selectedItem ? 'Edit Barang Inventaris' : 'Tambah Barang Inventaris'}
+        description="Kelola data aset dan inventaris warga RT"
+      >
+        <form onSubmit={handleSaveItem} className="space-y-4 mt-2">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   Nama Barang *
@@ -721,14 +713,12 @@ export const InventoryPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="is_borrowable"
                   checked={itemForm.is_borrowable}
-                  onChange={(e) => setItemForm({ ...itemForm, is_borrowable: e.target.checked })}
-                  className="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
+                  onCheckedChange={(checked) => setItemForm({ ...itemForm, is_borrowable: Boolean(checked) })}
                 />
-                <label htmlFor="is_borrowable" className="text-xs font-medium text-slate-700">
+                <label htmlFor="is_borrowable" className="text-xs font-medium text-slate-700 cursor-pointer select-none">
                   Dapat dipinjamkan kepada warga umum
                 </label>
               </div>
@@ -750,28 +740,17 @@ export const InventoryPage: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Dialog>
 
       {/* Modal Peminjaman Barang (Admin Only) */}
-      {isBorrowModalOpen && targetItemForBorrow && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-lg sm:max-w-xl w-full p-5 sm:p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <div>
-                <h3 className="font-semibold text-slate-900 text-base">Catat Peminjaman Barang</h3>
-                <p className="text-xs text-slate-500 mt-0.5">{targetItemForBorrow.name} (Tersedia: {targetItemForBorrow.available_quantity} {targetItemForBorrow.unit})</p>
-              </div>
-              <button
-                onClick={() => setIsBorrowModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveBorrow} className="space-y-4 mt-4">
+      {targetItemForBorrow && (
+        <Dialog
+          isOpen={isBorrowModalOpen}
+          onClose={() => setIsBorrowModalOpen(false)}
+          title="Catat Peminjaman Barang"
+          description={`${targetItemForBorrow.name} (Tersedia: ${targetItemForBorrow.available_quantity} ${targetItemForBorrow.unit})`}
+        >
+          <form onSubmit={handleSaveBorrow} className="space-y-4 mt-2">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   Nama Warga / Peminjam *
@@ -870,77 +849,69 @@ export const InventoryPage: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Modal Pengembalian Barang (Admin Only) */}
-      {isReturnModalOpen && selectedBorrowing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-xl sm:max-w-2xl w-full p-5 sm:p-7 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <h3 className="font-semibold text-slate-900 text-base">Proses Pengembalian Barang</h3>
-              <button
-                onClick={() => setIsReturnModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      {selectedBorrowing && (
+        <Dialog
+          isOpen={isReturnModalOpen}
+          onClose={() => setIsReturnModalOpen(false)}
+          title="Proses Pengembalian Barang"
+          description="Verifikasi kondisi barang saat dikembalikan ke inventaris"
+        >
+          <form onSubmit={handleSaveReturn} className="space-y-4 mt-2">
+            <div className="p-3 bg-slate-50 rounded-lg text-xs space-y-1 border border-slate-100">
+              <div><span className="text-slate-500">Peminjam:</span> <span className="font-semibold text-slate-900">{selectedBorrowing.borrower_name}</span></div>
+              <div><span className="text-slate-500">Barang:</span> <span className="font-semibold text-slate-900">{selectedBorrowing.item_name} ({selectedBorrowing.quantity} {selectedBorrowing.unit})</span></div>
             </div>
 
-            <form onSubmit={handleSaveReturn} className="space-y-4 mt-4">
-              <div className="p-3 bg-slate-50 rounded-lg text-xs space-y-1 border border-slate-100">
-                <div><span className="text-slate-500">Peminjam:</span> <span className="font-semibold text-slate-900">{selectedBorrowing.borrower_name}</span></div>
-                <div><span className="text-slate-500">Barang:</span> <span className="font-semibold text-slate-900">{selectedBorrowing.item_name} ({selectedBorrowing.quantity} {selectedBorrowing.unit})</span></div>
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Kondisi Barang Saat Kembali *
+              </label>
+              <Select
+                value={returnCondition}
+                onValueChange={(val) => setReturnCondition(val)}
+              >
+                <option value="good">Baik / Utuh</option>
+                <option value="fair">Cukup (Sedikit Kotor/Gores)</option>
+                <option value="damaged">Rusak</option>
+                <option value="lost">Hilang</option>
+              </Select>
+            </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Kondisi Barang Saat Kembali *
-                </label>
-                <Select
-                  value={returnCondition}
-                  onValueChange={(val) => setReturnCondition(val)}
-                >
-                  <option value="good">Baik / Utuh</option>
-                  <option value="fair">Cukup (Sedikit Kotor/Gores)</option>
-                  <option value="damaged">Rusak</option>
-                  <option value="lost">Hilang</option>
-                </Select>
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Catatan Pengurus (Opsional)
+              </label>
+              <textarea
+                rows={2}
+                value={returnNotes}
+                onChange={(e) => setReturnNotes(e.target.value)}
+                placeholder="Keterangan tambahan jika ada kerusakan atau denda"
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+              />
+            </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Catatan Pengurus (Opsional)
-                </label>
-                <textarea
-                  rows={2}
-                  value={returnNotes}
-                  onChange={(e) => setReturnNotes(e.target.value)}
-                  placeholder="Keterangan tambahan jika ada kerusakan atau denda"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setIsReturnModalOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={updateBorrowStatusMutation.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition disabled:opacity-50"
-                >
-                  {updateBorrowStatusMutation.isPending ? 'Memproses...' : 'Selesaikan Pengembalian'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setIsReturnModalOpen(false)}
+                className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={updateBorrowStatusMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition disabled:opacity-50"
+              >
+                {updateBorrowStatusMutation.isPending ? 'Memproses...' : 'Selesaikan Pengembalian'}
+              </button>
+            </div>
+          </form>
+        </Dialog>
       )}
     </div>
   );

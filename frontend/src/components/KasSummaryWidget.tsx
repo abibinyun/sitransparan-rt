@@ -10,6 +10,7 @@ import {
   Clock,
   Info
 } from 'lucide-react';
+import { Dialog } from './ui/dialog';
 import {
   usePublicFinancialSummary,
   usePublicFeeCategories,
@@ -57,8 +58,14 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-4 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-2xl sm:max-w-3xl rounded-lg bg-white shadow-2xl border border-[#d2d2d7] flex flex-col max-h-[88vh] overflow-hidden text-[#1d1d1f]">
+    <Dialog
+      isOpen={true}
+      onClose={onClose}
+      title=""
+      description=""
+      className="w-full max-w-2xl sm:max-w-3xl rounded-lg bg-white shadow-2xl border border-[#d2d2d7] p-0 overflow-hidden text-[#1d1d1f]"
+    >
+      <div className="flex flex-col max-h-[85vh] overflow-hidden">
         {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-[#d2d2d7] flex items-start justify-between bg-[#f5f5f7]">
           <div>
@@ -184,7 +191,7 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
           </button>
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 };
 

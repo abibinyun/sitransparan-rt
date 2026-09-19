@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ScrollText, MapPin, Calendar, CheckCircle2, ListTodo, X, ExternalLink } from 'lucide-react';
+import { ScrollText, MapPin, Calendar, CheckCircle2, ListTodo, ExternalLink } from 'lucide-react';
+import { Dialog } from './ui/dialog';
 import { usePublicMeetings, PublicMeeting } from '../services/public_transparency';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -86,8 +87,14 @@ export const MeetingDecisionsWidget: React.FC = () => {
 
       {/* Modal Detail Notulen & Keputusan Musyawarah Publik */}
       {selectedMeeting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in">
-          <div className="bg-white rounded-lg max-w-2xl sm:max-w-3xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden border border-[#d2d2d7] text-[#1d1d1f]">
+        <Dialog
+          isOpen={true}
+          onClose={() => setSelectedMeeting(null)}
+          title=""
+          description=""
+          className="bg-white rounded-lg max-w-2xl sm:max-w-3xl w-full p-0 shadow-2xl overflow-hidden border border-[#d2d2d7] text-[#1d1d1f]"
+        >
+          <div className="max-h-[85vh] flex flex-col overflow-hidden">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-[#d2d2d7] flex items-start justify-between gap-4 bg-[#f5f5f7]">
               <div className="space-y-1">
@@ -111,13 +118,6 @@ export const MeetingDecisionsWidget: React.FC = () => {
                   {selectedMeeting.title}
                 </h2>
               </div>
-              <button
-                onClick={() => setSelectedMeeting(null)}
-                className="p-1.5 text-[#707070] hover:text-[#1d1d1f] hover:bg-[#e2e2e5] rounded-full transition"
-                aria-label="Tutup"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
             {/* Modal Body */}
@@ -228,7 +228,7 @@ export const MeetingDecisionsWidget: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </>
   );

@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
+import { Checkbox } from './ui/checkbox';
 import { UploadCloud, Image as ImageIcon, FileText, Trash2, Plus } from 'lucide-react';
 import { getFileUrl } from '../utils/file';
 
@@ -373,11 +374,10 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
         {/* Sakelar Kolom Komentar */}
         <div className="pt-2 border-t border-slate-100">
           <label className="flex items-start gap-2.5 cursor-pointer select-none">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={allowComments}
-              onChange={(e) => setAllowComments(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              onCheckedChange={(checked) => setAllowComments(Boolean(checked))}
+              className="mt-0.5"
             />
             <div>
               <span className="text-xs font-bold text-slate-800 block">Buka Kolom Komentar untuk Warga</span>

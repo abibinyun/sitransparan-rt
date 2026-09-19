@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { Select } from '../components/ui/select';
+import { Dialog } from '../components/ui/dialog';
 import {
   useMeetingsQuery,
   useCreateMeetingMutation,
@@ -656,13 +657,13 @@ export const MeetingPage: React.FC = () => {
       )}
 
       {/* Modal: Create Meeting */}
-      {isCreateMeetingOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-gray-900">
-              {editingMeeting ? 'Edit Arsip Rapat' : 'Catat Rapat Baru'}
-            </h2>
-            <form onSubmit={handleCreateMeeting} className="space-y-4">
+      <Dialog
+        isOpen={isCreateMeetingOpen}
+        onClose={() => setIsCreateMeetingOpen(false)}
+        title={editingMeeting ? 'Edit Arsip Rapat' : 'Catat Rapat Baru'}
+        description="Isi rincian informasi musyawarah atau rapat warga"
+      >
+        <form onSubmit={handleCreateMeeting} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Judul Rapat</label>
                 <input
@@ -770,16 +771,16 @@ export const MeetingPage: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Dialog>
 
       {/* Modal: Create Action Item */}
-      {isCreateActionOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-gray-900">Tambah Tugas Tindak Lanjut</h2>
-            <form onSubmit={handleCreateActionItem} className="space-y-4">
+      <Dialog
+        isOpen={isCreateActionOpen}
+        onClose={() => setIsCreateActionOpen(false)}
+        title="Tambah Tugas Tindak Lanjut"
+        description="Tugaskan warga atau pengurus untuk menindaklanjuti hasil rapat"
+      >
+        <form onSubmit={handleCreateActionItem} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Pilih Rapat Terkait</label>
                 <Select
@@ -846,16 +847,16 @@ export const MeetingPage: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Dialog>
 
       {/* Modal: Add Decision */}
-      {isAddDecisionOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-gray-900">Tambah Keputusan Bersama</h2>
-            <form onSubmit={handleAddDecision} className="space-y-4">
+      <Dialog
+        isOpen={isAddDecisionOpen}
+        onClose={() => setIsAddDecisionOpen(false)}
+        title="Tambah Keputusan Bersama"
+        description="Catat kesepakatan dan hasil resmi musyawarah"
+      >
+        <form onSubmit={handleAddDecision} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Isi Keputusan / Kesepakatan</label>
                 <textarea
@@ -893,16 +894,16 @@ export const MeetingPage: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Dialog>
 
       {/* Modal: Add Attendee */}
-      {isAddAttendeeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-gray-900">Tambah Peserta Hadir</h2>
-            <form onSubmit={handleAddAttendee} className="space-y-4">
+      <Dialog
+        isOpen={isAddAttendeeOpen}
+        onClose={() => setIsAddAttendeeOpen(false)}
+        title="Tambah Peserta Hadir"
+        description="Catat daftar kehadiran musyawarah warga"
+      >
+        <form onSubmit={handleAddAttendee} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Nama Peserta</label>
                 <input
@@ -940,9 +941,7 @@ export const MeetingPage: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Dialog>
     </div>
   );
 };
