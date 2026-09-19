@@ -48,16 +48,12 @@ const DialogContent = React.forwardRef<
         }
       }}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-[94vw] sm:w-[92vw] max-w-2xl translate-x-[-50%] translate-y-[-50%] gap-3 border border-[#d2d2d7] bg-white p-4 sm:p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl max-h-[88vh] overflow-y-auto",
+        "fixed left-[50%] top-[50%] z-50 flex flex-col w-[94vw] sm:w-[92vw] max-w-2xl translate-x-[-50%] translate-y-[-50%] border border-[#d2d2d7] bg-white shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl max-h-[88vh] overflow-hidden",
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
-        <X className="h-5 w-5" />
-        <span className="sr-only">Close</span>
-      </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
 ))
@@ -69,7 +65,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-1.5 text-center sm:text-left",
+      "flex flex-col space-y-1.5 text-center sm:text-left pr-8",
       className
     )}
     {...props}
@@ -98,7 +94,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight text-slate-900",
+      "text-base sm:text-lg font-semibold leading-snug tracking-tight text-[#1d1d1f]",
       className
     )}
     {...props}
@@ -112,7 +108,7 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-sm text-slate-500 mt-1", className)}
+    className={cn("text-xs sm:text-sm text-[#707070] mt-1", className)}
     {...props}
   />
 ))
@@ -138,6 +134,8 @@ export const Dialog: React.FC<SimpleDialogProps> = ({
   className,
   preventOutsideClose = false,
 }) => {
+  const hasHeader = Boolean(title || description);
+
   return (
     <DialogRoot
       open={isOpen}
@@ -165,13 +163,19 @@ export const Dialog: React.FC<SimpleDialogProps> = ({
           }
         }}
       >
-        {(title || description) && (
-          <DialogHeader>
-            {title && <DialogTitle>{title}</DialogTitle>}
-            {description && <DialogDescription>{description}</DialogDescription>}
-          </DialogHeader>
+        {hasHeader && (
+          <div className="relative p-4 sm:p-5 border-b border-[#d2d2d7] bg-[#f5f5f7]">
+            <DialogHeader>
+              {title && <DialogTitle>{title}</DialogTitle>}
+              {description && <DialogDescription>{description}</DialogDescription>}
+            </DialogHeader>
+            <DialogClose className="absolute right-3.5 top-3.5 rounded-full p-1 text-[#707070] hover:bg-[#e2e2e5] hover:text-[#1d1d1f] focus:outline-none transition-colors">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </DialogClose>
+          </div>
         )}
-        <div className="w-full">{children}</div>
+        <div className="w-full min-w-0 flex-1 overflow-y-auto">{children}</div>
       </DialogContent>
     </DialogRoot>
   )

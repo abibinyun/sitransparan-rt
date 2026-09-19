@@ -4,7 +4,6 @@ import {
   Landmark,
   PiggyBank,
   ChevronRight,
-  X,
   Clock,
   Info
 } from 'lucide-react';
@@ -59,42 +58,23 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
     <Dialog
       isOpen={true}
       onClose={onClose}
-      title=""
-      description=""
-      className="w-[94vw] sm:w-[90vw] max-w-xl rounded-xl bg-white shadow-2xl border border-[#d2d2d7] p-0 overflow-hidden text-[#1d1d1f]"
+      title={title || (isFund ? 'Kantong Kas RT' : 'Pos Iuran Warga')}
+      description={`Saldo Bersih: ${formatRupiah(balance)}`}
+      className="w-[94vw] sm:w-[90vw] max-w-lg rounded-xl bg-white shadow-2xl border border-[#d2d2d7] p-0 text-[#1d1d1f]"
     >
-      <div className="flex flex-col max-h-[82vh] overflow-hidden">
-        {/* Modal Header */}
-        <div className="p-3.5 sm:p-4 border-b border-[#d2d2d7] flex items-start justify-between bg-[#f5f5f7]">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="apple-badge">
-                {isFund ? 'Kantong Kas RT' : 'Pos Iuran Warga'}
-              </span>
-              {selectedFund?.is_default && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#e2e2e5] text-[#1d1d1f] border border-[#d2d2d7]">
-                  Utama
-                </span>
-              )}
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] mt-1">{title}</h3>
-            <p className="text-xs text-[#707070] mt-0.5">
-              Saldo Bersih Tersedia:{' '}
-              <span className="font-semibold text-[#1d1d1f] tabular-nums">{formatRupiah(balance)}</span>
-            </p>
+      <div className="flex flex-col max-h-[75vh] sm:max-h-[80vh]">
+        {/* Sub-badge Utama jika fund default */}
+        {selectedFund?.is_default && (
+          <div className="px-4 pt-3">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
+              Kantong Kas Utama
+            </span>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-full p-1 text-[#707070] hover:text-[#1d1d1f] hover:bg-[#e2e2e5] transition-colors"
-            aria-label="Tutup rincian"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        )}
 
         {/* Modal Sub-Metrics if Category */}
         {selectedCategory && (
-          <div className="grid grid-cols-2 gap-2 p-3 bg-[#f4f8fb] border-b border-[#d2d2d7] text-xs">
+          <div className="grid grid-cols-2 gap-2 p-3.5 bg-[#f4f8fb] border-b border-[#d2d2d7] text-xs">
             <div className="p-2.5 rounded-lg bg-white border border-[#d2d2d7]">
               <p className="text-[10px] font-medium text-[#707070]">Iuran Terkumpul</p>
               <p className="font-semibold text-[#0066cc] mt-0.5 tabular-nums">
@@ -111,7 +91,7 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
         )}
 
         {/* Transactions List */}
-        <div className="p-4 overflow-y-auto space-y-2 flex-1 divide-y divide-[#d2d2d7]">
+        <div className="p-3.5 sm:p-4 space-y-2 flex-1 divide-y divide-[#d2d2d7] overflow-y-auto">
           <div className="flex items-center justify-between pb-2">
             <p className="text-xs font-semibold text-[#1d1d1f] uppercase tracking-wider flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-[#0071e3]" /> Riwayat Mutasi Buku Kas
@@ -145,12 +125,12 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
                 return (
                   <div
                     key={t.id}
-                    className="flex items-center justify-between p-2.5 rounded-lg border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] transition-colors text-xs"
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] transition-colors text-xs gap-2"
                   >
-                    <div className="min-w-0 pr-3">
+                    <div className="min-w-0 flex-1 pr-1">
                       <div className="flex items-center gap-1.5">
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                             isIncome ? 'bg-[#0071e3]' : 'bg-rose-500'
                           }`}
                         />
@@ -158,11 +138,11 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
                           {t.description || t.category}
                         </p>
                       </div>
-                      <p className="text-[10px] text-[#707070] mt-0.5">{dateStr} • {t.category}</p>
+                      <p className="text-[10px] text-[#707070] mt-0.5 truncate">{dateStr} • {t.category}</p>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 whitespace-nowrap pl-1">
                       <p
-                        className={`font-semibold tabular-nums ${
+                        className={`font-semibold tabular-nums text-xs sm:text-sm ${
                           isIncome ? 'text-[#0066cc]' : 'text-rose-600'
                         }`}
                       >
@@ -177,15 +157,15 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3 border-t border-[#d2d2d7] bg-[#f5f5f7] flex justify-between items-center">
+        <div className="p-3 border-t border-[#d2d2d7] bg-[#f5f5f7] flex justify-between items-center shrink-0">
           <p className="text-[11px] text-[#707070]">
             Transparansi publik RT/RW • Seluruh warga berhak memverifikasi buku kas.
           </p>
           <button
             onClick={onClose}
-            className="apple-btn-secondary text-xs px-4 py-1.5"
+            className="apple-btn-secondary text-xs px-4 py-1.5 shrink-0"
           >
-            Tutup Rincian
+            Tutup
           </button>
         </div>
       </div>
