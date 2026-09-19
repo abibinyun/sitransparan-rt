@@ -157,7 +157,7 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
       <footer className="border-t border-[#d2d2d7] bg-[#f5f5f7] py-10 text-center text-xs text-[#707070]">
         <div className="max-w-6xl mx-auto px-4 space-y-2">
           <p className="font-semibold text-[#1d1d1f]">
-            {tenantName} — Portal Transparansi &amp; Administrasi Mandiri
+            {tenantName} · Portal Transparansi &amp; Administrasi Mandiri
           </p>
           <p className="text-[11px] text-[#858585]">
             Didukung oleh platform terbuka SiTransparan RT/RW. Data dapat diaudit langsung oleh seluruh warga.

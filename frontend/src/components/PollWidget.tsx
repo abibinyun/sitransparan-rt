@@ -76,7 +76,7 @@ export const PollWidget: React.FC = () => {
                             ? 'border-[#d2d2d7] bg-[#f5f5f7] text-[#707070] cursor-default'
                             : 'border-[#d2d2d7] bg-white hover:border-[#0071e3] hover:bg-[#f5f5f7] text-[#1d1d1f]'
                         }`}
-                        aria-label={`${opt}${mine ? ' — pilihan Anda' : ''}`}
+                        aria-label={`${opt}${mine ? ' - pilihan Anda' : ''}`}
                       >
                         <span className="flex items-center justify-between gap-2 font-medium">
                           <span className="flex items-center gap-1.5 min-w-0">

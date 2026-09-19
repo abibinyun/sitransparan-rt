@@ -171,7 +171,7 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
             <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-video flex items-center justify-center">
               <img
                 src={getFileUrl(photos[activePhotoIndex] || photos[0])}
-                alt={`${announcement.title} — foto ${activePhotoIndex + 1}`}
+                alt={`${announcement.title} - foto ${activePhotoIndex + 1}`}
                 className="max-h-full max-w-full object-contain"
               />
 

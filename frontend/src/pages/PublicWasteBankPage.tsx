@@ -139,7 +139,7 @@ export const PublicWasteBankPage: React.FC = () => {
                 >
                   {(categories || []).map((cat) => (
                     <option key={cat.id} value={cat.id}>
-                      {cat.name} — Rp {cat.price_per_unit.toLocaleString('id-ID')}/{cat.unit}
+                      {cat.name} - Rp {cat.price_per_unit.toLocaleString('id-ID')}/{cat.unit}
                     </option>
                   ))}
                 </select>

@@ -37,7 +37,7 @@ export const MediaCarousel: React.FC<{ urls: string[]; alt: string }> = ({ urls,
           <img
             key={i}
             src={getFileUrl(url)}
-            alt={`${alt} — foto ${i + 1} dari ${urls.length}`}
+            alt={`${alt} - foto ${i + 1} dari ${urls.length}`}
             loading="lazy"
             className="w-full shrink-0 snap-start object-cover"
             style={{ aspectRatio: '16 / 9' }}

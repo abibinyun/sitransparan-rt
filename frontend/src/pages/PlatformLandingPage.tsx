@@ -204,7 +204,7 @@ export const PlatformLandingPage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-[#0071e3]" />
-            <span className="font-semibold text-[#1d1d1f]">SiTransparan RT/RW</span> — Platform Tata Kelola Rukun Tetangga Terbuka
+            <span className="font-semibold text-[#1d1d1f]">SiTransparan RT/RW</span> · Platform Tata Kelola Rukun Tetangga Terbuka
           </div>
           <p className="text-[11px] text-[#707070]">
             Dikelola independen oleh pengurus lingkungan RT setempat.

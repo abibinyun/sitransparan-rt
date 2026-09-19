@@ -184,7 +184,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ isOpen, onClose,
   };
 
   const shareWhatsApp = () => {
-    const summary = `*${announcement.title}*\n\n${truncate(announcement.content, 200)}\n\n— ${tenantName}`;
+    const summary = `*${announcement.title}*\n\n${truncate(announcement.content, 200)}\n\n- ${tenantName}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(summary)}`, '_blank', 'noopener');
   };
 

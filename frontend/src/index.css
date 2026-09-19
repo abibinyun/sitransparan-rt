@@ -11,7 +11,7 @@
 @layer base {
   :root {
     color-scheme: light;
-    font-family: 'Plus Jakarta Sans', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', ui-sans-serif, system-ui, sans-serif;
     background: #f8fafc;
   }
 
@@ -109,10 +109,14 @@
   font-weight: 500;
   border-radius: 980px;
   padding: 8px 16px;
-  transition: background-color 0.15s ease-out;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .apple-btn-primary:hover {
   background-color: #0077ed;
+}
+.apple-btn-primary:active {
+  transform: scale(0.98);
+  background-color: #0062c4;
 }
 
 .apple-btn-secondary {
@@ -122,10 +126,13 @@
   font-weight: 500;
   border-radius: 980px;
   padding: 8px 16px;
-  transition: background-color 0.15s ease-out;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .apple-btn-secondary:hover {
   background-color: rgba(0, 102, 204, 0.05);
+}
+.apple-btn-secondary:active {
+  transform: scale(0.98);
 }
 
 .apple-badge {
