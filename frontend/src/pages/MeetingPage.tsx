@@ -15,6 +15,8 @@ import {
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { Select } from '../components/ui/select';
 import { Dialog } from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 import {
@@ -288,33 +290,36 @@ export const MeetingPage: React.FC = () => {
         actions={
           isAdmin ? (
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setIsCreateActionOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition shadow-sm"
+                className="gap-1.5"
               >
-                <CheckSquare className="w-4 h-4" />
+                <CheckSquare className="w-4 h-4 text-[#0066cc]" />
                 + Tugas Baru
-              </button>
-              <button
+              </Button>
+              <Button
+                size="sm"
                 onClick={handleOpenCreateMeeting}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm"
+                className="gap-1.5"
               >
                 <Plus className="w-4 h-4" />
                 Catat Notulen Baru
-              </button>
+              </Button>
             </div>
           ) : undefined
         }
       />
 
       {/* Tabs Navigation */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-[#d2d2d7]">
         <button
           onClick={() => setActiveTab('meetings')}
-          className={`py-3 px-6 text-sm font-medium border-b-2 flex items-center gap-2 transition ${
+          className={`py-3 px-6 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition ${
             activeTab === 'meetings'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              ? 'border-[#0071e3] text-[#0071e3]'
+              : 'border-transparent text-[#707070] hover:text-[#1d1d1f] hover:border-[#d2d2d7]'
           }`}
         >
           <Calendar className="w-4 h-4" />
@@ -322,10 +327,10 @@ export const MeetingPage: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('action_items')}
-          className={`py-3 px-6 text-sm font-medium border-b-2 flex items-center gap-2 transition ${
+          className={`py-3 px-6 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition ${
             activeTab === 'action_items'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              ? 'border-[#0071e3] text-[#0071e3]'
+              : 'border-transparent text-[#707070] hover:text-[#1d1d1f] hover:border-[#d2d2d7]'
           }`}
         >
           <CheckSquare className="w-4 h-4" />
@@ -350,33 +355,33 @@ export const MeetingPage: React.FC = () => {
                 <div
                   key={m.id}
                   onClick={() => setSelectedMeetingId(m.id)}
-                  className={`p-4 rounded-xl border transition cursor-pointer ${
+                  className={`p-4 rounded-xl border transition cursor-pointer active:scale-[0.99] ${
                     (selectedMeetingId === m.id || (!selectedMeetingId && selectedMeeting?.id === m.id))
-                      ? 'border-indigo-600 bg-indigo-50/40 shadow-sm'
-                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50'
+                      ? 'border-[#0071e3] bg-[#f4f8fb] shadow-xs'
+                      : 'border-[#d2d2d7] bg-white hover:border-[#858585]'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-gray-900 text-sm">{m.title}</h3>
+                    <h3 className="font-semibold text-[#1d1d1f] text-sm">{m.title}</h3>
                     <span
-                      className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
+                      className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase border ${
                         m.status === 'completed'
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          ? 'bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7]'
                           : m.status === 'ongoing'
-                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                          : 'bg-blue-100 text-blue-800 border border-blue-200'
+                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                          : 'bg-gray-50 text-[#707070] border-[#d2d2d7]'
                       }`}
                     >
                       {MEETING_STATUS_LABEL[m.status] || m.status}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-600 mt-1.5 line-clamp-2">
-                    <span className="font-semibold text-gray-500">Agenda: </span>
+                  <div className="text-xs text-[#707070] mt-1.5 line-clamp-2">
+                    <span className="font-semibold text-[#1d1d1f]">Agenda: </span>
                     {m.agenda}
                   </div>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                  <div className="flex items-center gap-4 mt-3 text-xs text-[#707070]">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
+                      <Calendar className="w-3.5 h-3.5 text-[#0071e3]" />
                       {new Date(m.meeting_date).toLocaleDateString('id-ID', {
                         day: 'numeric',
                         month: 'short',
@@ -384,7 +389,7 @@ export const MeetingPage: React.FC = () => {
                       })}
                     </span>
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5" />
+                      <MapPin className="w-3.5 h-3.5 text-[#858585]" />
                       {m.location}
                     </span>
                   </div>
@@ -396,10 +401,10 @@ export const MeetingPage: React.FC = () => {
           {/* Meeting Detail View */}
           <div className="lg:col-span-2">
             {selectedMeeting ? (
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-6">
-                <div className="border-b pb-4">
+              <div className="bg-white border border-[#d2d2d7] rounded-xl p-6 shadow-2xs space-y-6">
+                <div className="border-b border-[#d2d2d7] pb-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[#0066cc] bg-[#f4f8fb] border border-[#d2d2d7] px-2.5 py-0.5 rounded-full">
                       {selectedMeeting.meeting_type} • {selectedMeeting.visibility}
                     </span>
                     <span className="text-xs text-gray-400">
@@ -664,112 +669,108 @@ export const MeetingPage: React.FC = () => {
         description="Isi rincian informasi musyawarah atau rapat warga"
       >
         <form onSubmit={handleCreateMeeting} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Judul Rapat</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Rapat Pleno Pemilihan Ketua RT 003"
-                  value={meetingForm.title}
-                  onChange={(e) => setMeetingForm({ ...meetingForm, title: e.target.value })}
-                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Judul Rapat</label>
+            <Input
+              type="text"
+              required
+              placeholder="Contoh: Rapat Pleno Pemilihan Ketua RT 003"
+              value={meetingForm.title}
+              onChange={(e) => setMeetingForm({ ...meetingForm, title: e.target.value })}
+            />
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Agenda & Pembahasan</label>
-                <Textarea
-                  required
-                  rows={3}
-                  placeholder="Rincian poin yang dibahas..."
-                  value={meetingForm.agenda}
-                  onChange={(e) => setMeetingForm({ ...meetingForm, agenda: e.target.value })}
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Agenda & Pembahasan</label>
+            <Textarea
+              required
+              rows={3}
+              placeholder="Rincian poin yang dibahas..."
+              value={meetingForm.agenda}
+              onChange={(e) => setMeetingForm({ ...meetingForm, agenda: e.target.value })}
+            />
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Waktu Rapat</label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={meetingForm.meeting_date}
-                    onChange={(e) => setMeetingForm({ ...meetingForm, meeting_date: e.target.value })}
-                    className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Lokasi</label>
-                  <input
-                    type="text"
-                    required
-                    value={meetingForm.location}
-                    onChange={(e) => setMeetingForm({ ...meetingForm, location: e.target.value })}
-                    className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
-                  />
-                </div>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Waktu Rapat</label>
+              <Input
+                type="datetime-local"
+                required
+                value={meetingForm.meeting_date}
+                onChange={(e) => setMeetingForm({ ...meetingForm, meeting_date: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Lokasi</label>
+              <Input
+                type="text"
+                required
+                value={meetingForm.location}
+                onChange={(e) => setMeetingForm({ ...meetingForm, location: e.target.value })}
+              />
+            </div>
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Tipe Rapat</label>
-                  <Select
-                    value={meetingForm.meeting_type}
-                    onValueChange={(val) => setMeetingForm({ ...meetingForm, meeting_type: val })}
-                  >
-                    <option value="regular">Rapat Rutin Bulanan</option>
-                    <option value="emergency">Rapat Darurat / Luar Biasa</option>
-                    <option value="karang_taruna">Rapat Pemuda / Karang Taruna</option>
-                    <option value="rtrw_pleno">Rapat Pleno RT/RW</option>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Visibilitas</label>
-                  <Select
-                    value={meetingForm.visibility}
-                    onValueChange={(val) => setMeetingForm({ ...meetingForm, visibility: val })}
-                  >
-                    <option value="internal">Internal Warga</option>
-                    <option value="public">Publik Transparan</option>
-                    <option value="confidential">Khusus Pengurus</option>
-                  </Select>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Tipe Rapat</label>
+              <Select
+                value={meetingForm.meeting_type}
+                onValueChange={(val) => setMeetingForm({ ...meetingForm, meeting_type: val })}
+              >
+                <option value="regular">Rapat Rutin Bulanan</option>
+                <option value="emergency">Rapat Darurat / Luar Biasa</option>
+                <option value="karang_taruna">Rapat Pemuda / Karang Taruna</option>
+                <option value="rtrw_pleno">Rapat Pleno RT/RW</option>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Visibilitas</label>
+              <Select
+                value={meetingForm.visibility}
+                onValueChange={(val) => setMeetingForm({ ...meetingForm, visibility: val })}
+              >
+                <option value="internal">Internal Warga</option>
+                <option value="public">Publik Transparan</option>
+                <option value="confidential">Khusus Pengurus</option>
+              </Select>
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Status Rapat</label>
-                <Select
-                  value={meetingForm.status}
-                  onValueChange={(val) => setMeetingForm({ ...meetingForm, status: val })}
-                >
-                  <option value="scheduled">Akan Datang (Scheduled)</option>
-                  <option value="ongoing">Sedang Berlangsung (Ongoing)</option>
-                  <option value="completed">Selesai (Completed)</option>
-                  <option value="cancelled">Dibatalkan (Cancelled)</option>
-                </Select>
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Status Rapat</label>
+            <Select
+              value={meetingForm.status}
+              onValueChange={(val) => setMeetingForm({ ...meetingForm, status: val })}
+            >
+              <option value="scheduled">Akan Datang (Scheduled)</option>
+              <option value="ongoing">Sedang Berlangsung (Ongoing)</option>
+              <option value="completed">Selesai (Completed)</option>
+              <option value="cancelled">Dibatalkan (Cancelled)</option>
+            </Select>
+          </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateMeetingOpen(false)}
-                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMeetingMutation.isPending || updateMeetingMutation.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition disabled:opacity-50"
-                >
-                  {createMeetingMutation.isPending || updateMeetingMutation.isPending
-                    ? 'Menyimpan...'
-                    : editingMeeting
-                    ? 'Simpan Perubahan'
-                    : 'Simpan Notulen'}
-                </button>
-              </div>
-            </form>
+          <div className="flex justify-end gap-2 pt-3 border-t border-[#d2d2d7]">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCreateMeetingOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={createMeetingMutation.isPending || updateMeetingMutation.isPending}
+            >
+              {createMeetingMutation.isPending || updateMeetingMutation.isPending
+                ? 'Menyimpan...'
+                : editingMeeting
+                ? 'Simpan Perubahan'
+                : 'Simpan Notulen'}
+            </Button>
+          </div>
+        </form>
       </Dialog>
 
       {/* Modal: Create Action Item */}
@@ -780,72 +781,68 @@ export const MeetingPage: React.FC = () => {
         description="Tugaskan warga atau pengurus untuk menindaklanjuti hasil rapat"
       >
         <form onSubmit={handleCreateActionItem} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Pilih Rapat Terkait</label>
-                <Select
-                  required
-                  value={actionForm.meeting_id || (meetings.length > 0 ? meetings[0].id : '')}
-                  onValueChange={(val) => setActionForm({ ...actionForm, meeting_id: val })}
-                >
-                  {meetings.map((m: Meeting) => (
-                    <option key={m.id} value={m.id}>
-                      {m.title}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Pilih Rapat Terkait</label>
+            <Select
+              required
+              value={actionForm.meeting_id || (meetings.length > 0 ? meetings[0].id : '')}
+              onValueChange={(val) => setActionForm({ ...actionForm, meeting_id: val })}
+            >
+              {meetings.map((m: Meeting) => (
+                <option key={m.id} value={m.id}>
+                  {m.title}
+                </option>
+              ))}
+            </Select>
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Deskripsi Tugas</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Beli cat dan kuas untuk pos ronda"
-                  value={actionForm.task}
-                  onChange={(e) => setActionForm({ ...actionForm, task: e.target.value })}
-                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Deskripsi Tugas</label>
+            <Input
+              type="text"
+              required
+              placeholder="Contoh: Beli cat dan kuas untuk pos ronda"
+              value={actionForm.task}
+              onChange={(e) => setActionForm({ ...actionForm, task: e.target.value })}
+            />
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Penanggung Jawab (PIC)</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Nama warga penanggung jawab"
-                  value={actionForm.assignee_name}
-                  onChange={(e) => setActionForm({ ...actionForm, assignee_name: e.target.value })}
-                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Penanggung Jawab (PIC)</label>
+            <Input
+              type="text"
+              required
+              placeholder="Nama warga penanggung jawab"
+              value={actionForm.assignee_name}
+              onChange={(e) => setActionForm({ ...actionForm, assignee_name: e.target.value })}
+            />
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Target Selesai (Due Date)</label>
-                <input
-                  type="date"
-                  value={actionForm.due_date}
-                  onChange={(e) => setActionForm({ ...actionForm, due_date: e.target.value })}
-                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Target Selesai (Due Date)</label>
+            <Input
+              type="date"
+              value={actionForm.due_date}
+              onChange={(e) => setActionForm({ ...actionForm, due_date: e.target.value })}
+            />
+          </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateActionOpen(false)}
-                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={createActionItemMutation.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition disabled:opacity-50"
-                >
-                  {createActionItemMutation.isPending ? 'Menyimpan...' : 'Simpan Tugas'}
-                </button>
-              </div>
-            </form>
+          <div className="flex justify-end gap-2 pt-3 border-t border-[#d2d2d7]">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCreateActionOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={createActionItemMutation.isPending}
+            >
+              {createActionItemMutation.isPending ? 'Menyimpan...' : 'Simpan Tugas'}
+            </Button>
+          </div>
+        </form>
       </Dialog>
 
       {/* Modal: Add Decision */}
@@ -856,42 +853,40 @@ export const MeetingPage: React.FC = () => {
         description="Catat kesepakatan dan hasil resmi musyawarah"
       >
         <form onSubmit={handleAddDecision} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Isi Keputusan / Kesepakatan</label>
-                <Textarea
-                  required
-                  rows={3}
-                  placeholder="Contoh: Iuran sampah disepakati naik menjadi Rp 25.000 mulai bulan depan."
-                  value={decisionForm.decision_text}
-                  onChange={(e) => setDecisionForm({ ...decisionForm, decision_text: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Kategori Keputusan</label>
-                <input
-                  type="text"
-                  value={decisionForm.category}
-                  onChange={(e) => setDecisionForm({ ...decisionForm, category: e.target.value })}
-                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t">
-                <button
-                  type="button"
-                  onClick={() => setIsAddDecisionOpen(false)}
-                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={addDecisionMutation.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition"
-                >
-                  Simpan Keputusan
-                </button>
-              </div>
-            </form>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Isi Keputusan / Kesepakatan</label>
+            <Textarea
+              required
+              rows={3}
+              placeholder="Contoh: Iuran sampah disepakati naik menjadi Rp 25.000 mulai bulan depan."
+              value={decisionForm.decision_text}
+              onChange={(e) => setDecisionForm({ ...decisionForm, decision_text: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Kategori Keputusan</label>
+            <Input
+              type="text"
+              value={decisionForm.category}
+              onChange={(e) => setDecisionForm({ ...decisionForm, category: e.target.value })}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-3 border-t border-[#d2d2d7]">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAddDecisionOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={addDecisionMutation.isPending}
+            >
+              Simpan Keputusan
+            </Button>
+          </div>
+        </form>
       </Dialog>
 
       {/* Modal: Add Attendee */}
@@ -902,43 +897,40 @@ export const MeetingPage: React.FC = () => {
         description="Catat daftar kehadiran musyawarah warga"
       >
         <form onSubmit={handleAddAttendee} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Nama Peserta</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Nama warga"
-                  value={attendeeForm.name}
-                  onChange={(e) => setAttendeeForm({ ...attendeeForm, name: e.target.value })}
-                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Peran / Jabatan</label>
-                <input
-                  type="text"
-                  value={attendeeForm.role_or_title}
-                  onChange={(e) => setAttendeeForm({ ...attendeeForm, role_or_title: e.target.value })}
-                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t">
-                <button
-                  type="button"
-                  onClick={() => setIsAddAttendeeOpen(false)}
-                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={addAttendeeMutation.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition"
-                >
-                  Simpan Peserta
-                </button>
-              </div>
-            </form>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Nama Peserta</label>
+            <Input
+              type="text"
+              required
+              placeholder="Nama warga"
+              value={attendeeForm.name}
+              onChange={(e) => setAttendeeForm({ ...attendeeForm, name: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Peran / Jabatan</label>
+            <Input
+              type="text"
+              value={attendeeForm.role_or_title}
+              onChange={(e) => setAttendeeForm({ ...attendeeForm, role_or_title: e.target.value })}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-3 border-t border-[#d2d2d7]">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAddAttendeeOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={addAttendeeMutation.isPending}
+            >
+              Simpan Peserta
+            </Button>
+          </div>
+        </form>
       </Dialog>
     </div>
   );

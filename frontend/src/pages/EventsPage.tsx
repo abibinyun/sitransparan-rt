@@ -226,7 +226,7 @@ export const EventsPage: React.FC = () => {
 
                 <h3 className="text-lg font-bold text-gray-900">{event.title}</h3>
                 {event.location && (
-                  <p className="text-xs font-medium text-indigo-600">📍 {event.location}</p>
+                  <p className="text-xs font-medium text-[#0066cc]">📍 {event.location}</p>
                 )}
                 {event.description && (
                   <p className="text-sm text-gray-600 line-clamp-2">{event.description}</p>
@@ -247,7 +247,7 @@ export const EventsPage: React.FC = () => {
                         href={event.attachment_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 font-medium"
+                        className="flex items-center gap-1.5 text-[#0066cc] hover:text-[#0071e3] font-medium"
                       >
                         <FileText className="w-3.5 h-3.5" />
                         <span className="truncate">Proposal / TOR</span>

@@ -12,6 +12,7 @@ import {
 import { AnnouncementModal } from '../components/AnnouncementModal';
 import { DocumentUploadModal } from '../components/DocumentUploadModal';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
+import { Button } from '../components/ui/button';
 import { Announcement, CreateAnnouncementPayload, Document, CreateDocumentPayload } from '../types/announcement_doc';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { FileText, MessageSquareHeart, Vote } from 'lucide-react';
@@ -114,19 +115,17 @@ export const AnnouncementsPage: React.FC = () => {
           !isResident ? (
             <div>
               {activeTab === 'announcements' ? (
-                <button
+                <Button
                   onClick={handleOpenCreateAnnouncement}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
                 >
                   + Tambah Pengumuman
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={handleOpenCreateDocument}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm"
                 >
                   + Upload Dokumen
-                </button>
+                </Button>
               )}
             </div>
           ) : undefined
@@ -171,7 +170,7 @@ export const AnnouncementsPage: React.FC = () => {
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#0066cc] bg-[#f4f8fb] border border-[#d2d2d7] px-2 py-0.5 rounded-full">
                           {item.target === 'residents_only' ? 'Khusus Warga' : 'Publik'}
                         </span>
                         <span className="text-xs text-gray-400">

@@ -16,6 +16,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import { Select } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
 import { Dialog } from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 
@@ -342,13 +344,13 @@ export const InventoryPage: React.FC = () => {
           {/* Filters */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#858585]" />
+              <Input
                 type="text"
                 value={itemSearch}
                 onChange={(e) => setItemSearch(e.target.value)}
                 placeholder="Cari nama barang / kode..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                className="pl-9"
               />
             </div>
             <div>
@@ -456,29 +458,32 @@ export const InventoryPage: React.FC = () => {
                     {!isResident && (
                       <div className="flex items-center gap-2">
                         {item.is_borrowable && item.available_quantity > 0 && (
-                          <button
+                          <Button
+                            size="sm"
                             onClick={() => handleOpenBorrow(item)}
-                            className="px-2.5 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition"
                           >
                             Catat Pinjam
-                          </button>
+                          </Button>
                         )}
-                        <button
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleEditItem(item)}
-                          className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-slate-100 rounded hover:bg-slate-200 transition"
                         >
                           Edit
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => {
                             if (window.confirm(`Hapus barang ${item.name}?`)) {
                               deleteItemMutation.mutate(item.id);
                             }
                           }}
-                          className="px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded transition"
+                          className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                         >
                           Hapus
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -495,13 +500,13 @@ export const InventoryPage: React.FC = () => {
           {/* Filter Peminjaman */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#858585]" />
+              <Input
                 type="text"
                 value={borrowingSearch}
                 onChange={(e) => setBorrowingSearch(e.target.value)}
                 placeholder="Cari nama peminjam / barang..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                className="pl-9"
               />
             </div>
             <div>
@@ -597,146 +602,140 @@ export const InventoryPage: React.FC = () => {
         description="Kelola data aset dan inventaris warga RT"
       >
         <form onSubmit={handleSaveItem} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Nama Barang *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={itemForm.name}
-                  onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
-                  placeholder="Contoh: Kursi Lipat Chitose, Tenda 4x6"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+              Nama Barang *
+            </label>
+            <Input
+              type="text"
+              required
+              value={itemForm.name}
+              onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
+              placeholder="Contoh: Kursi Lipat Chitose, Tenda 4x6"
+            />
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Kode Barang (Opsional)
-                  </label>
-                  <input
-                    type="text"
-                    value={itemForm.item_code}
-                    onChange={(e) => setItemForm({ ...itemForm, item_code: e.target.value })}
-                    placeholder="INV-001"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Kategori *
-                  </label>
-                  <Select
-                    value={itemForm.category}
-                    onValueChange={(val) => setItemForm({ ...itemForm, category: val })}
-                  >
-                    <option value="Peralatan Tenda & Kursi">Peralatan Tenda & Kursi</option>
-                    <option value="Sound & Elektronik">Sound & Elektronik</option>
-                    <option value="Kebersihan & Kerja Bakti">Kebersihan & Kerja Bakti</option>
-                    <option value="Olahraga & Kesenian">Olahraga & Kesenian</option>
-                    <option value="Perlengkapan Umum">Perlengkapan Umum</option>
-                  </Select>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                Kode Barang (Opsional)
+              </label>
+              <Input
+                type="text"
+                value={itemForm.item_code}
+                onChange={(e) => setItemForm({ ...itemForm, item_code: e.target.value })}
+                placeholder="INV-001"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                Kategori *
+              </label>
+              <Select
+                value={itemForm.category}
+                onValueChange={(val) => setItemForm({ ...itemForm, category: val })}
+              >
+                <option value="Peralatan Tenda & Kursi">Peralatan Tenda & Kursi</option>
+                <option value="Sound & Elektronik">Sound & Elektronik</option>
+                <option value="Kebersihan & Kerja Bakti">Kebersihan & Kerja Bakti</option>
+                <option value="Olahraga & Kesenian">Olahraga & Kesenian</option>
+                <option value="Perlengkapan Umum">Perlengkapan Umum</option>
+              </Select>
+            </div>
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Jumlah Total *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={itemForm.quantity}
-                    onChange={(e) => setItemForm({ ...itemForm, quantity: parseInt(e.target.value) || 1 })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Satuan *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={itemForm.unit}
-                    onChange={(e) => setItemForm({ ...itemForm, unit: e.target.value })}
-                    placeholder="Unit, Pcs, Set"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                  />
-                </div>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                Jumlah Total *
+              </label>
+              <Input
+                type="number"
+                min="1"
+                required
+                value={itemForm.quantity}
+                onChange={(e) => setItemForm({ ...itemForm, quantity: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                Satuan *
+              </label>
+              <Input
+                type="text"
+                required
+                value={itemForm.unit}
+                onChange={(e) => setItemForm({ ...itemForm, unit: e.target.value })}
+                placeholder="Unit, Pcs, Set"
+              />
+            </div>
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Kondisi Awal
-                  </label>
-                  <Select
-                    value={itemForm.condition}
-                    onValueChange={(val) => setItemForm({ ...itemForm, condition: val })}
-                  >
-                    <option value="good">Baik</option>
-                    <option value="fair">Cukup</option>
-                    <option value="damaged">Rusak</option>
-                    <option value="lost">Hilang</option>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Lokasi Penyimpanan
-                  </label>
-                  <input
-                    type="text"
-                    value={itemForm.location}
-                    onChange={(e) => setItemForm({ ...itemForm, location: e.target.value })}
-                    placeholder="Gudang RT / Balai Warga"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                  />
-                </div>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                Kondisi Awal
+              </label>
+              <Select
+                value={itemForm.condition}
+                onValueChange={(val) => setItemForm({ ...itemForm, condition: val })}
+              >
+                <option value="good">Baik</option>
+                <option value="fair">Cukup</option>
+                <option value="damaged">Rusak</option>
+                <option value="lost">Hilang</option>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                Lokasi Penyimpanan
+              </label>
+              <Input
+                type="text"
+                value={itemForm.location}
+                onChange={(e) => setItemForm({ ...itemForm, location: e.target.value })}
+                placeholder="Gudang RT / Balai Warga"
+              />
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Deskripsi / Spesifikasi
-                </label>
-                <Textarea
-                  rows={2}
-                  value={itemForm.description}
-                  onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
-                  placeholder="Keterangan warna, ukuran, atau merk"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+              Deskripsi / Spesifikasi
+            </label>
+            <Textarea
+              rows={2}
+              value={itemForm.description}
+              onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
+              placeholder="Keterangan warna, ukuran, atau merk"
+            />
+          </div>
 
-              <div className="flex items-center gap-2 pt-2">
-                <Checkbox
-                  id="is_borrowable"
-                  checked={itemForm.is_borrowable}
-                  onCheckedChange={(checked) => setItemForm({ ...itemForm, is_borrowable: Boolean(checked) })}
-                />
-                <label htmlFor="is_borrowable" className="text-xs font-medium text-slate-700 cursor-pointer select-none">
-                  Dapat dipinjamkan kepada warga umum
-                </label>
-              </div>
+          <div className="flex items-center gap-2 pt-2">
+            <Checkbox
+              id="is_borrowable"
+              checked={itemForm.is_borrowable}
+              onCheckedChange={(checked) => setItemForm({ ...itemForm, is_borrowable: Boolean(checked) })}
+            />
+            <label htmlFor="is_borrowable" className="text-xs font-medium text-[#1d1d1f] cursor-pointer select-none">
+              Dapat dipinjamkan kepada warga umum
+            </label>
+          </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setIsItemModalOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={createItemMutation.isPending || updateItemMutation.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition disabled:opacity-50"
-                >
-                  {createItemMutation.isPending || updateItemMutation.isPending ? 'Menyimpan...' : 'Simpan Barang'}
-                </button>
+          <div className="flex justify-end gap-2 pt-3 border-t border-[#d2d2d7]">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsItemModalOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={createItemMutation.isPending || updateItemMutation.isPending}
+            >
+              {createItemMutation.isPending || updateItemMutation.isPending ? 'Menyimpan...' : 'Simpan Barang'}
+            </Button>
               </div>
             </form>
       </Dialog>
@@ -750,104 +749,97 @@ export const InventoryPage: React.FC = () => {
           description={`${targetItemForBorrow.name} (Tersedia: ${targetItemForBorrow.available_quantity} ${targetItemForBorrow.unit})`}
         >
           <form onSubmit={handleSaveBorrow} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                Nama Warga / Peminjam *
+              </label>
+              <Input
+                type="text"
+                required
+                value={borrowForm.borrower_name}
+                onChange={(e) => setBorrowForm({ ...borrowForm, borrower_name: e.target.value })}
+                placeholder="Nama warga atau perwakilan"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Nama Warga / Peminjam *
+                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                  No. WhatsApp / HP
                 </label>
-                <input
+                <Input
                   type="text"
+                  value={borrowForm.borrower_phone}
+                  onChange={(e) => setBorrowForm({ ...borrowForm, borrower_phone: e.target.value })}
+                  placeholder="0812xxxx"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                  Jumlah Pinjam *
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  max={targetItemForBorrow.available_quantity}
                   required
-                  value={borrowForm.borrower_name}
-                  onChange={(e) => setBorrowForm({ ...borrowForm, borrower_name: e.target.value })}
-                  placeholder="Nama warga atau perwakilan"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                  value={borrowForm.quantity}
+                  onChange={(e) => setBorrowForm({ ...borrowForm, quantity: parseInt(e.target.value) || 1 })}
                 />
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    No. WhatsApp / HP
-                  </label>
-                  <input
-                    type="text"
-                    value={borrowForm.borrower_phone}
-                    onChange={(e) => setBorrowForm({ ...borrowForm, borrower_phone: e.target.value })}
-                    placeholder="0812xxxx"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Jumlah Pinjam *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max={targetItemForBorrow.available_quantity}
-                    required
-                    value={borrowForm.quantity}
-                    onChange={(e) => setBorrowForm({ ...borrowForm, quantity: parseInt(e.target.value) || 1 })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                  />
-                </div>
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                Keperluan / Acara
+              </label>
+              <Input
+                type="text"
+                value={borrowForm.purpose}
+                onChange={(e) => setBorrowForm({ ...borrowForm, purpose: e.target.value })}
+                placeholder="Contoh: Acara Hajatan / Rapat RT / Kerja Bakti"
+              />
+            </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Keperluan / Acara
+                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                  Tanggal Pinjam
                 </label>
-                <input
-                  type="text"
-                  value={borrowForm.purpose}
-                  onChange={(e) => setBorrowForm({ ...borrowForm, purpose: e.target.value })}
-                  placeholder="Contoh: Acara Hajatan / Rapat RT / Kerja Bakti"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                <Input
+                  type="date"
+                  value={borrowForm.borrow_date}
+                  onChange={(e) => setBorrowForm({ ...borrowForm, borrow_date: e.target.value })}
                 />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Tanggal Pinjam
-                  </label>
-                  <input
-                    type="date"
-                    value={borrowForm.borrow_date}
-                    onChange={(e) => setBorrowForm({ ...borrowForm, borrow_date: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Rencana Kembali
-                  </label>
-                  <input
-                    type="date"
-                    value={borrowForm.expected_return_date}
-                    onChange={(e) => setBorrowForm({ ...borrowForm, expected_return_date: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
+                  Rencana Kembali
+                </label>
+                <Input
+                  type="date"
+                  value={borrowForm.expected_return_date}
+                  onChange={(e) => setBorrowForm({ ...borrowForm, expected_return_date: e.target.value })}
+                />
               </div>
+            </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setIsBorrowModalOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={createBorrowMutation.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                >
-                  {createBorrowMutation.isPending ? 'Menyimpan...' : 'Konfirmasi Peminjaman'}
-                </button>
-              </div>
-            </form>
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#d2d2d7]">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsBorrowModalOpen(false)}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={createBorrowMutation.isPending}
+              >
+                {createBorrowMutation.isPending ? 'Menyimpan...' : 'Konfirmasi Peminjaman'}
+              </Button>
+            </div>
+          </form>
         </Dialog>
       )}
 
@@ -892,21 +884,20 @@ export const InventoryPage: React.FC = () => {
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
-              <button
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#d2d2d7]">
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setIsReturnModalOpen(false)}
-                className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition"
               >
                 Batal
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={updateBorrowStatusMutation.isPending}
-                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition disabled:opacity-50"
               >
                 {updateBorrowStatusMutation.isPending ? 'Memproses...' : 'Selesaikan Pengembalian'}
-              </button>
+              </Button>
             </div>
           </form>
         </Dialog>

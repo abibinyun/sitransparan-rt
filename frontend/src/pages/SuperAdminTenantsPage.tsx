@@ -116,15 +116,15 @@ export const SuperAdminTenantsPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">Manajemen Tenant RT</h2>
           <p className="text-sm text-gray-500 mt-1">SuperAdmin Panel: Kelola pendaftaran & data Tenant RT</p>
         </div>
-        <Button onClick={openCreateModal} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+        <Button onClick={openCreateModal}>
           + Pendaftaran RT Baru
         </Button>
       </div>
 
-      <div className="rounded-lg bg-white shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-          <h3 className="text-lg font-semibold text-gray-800">Daftar Tenant RT Terdaftar</h3>
-          <span className="text-xs bg-indigo-100 text-indigo-700 font-medium px-2.5 py-1 rounded-full">
+      <div className="rounded-lg bg-white shadow-sm border border-[#d2d2d7] overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#d2d2d7] flex justify-between items-center bg-[#f5f5f7]">
+          <h3 className="text-base font-semibold text-[#1d1d1f]">Daftar Tenant RT Terdaftar</h3>
+          <span className="text-xs bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] font-semibold px-2.5 py-0.5 rounded-full">
             Total: {tenants?.length || 0} RT
           </span>
         </div>
@@ -249,7 +249,6 @@ export const SuperAdminTenantsPage: React.FC = () => {
               form="tenant-form"
               data-testid="save-tenant-btn"
               disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               {createMutation.isPending || updateMutation.isPending ? 'Menyimpan...' : 'Simpan Tenant'}
             </Button>

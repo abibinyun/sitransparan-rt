@@ -501,14 +501,15 @@ export const FinancialPage: React.FC = () => {
             <>
               <Button
                 onClick={() => setIsDuesModalOpen(true)}
-                className="h-9 gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs font-medium text-xs"
+                className="h-9 gap-1.5 font-medium text-xs"
               >
                 <Coins className="h-3.5 w-3.5" />
                 Catat Iuran Warga
               </Button>
               <Button
                 onClick={() => setIsTxModalOpen(true)}
-                className="h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-medium text-xs"
+                variant="outline"
+                className="h-9 gap-1.5 font-medium text-xs text-[#0066cc]"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Transaksi Kas RT
@@ -516,9 +517,9 @@ export const FinancialPage: React.FC = () => {
               <Button
                 onClick={() => setIsFundModalOpen(true)}
                 variant="outline"
-                className="h-9 gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-xs"
+                className="h-9 gap-1.5 font-medium text-xs"
               >
-                <Wallet className="h-3.5 w-3.5 text-slate-500" />
+                <Wallet className="h-3.5 w-3.5 text-[#858585]" />
                 Kantong Kas Baru
               </Button>
             </>
@@ -548,25 +549,25 @@ export const FinancialPage: React.FC = () => {
 
       {/* Primary KPI Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs">
+        <div className="relative overflow-hidden rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Saldo Kas</span>
-            <div className="rounded-lg bg-indigo-50 p-2 text-indigo-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#707070]">Total Saldo Kas</span>
+            <div className="rounded-lg bg-[#f4f8fb] border border-[#d2d2d7] p-2 text-[#0066cc]">
               <Wallet className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-slate-900">
+            <span className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
               {isSummaryLoading ? '...' : `Rp ${(summary?.current_balance || 0).toLocaleString('id-ID')}`}
             </span>
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">Total likuiditas seluruh kantong dana aktif</p>
+          <p className="mt-1 text-[11px] text-[#707070]">Total likuiditas seluruh kantong dana aktif</p>
         </div>
 
-        <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs">
+        <div className="relative overflow-hidden rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Arus Masuk (Income)</span>
-            <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#707070]">Arus Masuk (Income)</span>
+            <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2 text-emerald-600">
               <ArrowDownRight className="h-4 w-4 rotate-180" />
             </div>
           </div>
@@ -575,58 +576,58 @@ export const FinancialPage: React.FC = () => {
               {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_income || 0).toLocaleString('id-ID')}`}
             </span>
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">Akumulasi iuran terverifikasi & pemasukan kas</p>
+          <p className="mt-1 text-[11px] text-[#707070]">Akumulasi iuran terverifikasi & pemasukan kas</p>
         </div>
 
-        <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs">
+        <div className="relative overflow-hidden rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Arus Keluar (Expense)</span>
-            <div className="rounded-lg bg-rose-50 p-2 text-rose-600">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#707070]">Arus Keluar (Expense)</span>
+            <div className="rounded-lg bg-rose-50 border border-rose-200 p-2 text-rose-600">
               <ArrowUpRight className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-slate-700">
+            <span className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
               {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_expense || 0).toLocaleString('id-ID')}`}
             </span>
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">Pengeluaran operasional & belanja pos kegiatan</p>
+          <p className="mt-1 text-[11px] text-[#707070]">Pengeluaran operasional & belanja pos kegiatan</p>
         </div>
       </div>
 
       {/* Allocation Overview: Split Section between Kas Kantong and Pos Iuran */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Kolom Kiri: Kantong Kas RT (Funds) */}
-        <div className="lg:col-span-5 rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col">
-          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="lg:col-span-5 rounded-xl border border-[#d2d2d7] bg-white shadow-2xs overflow-hidden flex flex-col">
+          <div className="px-4 py-3 border-b border-[#d2d2d7] flex items-center justify-between bg-[#f5f5f7]">
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-indigo-500" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Kantong Kas RT</h2>
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">
+              <span className="h-2 w-2 rounded-full bg-[#0071e3]" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#1d1d1f]">Kantong Kas RT</h2>
+              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-white border border-[#d2d2d7] text-[#707070]">
                 {fundList.length}
               </span>
             </div>
             {!isResident && (
               <button
                 onClick={() => setActiveTab('funds')}
-                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                className="text-xs text-[#0066cc] hover:text-[#0071e3] font-medium"
               >
-                Kelola →
+                Kelola &rarr;
               </button>
             )}
           </div>
 
           <div className="p-3 divide-y divide-slate-100 flex-1 overflow-y-auto max-h-[280px]">
             {fundList.length === 0 ? (
-              <p className="py-6 text-center text-xs text-slate-400">Belum ada kantong kas</p>
+              <p className="py-6 text-center text-xs text-[#858585]">Belum ada kantong kas</p>
             ) : (
               fundList.map((f: any) => (
                 <div key={f.id} className="py-2.5 first:pt-1 last:pb-1 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-semibold text-slate-800 truncate">{f.name}</p>
+                      <p className="text-xs font-semibold text-[#1d1d1f] truncate">{f.name}</p>
                       {f.is_default && (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
                           Utama
                         </span>
                       )}
@@ -766,13 +767,13 @@ export const FinancialPage: React.FC = () => {
           {/* Sub-view Toggle: Per Warga vs Riwayat Iuran Masuk vs Riwayat Pengeluaran Iuran */}
           <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-xs">
             <div className="flex items-center overflow-x-auto scrollbar-none pb-1 lg:pb-0">
-              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 text-xs font-semibold whitespace-nowrap">
+              <div className="inline-flex rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] p-1 text-xs font-semibold whitespace-nowrap">
                 <button
                   onClick={() => setDuesViewMode('resident')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
                     duesViewMode === 'resident'
-                      ? 'bg-white text-indigo-700 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white text-[#0066cc] shadow-xs'
+                      : 'text-[#707070] hover:text-[#1d1d1f]'
                   }`}
                 >
                   <Users className="h-3.5 w-3.5" /> Buku Iuran ({residentDuesSummary.length})
@@ -781,8 +782,8 @@ export const FinancialPage: React.FC = () => {
                   onClick={() => setDuesViewMode('history')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
                     duesViewMode === 'history'
-                      ? 'bg-white text-indigo-700 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white text-[#0066cc] shadow-xs'
+                      : 'text-[#707070] hover:text-[#1d1d1f]'
                   }`}
                 >
                   <ArrowDownRight className="h-3.5 w-3.5 text-emerald-600" /> Iuran Masuk ({duesList.length})
@@ -792,8 +793,8 @@ export const FinancialPage: React.FC = () => {
                     onClick={() => setDuesViewMode('disbursements')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
                       duesViewMode === 'disbursements'
-                        ? 'bg-white text-indigo-700 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white text-[#0066cc] shadow-xs'
+                        : 'text-[#707070] hover:text-[#1d1d1f]'
                     }`}
                   >
                     <ArrowUpRight className="h-3.5 w-3.5 text-rose-600" /> Pengeluaran / Penyaluran ({duesDisbursementList.length})
@@ -833,8 +834,8 @@ export const FinancialPage: React.FC = () => {
                       }}
                       className={`px-2.5 py-1 rounded-md transition-all capitalize ${
                         duesStatusFilter === st
-                          ? 'bg-white text-indigo-700 shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-white text-[#0066cc] shadow-xs'
+                          : 'text-[#707070] hover:text-[#1d1d1f]'
                       }`}
                     >
                       {st === 'all' ? 'Semua' : st}
@@ -906,7 +907,7 @@ export const FinancialPage: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => setSelectedResidentId(res.resident_id)}
-                            className="text-xs h-8 gap-1.5 self-start sm:self-auto border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                            className="text-xs h-8 gap-1.5 self-start sm:self-auto text-[#0066cc]"
                           >
                             Rincian Pembayaran <ChevronRight className="h-3.5 w-3.5" />
                           </Button>
@@ -1175,7 +1176,7 @@ export const FinancialPage: React.FC = () => {
                     setTxPage(1);
                   }}
                   className={`px-3 py-1 rounded-md transition-all ${
-                    txTypeFilter === 'all' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600'
+                    txTypeFilter === 'all' ? 'bg-white text-[#0066cc] shadow-xs' : 'text-[#707070] hover:text-[#1d1d1f]'
                   }`}
                 >
                   Semua Arus
@@ -1186,7 +1187,7 @@ export const FinancialPage: React.FC = () => {
                     setTxPage(1);
                   }}
                   className={`px-3 py-1 rounded-md transition-all ${
-                    txTypeFilter === 'income' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-600'
+                    txTypeFilter === 'income' ? 'bg-white text-emerald-700 shadow-xs' : 'text-[#707070] hover:text-[#1d1d1f]'
                   }`}
                 >
                   Pemasukan
@@ -1197,7 +1198,7 @@ export const FinancialPage: React.FC = () => {
                     setTxPage(1);
                   }}
                   className={`px-3 py-1 rounded-md transition-all ${
-                    txTypeFilter === 'expense' ? 'bg-white text-rose-700 shadow-xs' : 'text-slate-600'
+                    txTypeFilter === 'expense' ? 'bg-white text-rose-700 shadow-xs' : 'text-[#707070] hover:text-[#1d1d1f]'
                   }`}
                 >
                   Pengeluaran
@@ -1412,23 +1413,23 @@ export const FinancialPage: React.FC = () => {
       {activeTab === 'categories' && (
         <div className="space-y-4">
           {/* Sub-tab selection: Iuran vs Kas */}
-          <div className="flex border-b border-gray-200 gap-4">
+          <div className="flex border-b border-[#d2d2d7] gap-4">
             <button
               onClick={() => setCategorySubTab('dues')}
-              className={`pb-3 text-sm font-semibold border-b-2 transition-all ${
+              className={`pb-3 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
                 categorySubTab === 'dues'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
+                  ? 'border-[#0071e3] text-[#0071e3]'
+                  : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
               }`}
             >
               1. Master Kategori & Tarif Iuran Warga ({catList.length})
             </button>
             <button
               onClick={() => setCategorySubTab('cash')}
-              className={`pb-3 text-sm font-semibold border-b-2 transition-all ${
+              className={`pb-3 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
                 categorySubTab === 'cash'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
+                  ? 'border-[#0071e3] text-[#0071e3]'
+                  : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
               }`}
             >
               2. Master Kategori Kas Masuk & Keluar ({cashCats.length})
@@ -1521,7 +1522,7 @@ export const FinancialPage: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditCashCat(c)}
-                              className="text-indigo-600 hover:text-indigo-800 h-7 w-7 p-0"
+                              className="text-[#0066cc] hover:text-[#0071e3] h-7 w-7 p-0"
                               title="Edit Kategori"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
@@ -1567,7 +1568,7 @@ export const FinancialPage: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditCashCat(c)}
-                              className="text-indigo-600 hover:text-indigo-800 h-7 w-7 p-0"
+                              className="text-[#0066cc] hover:text-[#0071e3] h-7 w-7 p-0"
                               title="Edit Kategori"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
@@ -1950,7 +1951,7 @@ export const FinancialPage: React.FC = () => {
                                 href={getFileUrl(item.proof_url)}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-indigo-600 hover:text-indigo-800 underline text-[10px] font-medium"
+                                className="text-[#0066cc] hover:text-[#0071e3] underline text-[10px] font-medium"
                               >
                                 Lihat Bukti
                               </a>

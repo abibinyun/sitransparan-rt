@@ -236,12 +236,12 @@ export const KarangTarunaPage: React.FC = () => {
           !isResident ? (
             <div className="flex items-center gap-2">
               {activeTab === 'structure' && (
-                <Button onClick={() => handleOpenMemberModal()} className="gap-2 bg-emerald-700 hover:bg-emerald-800">
+                <Button onClick={() => handleOpenMemberModal()} className="gap-2">
                   <Plus className="h-4 w-4" /> Tambah Pengurus
                 </Button>
               )}
               {activeTab === 'periods' && (
-                <Button onClick={() => handleOpenPeriodModal()} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                <Button onClick={() => handleOpenPeriodModal()} className="gap-2">
                   <Plus className="h-4 w-4" /> Periode Baru
                 </Button>
               )}
@@ -251,23 +251,23 @@ export const KarangTarunaPage: React.FC = () => {
       />
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-[#d2d2d7] pb-2">
         <button
           onClick={() => setActiveTab('structure')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition ${
+          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition ${
             activeTab === 'structure'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-              : 'text-slate-600 hover:bg-slate-100'
+              ? 'bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]'
+              : 'text-[#707070] hover:bg-[#f5f5f7]'
           }`}
         >
           <Users className="h-4 w-4" /> Struktur Pengurus
         </button>
         <button
           onClick={() => setActiveTab('periods')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition ${
+          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition ${
             activeTab === 'periods'
-              ? 'bg-indigo-50 text-indigo-800 border border-indigo-200'
-              : 'text-slate-600 hover:bg-slate-100'
+              ? 'bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]'
+              : 'text-[#707070] hover:bg-[#f5f5f7]'
           }`}
         >
           <Calendar className="h-4 w-4" /> Masa Bakti ({periods.length})

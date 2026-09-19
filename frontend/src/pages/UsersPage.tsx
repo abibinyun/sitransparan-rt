@@ -99,9 +99,9 @@ export const UsersPage: React.FC = () => {
       case 'superadmin':
         return <Badge variant="destructive" className="bg-red-500/10 text-red-600 hover:bg-red-500/20">Super Admin</Badge>;
       case 'admin_rt':
-        return <Badge variant="default" className="bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20">Admin RT</Badge>;
+        return <Badge variant="default" className="bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">Admin RT</Badge>;
       default:
-        return <Badge variant="secondary" className="bg-slate-100 text-slate-700">Warga</Badge>;
+        return <Badge variant="secondary" className="bg-gray-50 text-[#707070] border border-[#d2d2d7]">Warga</Badge>;
     }
   };
 
@@ -117,7 +117,7 @@ export const UsersPage: React.FC = () => {
         description="Kelola hak akses pengurus RT, penetapan peran warga, serta rekam jejak aktivitas audit."
         tabs={settingsTabs}
         actions={
-          <Button onClick={handleOpenAdd} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+          <Button onClick={handleOpenAdd} className="gap-2">
             <Plus className="h-4 w-4" />
             Tambah Pengguna
           </Button>
@@ -177,7 +177,7 @@ export const UsersPage: React.FC = () => {
                 <TableRow key={u.id} className="hover:bg-slate-50/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-semibold text-sm">
+                      <div className="h-9 w-9 rounded-full bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] flex items-center justify-center font-semibold text-sm">
                         {u.name.charAt(0).toUpperCase()}
                       </div>
                       <div>

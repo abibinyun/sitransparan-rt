@@ -259,7 +259,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
                       {item.content.length > 280 ? `${item.content.slice(0, 280)}... ` : item.content}
                       {item.content.length > 280 && (
                         <span className="text-[#0066cc] font-medium inline-block hover:underline ml-1">
-                          Lihat Selengkapnya →
+                          Lihat Selengkapnya &rarr;
                         </span>
                       )}
                     </div>

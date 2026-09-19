@@ -27,6 +27,8 @@ import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { Select } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
 import { Dialog } from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 import { formatRupiah } from '../services/public_transparency';
 import { useAuthStore } from '../store/useAuthStore';
@@ -222,14 +224,14 @@ export const WasteBankPage: React.FC = () => {
         </div>
 
         {activeTab === 'deposits' && (
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-[#858585] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
               type="text"
               placeholder="Cari nama KK / no KK..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 w-full sm:w-64"
+              className="pl-9"
             />
           </div>
         )}
@@ -633,60 +635,57 @@ const DepositModal: React.FC<{
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Kepala Keluarga (KK)</label>
-              <input
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Kepala Keluarga (KK)</label>
+              <Input
                 type="text"
                 required
                 placeholder="cth: Bambang Supriyanto"
                 value={familyHeadName}
                 onChange={e => setFamilyHeadName(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Nomor KK (16 Digit)</label>
-              <input
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Nomor KK (16 Digit)</label>
+              <Input
                 type="text"
                 required
                 placeholder="3201..."
                 value={kkNumber}
                 onChange={e => setKkNumber(e.target.value)}
-                className="w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                className="font-mono"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">RT</label>
-              <input
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">RT</label>
+              <Input
                 type="text"
                 placeholder="003"
                 value={rtNumber}
                 onChange={e => setRtNumber(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Alamat / Nomor Rumah</label>
-              <input
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Alamat / Nomor Rumah</label>
+              <Input
                 type="text"
                 placeholder="Blok B4 No. 12"
                 value={houseNumber}
                 onChange={e => setHouseNumber(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl"
               />
             </div>
           </div>
 
           {/* Items */}
-          <div className="pt-3 border-t border-slate-100">
+          <div className="pt-3 border-t border-[#d2d2d7]">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-slate-700">Rincian Kategori Sampah</label>
+              <label className="text-xs font-bold text-[#1d1d1f]">Rincian Kategori Sampah</label>
               <button
                 type="button"
                 onClick={addItem}
-                className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+                className="text-xs font-semibold text-[#0066cc] hover:text-[#0071e3] flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" /> Tambah Baris
               </button>
@@ -707,21 +706,21 @@ const DepositModal: React.FC<{
                       ))}
                     </Select>
                   </div>
-                  <input
+                  <Input
                     type="number"
                     step="0.1"
                     min="0.1"
                     required
                     value={item.quantity}
                     onChange={e => updateItem(idx, 'quantity', parseFloat(e.target.value) || 0)}
-                    className="w-24 px-3 py-2 text-sm border border-slate-200 rounded-xl text-right"
+                    className="w-24 text-right"
                     placeholder="Qty"
                   />
                   {items.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeItem(idx)}
-                      className="p-2 text-slate-400 hover:text-rose-600 rounded-lg"
+                      className="p-2 text-[#858585] hover:text-rose-600 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -731,21 +730,20 @@ const DepositModal: React.FC<{
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-            <button
+          <div className="flex justify-end gap-2 pt-3 border-t border-[#d2d2d7]">
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl"
             >
               Batal
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={createMutation.isPending}
-              className="px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm shadow-emerald-200"
             >
               {createMutation.isPending ? 'Menyimpan...' : 'Simpan Setoran'}
-            </button>
+            </Button>
           </div>
         </form>
     </Dialog>
@@ -798,46 +796,43 @@ const CategoryModal: React.FC<{
     >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Kategori</label>
-            <input
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Nama Kategori</label>
+            <Input
               type="text"
               required
               placeholder="cth: Kardus / Box Bekas"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Satuan</label>
-              <input
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Satuan</label>
+              <Input
                 type="text"
                 required
                 placeholder="kg / liter / pcs"
                 value={unit}
                 onChange={e => setUnit(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Harga per Satuan (Rp)</label>
-              <input
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Harga per Satuan (Rp)</label>
+              <Input
                 type="number"
                 required
                 min="0"
                 value={pricePerUnit}
                 onChange={e => setPricePerUnit(Number(e.target.value))}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Bagi Hasil Warga (%)</label>
-              <input
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Bagi Hasil Warga (%)</label>
+              <Input
                 type="number"
                 required
                 min="0"
@@ -848,12 +843,11 @@ const CategoryModal: React.FC<{
                   setResidentSharePct(val);
                   setKarangTarunaSharePct(100 - val);
                 }}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Bagian Karang Taruna (%)</label>
-              <input
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Bagian Karang Taruna (%)</label>
+              <Input
                 type="number"
                 required
                 min="0"
@@ -864,7 +858,6 @@ const CategoryModal: React.FC<{
                   setKarangTarunaSharePct(val);
                   setResidentSharePct(100 - val);
                 }}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl"
               />
             </div>
           </div>
@@ -875,26 +868,25 @@ const CategoryModal: React.FC<{
               checked={isActive}
               onCheckedChange={(checked) => setIsActive(Boolean(checked))}
             />
-            <label htmlFor="category_is_active" className="text-xs text-slate-700 font-medium cursor-pointer select-none">
+            <label htmlFor="category_is_active" className="text-xs text-[#1d1d1f] font-medium cursor-pointer select-none">
               Status Kategori Aktif (Dapat dipilih saat penimbangan)
             </label>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-            <button
+          <div className="flex justify-end gap-2 pt-3 border-t border-[#d2d2d7]">
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl"
             >
               Batal
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={saveMutation.isPending}
-              className="px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm shadow-emerald-200"
             >
               {saveMutation.isPending ? 'Menyimpan...' : 'Simpan Kategori'}
-            </button>
+            </Button>
           </div>
         </form>
     </Dialog>
