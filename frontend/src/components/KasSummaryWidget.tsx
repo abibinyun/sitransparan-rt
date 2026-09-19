@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import {
-  ArrowUpRight,
-  ArrowDownRight,
   Layers,
   Landmark,
   PiggyBank,
@@ -10,7 +8,6 @@ import {
   Clock,
   Info
 } from 'lucide-react';
-import { Dialog } from './ui/dialog';
 import {
   usePublicFinancialSummary,
   usePublicFeeCategories,
@@ -19,6 +16,7 @@ import {
   PublicFundSummary,
   PublicFeeCategory
 } from '../services/public_transparency';
+import { Dialog } from './ui/dialog';
 
 const FUND_TYPE_LABELS: Record<string, string> = {
   operational: 'Operasional',
@@ -29,11 +27,11 @@ const FUND_TYPE_LABELS: Record<string, string> = {
 };
 
 const FUND_TYPE_BADGES: Record<string, { bg: string; text: string }> = {
-  operational: { bg: 'bg-emerald-50 text-emerald-800 border-emerald-200', text: 'Operasional' },
+  operational: { bg: 'bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7]', text: 'Operasional' },
   social: { bg: 'bg-amber-50 text-amber-800 border-amber-200', text: 'Sosial / Duka' },
   youth: { bg: 'bg-indigo-50 text-indigo-800 border-indigo-200', text: 'Karang Taruna' },
   infrastructure: { bg: 'bg-sky-50 text-sky-800 border-sky-200', text: 'Pembangunan' },
-  other: { bg: 'bg-slate-100 text-slate-700 border-slate-200', text: 'Lainnya' },
+  other: { bg: 'bg-[#f5f5f7] text-[#707070] border-[#d2d2d7]', text: 'Lainnya' },
 };
 
 /**
@@ -63,11 +61,11 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
       onClose={onClose}
       title=""
       description=""
-      className="w-full max-w-2xl sm:max-w-3xl rounded-lg bg-white shadow-2xl border border-[#d2d2d7] p-0 overflow-hidden text-[#1d1d1f]"
+      className="w-[94vw] sm:w-[90vw] max-w-xl rounded-xl bg-white shadow-2xl border border-[#d2d2d7] p-0 overflow-hidden text-[#1d1d1f]"
     >
-      <div className="flex flex-col max-h-[85vh] overflow-hidden">
+      <div className="flex flex-col max-h-[82vh] overflow-hidden">
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-[#d2d2d7] flex items-start justify-between bg-[#f5f5f7]">
+        <div className="p-3.5 sm:p-4 border-b border-[#d2d2d7] flex items-start justify-between bg-[#f5f5f7]">
           <div>
             <div className="flex items-center gap-2">
               <span className="apple-badge">
@@ -87,10 +85,10 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-[#707070] hover:text-[#1d1d1f] hover:bg-[#e2e2e5] transition-colors"
+            className="rounded-full p-1 text-[#707070] hover:text-[#1d1d1f] hover:bg-[#e2e2e5] transition-colors"
             aria-label="Tutup rincian"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -196,8 +194,8 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
 };
 
 /**
- * Widget kas publik dinamis: menampilkan ringkasan kas total,
- * kantong kas (funds), dan pos iuran warga dengan rincian transaksi interaktif.
+ * Widget kas publik dinamis: menampilkan list kantong kas dan pos iuran warga
+ * dengan rincian transaksi interaktif tanpa banner saldo redundant.
  */
 export const KasSummaryWidget: React.FC = () => {
   const { data: kas, isLoading: isKasLoading } = usePublicFinancialSummary();
@@ -218,75 +216,46 @@ export const KasSummaryWidget: React.FC = () => {
 
   return (
     <>
-      <section aria-label="Ringkasan kas transparansi" className="apple-card p-5 sm:p-6 space-y-4">
-        <div className="flex items-baseline justify-between gap-4">
+      <section aria-label="Ringkasan kas transparansi" className="apple-card p-4 sm:p-5 space-y-3.5">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#1d1d1f]">
             <Landmark className="h-4 w-4 text-[#0071e3]" /> Kas &amp; Saldo Lingkungan
           </h2>
-          <span className="apple-badge">
-            Terbuka
-          </span>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs font-medium text-[#707070]">Total Saldo Gabungan</p>
-            <p className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] tabular-nums">
-              {formatRupiah(kas.current_balance)}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2.5 text-xs border-t border-[#d2d2d7] pt-3">
-            <div className="bg-[#f4f8fb] p-3 rounded-lg border border-[#d2d2d7]">
-              <p className="flex items-center gap-1 text-[11px] font-medium text-[#0066cc]">
-                <ArrowUpRight className="h-3.5 w-3.5 text-[#0066cc]" /> Masuk Bulan Ini
-              </p>
-              <p className="mt-1 font-semibold text-[#1d1d1f] tabular-nums text-xs sm:text-sm">{formatRupiah(kas.monthly_income)}</p>
-            </div>
-            <div className="bg-[#f5f5f7] p-3 rounded-lg border border-[#d2d2d7]">
-              <p className="flex items-center gap-1 text-[11px] font-medium text-[#707070]">
-                <ArrowDownRight className="h-3.5 w-3.5 text-[#707070]" /> Keluar Bulan Ini
-              </p>
-              <p className="mt-1 font-semibold text-[#1d1d1f] tabular-nums text-xs sm:text-sm">{formatRupiah(kas.monthly_expense)}</p>
-            </div>
-          </div>
+          <span className="text-[10px] text-[#707070] font-medium">Klik untuk rincian</span>
         </div>
 
         {/* Sub-Tabs: Kantong Kas vs Pos Iuran Warga */}
-        <div className="border-t border-slate-100 pt-3">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <div className="flex rounded-lg bg-slate-100 p-0.5 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => setActiveTab('funds')}
-                className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 text-[11px] ${
-                  activeTab === 'funds'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Layers className="w-3 h-3 text-emerald-600" /> Kantong ({funds.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('dues')}
-                className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 text-[11px] ${
-                  activeTab === 'dues'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <PiggyBank className="w-3 h-3 text-emerald-600" /> Pos Iuran ({categories.length})
-              </button>
-            </div>
-            <span className="text-[10px] text-slate-400 font-medium">Klik untuk rincian</span>
+        <div>
+          <div className="flex items-center gap-1.5 mb-3 p-1 rounded-lg bg-[#f5f5f7] border border-[#d2d2d7]">
+            <button
+              type="button"
+              onClick={() => setActiveTab('funds')}
+              className={`flex-1 py-1.5 px-3 rounded-md transition-all flex items-center justify-center gap-1.5 text-xs font-medium ${
+                activeTab === 'funds'
+                  ? 'bg-white text-[#1d1d1f] shadow-2xs'
+                  : 'text-[#707070] hover:text-[#1d1d1f]'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-[#0071e3]" /> Kantong Kas ({funds.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('dues')}
+              className={`flex-1 py-1.5 px-3 rounded-md transition-all flex items-center justify-center gap-1.5 text-xs font-medium ${
+                activeTab === 'dues'
+                  ? 'bg-white text-[#1d1d1f] shadow-2xs'
+                  : 'text-[#707070] hover:text-[#1d1d1f]'
+              }`}
+            >
+              <PiggyBank className="w-3.5 h-3.5 text-[#0071e3]" /> Pos Iuran ({categories.length})
+            </button>
           </div>
 
           {/* List Kantong Kas (Funds) */}
           {activeTab === 'funds' && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {funds.length === 0 ? (
-                <p className="text-xs text-slate-400 py-3 text-center">Belum ada kantong kas tercatat.</p>
+                <p className="text-xs text-[#707070] py-3 text-center">Belum ada kantong kas tercatat.</p>
               ) : (
                 funds.map((fund) => {
                   const badgeConfig = FUND_TYPE_BADGES[fund.type] || FUND_TYPE_BADGES.other;
@@ -298,28 +267,28 @@ export const KasSummaryWidget: React.FC = () => {
                         setSelectedFund(fund);
                         setSelectedCategory(null);
                       }}
-                      className="w-full text-left flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100/80 hover:border-slate-200 transition-all group"
+                      className="w-full text-left flex items-center justify-between p-3 rounded-lg border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] transition-all group"
                     >
                       <div className="min-w-0 pr-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-xs font-bold text-slate-800 truncate group-hover:text-emerald-700 transition-colors">
+                          <p className="text-xs sm:text-sm font-semibold text-[#1d1d1f] truncate group-hover:text-[#0071e3] transition-colors">
                             {fund.name}
                           </p>
                           {fund.is_default && (
-                            <span className="inline-block bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                            <span className="bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
                               Utama
                             </span>
                           )}
                         </div>
-                        <span className={`inline-block mt-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded border ${badgeConfig.bg}`}>
+                        <span className={`inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${badgeConfig.bg}`}>
                           {FUND_TYPE_LABELS[fund.type] || badgeConfig.text}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <p className="text-xs font-extrabold text-slate-900 tabular-nums">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <p className="text-xs sm:text-sm font-semibold text-[#1d1d1f] tabular-nums">
                           {formatRupiah(fund.balance)}
                         </p>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-600 transition-colors" />
+                        <ChevronRight className="w-4 h-4 text-[#858585] group-hover:text-[#1d1d1f] transition-colors" />
                       </div>
                     </button>
                   );
@@ -330,15 +299,15 @@ export const KasSummaryWidget: React.FC = () => {
 
           {/* List Pos Iuran Warga (Fee Categories) */}
           {activeTab === 'dues' && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {isCatLoading ? (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {[1, 2].map((i) => (
-                    <div key={i} className="h-11 rounded-xl bg-slate-100 animate-pulse" />
+                    <div key={i} className="h-12 rounded-lg bg-[#f5f5f7] animate-pulse" />
                   ))}
                 </div>
               ) : categories.length === 0 ? (
-                <p className="text-xs text-slate-400 py-3 text-center">Belum ada pos iuran terdaftar.</p>
+                <p className="text-xs text-[#707070] py-3 text-center">Belum ada pos iuran terdaftar.</p>
               ) : (
                 categories.map((cat) => {
                   return (
@@ -349,26 +318,26 @@ export const KasSummaryWidget: React.FC = () => {
                         setSelectedCategory(cat);
                         setSelectedFund(null);
                       }}
-                      className="w-full text-left flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100/80 hover:border-slate-200 transition-all group"
+                      className="w-full text-left flex items-center justify-between p-3 rounded-lg border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] transition-all group"
                     >
                       <div className="min-w-0 pr-2">
-                        <p className="text-xs font-bold text-slate-800 truncate group-hover:text-emerald-700 transition-colors">
+                        <p className="text-xs sm:text-sm font-semibold text-[#1d1d1f] truncate group-hover:text-[#0071e3] transition-colors">
                           {cat.name}
                         </p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
-                          Tarif: {formatRupiah(cat.amount)} • {cat.period === 'monthly' ? 'Bulanan' : 'Sekali'}
+                        <p className="text-[11px] text-[#707070] mt-0.5">
+                          Tarif: {formatRupiah(cat.amount)} · {cat.period === 'monthly' ? 'Bulanan' : 'Sekali'}
                         </p>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <div className="text-right">
-                          <p className="text-xs font-extrabold text-slate-900 tabular-nums">
+                      <div className="text-right shrink-0">
+                        <div className="flex items-center gap-2 justify-end">
+                          <p className="text-xs sm:text-sm font-semibold text-[#0066cc] tabular-nums">
                             {formatRupiah(cat.balance)}
                           </p>
-                          <p className="text-[9px] text-emerald-700 font-semibold">
-                            Terkumpul {formatRupiah(cat.collected)}
-                          </p>
+                          <ChevronRight className="w-4 h-4 text-[#858585] group-hover:text-[#1d1d1f] transition-colors" />
                         </div>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-600 transition-colors" />
+                        <p className="text-[10px] text-[#707070] mt-0.5">
+                          Terkumpul: {formatRupiah(cat.collected)}
+                        </p>
                       </div>
                     </button>
                   );
