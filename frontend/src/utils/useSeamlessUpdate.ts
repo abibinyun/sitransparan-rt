@@ -17,8 +17,13 @@ export function useSeamlessUpdate() {
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (!refreshing) {
+        // Jangan reload jika ada modal dialog terbuka di layar
+        const isModalOpen = document.querySelector('[role="dialog"]') !== null;
+        if (isModalOpen) {
+          hasUpdateRef.current = true;
+          return;
+        }
         refreshing = true;
-        // Hanya reload jika ada update baru dan rute berpindah
         window.location.reload();
       }
     });

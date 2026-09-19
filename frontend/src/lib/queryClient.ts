@@ -8,7 +8,7 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: 30 * 1000, // 30 detik: navigasi instan dari cache, background refresh mulus tanpa kedip skeleton
       gcTime: 10 * 60 * 1000, // 10 menit cache data di memori
-      refetchOnWindowFocus: true, // Auto sinkronisasi saat user kembali ke tab/layar aplikasi
+      refetchOnWindowFocus: false, // Jangan auto-refetch saat user kembali dari picker/kamera ke browser
       refetchOnMount: false, // Jangan buang cache data saat ganti page
       refetchOnReconnect: true,
       retry: 1,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useUpdateProfileMutation } from '../services/auth';
+import { Button } from '../components/ui/button';
 import { Shield, User as UserIcon, Phone, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
@@ -51,34 +52,34 @@ export const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">Profil Pengguna</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-xl sm:text-2xl font-semibold text-[#1d1d1f]">Profil Pengguna</h1>
+        <p className="text-xs sm:text-sm text-[#707070] mt-1">
           Kelola informasi akun Anda. Email dan hak akses peran dikunci oleh sistem.
         </p>
       </div>
 
       {successMsg && (
-        <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="flex items-center gap-3 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm">
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm">
           <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      <div className="grid gap-8 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         {/* Kolom Kiri: Informasi Pribadi & Akun */}
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-5">
-            <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-              <div className="p-2.5 rounded-2xl bg-indigo-50 text-indigo-600">
+          <div className="bg-white p-6 rounded-xl border border-[#d2d2d7] shadow-2xs space-y-5">
+            <div className="flex items-center gap-3 pb-4 border-b border-[#d2d2d7]">
+              <div className="p-2.5 rounded-xl bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
                 <UserIcon className="w-5 h-5" />
               </div>
               <div>
@@ -150,29 +151,29 @@ export const ProfilePage: React.FC = () => {
                 <span className="font-mono font-semibold text-slate-700">{user?.email || '-'}</span>
                 <span className="text-[11px] text-slate-400 block mt-0.5">(Email terkunci oleh sistem keamanan)</span>
               </div>
-              <div className="pt-2 border-t border-slate-200">
-                <span className="text-slate-400 block font-medium">Peran / Role</span>
-                <span className="inline-block mt-1 px-2.5 py-1 rounded-lg bg-indigo-100/70 text-indigo-700 font-bold uppercase tracking-wider text-[11px]">
+              <div className="pt-2 border-t border-[#d2d2d7]">
+                <span className="text-[#707070] block font-medium">Peran / Role</span>
+                <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] font-semibold uppercase tracking-wider text-[11px]">
                   {user?.role}
                 </span>
               </div>
-              <div className="pt-2 border-t border-slate-200">
-                <span className="text-slate-400 block font-medium">Lingkup RT / Tenant Aktif</span>
-                <span className="font-semibold text-slate-700">{activeTenant?.name || 'Semua Tenant'}</span>
+              <div className="pt-2 border-t border-[#d2d2d7]">
+                <span className="text-[#707070] block font-medium">Lingkup RT / Tenant Aktif</span>
+                <span className="font-semibold text-[#1d1d1f]">{activeTenant?.name || 'Semua Tenant'}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Kolom Kanan: Ubah Password */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-            <div className="p-2.5 rounded-2xl bg-amber-50 text-amber-600">
+        <div className="bg-white p-6 rounded-xl border border-[#d2d2d7] shadow-2xs space-y-5">
+          <div className="flex items-center gap-3 pb-4 border-b border-[#d2d2d7]">
+            <div className="p-2.5 rounded-xl bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
               <Lock className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900">Ubah Kata Sandi</h2>
-              <p className="text-xs text-slate-400">Verifikasi password lama wajib dilakukan</p>
+              <h2 className="font-semibold text-[#1d1d1f]">Ubah Kata Sandi</h2>
+              <p className="text-xs text-[#707070]">Verifikasi password lama wajib dilakukan</p>
             </div>
           </div>
 
@@ -217,13 +218,13 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             <div className="pt-2">
-              <button
+              <Button
                 type="submit"
                 disabled={updateProfileMutation.isPending || !oldPassword || !newPassword}
-                className="w-full py-2.5 px-4 rounded-xl bg-amber-600 text-white text-sm font-bold shadow-md shadow-amber-200 hover:bg-amber-700 transition disabled:opacity-50"
+                className="w-full"
               >
                 {updateProfileMutation.isPending ? 'Mengubah...' : 'Perbarui Kata Sandi'}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

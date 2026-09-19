@@ -26,18 +26,37 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, onInteractOutside, onPointerDownOutside, onEscapeKeyDown, ...props }, ref) => (
+>(({ className, children, onInteractOutside, onPointerDownOutside, onFocusOutside, onEscapeKeyDown, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
       onPointerDownOutside={(e) => {
-        // Jangan auto-close jika target adalah input/file atau jika interaksi berasal dari dialog OS
+        // Cegah auto-close jika dokumen sedang hidden (buka native picker/kamera)
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+          e.preventDefault();
+          return;
+        }
         if (onPointerDownOutside) {
           onPointerDownOutside(e);
         }
       }}
+      onFocusOutside={(e) => {
+        // Cegah auto-close saat browser kehilangan fokus ke native dialog OS
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+          e.preventDefault();
+          return;
+        }
+        if (onFocusOutside) {
+          onFocusOutside(e);
+        }
+      }}
       onInteractOutside={(e) => {
+        // Cegah auto-close saat dokumen tersembunyi karena picker OS
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+          e.preventDefault();
+          return;
+        }
         if (onInteractOutside) {
           onInteractOutside(e);
         }
@@ -153,6 +172,10 @@ export const Dialog: React.FC<SimpleDialogProps> = ({
           if (preventOutsideClose) {
             e.preventDefault();
           }
+        }}
+        onFocusOutside={(e) => {
+          // Selalu cegah dialog tertutup saat browser kehilangan fokus ke file picker OS
+          e.preventDefault();
         }}
         onInteractOutside={(e) => {
           if (preventOutsideClose) {

@@ -7,9 +7,9 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
 declare const self: ServiceWorkerGlobalScope;
 
-// Langsung aktifkan service worker baru segera setelah terinstall
+// Service Worker lifecycle
 self.addEventListener('install', () => {
-  self.skipWaiting();
+  // Biarkan SW menunggu sampai dipanggil secara aman oleh useSeamlessUpdate
 });
 
 cleanupOutdatedCaches();
