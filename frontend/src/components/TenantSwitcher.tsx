@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSwitchTenantMutation } from '../services/auth';
 import type { Tenant } from '../types/auth';
+import { Select } from './ui/select';
 
 export const TenantSwitcher: React.FC = () => {
   const { user, activeTenant, setAuth } = useAuthStore();
@@ -11,8 +12,8 @@ export const TenantSwitcher: React.FC = () => {
     return null;
   }
 
-  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = user.tenants.find((t) => t.id === e.target.value) || null;
+  const handleSwitch = async (tenantId: string) => {
+    const selected = user.tenants?.find((t) => t.id === tenantId) || null;
     if (!selected) return;
     try {
       // Server-verified tenant switch: the backend re-issues a JWT scoped to
@@ -31,21 +32,22 @@ export const TenantSwitcher: React.FC = () => {
 
   return (
     <div className="flex items-center space-x-2">
-      <label htmlFor="tenant-select" className="text-sm font-medium text-gray-700">
+      <label htmlFor="tenant-select" className="text-xs font-medium text-[#707070] shrink-0">
         Active RT:
       </label>
-      <select
-        id="tenant-select"
-        value={activeTenant?.id || ''}
-        onChange={handleChange}
-        className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-      >
-        {user.tenants.map((t: Tenant) => (
-          <option key={t.id} value={t.id}>
-            {t.name} ({t.code || t.slug})
-          </option>
-        ))}
-      </select>
+      <div className="w-48">
+        <Select
+          id="tenant-select"
+          value={activeTenant?.id || ''}
+          onValueChange={handleSwitch}
+        >
+          {user.tenants.map((t: Tenant) => (
+            <option key={t.id} value={t.id}>
+              {t.name} ({t.code || t.slug})
+            </option>
+          ))}
+        </Select>
+      </div>
     </div>
   );
 };

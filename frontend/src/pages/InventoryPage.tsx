@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { inventoryService, InventoryItem, InventoryBorrowing } from '../services/inventory';
 import { useAuthStore } from '../store/useAuthStore';
+import { Select } from '../components/ui/select';
 
 export const InventoryPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -348,10 +349,9 @@ export const InventoryPage: React.FC = () => {
               />
             </div>
             <div>
-              <select
+              <Select
                 value={itemCategory}
-                onChange={(e) => setItemCategory(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                onValueChange={(val) => setItemCategory(val)}
               >
                 <option value="">Semua Kategori</option>
                 <option value="Peralatan Tenda & Kursi">Peralatan Tenda & Kursi</option>
@@ -359,20 +359,19 @@ export const InventoryPage: React.FC = () => {
                 <option value="Kebersihan & Kerja Bakti">Kebersihan & Kerja Bakti</option>
                 <option value="Olahraga & Kesenian">Olahraga & Kesenian</option>
                 <option value="Perlengkapan Umum">Perlengkapan Umum</option>
-              </select>
+              </Select>
             </div>
             <div>
-              <select
+              <Select
                 value={itemCondition}
-                onChange={(e) => setItemCondition(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                onValueChange={(val) => setItemCondition(val)}
               >
                 <option value="">Semua Kondisi</option>
                 <option value="good">Baik</option>
                 <option value="fair">Cukup</option>
                 <option value="damaged">Rusak</option>
                 <option value="lost">Hilang</option>
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -503,16 +502,15 @@ export const InventoryPage: React.FC = () => {
               />
             </div>
             <div>
-              <select
+              <Select
                 value={borrowingStatus}
-                onChange={(e) => setBorrowingStatus(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                onValueChange={(val) => setBorrowingStatus(val)}
               >
                 <option value="">Semua Status</option>
                 <option value="borrowed">Sedang Dipinjam</option>
                 <option value="returned">Sudah Dikembalikan</option>
                 <option value="overdue">Terlambat</option>
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -638,17 +636,16 @@ export const InventoryPage: React.FC = () => {
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Kategori *
                   </label>
-                  <select
+                  <Select
                     value={itemForm.category}
-                    onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                    onValueChange={(val) => setItemForm({ ...itemForm, category: val })}
                   >
                     <option value="Peralatan Tenda & Kursi">Peralatan Tenda & Kursi</option>
                     <option value="Sound & Elektronik">Sound & Elektronik</option>
                     <option value="Kebersihan & Kerja Bakti">Kebersihan & Kerja Bakti</option>
                     <option value="Olahraga & Kesenian">Olahraga & Kesenian</option>
                     <option value="Perlengkapan Umum">Perlengkapan Umum</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
 
@@ -686,16 +683,15 @@ export const InventoryPage: React.FC = () => {
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Kondisi Awal
                   </label>
-                  <select
+                  <Select
                     value={itemForm.condition}
-                    onChange={(e) => setItemForm({ ...itemForm, condition: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                    onValueChange={(val) => setItemForm({ ...itemForm, condition: val })}
                   >
                     <option value="good">Baik</option>
                     <option value="fair">Cukup</option>
                     <option value="damaged">Rusak</option>
                     <option value="lost">Hilang</option>
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
@@ -902,16 +898,15 @@ export const InventoryPage: React.FC = () => {
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   Kondisi Barang Saat Kembali *
                 </label>
-                <select
+                <Select
                   value={returnCondition}
-                  onChange={(e) => setReturnCondition(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                  onValueChange={(val) => setReturnCondition(val)}
                 >
                   <option value="good">Baik / Utuh</option>
                   <option value="fair">Cukup (Sedikit Kotor/Gores)</option>
                   <option value="damaged">Rusak</option>
                   <option value="lost">Hilang</option>
-                </select>
+                </Select>
               </div>
 
               <div>

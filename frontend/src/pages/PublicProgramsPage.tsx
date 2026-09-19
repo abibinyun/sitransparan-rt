@@ -15,6 +15,7 @@ import { wasteBankService, WasteCategory, WasteBankSummary } from '../services/w
 import { formatRupiah } from '../services/public_transparency';
 import { getTenantSlugOrFallback } from '../utils/tenant';
 import { PublicKarangTarunaPage } from './PublicKarangTarunaPage';
+import { Select } from '../components/ui/select';
 
 type ProgramTab = 'waste' | 'environment';
 
@@ -169,17 +170,16 @@ export const PublicProgramsPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-[#1d1d1f]">Pilih Kategori Sampah</label>
-                <select
+                <Select
                   value={selectedCategory?.id || ''}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
-                  className="w-full rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] px-3 py-2 text-xs font-medium focus:outline-none focus:border-[#0071e3] focus:bg-white"
+                  onValueChange={(val) => setSelectedCategoryId(val)}
                 >
                   {(categories || []).map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} ({formatRupiah(c.price_per_unit)}/{c.unit})
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div className="space-y-1.5">

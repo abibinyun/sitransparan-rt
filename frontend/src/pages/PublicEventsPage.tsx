@@ -13,6 +13,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { usePublicEvents, formatRupiah } from '../services/public_transparency';
+import { Select } from '../components/ui/select';
 
 const STATUS_CONFIG: Record<
   string,
@@ -178,18 +179,19 @@ export const PublicEventsPage: React.FC = () => {
               <div className="flex items-center gap-2 shrink-0">
                 <Filter className="w-3.5 h-3.5 text-[#707070]" />
                 <span className="text-xs font-normal text-[#707070]">Tahun:</span>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="text-xs font-medium bg-white text-[#1d1d1f] border border-[#d2d2d7] rounded-full px-3 py-1.5 focus:outline-none focus:border-[#0071e3]"
-                >
-                  <option value="all">Semua Tahun</option>
-                  {availableYears.map((yr) => (
-                    <option key={yr} value={yr}>
-                      {yr}
-                    </option>
-                  ))}
-                </select>
+                <div className="w-36">
+                  <Select
+                    value={selectedYear}
+                    onValueChange={(val) => setSelectedYear(val)}
+                  >
+                    <option value="all">Semua Tahun</option>
+                    {availableYears.map((yr) => (
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
               </div>
             )}
           </div>

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { formatRupiah } from '../services/public_transparency';
 import { getTenantSlugOrFallback } from '../utils/tenant';
+import { Select } from '../components/ui/select';
 
 export const PublicWasteBankPage: React.FC = () => {
   const tenantSlug = getTenantSlugOrFallback();
@@ -132,17 +133,16 @@ export const PublicWasteBankPage: React.FC = () => {
                 <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
                   Pilih Jenis Sampah Terpilah
                 </label>
-                <select
+                <Select
                   value={selectedCategory?.id || ''}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
-                  className="w-full bg-[#f5f5f7] border border-[#d2d2d7] text-xs sm:text-sm font-medium p-2.5 rounded-lg outline-none focus:border-[#0071e3] focus:bg-white"
+                  onValueChange={(val) => setSelectedCategoryId(val)}
                 >
                   {(categories || []).map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name} - Rp {cat.price_per_unit.toLocaleString('id-ID')}/{cat.unit}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>

@@ -13,6 +13,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
+import { Select } from '../components/ui/select';
 import {
   useMeetingsQuery,
   useCreateMeetingMutation,
@@ -409,39 +410,31 @@ export const MeetingPage: React.FC = () => {
                       {isAdmin && (
                         <div className="flex flex-wrap items-center gap-2 mt-2">
                           <span className="text-xs font-semibold text-slate-500">Ubah Status:</span>
-                          <select
-                            value={selectedMeeting.status}
-                            onChange={async (e) => {
-                              const newStatus = e.target.value;
-                              await updateMeetingMutation.mutateAsync({
-                                id: selectedMeeting.id,
-                                dto: {
-                                  title: selectedMeeting.title,
-                                  agenda: selectedMeeting.agenda,
-                                  meeting_date: selectedMeeting.meeting_date,
-                                  location: selectedMeeting.location,
-                                  meeting_type: selectedMeeting.meeting_type,
-                                  visibility: selectedMeeting.visibility,
-                                  status: newStatus,
-                                  notes: selectedMeeting.notes || '',
-                                },
-                              });
-                            }}
-                            className={`text-xs font-semibold px-2.5 py-1 rounded-lg border outline-none cursor-pointer transition ${
-                              selectedMeeting.status === 'completed'
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                                : selectedMeeting.status === 'ongoing'
-                                ? 'bg-amber-50 text-amber-800 border-amber-300'
-                                : selectedMeeting.status === 'cancelled'
-                                ? 'bg-rose-50 text-rose-800 border-rose-300'
-                                : 'bg-blue-50 text-blue-800 border-blue-300'
-                            }`}
-                          >
-                            <option value="scheduled">Akan Datang</option>
-                            <option value="ongoing">Sedang Berlangsung</option>
-                            <option value="completed">Selesai</option>
-                            <option value="cancelled">Dibatalkan</option>
-                          </select>
+                          <div className="w-40">
+                            <Select
+                              value={selectedMeeting.status}
+                              onValueChange={async (newStatus) => {
+                                await updateMeetingMutation.mutateAsync({
+                                  id: selectedMeeting.id,
+                                  dto: {
+                                    title: selectedMeeting.title,
+                                    agenda: selectedMeeting.agenda,
+                                    meeting_date: selectedMeeting.meeting_date,
+                                    location: selectedMeeting.location,
+                                    meeting_type: selectedMeeting.meeting_type,
+                                    visibility: selectedMeeting.visibility,
+                                    status: newStatus,
+                                    notes: selectedMeeting.notes || '',
+                                  },
+                                });
+                              }}
+                            >
+                              <option value="scheduled">Akan Datang</option>
+                              <option value="ongoing">Sedang Berlangsung</option>
+                              <option value="completed">Selesai</option>
+                              <option value="cancelled">Dibatalkan</option>
+                            </Select>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -720,43 +713,40 @@ export const MeetingPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Tipe Rapat</label>
-                  <select
+                  <Select
                     value={meetingForm.meeting_type}
-                    onChange={(e) => setMeetingForm({ ...meetingForm, meeting_type: e.target.value })}
-                    className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    onValueChange={(val) => setMeetingForm({ ...meetingForm, meeting_type: val })}
                   >
                     <option value="regular">Rapat Rutin Bulanan</option>
                     <option value="emergency">Rapat Darurat / Luar Biasa</option>
                     <option value="karang_taruna">Rapat Pemuda / Karang Taruna</option>
                     <option value="rtrw_pleno">Rapat Pleno RT/RW</option>
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Visibilitas</label>
-                  <select
+                  <Select
                     value={meetingForm.visibility}
-                    onChange={(e) => setMeetingForm({ ...meetingForm, visibility: e.target.value })}
-                    className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    onValueChange={(val) => setMeetingForm({ ...meetingForm, visibility: val })}
                   >
                     <option value="internal">Internal Warga</option>
                     <option value="public">Publik Transparan</option>
                     <option value="confidential">Khusus Pengurus</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Status Rapat</label>
-                <select
+                <Select
                   value={meetingForm.status}
-                  onChange={(e) => setMeetingForm({ ...meetingForm, status: e.target.value })}
-                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  onValueChange={(val) => setMeetingForm({ ...meetingForm, status: val })}
                 >
                   <option value="scheduled">Akan Datang (Scheduled)</option>
                   <option value="ongoing">Sedang Berlangsung (Ongoing)</option>
                   <option value="completed">Selesai (Completed)</option>
                   <option value="cancelled">Dibatalkan (Cancelled)</option>
-                </select>
+                </Select>
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t">
@@ -792,18 +782,17 @@ export const MeetingPage: React.FC = () => {
             <form onSubmit={handleCreateActionItem} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Pilih Rapat Terkait</label>
-                <select
+                <Select
                   required
                   value={actionForm.meeting_id || (meetings.length > 0 ? meetings[0].id : '')}
-                  onChange={(e) => setActionForm({ ...actionForm, meeting_id: e.target.value })}
-                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  onValueChange={(val) => setActionForm({ ...actionForm, meeting_id: val })}
                 >
                   {meetings.map((m: Meeting) => (
                     <option key={m.id} value={m.id}>
                       {m.title}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>

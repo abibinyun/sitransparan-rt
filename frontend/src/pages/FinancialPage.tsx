@@ -1925,35 +1925,37 @@ export const FinancialPage: React.FC = () => {
                   </span>
                   <div className="flex items-center gap-2">
                     {availableYears.length > 1 && (
-                      <select
-                        value={modalDuesYearFilter}
-                        onChange={(e) => {
-                          setModalDuesYearFilter(e.target.value);
-                          setModalDuesPage(1);
-                        }}
-                        className="text-[11px] h-7 px-2 rounded border border-slate-200 bg-white text-slate-700"
-                      >
-                        <option value="all">Semua Tahun</option>
-                        {availableYears.map((y) => (
-                          <option key={y} value={y}>Tahun {y}</option>
-                        ))}
-                      </select>
+                      <div className="w-32">
+                        <Select
+                          value={modalDuesYearFilter}
+                          onValueChange={(val) => {
+                            setModalDuesYearFilter(val);
+                            setModalDuesPage(1);
+                          }}
+                        >
+                          <option value="all">Semua Tahun</option>
+                          {availableYears.map((y) => (
+                            <option key={y} value={y}>Tahun {y}</option>
+                          ))}
+                        </Select>
+                      </div>
                     )}
 
                     {catList.length > 1 && (
-                      <select
-                        value={modalDuesCategoryFilter}
-                        onChange={(e) => {
-                          setModalDuesCategoryFilter(e.target.value);
-                          setModalDuesPage(1);
-                        }}
-                        className="text-[11px] h-7 px-2 rounded border border-slate-200 bg-white text-slate-700 max-w-[140px] truncate"
-                      >
-                        <option value="all">Semua Pos</option>
-                        {catList.map((cat: any) => (
-                          <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                      </select>
+                      <div className="w-36">
+                        <Select
+                          value={modalDuesCategoryFilter}
+                          onValueChange={(val) => {
+                            setModalDuesCategoryFilter(val);
+                            setModalDuesPage(1);
+                          }}
+                        >
+                          <option value="all">Semua Pos</option>
+                          {catList.map((cat: any) => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                          ))}
+                        </Select>
+                      </div>
                     )}
                   </div>
                 </div>

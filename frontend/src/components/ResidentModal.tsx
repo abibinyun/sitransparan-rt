@@ -195,15 +195,14 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
         </div>
 
         {/* Selector Rumah / Blok Warga */}
-        <div className="p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl space-y-1.5">
-          <Label htmlFor="house_select" className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-            <Home className="w-4 h-4 text-emerald-600" />
+        <div className="p-3 bg-[#f4f8fb] border border-[#d2d2d7] rounded-lg space-y-1.5">
+          <Label htmlFor="house_select" className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
+            <Home className="w-4 h-4 text-[#0071e3]" />
             Tautkan ke Data Rumah / Blok (Otomatis Isi Alamat)
           </Label>
-          <select
+          <Select
             id="house_select"
-            onChange={(e) => handleSelectHouse(e.target.value)}
-            className="w-full rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none"
+            onValueChange={(val) => handleSelectHouse(val)}
           >
             <option value="">-- Pilih Rumah / Blok Terdaftar --</option>
             {housesList.map((h) => (
@@ -211,7 +210,7 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
                 {h.block_number} {h.address ? `- ${h.address}` : ''}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

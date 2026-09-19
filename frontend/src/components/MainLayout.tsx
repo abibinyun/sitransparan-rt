@@ -28,6 +28,7 @@ import { useTenantsQuery } from '../services/tenant';
 import { usePublicTenantQuery } from '../services/public_tenant';
 import { TenantNotFoundPage } from './TenantNotFoundPage';
 import { useSwitchTenantMutation } from '../services/auth';
+import { Select } from './ui/select';
 import { getTenantUrl, getTenantSlugFromHost, getPlatformUrl } from '../utils/tenant';
 
 type NavItem = {
@@ -169,9 +170,12 @@ const SuperAdminTenantSwitchCard: React.FC = () => {
         <div className="rounded-2xl bg-emerald-400/15 p-2 text-emerald-200"><Building2 className="h-5 w-5" /></div>
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Tenant Aktif (SuperAdmin)</p>
       </div>
-      <select
+      <Select
         value={activeTenant?.id || ''}
-        onChange={handleSwitch}
+        onValueChange={(val) => {
+          const t = tenants.find((item) => item.id === val);
+          if (t) handleSwitch({ target: { value: val } } as any);
+        }}
         disabled={switchTenantMutation.isPending}
         className="w-full rounded-xl bg-white/10 border border-white/20 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-white/30"
       >
@@ -179,7 +183,7 @@ const SuperAdminTenantSwitchCard: React.FC = () => {
         {tenants.map((tenant) => (
           <option key={tenant.id} value={tenant.id} className="text-slate-900">{tenant.name} ({tenant.slug})</option>
         ))}
-      </select>
+      </Select>
       <p className="text-[11px] text-slate-400">Pilih RT → masuk sebagai superadmin ke tenant. Aktif: <span className="text-white font-bold">{activeTenant?.name || 'Platform'}</span></p>
     </div>
   );

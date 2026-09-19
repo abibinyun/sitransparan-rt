@@ -14,6 +14,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
+import { Select } from '../components/ui/select';
 import { Card, CardContent } from '../components/ui/card';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import {
@@ -240,24 +241,25 @@ export const ResidentsPage: React.FC = () => {
                     </TableCell>
                     <TableCell className="text-right space-x-1 whitespace-nowrap">
                       {/* Ganti Status Kependudukan */}
-                      <select
-                        value={r.status || 'approved'}
-                        onChange={(e) =>
-                          handleUpdateStatus(
-                            r.id,
-                            r.full_name,
-                            e.target.value as 'pending' | 'approved' | 'rejected' | 'moved' | 'deceased'
-                          )
-                        }
-                        className="text-xs h-8 px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                        title="Ubah Status Kependudukan"
-                      >
-                        <option value="approved">Aktif</option>
-                        <option value="moved">Pindah</option>
-                        <option value="deceased">Meninggal</option>
-                        <option value="pending">Menunggu</option>
-                        <option value="rejected">Ditolak</option>
-                      </select>
+                      <div className="inline-block w-28 text-left">
+                        <Select
+                          value={r.status || 'approved'}
+                          onValueChange={(val) =>
+                            handleUpdateStatus(
+                              r.id,
+                              r.full_name,
+                              val as 'pending' | 'approved' | 'rejected' | 'moved' | 'deceased'
+                            )
+                          }
+                          aria-label="Ubah Status Kependudukan"
+                        >
+                          <option value="approved">Aktif</option>
+                          <option value="moved">Pindah</option>
+                          <option value="deceased">Meninggal</option>
+                          <option value="pending">Menunggu</option>
+                          <option value="rejected">Ditolak</option>
+                        </Select>
+                      </div>
 
                       <Button
                         variant="ghost"

@@ -24,6 +24,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
+import { Select } from '../components/ui/select';
 import { formatRupiah } from '../services/public_transparency';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -593,14 +594,13 @@ const DepositModal: React.FC<{
               <Home className="w-4 h-4 text-emerald-600" />
               Pilih dari Data Rumah / Stiker QR (Otomatis Isi)
             </label>
-            <select
+            <Select
               value={selectedHouseId}
-              onChange={(e) => handleSelectHouse(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20"
+              onValueChange={(val) => handleSelectHouse(val)}
             >
               <option value="">-- Pilih Rumah / Blok Warga --</option>
               {isHousesLoading ? (
-                <option disabled>Memuat master rumah...</option>
+                <option disabled value="">Memuat master rumah...</option>
               ) : (
                 housesList.map((h) => (
                   <option key={h.id} value={h.id}>
@@ -608,7 +608,7 @@ const DepositModal: React.FC<{
                   </option>
                 ))
               )}
-            </select>
+            </Select>
           </div>
 
           {/* Integrasi Master Data Warga */}
@@ -617,14 +617,13 @@ const DepositModal: React.FC<{
               <UserCheck className="w-4 h-4 text-emerald-600" />
               Pilih dari Master Data Penduduk (Opsional)
             </label>
-            <select
+            <Select
               value={selectedResidentId}
-              onChange={(e) => handleSelectResident(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20"
+              onValueChange={(val) => handleSelectResident(val)}
             >
               <option value="">-- Isi Manual atau Pilih Warga Terdaftar --</option>
               {isResidentsLoading ? (
-                <option disabled>Memuat master warga...</option>
+                <option disabled value="">Memuat master warga...</option>
               ) : (
                 residentsList.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -632,7 +631,7 @@ const DepositModal: React.FC<{
                   </option>
                 ))
               )}
-            </select>
+            </Select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -699,17 +698,18 @@ const DepositModal: React.FC<{
             <div className="space-y-2">
               {items.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2">
-                  <select
-                    value={item.category_id}
-                    onChange={e => updateItem(idx, 'category_id', e.target.value)}
-                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-xl"
-                  >
-                    {categories.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({formatRupiah(c.price_per_unit || 0)}/{c.unit})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex-1">
+                    <Select
+                      value={item.category_id}
+                      onValueChange={(val) => updateItem(idx, 'category_id', val)}
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({formatRupiah(c.price_per_unit || 0)}/{c.unit})
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
                   <input
                     type="number"
                     step="0.1"
