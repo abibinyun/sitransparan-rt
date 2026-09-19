@@ -4,6 +4,7 @@ import { Dialog } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
+import { Textarea } from './ui/textarea';
 import { useAuthStore } from '../store/useAuthStore';
 
 interface AspirationFormProps {
@@ -50,7 +51,7 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
       onClose={handleClose}
       title="Kirim Aspirasi / Usulan / Keluhan"
       description="Sampaikan aspirasi Anda untuk kemajuan lingkungan RT"
-      className="w-[96vw] sm:w-[92vw] max-w-3xl p-4 sm:p-7 bg-white border border-[#d2d2d7] text-[#1d1d1f] rounded-lg shadow-2xl"
+      className="w-[96vw] sm:w-[92vw] max-w-3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Identitas pengusul otomatis dari akun login */}
@@ -89,13 +90,12 @@ export const AspirationFormModal: React.FC<AspirationFormProps> = ({
 
         <div className="space-y-1.5">
           <Label htmlFor="aspContent" className="text-[#1d1d1f] text-xs font-semibold">Isi Aspirasi</Label>
-          <textarea
+          <Textarea
             id="aspContent"
             required
             rows={4}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="flex w-full rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] px-3 py-2 text-sm text-[#1d1d1f] placeholder-[#858585] focus:outline-none focus:border-[#0071e3] focus:bg-white"
             placeholder="Jelaskan aspirasi atau keluhan Anda..."
           />
         </div>

@@ -26,30 +26,24 @@ const StatCard: React.FC<{
   value: string | number;
   description: string;
   icon: React.ElementType;
-  tone: 'indigo' | 'emerald' | 'rose' | 'sky';
+  tone: 'blue' | 'emerald' | 'rose' | 'slate';
 }> = ({ title, value, description, icon: Icon, tone }) => {
-  const tones = {
-    indigo: 'from-indigo-500 to-violet-500 text-indigo-600 bg-indigo-50 ring-indigo-100',
-    emerald: 'from-emerald-500 to-teal-500 text-emerald-600 bg-emerald-50 ring-emerald-100',
-    rose: 'from-rose-500 to-orange-500 text-rose-600 bg-rose-50 ring-rose-100',
-    sky: 'from-sky-500 to-blue-500 text-sky-600 bg-sky-50 ring-sky-100',
+  const iconColors = {
+    blue: 'text-[#0071e3] bg-[#f4f8fb] border-[#d2d2d7]',
+    emerald: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+    rose: 'text-rose-700 bg-rose-50 border-rose-200',
+    slate: 'text-[#1d1d1f] bg-[#f5f5f7] border-[#d2d2d7]',
   }[tone];
 
-  const [gradient, text, bg, ring] = tones.split(' ');
-  const secondGradient = tones.split(' ')[1];
-
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-white/70 bg-white p-5 shadow-sm shadow-slate-200/70 ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-200/80">
-      <div className={`absolute -right-10 -top-10 h-28 w-28 rounded-full bg-gradient-to-br ${gradient} ${secondGradient} opacity-10 transition group-hover:scale-125`} />
-      <div className="relative flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{title}</p>
-          <p className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{value}</p>
-          <p className="mt-2 text-sm font-medium text-slate-500">{description}</p>
-        </div>
-        <div className={`rounded-2xl ${bg} p-3 ${text} ring-1 ${ring}`}>
-          <Icon className="h-5 w-5" />
-        </div>
+    <div className="apple-card p-4 sm:p-5 flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#707070]">{title}</p>
+        <p className="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f] tabular-nums truncate">{value}</p>
+        <p className="mt-1 text-xs text-[#707070]">{description}</p>
+      </div>
+      <div className={`rounded-lg border p-2.5 shrink-0 ${iconColors}`}>
+        <Icon className="h-5 w-5" />
       </div>
     </div>
   );
@@ -96,9 +90,9 @@ export const DashboardPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-36 animate-pulse rounded-3xl bg-white/80 shadow-sm" />
+          <div key={index} className="h-32 animate-pulse rounded-lg bg-[#e2e2e5]" />
         ))}
       </div>
     );
@@ -114,123 +108,128 @@ export const DashboardPage: React.FC = () => {
   const healthRatio = income > 0 ? Math.max(0, Math.round(((income - expense) / income) * 100)) : 0;
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <section className="relative overflow-hidden rounded-[2rem] bg-slate-950 p-6 text-white shadow-2xl shadow-slate-300/40 sm:p-8 print:bg-white print:text-slate-950 print:shadow-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(99,102,241,0.45),transparent_28rem),radial-gradient(circle_at_85%_30%,rgba(20,184,166,0.3),transparent_24rem)]" />
-        <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.22em] text-indigo-100 backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5" />
-              Dashboard RT
+    <div className="space-y-5 sm:space-y-6">
+      {/* Banner Ringkasan Eksekutif */}
+      <section className="apple-card p-5 sm:p-7 border-[#d2d2d7] bg-white">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="space-y-2 max-w-2xl">
+            <div className="apple-badge">
+              <Sparkles className="h-3.5 w-3.5 text-[#0071e3]" />
+              Dashboard Lingkungan
             </div>
-            <h2 className="mt-5 max-w-3xl text-3xl font-black tracking-tight sm:text-5xl">
-              Kelola warga, kas, dan kegiatan dengan tampilan yang lebih terarah.
+            <h2 className="text-xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] leading-snug">
+              Tata Kelola RT/RW yang Transparan, Akuntabel, dan Mandiri.
             </h2>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-              Ringkasan operasional {activeTenant?.name || 'RT'} ({activeTenant?.code || '-'}) untuk membantu pengurus mengambil keputusan cepat dan transparan.
+            <p className="text-xs sm:text-sm text-[#707070] leading-relaxed">
+              Ringkasan operasional {activeTenant?.name || 'RT'} ({activeTenant?.code || '-'}) untuk membantu pengurus mengambil keputusan cepat dan terbuka bagi seluruh warga.
             </p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col print:hidden">
+
+          <div className="flex items-center gap-2.5 shrink-0 print:hidden">
             <button
               onClick={exportCSV}
               disabled={!!exporting}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:opacity-50"
+              className="apple-btn-secondary text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-50"
             >
-              <Download className="h-4 w-4" />
-              {exporting === 'csv' ? 'Mengunduh…' : 'Export CSV'}
+              <Download className="h-3.5 w-3.5 text-[#0066cc]" />
+              {exporting === 'csv' ? 'Mengunduh...' : 'Export CSV'}
             </button>
             <button
               onClick={exportPDF}
               disabled={!!exporting}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:opacity-50"
+              className="apple-btn-primary text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-50"
             >
-              <FileDown className="h-4 w-4" />
-              {exporting === 'pdf' ? 'Mengunduh…' : 'Export PDF'}
+              <FileDown className="h-3.5 w-3.5 text-white" />
+              {exporting === 'pdf' ? 'Mengunduh...' : 'Export PDF'}
             </button>
-            {exportError && <p className="text-xs font-semibold text-rose-200">{exportError}</p>}
           </div>
         </div>
+        {exportError && <p className="mt-2 text-xs font-semibold text-rose-600">{exportError}</p>}
       </section>
 
-      <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Total Warga" value={metrics?.totalResidents || 0} description="Warga terdata aktif" icon={Users} tone="indigo" />
+      {/* Grid 4 Kartu Metrik Utama */}
+      <section className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard title="Total Warga" value={metrics?.totalResidents || 0} description="Warga terdata aktif" icon={Users} tone="slate" />
         <StatCard title="Pemasukan" value={formatRupiah(income)} description="Akumulasi kas masuk" icon={ArrowUpRight} tone="emerald" />
         <StatCard title="Pengeluaran" value={formatRupiah(expense)} description="Akumulasi kas keluar" icon={ArrowDownRight} tone="rose" />
-        <StatCard title="Saldo Kas" value={formatRupiah(balance)} description={`${metrics?.pendingDues || 0} iuran pending`} icon={WalletCards} tone="sky" />
+        <StatCard title="Saldo Kas" value={formatRupiah(balance)} description={`${metrics?.pendingDues || 0} iuran pending`} icon={WalletCards} tone="blue" />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
-        <div className="rounded-[2rem] border border-white/70 bg-white p-5 shadow-sm shadow-slate-200/70 ring-1 ring-slate-100 sm:p-6">
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* Visual Arus Kas & Analisis Kesehatan */}
+      <section className="grid gap-5 xl:grid-cols-[1.4fr_0.6fr]">
+        <div className="apple-card p-5 sm:p-6 space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-[#d2d2d7]">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Visual Kas</p>
-              <h3 className="mt-1 text-xl font-black tracking-tight text-slate-950">Pemasukan vs Pengeluaran</h3>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#707070]">Grafik Transparansi</p>
+              <h3 className="mt-0.5 text-base sm:text-lg font-semibold text-[#1d1d1f]">Pemasukan vs Pengeluaran</h3>
             </div>
-            <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
-              <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />Pemasukan</span>
-              <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-rose-500" />Pengeluaran</span>
+            <div className="flex items-center gap-3 text-xs text-[#707070]">
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#0071e3]" />Pemasukan</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-rose-500" />Pengeluaran</span>
             </div>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-3">
             {metrics?.monthlyTrend && metrics.monthlyTrend.length > 0 ? (
               metrics.monthlyTrend.map((item, idx) => {
                 const incPct = Math.round((item.income / maxAmount) * 100);
                 const expPct = Math.round((item.expense / maxAmount) * 100);
 
                 return (
-                  <div key={idx} className="group rounded-2xl border border-slate-100 p-3 transition hover:border-indigo-100 hover:bg-indigo-50/30">
-                    <div className="mb-2 flex flex-col gap-1 text-xs font-bold text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-                      <span className="text-sm text-slate-900">{item.month}</span>
-                      <span className="text-slate-500">Masuk {formatRupiah(item.income)} · Keluar {formatRupiah(item.expense)}</span>
+                  <div key={idx} className="p-3 rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] space-y-2">
+                    <div className="flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between">
+                      <span className="font-semibold text-[#1d1d1f]">{item.month}</span>
+                      <span className="text-[11px] text-[#707070]">Masuk {formatRupiah(item.income)} · Keluar {formatRupiah(item.expense)}</span>
                     </div>
-                    <div className="grid gap-2">
-                      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                        <div style={{ width: `${incPct}%` }} className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-500" title={`Pemasukan: ${formatRupiah(item.income)}`} />
+                    <div className="grid gap-1.5">
+                      <div className="h-2 overflow-hidden rounded-full bg-[#e2e2e5]">
+                        <div style={{ width: `${incPct}%` }} className="h-full rounded-full bg-[#0071e3] transition-all duration-300" title={`Pemasukan: ${formatRupiah(item.income)}`} />
                       </div>
-                      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                        <div style={{ width: `${expPct}%` }} className="h-full rounded-full bg-gradient-to-r from-rose-400 to-orange-500 transition-all duration-500" title={`Pengeluaran: ${formatRupiah(item.expense)}`} />
+                      <div className="h-2 overflow-hidden rounded-full bg-[#e2e2e5]">
+                        <div style={{ width: `${expPct}%` }} className="h-full rounded-full bg-rose-500 transition-all duration-300" title={`Pengeluaran: ${formatRupiah(item.expense)}`} />
                       </div>
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <PiggyBank className="h-10 w-10 text-slate-300 mb-2" />
-                <p className="text-sm font-semibold text-slate-500">Belum ada transaksi kas untuk ditampilkan.</p>
-                <p className="text-xs text-slate-400 mt-1">Transaksi yang dicatat akan muncul dalam visual perbandingan bulanan.</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center text-xs text-[#707070]">
+                <PiggyBank className="h-8 w-8 text-[#858585] mb-2 opacity-60" />
+                <p className="font-medium text-[#1d1d1f]">Belum ada transaksi kas untuk ditampilkan.</p>
+                <p className="text-[11px] text-[#858585] mt-0.5">Transaksi yang dicatat akan muncul dalam grafik perbandingan bulanan.</p>
               </div>
             )}
           </div>
         </div>
 
-        <aside className="space-y-6">
-          <div className="rounded-[2rem] border border-white/70 bg-white p-6 shadow-sm shadow-slate-200/70 ring-1 ring-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-indigo-50 p-3 text-indigo-600 ring-1 ring-indigo-100">
-                <PiggyBank className="h-5 w-5" />
+        <aside className="space-y-5">
+          {/* Rasio Kesehatan Kas */}
+          <div className="apple-card p-5 space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="rounded-lg bg-[#f4f8fb] border border-[#d2d2d7] p-2 text-[#0066cc]">
+                <PiggyBank className="h-4.5 w-4.5" />
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Kesehatan Kas</p>
-                <h3 className="text-lg font-black text-slate-950">{healthRatio}% surplus</h3>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#707070]">Kesehatan Kas</p>
+                <h3 className="text-base font-semibold text-[#1d1d1f]">{healthRatio}% surplus</h3>
               </div>
             </div>
-            <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-teal-400 transition-all duration-700" style={{ width: `${Math.min(healthRatio, 100)}%` }} />
+            <div className="h-2 overflow-hidden rounded-full bg-[#e2e2e5]">
+              <div className="h-full rounded-full bg-[#0071e3] transition-all duration-500" style={{ width: `${Math.min(healthRatio, 100)}%` }} />
             </div>
-            <p className="mt-4 text-sm leading-6 text-slate-500">
-              Selamat datang, <span className="font-bold text-slate-900">{user?.name}</span>. Anda masuk sebagai <span className="font-bold text-indigo-600">{user?.role}</span>.
+            <p className="text-xs text-[#707070] leading-relaxed pt-1">
+              Selamat datang, <span className="font-semibold text-[#1d1d1f]">{user?.name}</span>. Anda masuk sebagai <span className="font-semibold text-[#0066cc]">{user?.role}</span>.
             </p>
           </div>
 
-          <div className="rounded-[2rem] bg-gradient-to-br from-indigo-600 to-slate-950 p-6 text-white shadow-xl shadow-indigo-200/60">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-5 w-5 text-indigo-100" />
-              <h3 className="font-black">Insight cepat</h3>
+          {/* Kartu Ringkasan Cepat */}
+          <div className="apple-card p-5 space-y-2 bg-[#f4f8fb]">
+            <div className="flex items-center gap-2 text-[#0066cc]">
+              <TrendingUp className="h-4 w-4" />
+              <h3 className="text-xs font-semibold uppercase tracking-wider">Pemantauan Mandiri</h3>
             </div>
-            <p className="mt-3 text-sm leading-6 text-indigo-100">
-              Gunakan kartu ringkasan untuk memantau performa kas dan lihat tren bulanan untuk mendeteksi lonjakan pengeluaran lebih awal.
+            <p className="text-xs text-[#474747] leading-relaxed">
+              Gunakan grafik perbandingan untuk memantau performa kas dan deteksi lonjakan pengeluaran sedini mungkin untuk menjaga keterbukaan warga.
             </p>
           </div>
         </aside>

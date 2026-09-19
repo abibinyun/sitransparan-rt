@@ -118,10 +118,11 @@ DialogDescription.displayName = DialogPrimitive.Description.displayName
 interface SimpleDialogProps {
   isOpen: boolean
   onClose: () => void
-  title: string
+  title?: string
   description?: string
   children: React.ReactNode
   className?: string
+  contentClassName?: string
   preventOutsideClose?: boolean
 }
 
@@ -132,6 +133,7 @@ export const Dialog: React.FC<SimpleDialogProps> = ({
   description,
   children,
   className,
+  contentClassName,
   preventOutsideClose = false,
 }) => {
   const hasHeader = Boolean(title || description);
@@ -164,18 +166,20 @@ export const Dialog: React.FC<SimpleDialogProps> = ({
         }}
       >
         {hasHeader && (
-          <div className="relative p-4 sm:p-5 border-b border-[#d2d2d7] bg-[#f5f5f7]">
+          <div className="relative px-5 py-4 sm:px-6 sm:py-4.5 border-b border-[#d2d2d7] bg-[#f5f5f7]">
             <DialogHeader>
               {title && <DialogTitle>{title}</DialogTitle>}
               {description && <DialogDescription>{description}</DialogDescription>}
             </DialogHeader>
-            <DialogClose className="absolute right-3.5 top-3.5 rounded-full p-1 text-[#707070] hover:bg-[#e2e2e5] hover:text-[#1d1d1f] focus:outline-none transition-colors">
+            <DialogClose className="absolute right-4 top-4 rounded-full p-1.5 text-[#707070] hover:bg-[#e2e2e5] hover:text-[#1d1d1f] focus:outline-none transition-colors">
               <X className="h-4 w-4" />
               <span className="sr-only">Close</span>
             </DialogClose>
           </div>
         )}
-        <div className="w-full min-w-0 flex-1 overflow-y-auto">{children}</div>
+        <div className={cn("w-full min-w-0 flex-1 overflow-y-auto p-5 sm:p-6", contentClassName)}>
+          {children}
+        </div>
       </DialogContent>
     </DialogRoot>
   )

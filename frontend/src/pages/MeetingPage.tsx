@@ -15,6 +15,8 @@ import {
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { Select } from '../components/ui/select';
 import { Dialog } from '../components/ui/dialog';
+import { Textarea } from '../components/ui/textarea';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 import {
   useMeetingsQuery,
   useCreateMeetingMutation,
@@ -588,71 +590,69 @@ export const MeetingPage: React.FC = () => {
             )}
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-gray-500 text-xs font-semibold border-b">
-                <tr>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Deskripsi Tugas</th>
-                  <th className="py-3 px-4">Penanggung Jawab (PIC)</th>
-                  <th className="py-3 px-4">Target Selesai</th>
-                  <th className="py-3 px-4">Catatan</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {isLoadingActions ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-gray-500 text-sm">
-                      Memuat daftar tugas...
-                    </td>
-                  </tr>
-                ) : actionItems.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-gray-500 text-sm">
-                      Belum ada tugas tindak lanjut aktif.
-                    </td>
-                  </tr>
-                ) : (
-                  actionItems.map((item: MeetingActionItem) => (
-                    <tr key={item.id} className="hover:bg-gray-50/80 transition">
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => handleToggleActionStatus(item)}
-                          disabled={!isAdmin}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition ${
-                            item.status === 'completed'
-                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                              : item.status === 'in_progress'
-                              ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          {item.status === 'completed' ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          ) : (
-                            <Clock className="w-3.5 h-3.5 text-amber-600" />
-                          )}
-                          {item.status}
-                        </button>
-                      </td>
-                      <td className="py-3 px-4 font-medium text-gray-900">
-                        {item.task}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700 font-medium">
-                        {item.assignee_name}
-                      </td>
-                      <td className="py-3 px-4 text-gray-500 text-xs">
-                        {item.due_date || '-'}
-                      </td>
-                      <td className="py-3 px-4 text-gray-500 text-xs">
-                        {item.notes || '-'}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Status</TableHead>
+                <TableHead>Deskripsi Tugas</TableHead>
+                <TableHead>Penanggung Jawab (PIC)</TableHead>
+                <TableHead>Target Selesai</TableHead>
+                <TableHead>Catatan</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoadingActions ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-8 text-center text-[#707070] text-sm">
+                    Memuat daftar tugas...
+                  </TableCell>
+                </TableRow>
+              ) : actionItems.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-8 text-center text-[#707070] text-sm">
+                    Belum ada tugas tindak lanjut aktif.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                actionItems.map((item: MeetingActionItem) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <button
+                        onClick={() => handleToggleActionStatus(item)}
+                        disabled={!isAdmin}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition border ${
+                          item.status === 'completed'
+                            ? 'bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7]'
+                            : item.status === 'in_progress'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-[#f5f5f7] text-[#707070] border-[#d2d2d7]'
+                        }`}
+                      >
+                        {item.status === 'completed' ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#0066cc]" />
+                        ) : (
+                          <Clock className="w-3.5 h-3.5 text-amber-600" />
+                        )}
+                        {item.status}
+                      </button>
+                    </TableCell>
+                    <TableCell className="font-medium text-[#1d1d1f]">
+                      {item.task}
+                    </TableCell>
+                    <TableCell className="text-[#707070]">
+                      {item.assignee_name}
+                    </TableCell>
+                    <TableCell className="text-[#707070] font-mono text-xs">
+                      {item.due_date || '-'}
+                    </TableCell>
+                    <TableCell className="text-[#707070] max-w-xs truncate">
+                      {item.notes || '-'}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
       )}
 
@@ -678,13 +678,12 @@ export const MeetingPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Agenda & Pembahasan</label>
-                <textarea
+                <Textarea
                   required
                   rows={3}
                   placeholder="Rincian poin yang dibahas..."
                   value={meetingForm.agenda}
                   onChange={(e) => setMeetingForm({ ...meetingForm, agenda: e.target.value })}
-                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
               </div>
 
@@ -859,13 +858,12 @@ export const MeetingPage: React.FC = () => {
         <form onSubmit={handleAddDecision} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Isi Keputusan / Kesepakatan</label>
-                <textarea
+                <Textarea
                   required
                   rows={3}
                   placeholder="Contoh: Iuran sampah disepakati naik menjadi Rp 25.000 mulai bulan depan."
                   value={decisionForm.decision_text}
                   onChange={(e) => setDecisionForm({ ...decisionForm, decision_text: e.target.value })}
-                  className="w-full text-sm border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
               </div>
               <div>

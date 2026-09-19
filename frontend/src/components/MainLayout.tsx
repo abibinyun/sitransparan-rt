@@ -7,7 +7,6 @@ import {
   CalendarDays,
   ChevronRight,
   Flame,
-  Home,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -265,7 +264,7 @@ export const MainLayout: React.FC = () => {
   }
 
   const renderNavigation = () => (
-    <nav className="mt-8 space-y-1.5 px-3">
+    <nav className="mt-4 space-y-1 px-3">
       {navItems.map(({ to, label, icon: Icon, end, matchPrefixes, externalHref }) => {
         const isMatched = matchPrefixes
           ? matchPrefixes.some((prefix) => location.pathname.startsWith(prefix))
@@ -279,13 +278,13 @@ export const MainLayout: React.FC = () => {
               key={to}
               href={externalHref}
               onClick={() => setSidebarOpen(false)}
-              className="group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all duration-200 text-slate-400 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="group flex items-center gap-3 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-colors text-[#707070] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] focus:outline-none"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-300 group-hover:bg-white/10 group-hover:text-white transition-colors">
-                <Icon className="h-4.5 w-4.5" />
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#f5f5f7] text-[#707070] group-hover:text-[#0071e3] transition-colors">
+                <Icon className="h-4 w-4" />
               </span>
               <span className="flex-1 truncate">{label}</span>
-              <ChevronRight className="h-4 w-4 transition-transform -translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-70" />
+              <ChevronRight className="h-3.5 w-3.5 transition-transform -translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-60" />
             </a>
           );
         }
@@ -300,24 +299,24 @@ export const MainLayout: React.FC = () => {
             onClick={() => setSidebarOpen(false)}
             className={
               [
-                'group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all duration-200',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
+                'group flex items-center gap-3 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all duration-150',
+                'focus:outline-none',
                 isMatched
-                  ? 'bg-white text-indigo-700 shadow-lg shadow-indigo-950/10 ring-1 ring-indigo-100'
-                  : 'text-slate-400 hover:bg-white/10 hover:text-white',
+                  ? 'bg-[#f4f8fb] text-[#0066cc] font-semibold border border-[#d2d2d7]'
+                  : 'text-[#707070] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]',
               ].join(' ')
             }
           >
             <span
               className={[
-                'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
-                isMatched ? 'bg-indigo-50 text-indigo-600' : 'bg-white/5 text-slate-300 group-hover:bg-white/10 group-hover:text-white',
+                'flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                isMatched ? 'bg-white text-[#0071e3] shadow-2xs' : 'bg-transparent text-[#707070] group-hover:text-[#1d1d1f]',
               ].join(' ')}
             >
-              <Icon className="h-4.5 w-4.5" />
+              <Icon className="h-4 w-4" />
             </span>
             <span className="flex-1 truncate">{label}</span>
-            <ChevronRight className={['h-4 w-4 transition-transform', isMatched ? 'translate-x-0 text-indigo-400' : '-translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-70'].join(' ')} />
+            <ChevronRight className={['h-3.5 w-3.5 transition-transform', isMatched ? 'translate-x-0 text-[#0071e3]' : '-translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-60'].join(' ')} />
           </NavLink>
         );
       })}
@@ -325,58 +324,56 @@ export const MainLayout: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 antialiased">
+    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] antialiased">
       <OfflineBanner />
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.16),transparent_32rem),radial-gradient(circle_at_80%_10%,rgba(20,184,166,0.12),transparent_28rem)]" />
 
       {sidebarOpen && (
         <button
           aria-label="Tutup menu"
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-slate-950/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
         />
       )}
 
       <aside
         className={[
-          'fixed inset-y-0 left-0 z-40 flex w-80 max-w-[86vw] flex-col bg-slate-950 transition-transform duration-300 lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 flex w-72 max-w-[86vw] flex-col bg-white border-r border-[#d2d2d7] transition-transform duration-300 lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
       >
-        <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-br from-indigo-500/25 via-sky-500/10 to-transparent pointer-events-none" />
         <div className="relative flex h-full flex-col min-h-0">
-          <div className="flex items-center justify-between px-6 pt-6 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-indigo-700 shadow-xl shadow-indigo-950/20">
-                <Home className="h-6 w-6" />
+          <div className="flex items-center justify-between px-5 pt-5 shrink-0 border-b border-[#d2d2d7] pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#f5f5f7] text-[#0071e3] border border-[#d2d2d7] shadow-2xs">
+                <Building2 className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.28em] text-indigo-200">Platform</p>
-                <h1 className="text-xl font-black tracking-tight text-white">RT App</h1>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#707070]">SiTransparan</p>
+                <h1 className="text-base font-semibold tracking-tight text-[#1d1d1f]">RT/RW Admin</h1>
               </div>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="rounded-xl p-2 text-slate-300 transition hover:bg-white/10 hover:text-white lg:hidden"
+              className="rounded-lg p-1.5 text-[#707070] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f] lg:hidden"
               aria-label="Tutup sidebar"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="mx-6 mt-6 shrink-0 rounded-3xl border border-white/10 bg-white/10 p-4 text-white shadow-2xl shadow-slate-950/20 backdrop-blur">
+          <div className="mx-4 mt-4 shrink-0 rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] p-3 text-[#1d1d1f]">
             {(() => {
               const isSuper = user?.role === 'SUPER_ADMIN' || String(user?.role).toLowerCase().replace('-','_') === 'superadmin' || String(user?.role).toLowerCase() === 'super_admin';
               if (!isSuper) {
                 return (
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 rounded-2xl bg-emerald-400/15 p-2 text-emerald-200">
-                      <Building2 className="h-5 w-5" />
+                  <div className="flex items-start gap-2.5">
+                    <div className="mt-0.5 rounded-md bg-white p-1.5 text-[#0071e3] border border-[#d2d2d7]">
+                      <Building2 className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Tenant Aktif</p>
-                      <p className="mt-1 truncate text-sm font-bold">{activeTenant?.name || 'Pilih RT'}</p>
-                      <p className="text-xs text-slate-400">{activeTenant?.code || (activeTenant as any)?.slug || 'Belum tersedia'}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-[#707070]">Tenant Aktif</p>
+                      <p className="mt-0.5 truncate text-xs font-semibold text-[#1d1d1f]">{activeTenant?.name || 'Pilih RT'}</p>
+                      <p className="text-[10px] text-[#707070]">{activeTenant?.code || (activeTenant as any)?.slug || 'Belum tersedia'}</p>
                     </div>
                   </div>
                 );
@@ -389,12 +386,12 @@ export const MainLayout: React.FC = () => {
             {renderNavigation()}
           </div>
 
-          <div className="mt-auto p-4 shrink-0">
-            <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-4">
+          <div className="mt-auto p-3 shrink-0 border-t border-[#d2d2d7]">
+            <div className="rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] p-3">
               <div className="flex items-center justify-between">
                 <div className="min-w-0 pr-2">
-                  <p className="text-sm font-bold text-white truncate">{user?.name || 'Pengguna'}</p>
-                  <p className="mt-0.5 text-xs font-medium text-slate-400">
+                  <p className="text-xs font-semibold text-[#1d1d1f] truncate">{user?.name || 'Pengguna'}</p>
+                  <p className="mt-0.5 text-[10px] font-medium text-[#707070]">
                     {(() => {
                       const role = String(user?.role || '').toLowerCase();
                       if (role === 'resident') return 'Warga RT (Resident)';
@@ -406,17 +403,17 @@ export const MainLayout: React.FC = () => {
                 </div>
                 <NavLink
                   to="/admin/profile"
-                  className="rounded-xl p-2 text-indigo-200 hover:bg-white/10 hover:text-white transition"
+                  className="rounded-lg p-1.5 text-[#707070] hover:bg-white hover:text-[#1d1d1f] transition border border-transparent hover:border-[#d2d2d7]"
                   title="Edit Profil"
                 >
-                  <UserCircle className="h-5 w-5" />
+                  <UserCircle className="h-4.5 w-4.5" />
                 </NavLink>
               </div>
               <button
                 onClick={handleLogout}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500/10 px-4 py-2.5 text-sm font-bold text-rose-100 transition hover:bg-rose-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-white border border-[#d2d2d7] px-3 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-50 hover:border-rose-200 active:scale-[0.98]"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-3.5 w-3.5" />
                 Logout
               </button>
             </div>
@@ -424,22 +421,22 @@ export const MainLayout: React.FC = () => {
         </div>
       </aside>
 
-      <div className="lg:pl-80">
-        <header className="sticky top-0 z-20 border-b border-white/70 bg-white/75 px-4 py-3 shadow-sm shadow-slate-200/60 backdrop-blur-xl sm:px-6 lg:px-8">
+      <div className="lg:pl-72">
+        <header className="sticky top-0 z-20 border-b border-[#d2d2d7] bg-white/80 px-4 py-3 backdrop-blur-xl sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="rounded-2xl border border-slate-200 bg-white p-2.5 text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-600 hover:shadow-md lg:hidden"
+                className="rounded-lg border border-[#d2d2d7] bg-white p-2 text-[#1d1d1f] shadow-2xs transition hover:bg-[#f5f5f7] lg:hidden"
                 aria-label="Buka sidebar"
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-4 w-4" />
               </button>
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-400">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#707070]">
                   {String(user?.role || '').toLowerCase() === 'resident' ? 'Layanan Warga RT' : 'Administrasi Warga'}
                 </p>
-                <h2 className="text-lg font-black tracking-tight text-slate-950 sm:text-2xl">Platform RT App</h2>
+                <h2 className="text-base sm:text-lg font-semibold tracking-tight text-[#1d1d1f]">SiTransparan RT/RW</h2>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -448,33 +445,33 @@ export const MainLayout: React.FC = () => {
               </div>
               <NavLink
                 to="/admin/profile"
-                className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm md:flex items-center gap-2.5 hover:border-indigo-200 hover:shadow transition"
+                className="hidden rounded-lg border border-[#d2d2d7] bg-white px-3 py-1.5 shadow-2xs md:flex items-center gap-2 hover:bg-[#f5f5f7] transition text-xs"
                 title="Kelola Profil Saya"
               >
                 <div>
-                  <p className="text-xs font-medium text-slate-500">Masuk sebagai</p>
-                  <p className="text-sm font-bold text-slate-900">{user?.name} · {user?.role}</p>
+                  <p className="text-[10px] text-[#707070]">Masuk sebagai</p>
+                  <p className="font-semibold text-[#1d1d1f]">{user?.name} · {user?.role}</p>
                 </div>
-                <UserCircle className="h-5 w-5 text-slate-400" />
+                <UserCircle className="h-4 w-4 text-[#707070]" />
               </NavLink>
             </div>
           </div>
-          <div className="mt-3 sm:hidden">
+          <div className="mt-2.5 sm:hidden">
             <TenantSwitcher />
           </div>
         </header>
 
-        <main className="mx-auto min-h-[calc(100vh-5rem)] w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main className="mx-auto min-h-[calc(100vh-4rem)] w-full max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
           <Suspense
             fallback={
               <div className="space-y-4 animate-pulse">
-                <div className="h-10 w-48 rounded-xl bg-slate-200/80" />
+                <div className="h-8 w-44 rounded-lg bg-[#e2e2e5]" />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="h-28 rounded-2xl bg-slate-200/80" />
-                  <div className="h-28 rounded-2xl bg-slate-200/80" />
-                  <div className="h-28 rounded-2xl bg-slate-200/80" />
+                  <div className="h-24 rounded-lg bg-[#e2e2e5]" />
+                  <div className="h-24 rounded-lg bg-[#e2e2e5]" />
+                  <div className="h-24 rounded-lg bg-[#e2e2e5]" />
                 </div>
-                <div className="h-72 rounded-2xl bg-slate-200/80" />
+                <div className="h-64 rounded-lg bg-[#e2e2e5]" />
               </div>
             }
           >

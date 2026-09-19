@@ -194,7 +194,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ isOpen, onClose,
       onClose={onClose}
       title="Bagikan ke WhatsApp"
       description="Kartu siap-unduh untuk dibagikan ke grup RT"
-      className="w-[96vw] sm:w-[92vw] max-w-2xl bg-white border border-[#d2d2d7] text-[#1d1d1f] rounded-lg shadow-2xl"
+      className="w-[96vw] sm:w-[92vw] max-w-2xl"
     >
       <div className="space-y-4">
         <canvas

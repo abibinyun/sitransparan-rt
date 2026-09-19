@@ -199,24 +199,24 @@ export const AspirationsPage: React.FC = () => {
       />
 
       {/* Tabs Switcher */}
-      <div className="border-b border-slate-200">
-        <nav className="-mb-px flex space-x-8">
+      <div className="border-b border-[#d2d2d7]">
+        <nav className="-mb-px flex space-x-6">
           <button
             onClick={() => setActiveTab('aspirations')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
               activeTab === 'aspirations'
-                ? 'border-indigo-600 text-indigo-600 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                ? 'border-[#0071e3] text-[#0066cc] font-semibold'
+                : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
             }`}
           >
             Aspirasi Warga
           </button>
           <button
             onClick={() => setActiveTab('needs')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
               activeTab === 'needs'
-                ? 'border-indigo-600 text-indigo-600 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                ? 'border-[#0071e3] text-[#0066cc] font-semibold'
+                : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
             }`}
           >
             Kebutuhan Lingkungan

@@ -27,6 +27,7 @@ import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { Select } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
 import { Dialog } from '../components/ui/dialog';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 import { formatRupiah } from '../services/public_transparency';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -236,155 +237,147 @@ export const WasteBankPage: React.FC = () => {
 
       {/* Content Area */}
       {activeTab === 'deposits' && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/75 border-b border-slate-100 text-xs font-semibold text-slate-500">
-                  <th className="py-3 px-4">Tanggal</th>
-                  <th className="py-3 px-4">Kepala Keluarga / KK</th>
-                  <th className="py-3 px-4">Bobot (kg)</th>
-                  <th className="py-3 px-4">Total Bruto</th>
-                  <th className="py-3 px-4">Bagian Warga</th>
-                  <th className="py-3 px-4">Kas Pemuda</th>
-                  <th className="py-3 px-4">Status</th>
-                  {!isResident && <th className="py-3 px-4 text-right">Aksi</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {isDepositsLoading ? (
-                  <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400">Memuat data setoran...</td>
-                  </tr>
-                ) : depositsList.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400">Belum ada catatan setoran sampah</td>
-                  </tr>
-                ) : (
-                  depositsList.map((d: WasteDeposit) => (
-                    <tr key={d.id} className="hover:bg-slate-50/50">
-                      <td className="py-3.5 px-4 text-slate-600 whitespace-nowrap">
-                        {d.deposit_date ? new Date(d.deposit_date).toLocaleDateString('id-ID', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        }) : '-'}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-medium text-slate-800">{d.family_head_name}</div>
-                        <div className="text-xs text-slate-400 font-mono">KK: {d.kk_number} {d.rt_number ? `• RT ${d.rt_number}` : ''}</div>
-                      </td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-700">
-                        {d.total_weight_kg} kg
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-700">
-                        {formatRupiah(d.total_gross_amount || 0)}
-                      </td>
-                      <td className="py-3.5 px-4 font-medium text-amber-600">
-                        {formatRupiah(d.resident_earnings_amount || 0)}
-                      </td>
-                      <td className="py-3.5 px-4 font-medium text-purple-600">
-                        {formatRupiah(d.karang_taruna_amount || 0)}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          d.status === 'verified'
-                            ? 'bg-blue-50 text-blue-700'
-                            : d.status === 'paid_out'
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : 'bg-amber-50 text-amber-700'
-                        }`}>
-                          {d.status === 'verified' ? 'Terverifikasi' : d.status === 'paid_out' ? 'Sudah Cair' : 'Menunggu'}
-                        </span>
-                      </td>
-                      {!isResident && (
-                        <td className="py-3.5 px-4 text-right">
-                          {d.status === 'pending' && (
-                            <button
-                              onClick={() => updateStatusMutation.mutate({ id: d.id, status: 'verified' })}
-                              className="px-2.5 py-1 text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition"
-                            >
-                              Verifikasi
-                            </button>
-                          )}
-                          {d.status === 'verified' && (
-                            <button
-                              onClick={() => updateStatusMutation.mutate({ id: d.id, status: 'paid_out' })}
-                              className="px-2.5 py-1 text-xs font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition"
-                            >
-                              Tandai Cair
-                            </button>
-                          )}
-                        </td>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tanggal</TableHead>
+              <TableHead>Kepala Keluarga / KK</TableHead>
+              <TableHead>Bobot (kg)</TableHead>
+              <TableHead>Total Bruto</TableHead>
+              <TableHead>Bagian Warga</TableHead>
+              <TableHead>Kas Pemuda</TableHead>
+              <TableHead>Status</TableHead>
+              {!isResident && <TableHead className="text-right">Aksi</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isDepositsLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="py-8 text-center text-[#707070]">Memuat data setoran...</TableCell>
+              </TableRow>
+            ) : depositsList.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="py-8 text-center text-[#707070]">Belum ada catatan setoran sampah</TableCell>
+              </TableRow>
+            ) : (
+              depositsList.map((d: WasteDeposit) => (
+                <TableRow key={d.id}>
+                  <TableCell className="text-[#707070] whitespace-nowrap font-mono text-xs">
+                    {d.deposit_date ? new Date(d.deposit_date).toLocaleDateString('id-ID', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    }) : '-'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-semibold text-[#1d1d1f]">{d.family_head_name}</div>
+                    <div className="text-[11px] text-[#707070] font-mono">KK: {d.kk_number} {d.rt_number ? `· RT ${d.rt_number}` : ''}</div>
+                  </TableCell>
+                  <TableCell className="font-semibold text-[#1d1d1f]">
+                    {d.total_weight_kg} kg
+                  </TableCell>
+                  <TableCell className="text-[#1d1d1f] tabular-nums">
+                    {formatRupiah(d.total_gross_amount || 0)}
+                  </TableCell>
+                  <TableCell className="font-semibold text-[#0066cc] tabular-nums">
+                    {formatRupiah(d.resident_earnings_amount || 0)}
+                  </TableCell>
+                  <TableCell className="font-semibold text-[#1d1d1f] tabular-nums">
+                    {formatRupiah(d.karang_taruna_amount || 0)}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
+                      d.status === 'verified'
+                        ? 'bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7]'
+                        : d.status === 'paid_out'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-amber-50 text-amber-800 border-amber-200'
+                    }`}>
+                      {d.status === 'verified' ? 'Terverifikasi' : d.status === 'paid_out' ? 'Sudah Cair' : 'Menunggu'}
+                    </span>
+                  </TableCell>
+                  {!isResident && (
+                    <TableCell className="text-right">
+                      {d.status === 'pending' && (
+                        <button
+                          onClick={() => updateStatusMutation.mutate({ id: d.id, status: 'verified' })}
+                          className="apple-btn-primary text-xs px-2.5 py-1"
+                        >
+                          Verifikasi
+                        </button>
                       )}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                      {d.status === 'verified' && (
+                        <button
+                          onClick={() => updateStatusMutation.mutate({ id: d.id, status: 'paid_out' })}
+                          className="apple-btn-secondary text-xs px-2.5 py-1"
+                        >
+                          Tandai Cair
+                        </button>
+                      )}
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       )}
 
       {activeTab === 'households' && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/75 border-b border-slate-100 text-xs font-semibold text-slate-500">
-                  <th className="py-3 px-4">Kepala Keluarga</th>
-                  <th className="py-3 px-4">Nomor KK</th>
-                  <th className="py-3 px-4">Alamat / RT</th>
-                  <th className="py-3 px-4">Frekuensi Setor</th>
-                  <th className="py-3 px-4">Akumulasi Bobot</th>
-                  <th className="py-3 px-4">Total Saldo Hasil</th>
-                  <th className="py-3 px-4">Setoran Terakhir</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {isHouseholdsLoading ? (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400">Memuat rekapitulasi KK...</td>
-                  </tr>
-                ) : householdsList.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400">Belum ada KK terdaftar yang menyetor</td>
-                  </tr>
-                ) : (
-                  householdsList.map((h: HouseholdAccumulation, idx: number) => (
-                    <tr key={idx} className="hover:bg-slate-50/50">
-                      <td className="py-3.5 px-4 font-medium text-slate-800">
-                        {h.family_head_name}
-                      </td>
-                      <td className="py-3.5 px-4 font-mono text-xs text-slate-500">
-                        {h.kk_number}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-600">
-                        RT {h.rt_number || '-'} {h.house_number ? `/ No. ${h.house_number}` : ''}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-700">
-                        {h.deposit_count} kali
-                      </td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-700">
-                        {h.total_weight_kg} kg
-                      </td>
-                      <td className="py-3.5 px-4 font-bold text-emerald-600">
-                        {formatRupiah(h.total_earnings_amount || 0)}
-                      </td>
-                      <td className="py-3.5 px-4 text-xs text-slate-500 whitespace-nowrap">
-                        {h.last_deposit_date ? new Date(h.last_deposit_date).toLocaleDateString('id-ID', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        }) : '-'}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Kepala Keluarga</TableHead>
+              <TableHead>Nomor KK</TableHead>
+              <TableHead>Alamat / RT</TableHead>
+              <TableHead>Frekuensi Setor</TableHead>
+              <TableHead>Akumulasi Bobot</TableHead>
+              <TableHead>Total Saldo Hasil</TableHead>
+              <TableHead>Setoran Terakhir</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isHouseholdsLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="py-8 text-center text-[#707070]">Memuat rekapitulasi KK...</TableCell>
+              </TableRow>
+            ) : householdsList.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="py-8 text-center text-[#707070]">Belum ada KK terdaftar yang menyetor</TableCell>
+              </TableRow>
+            ) : (
+              householdsList.map((h: HouseholdAccumulation, idx: number) => (
+                <TableRow key={idx}>
+                  <TableCell className="font-semibold text-[#1d1d1f]">
+                    {h.family_head_name}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-[#707070]">
+                    {h.kk_number}
+                  </TableCell>
+                  <TableCell className="text-[#707070]">
+                    RT {h.rt_number || '-'} {h.house_number ? `/ No. ${h.house_number}` : ''}
+                  </TableCell>
+                  <TableCell className="text-[#1d1d1f]">
+                    {h.deposit_count} kali
+                  </TableCell>
+                  <TableCell className="font-semibold text-[#1d1d1f]">
+                    {h.total_weight_kg} kg
+                  </TableCell>
+                  <TableCell className="font-semibold text-[#0066cc] tabular-nums">
+                    {formatRupiah(h.total_earnings_amount || 0)}
+                  </TableCell>
+                  <TableCell className="text-[#707070] text-xs font-mono whitespace-nowrap">
+                    {h.last_deposit_date ? new Date(h.last_deposit_date).toLocaleDateString('id-ID', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    }) : '-'}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       )}
 
       {activeTab === 'categories' && (

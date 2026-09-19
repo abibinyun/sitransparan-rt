@@ -22,6 +22,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 import { Plus, Trash2, Wallet, Coins, Search, Users, ChevronRight, Edit2, ArrowDownRight, ArrowUpRight, RotateCcw } from 'lucide-react';
 import { FeePeriod, FundType } from '../types/financial';
 import { getFileUrl } from '../utils/file';
@@ -706,15 +707,15 @@ export const FinancialPage: React.FC = () => {
       </div>
 
       {/* Tabs Navigasi Utama (Scrollable on Mobile) */}
-      <div className="border-b border-gray-200 -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="border-b border-[#d2d2d7] -mx-4 px-4 sm:mx-0 sm:px-0">
         <nav className="-mb-px flex space-x-6 sm:space-x-8 overflow-x-auto scrollbar-none touch-pan-x">
           <button
             id="tab-dues"
             onClick={() => setActiveTab('dues')}
-            className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
+            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
               activeTab === 'dues'
-                ? 'border-indigo-500 text-indigo-600 font-bold'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                ? 'border-[#0071e3] text-[#0066cc] font-semibold'
+                : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
             }`}
           >
             {isResident ? 'Iuran Keluarga Saya' : `Iuran Warga (${duesList.length})`}
@@ -724,10 +725,10 @@ export const FinancialPage: React.FC = () => {
               <button
                 id="tab-transactions"
                 onClick={() => setActiveTab('transactions')}
-                className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
+                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
                   activeTab === 'transactions'
-                    ? 'border-indigo-500 text-indigo-600 font-bold'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    ? 'border-[#0071e3] text-[#0066cc] font-semibold'
+                    : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
                 }`}
               >
                 Transaksi Kas RT ({txList.length})
@@ -735,10 +736,10 @@ export const FinancialPage: React.FC = () => {
               <button
                 id="tab-funds"
                 onClick={() => setActiveTab('funds')}
-                className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
+                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
                   activeTab === 'funds'
-                    ? 'border-indigo-500 text-indigo-600 font-bold'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    ? 'border-[#0071e3] text-[#0066cc] font-semibold'
+                    : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
                 }`}
               >
                 Kantong Kas ({fundList.length})
@@ -746,10 +747,10 @@ export const FinancialPage: React.FC = () => {
               <button
                 id="tab-categories"
                 onClick={() => setActiveTab('categories')}
-                className={`whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all ${
+                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
                   activeTab === 'categories'
-                    ? 'border-indigo-500 text-indigo-600 font-bold'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    ? 'border-[#0071e3] text-[#0066cc] font-semibold'
+                    : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
                 }`}
               >
                 Master Kategori Iuran & Kas
@@ -953,92 +954,78 @@ export const FinancialPage: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <div className="overflow-x-auto scrollbar-thin">
-                    <table className="min-w-[700px] w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Warga
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Kategori / Periode
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Jumlah
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Bukti
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Aksi
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Warga</TableHead>
+                        <TableHead>Kategori / Periode</TableHead>
+                        <TableHead>Jumlah</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Bukti</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {paginatedDues.map((item: any) => (
-                        <tr key={item.id}>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                        <TableRow key={item.id}>
+                          <TableCell className="font-semibold text-[#1d1d1f]">
                             {item.resident_name || item.resident_id}
-                          </td>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                          </TableCell>
+                          <TableCell className="text-[#707070]">
                             {item.fee_category_name || 'Iuran'} ({item.period_month}/{item.period_year})
-                          </td>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">
+                          </TableCell>
+                          <TableCell className="font-semibold text-[#1d1d1f] tabular-nums">
                             Rp {item.amount.toLocaleString('id-ID')}
-                          </td>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm">
+                          </TableCell>
+                          <TableCell>
                             <span
-                              className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                              className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase border ${
                                 item.status === 'verified'
-                                  ? 'bg-green-100 text-green-800'
+                                  ? 'bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7]'
                                   : item.status === 'rejected'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  : 'bg-amber-50 text-amber-800 border-amber-200'
                               }`}
                             >
                               {item.status}
                             </span>
-                          </td>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                          </TableCell>
+                          <TableCell>
                             {item.proof_url ? (
                               <a
                                 href={getFileUrl(item.proof_url)}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-indigo-600 underline hover:text-indigo-900"
+                                className="text-[#0066cc] underline hover:text-[#0071e3]"
                               >
                                 Lihat Bukti
                               </a>
                             ) : (
-                              '-'
+                              <span className="text-[#858585]">-</span>
                             )}
-                          </td>
-                          <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium space-x-2">
+                          </TableCell>
+                          <TableCell className="text-right space-x-2">
                             {item.status === 'pending' && !isResident && (
                               <>
                                 <button
                                   onClick={() => handleVerify(item.id, 'verified')}
-                                  className="text-green-600 hover:text-green-900 font-semibold"
+                                  className="apple-btn-secondary text-xs px-2.5 py-1 text-emerald-700"
                                 >
                                   Verifikasi
                                 </button>
                                 <button
                                   onClick={() => handleVerify(item.id, 'rejected')}
-                                  className="text-red-600 hover:text-red-900 font-semibold"
+                                  className="apple-btn-secondary text-xs px-2.5 py-1 text-rose-600"
                                 >
                                   Tolak
                                 </button>
                               </>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </TableBody>
+                  </Table>
 
                 {/* Pagination */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50/50">
@@ -1102,87 +1089,73 @@ export const FinancialPage: React.FC = () => {
                     : 'Belum ada pengeluaran atau penyaluran dari pos iuran warga.'}
                 </div>
               ) : (
-                <div className="overflow-x-auto scrollbar-thin">
-                  <table className="min-w-[700px] w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Tanggal
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Pos Iuran Sumber
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Tipe Penyaluran
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Keterangan / Keperluan
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Jumlah
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Bukti / Nota
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
-                      {filteredDisbursements.map((tx: any) => {
-                        const isTransfer = tx.category?.startsWith('IURAN_PINDAH_KAS');
-                        const catClean = tx.category
-                          ?.replace('IURAN_PINDAH_KAS: ', '')
-                          ?.replace('IURAN_KELUAR: ', '')
-                          ?.replace('IURAN: ', '');
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Pos Iuran Sumber</TableHead>
+                      <TableHead>Tipe Penyaluran</TableHead>
+                      <TableHead>Keterangan / Keperluan</TableHead>
+                      <TableHead>Jumlah</TableHead>
+                      <TableHead className="text-right">Bukti / Nota</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDisbursements.map((tx: any) => {
+                      const isTransfer = tx.category?.startsWith('IURAN_PINDAH_KAS');
+                      const catClean = tx.category
+                        ?.replace('IURAN_PINDAH_KAS: ', '')
+                        ?.replace('IURAN_KELUAR: ', '')
+                        ?.replace('IURAN: ', '');
 
-                        return (
-                          <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="whitespace-nowrap px-6 py-4 text-xs text-gray-600">
-                              {new Date(tx.transaction_date).toLocaleDateString('id-ID', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric',
-                              })}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-xs font-semibold text-slate-800">
-                              {catClean || '-'}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-xs">
-                              {isTransfer ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 border border-indigo-200">
-                                  <Wallet className="h-3 w-3" /> Pindah ke Kas RT ({tx.fund_name || 'Kas'})
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 border border-rose-200">
-                                  <ArrowUpRight className="h-3 w-3" /> Belanja Langsung
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-xs text-gray-700 max-w-xs truncate" title={tx.description}>
-                              {tx.description || '-'}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-xs font-bold text-rose-600">
-                              - Rp {Number(tx.amount).toLocaleString('id-ID')}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-right text-xs">
-                              {tx.proof_url ? (
-                                <a
-                                  href={getFileUrl(tx.proof_url)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-indigo-600 underline hover:text-indigo-900 font-medium"
-                                >
-                                  Lihat Bukti
-                                </a>
-                              ) : (
-                                <span className="text-slate-400">-</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                      return (
+                        <TableRow key={tx.id}>
+                          <TableCell className="text-xs text-[#707070] font-mono">
+                            {new Date(tx.transaction_date).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </TableCell>
+                          <TableCell className="text-xs font-semibold text-[#1d1d1f]">
+                            {catClean || '-'}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {isTransfer ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-[#f4f8fb] px-2 py-0.5 text-[10px] font-semibold text-[#0066cc] border border-[#d2d2d7]">
+                                <Wallet className="h-3 w-3" /> Pindah ke Kas RT ({tx.fund_name || 'Kas'})
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
+                                <ArrowUpRight className="h-3 w-3" /> Belanja Langsung
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-[#707070] max-w-xs truncate" title={tx.description}>
+                            {tx.description || '-'}
+                          </TableCell>
+                          <TableCell className="text-xs font-semibold text-rose-600 tabular-nums">
+                            - Rp {Number(tx.amount).toLocaleString('id-ID')}
+                          </TableCell>
+                          <TableCell className="text-right text-xs">
+                            {tx.proof_url ? (
+                              <a
+                                href={getFileUrl(tx.proof_url)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[#0066cc] underline hover:text-[#0071e3] font-medium"
+                              >
+                                Lihat Bukti
+                              </a>
+                            ) : (
+                              <span className="text-[#858585]">-</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               )}
             </div>
           )}
@@ -1282,76 +1255,62 @@ export const FinancialPage: React.FC = () => {
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto scrollbar-thin">
-                  <table className="min-w-[700px] w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                        Tanggal
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                        Tipe
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                        Kantong Kas
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                        Kategori / Ket.
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                        Jumlah
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                        Bukti
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Tipe</TableHead>
+                      <TableHead>Kantong Kas</TableHead>
+                      <TableHead>Kategori / Ket.</TableHead>
+                      <TableHead>Jumlah</TableHead>
+                      <TableHead>Bukti</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {paginatedTx.map((tx: any) => (
-                      <tr key={tx.id}>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                      <TableRow key={tx.id}>
+                        <TableCell className="text-[#707070] font-mono text-xs">
                           {tx.transaction_date}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm">
+                        </TableCell>
+                        <TableCell>
                           <span
-                            className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                              tx.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase border ${
+                              tx.type === 'income' ? 'bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7]' : 'bg-rose-50 text-rose-700 border-rose-200'
                             }`}
                           >
                             {tx.type === 'income' ? 'Masuk' : 'Keluar'}
                           </span>
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700 font-medium">
+                        </TableCell>
+                        <TableCell className="text-[#1d1d1f] font-medium text-xs">
                           {tx.fund_name || 'Kas RT'}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                          <div className="font-medium">{tx.category}</div>
+                        </TableCell>
+                        <TableCell className="text-xs text-[#707070]">
+                          <div className="font-semibold text-[#1d1d1f]">{tx.category}</div>
                           {tx.description && (
-                            <div className="text-xs text-gray-500">{tx.description}</div>
+                            <div className="text-[11px] text-[#707070]">{tx.description}</div>
                           )}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">
+                        </TableCell>
+                        <TableCell className={`text-xs font-semibold tabular-nums ${tx.type === 'income' ? 'text-[#0066cc]' : 'text-rose-600'}`}>
                           {tx.type === 'income' ? '+' : '-'} Rp {tx.amount.toLocaleString('id-ID')}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                        </TableCell>
+                        <TableCell>
                           {tx.proof_url ? (
                             <a
                               href={getFileUrl(tx.proof_url)}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-indigo-600 underline hover:text-indigo-900"
+                              className="text-[#0066cc] underline hover:text-[#0071e3] text-xs font-medium"
                             >
                               Lihat Bukti
                             </a>
                           ) : (
-                            '-'
+                            <span className="text-[#858585] text-xs">-</span>
                           )}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </TableBody>
+                </Table>
 
               {/* Pagination */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50/50">
@@ -1403,50 +1362,48 @@ export const FinancialPage: React.FC = () => {
           ) : fundList.length === 0 ? (
             <div className="p-6 text-center text-gray-500">Belum ada kantong kas</div>
           ) : (
-            <div className="overflow-x-auto scrollbar-thin">
-              <table className="min-w-[650px] w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Nama Kantong Kas</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tipe</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Saldo Saat Ini</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Deskripsi / Peruntukan</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {fundList.map((f: any) => (
-                    <tr key={f.id}>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">
-                        {f.name} {f.is_default && <span className="ml-2 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700 font-bold">Utama</span>}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                        <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
-                          {f.type}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-bold text-gray-900">
-                        Rp {(f.balance || 0).toLocaleString('id-ID')}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{f.description || '-'}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                        {!f.is_default && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteFund(f.id, f.is_default)}
-                            className="text-red-600 hover:text-red-800"
-                            title="Hapus Kantong Kas"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nama Kantong Kas</TableHead>
+                  <TableHead>Tipe</TableHead>
+                  <TableHead>Saldo Saat Ini</TableHead>
+                  <TableHead>Deskripsi / Peruntukan</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {fundList.map((f: any) => (
+                  <TableRow key={f.id}>
+                    <TableCell className="font-semibold text-[#1d1d1f]">
+                      {f.name} {f.is_default && <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] font-semibold">Utama</span>}
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase border bg-gray-50 text-[#707070] border-[#d2d2d7]">
+                        {f.type}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-semibold text-[#1d1d1f] tabular-nums">
+                      Rp {(f.balance || 0).toLocaleString('id-ID')}
+                    </TableCell>
+                    <TableCell className="text-xs text-[#707070]">{f.description || '-'}</TableCell>
+                    <TableCell className="text-right">
+                      {!f.is_default && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteFund(f.id, f.is_default)}
+                          className="text-rose-600 hover:text-rose-800"
+                          title="Hapus Kantong Kas"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </div>
       )}
@@ -1496,44 +1453,42 @@ export const FinancialPage: React.FC = () => {
               ) : catList.length === 0 ? (
                 <div className="p-6 text-center text-gray-500">Belum ada jenis iuran. Silakan tambahkan baru.</div>
               ) : (
-                <div className="overflow-x-auto scrollbar-thin">
-                  <table className="min-w-[650px] w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Nama Iuran</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tarif / Nominal</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Periode</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Keterangan</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
-                      {catList.map((cat: any) => (
-                        <tr key={cat.id}>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">{cat.name}</td>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">Rp {Number(cat.amount).toLocaleString('id-ID')}</td>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                            <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
-                              {cat.period === 'monthly' ? 'Bulanan' : 'Sekali Bayar (Insidental)'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">{cat.description || '-'}</td>
-                          <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteCategory(cat.id)}
-                              className="text-red-600 hover:text-red-800"
-                              title="Hapus Kategori"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nama Iuran</TableHead>
+                      <TableHead>Tarif / Nominal</TableHead>
+                      <TableHead>Periode</TableHead>
+                      <TableHead>Keterangan</TableHead>
+                      <TableHead className="text-right">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {catList.map((cat: any) => (
+                      <TableRow key={cat.id}>
+                        <TableCell className="font-semibold text-[#1d1d1f]">{cat.name}</TableCell>
+                        <TableCell className="font-semibold text-[#1d1d1f] tabular-nums">Rp {Number(cat.amount).toLocaleString('id-ID')}</TableCell>
+                        <TableCell>
+                          <span className="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase border bg-gray-50 text-[#707070] border-[#d2d2d7]">
+                            {cat.period === 'monthly' ? 'Bulanan' : 'Sekali Bayar (Insidental)'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-xs text-[#707070]">{cat.description || '-'}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            className="text-rose-600 hover:text-rose-800"
+                            title="Hapus Kategori"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </div>
           )}

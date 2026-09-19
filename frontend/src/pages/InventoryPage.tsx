@@ -16,6 +16,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import { Select } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
 import { Dialog } from '../components/ui/dialog';
+import { Textarea } from '../components/ui/textarea';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 
 export const InventoryPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -525,66 +527,64 @@ export const InventoryPage: React.FC = () => {
               <p className="text-xs text-slate-500 mt-1">Data peminjaman warga akan tercatat di sini.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto bg-white border border-slate-200 rounded-xl">
-              <table className="w-full min-w-[650px] text-left border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
-                    <th className="py-3 px-4">Peminjam</th>
-                    <th className="py-3 px-4">Barang</th>
-                    <th className="py-3 px-4">Jumlah</th>
-                    <th className="py-3 px-4">Tgl Pinjam</th>
-                    <th className="py-3 px-4">Est. Kembali</th>
-                    <th className="py-3 px-4">Status</th>
-                    {!isResident && <th className="py-3 px-4 text-right">Aksi</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {(borrowingsData?.data || []).map((b) => (
-                    <tr key={b.id} className="hover:bg-slate-50 transition">
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-slate-900">{b.borrower_name}</div>
-                        {b.borrower_phone && (
-                          <div className="text-xs text-slate-500">{b.borrower_phone}</div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-slate-800">{b.item_name || 'Item'}</div>
-                        {b.purpose && <div className="text-xs text-slate-500">{b.purpose}</div>}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-semibold text-slate-900">
-                          {b.quantity} {b.unit}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-xs text-slate-600">
-                        {b.borrow_date ? new Date(b.borrow_date).toLocaleDateString('id-ID') : '-'}
-                      </td>
-                      <td className="py-3 px-4 text-xs text-slate-600">
-                        {b.expected_return_date ? new Date(b.expected_return_date).toLocaleDateString('id-ID') : '-'}
-                      </td>
-                      <td className="py-3 px-4">{getStatusBadge(b.status)}</td>
-                      {!isResident && (
-                        <td className="py-3 px-4 text-right">
-                          {(b.status === 'borrowed' || b.status === 'approved') && (
-                            <button
-                              onClick={() => handleOpenReturn(b)}
-                              className="px-3 py-1 text-xs font-medium text-white bg-emerald-600 rounded hover:bg-emerald-700 transition"
-                            >
-                              Pengembalian
-                            </button>
-                          )}
-                          {b.status === 'returned' && b.actual_return_date && (
-                            <span className="text-xs text-slate-500">
-                              Kembali: {new Date(b.actual_return_date).toLocaleDateString('id-ID')}
-                            </span>
-                          )}
-                        </td>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Peminjam</TableHead>
+                  <TableHead>Barang</TableHead>
+                  <TableHead>Jumlah</TableHead>
+                  <TableHead>Tgl Pinjam</TableHead>
+                  <TableHead>Est. Kembali</TableHead>
+                  <TableHead>Status</TableHead>
+                  {!isResident && <TableHead className="text-right">Aksi</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(borrowingsData?.data || []).map((b) => (
+                  <TableRow key={b.id}>
+                    <TableCell>
+                      <div className="font-semibold text-[#1d1d1f]">{b.borrower_name}</div>
+                      {b.borrower_phone && (
+                        <div className="text-[11px] text-[#707070]">{b.borrower_phone}</div>
                       )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium text-[#1d1d1f]">{b.item_name || 'Item'}</div>
+                      {b.purpose && <div className="text-[11px] text-[#707070]">{b.purpose}</div>}
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-semibold text-[#1d1d1f]">
+                        {b.quantity} {b.unit}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-[#707070] text-xs font-mono">
+                      {b.borrow_date ? new Date(b.borrow_date).toLocaleDateString('id-ID') : '-'}
+                    </TableCell>
+                    <TableCell className="text-[#707070] text-xs font-mono">
+                      {b.expected_return_date ? new Date(b.expected_return_date).toLocaleDateString('id-ID') : '-'}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(b.status)}</TableCell>
+                    {!isResident && (
+                      <TableCell className="text-right">
+                        {(b.status === 'borrowed' || b.status === 'approved') && (
+                          <button
+                            onClick={() => handleOpenReturn(b)}
+                            className="apple-btn-primary text-xs px-3 py-1"
+                          >
+                            Pengembalian
+                          </button>
+                        )}
+                        {b.status === 'returned' && b.actual_return_date && (
+                          <span className="text-[11px] text-[#707070]">
+                            Kembali: {new Date(b.actual_return_date).toLocaleDateString('id-ID')}
+                          </span>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </div>
       )}
@@ -596,7 +596,7 @@ export const InventoryPage: React.FC = () => {
         title={selectedItem ? 'Edit Barang Inventaris' : 'Tambah Barang Inventaris'}
         description="Kelola data aset dan inventaris warga RT"
       >
-        <form onSubmit={handleSaveItem} className="space-y-4 mt-2">
+        <form onSubmit={handleSaveItem} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   Nama Barang *
@@ -703,12 +703,11 @@ export const InventoryPage: React.FC = () => {
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   Deskripsi / Spesifikasi
                 </label>
-                <textarea
+                <Textarea
                   rows={2}
                   value={itemForm.description}
                   onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
                   placeholder="Keterangan warna, ukuran, atau merk"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
                 />
               </div>
 
@@ -750,7 +749,7 @@ export const InventoryPage: React.FC = () => {
           title="Catat Peminjaman Barang"
           description={`${targetItemForBorrow.name} (Tersedia: ${targetItemForBorrow.available_quantity} ${targetItemForBorrow.unit})`}
         >
-          <form onSubmit={handleSaveBorrow} className="space-y-4 mt-2">
+          <form onSubmit={handleSaveBorrow} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
                   Nama Warga / Peminjam *
@@ -885,12 +884,11 @@ export const InventoryPage: React.FC = () => {
               <label className="block text-xs font-medium text-slate-700 mb-1">
                 Catatan Pengurus (Opsional)
               </label>
-              <textarea
+              <Textarea
                 rows={2}
                 value={returnNotes}
                 onChange={(e) => setReturnNotes(e.target.value)}
                 placeholder="Keterangan tambahan jika ada kerusakan atau denda"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
               />
             </div>
 

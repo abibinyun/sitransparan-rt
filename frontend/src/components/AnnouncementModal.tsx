@@ -7,6 +7,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
 import { Checkbox } from './ui/checkbox';
+import { Textarea } from './ui/textarea';
 import { UploadCloud, Image as ImageIcon, FileText, Trash2, Plus } from 'lucide-react';
 import { getFileUrl } from '../utils/file';
 
@@ -136,10 +137,10 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       onClose={onClose}
       title={initialData ? 'Edit Pengumuman' : 'Tambah Pengumuman Baru'}
       description="Buat pengumuman resmi untuk warga RT lengkap dengan multi foto dan berkas lampiran"
-      className="w-[96vw] sm:w-[92vw] max-w-4xl p-4 sm:p-7"
+      className="w-[96vw] sm:w-[92vw] max-w-4xl"
       preventOutsideClose={true}
     >
-      <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] sm:max-h-[78vh] overflow-y-auto px-0.5 sm:px-1">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="title" className="text-xs sm:text-sm font-semibold">Judul Pengumuman</Label>
           <Input
@@ -155,13 +156,12 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
 
         <div className="space-y-1.5">
           <Label htmlFor="content" className="text-xs sm:text-sm font-semibold">Isi Pengumuman</Label>
-          <textarea
+          <Textarea
             id="content"
             required
             rows={4}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="flex w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             placeholder="Tulis detail pengumuman secara rinci..."
           />
         </div>

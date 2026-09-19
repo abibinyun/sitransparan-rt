@@ -24,17 +24,17 @@ export const PageHeaderTabs: React.FC<PageHeaderTabsProps> = ({
   actions,
 }) => {
   return (
-    <div className="space-y-4 mb-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-3 mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
-          {description && <p className="text-sm text-slate-500 mt-0.5">{description}</p>}
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f]">{title}</h1>
+          {description && <p className="text-xs sm:text-sm text-[#707070] mt-0.5">{description}</p>}
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
 
-      <div className="border-b border-slate-200">
-        <nav className="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto">
+      <div className="border-b border-[#d2d2d7]">
+        <nav className="-mb-px flex space-x-1 sm:space-x-4 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -45,17 +45,17 @@ export const PageHeaderTabs: React.FC<PageHeaderTabsProps> = ({
                 onFocus={() => prefetchRoute(tab.to)}
                 className={({ isActive }) =>
                   [
-                    'inline-flex items-center gap-2 py-3 px-2 sm:px-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors duration-150',
+                    'inline-flex items-center gap-1.5 py-2.5 px-2 sm:px-3 text-xs sm:text-sm font-medium border-b-2 whitespace-nowrap transition-colors duration-150',
                     isActive
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                      ? 'border-[#0071e3] text-[#0066cc] font-semibold'
+                      : 'border-transparent text-[#707070] hover:text-[#1d1d1f] hover:border-[#858585]',
                   ].join(' ')
                 }
               >
                 {Icon && <Icon className="h-4 w-4" />}
                 <span>{tab.label}</span>
                 {tab.badge !== undefined && (
-                  <span className="ml-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                  <span className="ml-1 rounded-full bg-[#f4f8fb] border border-[#d2d2d7] px-1.5 py-0.2 text-[10px] font-semibold text-[#0066cc]">
                     {tab.badge}
                   </span>
                 )}

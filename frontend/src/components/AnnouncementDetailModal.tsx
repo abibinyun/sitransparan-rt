@@ -129,9 +129,9 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
       onClose={onClose}
       title=""
       description=""
-      className="w-[96vw] sm:w-[92vw] max-w-4xl p-4 sm:p-7 bg-white border border-[#d2d2d7] text-[#1d1d1f] rounded-lg shadow-2xl"
+      className="w-[96vw] sm:w-[92vw] max-w-4xl"
     >
-      <div className="space-y-5 max-h-[85vh] sm:max-h-[88vh] overflow-y-auto pr-1">
+      <div className="space-y-5">
         {/* Header Badges & Actions */}
         <div className="flex items-start justify-between gap-3 border-b border-[#d2d2d7] pb-3">
           <div className="space-y-1">

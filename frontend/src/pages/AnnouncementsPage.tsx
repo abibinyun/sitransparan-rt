@@ -11,6 +11,7 @@ import {
 } from '../services/announcement_doc';
 import { AnnouncementModal } from '../components/AnnouncementModal';
 import { DocumentUploadModal } from '../components/DocumentUploadModal';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 import { Announcement, CreateAnnouncementPayload, Document, CreateDocumentPayload } from '../types/announcement_doc';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
 import { FileText, MessageSquareHeart, Vote } from 'lucide-react';
@@ -133,24 +134,24 @@ export const AnnouncementsPage: React.FC = () => {
       />
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+      <div className="border-b border-[#d2d2d7]">
+        <nav className="-mb-px flex space-x-6">
           <button
             onClick={() => setActiveTab('announcements')}
-            className={`py-3 text-sm font-medium border-b-2 ${
+            className={`py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'announcements'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-[#0071e3] text-[#0066cc] font-semibold'
+                : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
             }`}
           >
             Pengumuman ({announcementsData?.total || 0})
           </button>
           <button
             onClick={() => setActiveTab('documents')}
-            className={`py-3 text-sm font-medium border-b-2 ${
+            className={`py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'documents'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-[#0071e3] text-[#0066cc] font-semibold'
+                : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
             }`}
           >
             Dokumen & Berkas ({documentsData?.total || 0})
@@ -271,63 +272,53 @@ export const AnnouncementsPage: React.FC = () => {
           {loadingDocuments ? (
             <p className="text-sm text-gray-500">Memuat dokumen...</p>
           ) : documentsData?.data?.length ? (
-            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Judul
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Kategori
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Tanggal
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Aksi
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {documentsData.data.map((doc) => (
-                    <tr key={doc.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{doc.title}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{doc.category}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {new Date(doc.created_at).toLocaleDateString('id-ID')}
-                      </td>
-                      <td className="px-6 py-4 text-right text-sm space-x-3">
-                        <a
-                          href={getFileUrl(doc.file_url)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-medium text-indigo-600 hover:text-indigo-900 underline"
-                        >
-                          Buka File
-                        </a>
-                        {!isResident && (
-                          <>
-                            <button
-                              onClick={() => handleOpenEditDocument(doc)}
-                              className="font-medium text-gray-600 hover:text-gray-900"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDocument(doc.id)}
-                              className="font-medium text-red-600 hover:text-red-900"
-                            >
-                              Hapus
-                            </button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Judul</TableHead>
+                  <TableHead>Kategori</TableHead>
+                  <TableHead>Tanggal</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {documentsData.data.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell className="font-semibold text-[#1d1d1f]">{doc.title}</TableCell>
+                    <TableCell className="text-[#707070]">{doc.category}</TableCell>
+                    <TableCell className="text-[#707070]">
+                      {new Date(doc.created_at).toLocaleDateString('id-ID')}
+                    </TableCell>
+                    <TableCell className="text-right space-x-3">
+                      <a
+                        href={getFileUrl(doc.file_url)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-[#0066cc] hover:underline"
+                      >
+                        Buka File
+                      </a>
+                      {!isResident && (
+                        <>
+                          <button
+                            onClick={() => handleOpenEditDocument(doc)}
+                            className="font-medium text-[#707070] hover:text-[#1d1d1f]"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            className="font-medium text-rose-600 hover:underline"
+                          >
+                            Hapus
+                          </button>
+                        </>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           ) : (
             <p className="text-sm text-gray-500">Belum ada dokumen.</p>
           )}

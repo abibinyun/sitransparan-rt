@@ -88,132 +88,131 @@ export const ResidentDashboardView: React.FC = () => {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Welcome Hero Banner */}
-      <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-950 via-slate-900 to-teal-950 p-6 text-white shadow-xl sm:p-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(99,102,241,0.35),transparent_24rem),radial-gradient(circle_at_85%_30%,rgba(20,184,166,0.25),transparent_20rem)] pointer-events-none" />
-        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/15 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-indigo-200 backdrop-blur">
-              <Home className="h-3.5 w-3.5" />
+      <section className="apple-card p-5 sm:p-7 border-[#d2d2d7] bg-white">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+          <div className="space-y-2">
+            <div className="apple-badge">
+              <Home className="h-3.5 w-3.5 text-[#0071e3]" />
               <span>Portal Mandiri Warga RT</span>
             </div>
-            <h1 className="text-2xl font-black tracking-tight sm:text-4xl">
+            <h1 className="text-xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f]">
               Selamat Datang, {user?.name || 'Warga'}
             </h1>
-            <p className="max-w-xl text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="max-w-xl text-xs sm:text-sm text-[#707070] leading-relaxed">
               Pantau status iuran keluarga, tabungan bank sampah, ajukan usulan lingkungan, dan akses informasi warga RT dengan transparan.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <NavLink
               to="/admin/profile"
-              className="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2.5 text-xs font-bold text-white transition backdrop-blur"
+              className="apple-btn-secondary text-xs px-4 py-2 flex items-center gap-1.5"
             >
-              <UserCircle className="h-4 w-4" />
+              <UserCircle className="h-4 w-4 text-[#0066cc]" />
               Edit Profil Saya
             </NavLink>
             <NavLink
               to="/admin/aspirations"
-              className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-950/20 transition"
+              className="apple-btn-primary text-xs px-4 py-2 flex items-center gap-1.5"
             >
-              <Send className="h-4 w-4" />
-              Kirim Usulan / Aduan
+              <Send className="h-3.5 w-3.5 text-white" />
+              Kirim Usulan
             </NavLink>
           </div>
         </div>
       </section>
 
       {/* Ringkasan Kartu Data Rumah & Keluarga */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         {/* Kartu Rumah */}
-        <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Atas Nama / Rumah</p>
-              <p className="mt-2 text-xl font-black text-slate-900">
+        <div className="apple-card p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#707070]">Rumah Terdaftar</p>
+              <p className="mt-1.5 text-lg sm:text-xl font-semibold text-[#1d1d1f] truncate">
                 {house?.block_number || 'Rumah Terdaftar'}
               </p>
-              <p className="mt-1 text-xs text-slate-500 truncate max-w-[180px]">
+              <p className="mt-0.5 text-xs text-[#707070] truncate">
                 {house?.address || activeTenant?.name || 'RT Terdaftar'}
               </p>
             </div>
-            <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600">
-              <Home className="h-5 w-5" />
+            <div className="p-2 rounded-lg bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] shrink-0">
+              <Home className="h-4.5 w-4.5" />
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-400">Kepala Keluarga:</span>
-            <span className="font-semibold text-slate-700 truncate max-w-[120px]">
+          <div className="mt-3 pt-2.5 border-t border-[#d2d2d7] flex items-center justify-between text-xs">
+            <span className="text-[#707070]">Kepala Keluarga:</span>
+            <span className="font-semibold text-[#1d1d1f] truncate max-w-[120px]">
               {head?.full_name || user?.name || '-'}
             </span>
           </div>
         </div>
 
         {/* Kartu Status Iuran KK */}
-        <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Status Iuran KK</p>
-              <p className="mt-2 text-xl font-black text-slate-900">
+        <div className="apple-card p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#707070]">Status Iuran KK</p>
+              <p className="mt-1.5 text-lg sm:text-xl font-semibold text-[#1d1d1f] truncate">
                 {pendingDues.length === 0 ? 'Lunas / Nihil' : `${pendingDues.length} Tertunda`}
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-0.5 text-xs text-[#707070]">
                 {pendingDues.length === 0 ? 'Semua tagihan terverifikasi' : 'Perlu penyelesaian iuran'}
               </p>
             </div>
-            <div className={`p-3 rounded-2xl ${pendingDues.length === 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-              <Coins className="h-5 w-5" />
+            <div className={`p-2 rounded-lg border shrink-0 ${pendingDues.length === 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>
+              <Coins className="h-4.5 w-4.5" />
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-400">Total Terbayar:</span>
-            <span className="font-bold text-emerald-600">{formatRupiah(totalPaidAmount)}</span>
+          <div className="mt-3 pt-2.5 border-t border-[#d2d2d7] flex items-center justify-between text-xs">
+            <span className="text-[#707070]">Total Terbayar:</span>
+            <span className="font-semibold text-[#0066cc] tabular-nums">{formatRupiah(totalPaidAmount)}</span>
           </div>
         </div>
 
         {/* Kartu Tabungan Sampah */}
-        <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Tabungan Sampah</p>
-              <p className="mt-2 text-xl font-black text-slate-900">
+        <div className="apple-card p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#707070]">Tabungan Sampah</p>
+              <p className="mt-1.5 text-lg sm:text-xl font-semibold text-[#0066cc] tabular-nums truncate">
                 {formatRupiah(myWaste?.total_earnings_amount || 0)}
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-0.5 text-xs text-[#707070]">
                 {myWaste ? `${myWaste.total_weight_kg} kg terkumpul` : 'Belum ada setoran'}
               </p>
             </div>
-            <div className="p-3 rounded-2xl bg-teal-50 text-teal-600">
-              <Recycle className="h-5 w-5" />
+            <div className="p-2 rounded-lg bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] shrink-0">
+              <Recycle className="h-4.5 w-4.5" />
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-400">Frekuensi:</span>
-            <span className="font-semibold text-slate-700">
+          <div className="mt-3 pt-2.5 border-t border-[#d2d2d7] flex items-center justify-between text-xs">
+            <span className="text-[#707070]">Frekuensi:</span>
+            <span className="font-semibold text-[#1d1d1f]">
               {myWaste?.deposit_count || 0} kali setoran
             </span>
           </div>
         </div>
 
         {/* Kartu Usulan & Aspirasi Saya */}
-        <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Usulan Saya</p>
-              <p className="mt-2 text-xl font-black text-slate-900">
+        <div className="apple-card p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#707070]">Usulan Saya</p>
+              <p className="mt-1.5 text-lg sm:text-xl font-semibold text-[#1d1d1f] truncate">
                 {myAspirations.length} Diajukan
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-0.5 text-xs text-[#707070]">
                 {myAspirations.filter((a) => a.status === 'resolved').length} selesai ditindaklanjuti
               </p>
             </div>
-            <div className="p-3 rounded-2xl bg-rose-50 text-rose-600">
-              <MessageSquareHeart className="h-5 w-5" />
+            <div className="p-2 rounded-lg bg-[#f5f5f7] text-[#1d1d1f] border border-[#d2d2d7] shrink-0">
+              <MessageSquareHeart className="h-4.5 w-4.5" />
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-400">Dalam Proses:</span>
-            <span className="font-semibold text-amber-600">
+          <div className="mt-3 pt-2.5 border-t border-[#d2d2d7] flex items-center justify-between text-xs">
+            <span className="text-[#707070]">Dalam Proses:</span>
+            <span className="font-semibold text-amber-700">
               {myAspirations.filter((a) => a.status === 'submitted' || a.status === 'under_review').length}
             </span>
           </div>
@@ -221,48 +220,48 @@ export const ResidentDashboardView: React.FC = () => {
       </div>
 
       {/* Grid 2 Kolom Konten Spesifik */}
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-2">
         {/* Kolom Kiri: Riwayat Iuran KK Terakhir */}
-        <div className="space-y-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="apple-card p-5 sm:p-6 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[#d2d2d7]">
             <div>
-              <h2 className="font-bold text-slate-900">Riwayat Iuran Keluarga</h2>
-              <p className="text-xs text-slate-400">Status pembayaran iuran lingkungan RT Anda</p>
+              <h2 className="font-semibold text-[#1d1d1f] text-base">Riwayat Iuran Keluarga</h2>
+              <p className="text-xs text-[#707070]">Status pembayaran iuran lingkungan RT Anda</p>
             </div>
             <NavLink
               to="/admin/financial"
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+              className="text-xs font-semibold text-[#0066cc] hover:underline flex items-center gap-1"
             >
               Lihat Detail <ChevronRight className="w-3.5 h-3.5" />
             </NavLink>
           </div>
 
           {myDues.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 text-xs">
+            <div className="py-8 text-center text-[#707070] text-xs">
               Belum ada riwayat pembayaran iuran yang tercatat.
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {myDues.slice(0, 5).map((due: DuesPayment) => (
                 <div
                   key={due.id}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs"
+                  className="flex items-center justify-between p-3 rounded-lg bg-[#f5f5f7] border border-[#d2d2d7] text-xs"
                 >
                   <div>
-                    <p className="font-bold text-slate-800">{due.fee_category_name || 'Iuran Bulanan'}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="font-semibold text-[#1d1d1f]">{due.fee_category_name || 'Iuran Bulanan'}</p>
+                    <p className="text-[11px] text-[#707070] mt-0.5">
                       Periode: Bulan {due.period_month} / {due.period_year}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-slate-900">{formatRupiah(due.amount || 0)}</p>
+                    <p className="font-semibold text-[#1d1d1f] tabular-nums">{formatRupiah(due.amount || 0)}</p>
                     <span
-                      className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase border ${
                         due.status === 'verified'
-                          ? 'bg-emerald-100 text-emerald-700'
+                          ? 'bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7]'
                           : due.status === 'rejected'
-                          ? 'bg-rose-100 text-rose-700'
-                          : 'bg-amber-100 text-amber-700'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : 'bg-amber-50 text-amber-800 border-amber-200'
                       }`}
                     >
                       {due.status || 'pending'}
@@ -275,15 +274,15 @@ export const ResidentDashboardView: React.FC = () => {
         </div>
 
         {/* Kolom Kanan: Status Usulan & Aspirasi Saya */}
-        <div className="space-y-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="apple-card p-5 sm:p-6 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[#d2d2d7]">
             <div>
-              <h2 className="font-bold text-slate-900">Usulan & Aduan Saya</h2>
-              <p className="text-xs text-slate-400">Pantau respon pengurus RT atas aspirasi Anda</p>
+              <h2 className="font-semibold text-[#1d1d1f] text-base">Usulan &amp; Aduan Saya</h2>
+              <p className="text-xs text-[#707070]">Pantau respon pengurus RT atas aspirasi Anda</p>
             </div>
             <NavLink
               to="/admin/aspirations"
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+              className="text-xs font-semibold text-[#0066cc] hover:underline flex items-center gap-1"
             >
               Semua Usulan <ChevronRight className="w-3.5 h-3.5" />
             </NavLink>
@@ -291,41 +290,41 @@ export const ResidentDashboardView: React.FC = () => {
 
           {myAspirations.length === 0 ? (
             <div className="py-8 text-center space-y-3">
-              <p className="text-xs text-slate-400">Anda belum mengajukan usulan atau aduan lingkungan.</p>
+              <p className="text-xs text-[#707070]">Anda belum mengajukan usulan atau aduan lingkungan.</p>
               <NavLink
                 to="/admin/aspirations"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition"
+                className="apple-btn-secondary text-xs px-3.5 py-1.5 inline-flex items-center gap-1.5"
               >
-                <Send className="w-3.5 h-3.5" /> Buat Usulan Pertama
+                <Send className="w-3.5 h-3.5 text-[#0066cc]" /> Buat Usulan Pertama
               </NavLink>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {myAspirations.slice(0, 5).map((asp) => (
                 <div
                   key={asp.id}
-                  className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs space-y-2"
+                  className="p-3.5 rounded-lg bg-[#f5f5f7] border border-[#d2d2d7] text-xs space-y-2"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-bold text-slate-800 line-clamp-1">{asp.title}</p>
+                    <p className="font-semibold text-[#1d1d1f] line-clamp-1">{asp.title}</p>
                     <span
-                      className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase border ${
                         asp.status === 'resolved'
-                          ? 'bg-emerald-100 text-emerald-700'
+                          ? 'bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7]'
                           : asp.status === 'rejected'
-                          ? 'bg-rose-100 text-rose-700'
-                          : 'bg-amber-100 text-amber-700'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : 'bg-amber-50 text-amber-800 border-amber-200'
                       }`}
                     >
                       {asp.status}
                     </span>
                   </div>
-                  <p className="text-slate-500 line-clamp-2 text-[11px] leading-relaxed">
+                  <p className="text-[#474747] line-clamp-2 text-[11px] leading-relaxed">
                     {asp.content}
                   </p>
                   {asp.response && (
-                    <div className="mt-2 p-2 rounded-xl bg-indigo-50/70 border border-indigo-100 text-indigo-900 text-[11px]">
-                      <span className="font-bold block">Tanggapan Pengurus:</span>
+                    <div className="mt-2 p-2.5 rounded-lg bg-[#f4f8fb] border border-[#d2d2d7] text-[#1d1d1f] text-[11px]">
+                      <span className="font-semibold text-[#0066cc] block">Tanggapan Pengurus:</span>
                       {asp.response}
                     </div>
                   )}
@@ -337,39 +336,45 @@ export const ResidentDashboardView: React.FC = () => {
       </div>
 
       {/* Akses Cepat & Menu Penting */}
-      <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-lg space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-wider text-slate-300">Aksi Cepat Lingkungan</h3>
+      <div className="apple-card p-5 sm:p-6 space-y-3.5 bg-white">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[#707070]">Aksi Cepat Lingkungan</h3>
         <div className="grid gap-3 sm:grid-cols-3">
           <NavLink
             to="/agenda"
-            className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition"
+            className="flex items-center gap-3 p-3.5 rounded-lg bg-[#f5f5f7] hover:bg-[#e2e2e5] border border-[#d2d2d7] transition"
           >
-            <CalendarDays className="w-5 h-5 text-indigo-400" />
+            <div className="p-2 rounded-md bg-white border border-[#d2d2d7] text-[#0071e3]">
+              <CalendarDays className="w-4 h-4" />
+            </div>
             <div>
-              <p className="text-xs font-bold text-white">Agenda & Kegiatan RT</p>
-              <p className="text-[11px] text-slate-400">Lihat acara & gotong royong</p>
+              <p className="text-xs font-semibold text-[#1d1d1f]">Agenda &amp; Kegiatan RT</p>
+              <p className="text-[10px] text-[#707070]">Lihat acara &amp; gotong royong</p>
             </div>
           </NavLink>
 
           <NavLink
             to="/admin/waste-bank"
-            className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition"
+            className="flex items-center gap-3 p-3.5 rounded-lg bg-[#f5f5f7] hover:bg-[#e2e2e5] border border-[#d2d2d7] transition"
           >
-            <Recycle className="w-5 h-5 text-teal-400" />
+            <div className="p-2 rounded-md bg-white border border-[#d2d2d7] text-[#0071e3]">
+              <Recycle className="w-4 h-4" />
+            </div>
             <div>
-              <p className="text-xs font-bold text-white">Bank Sampah Lingkungan</p>
-              <p className="text-[11px] text-slate-400">Kategori & harga sampah</p>
+              <p className="text-xs font-semibold text-[#1d1d1f]">Bank Sampah Lingkungan</p>
+              <p className="text-[10px] text-[#707070]">Kategori &amp; harga sampah</p>
             </div>
           </NavLink>
 
           <NavLink
             to="/admin/karang-taruna"
-            className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition"
+            className="flex items-center gap-3 p-3.5 rounded-lg bg-[#f5f5f7] hover:bg-[#e2e2e5] border border-[#d2d2d7] transition"
           >
-            <Flame className="w-5 h-5 text-amber-400" />
+            <div className="p-2 rounded-md bg-white border border-[#d2d2d7] text-amber-600">
+              <Flame className="w-4 h-4" />
+            </div>
             <div>
-              <p className="text-xs font-bold text-white">Karang Taruna RT</p>
-              <p className="text-[11px] text-slate-400">Pengurus & program pemuda</p>
+              <p className="text-xs font-semibold text-[#1d1d1f]">Karang Taruna RT</p>
+              <p className="text-[10px] text-[#707070]">Pengurus &amp; program pemuda</p>
             </div>
           </NavLink>
         </div>

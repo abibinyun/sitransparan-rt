@@ -3,6 +3,7 @@ import { Resident } from '../types/resident';
 import { Dialog } from './ui/dialog';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { UserCheck, Phone, MapPin, FileText, ExternalLink, Users, Edit3 } from 'lucide-react';
 import { getFileUrl } from '../utils/file';
 
@@ -31,7 +32,7 @@ export const ResidentDetailModal: React.FC<ResidentDetailModalProps> = ({
       description="Rincian data kependudukan, kartu keluarga, dan dokumen identitas"
       className="max-w-4xl"
     >
-      <div className="space-y-6 pt-2">
+      <div className="space-y-6">
         {/* Header Profil Singkat */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
           <div className="space-y-1">
@@ -230,46 +231,44 @@ export const ResidentDetailModal: React.FC<ResidentDetailModalProps> = ({
             </div>
 
             {resident.family_members && resident.family_members.length > 0 ? (
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
-                <table className="min-w-full divide-y divide-slate-200 text-xs">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-600">Nama</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-600">NIK</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-600">Hubungan</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-600">Jenis Kelamin</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-600">Tanggal Lahir</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
-                    {resident.family_members.map((fm) => (
-                      <tr key={fm.id} className="hover:bg-slate-50/50">
-                        <td className="px-3 py-2.5 font-medium text-slate-800">{fm.full_name}</td>
-                        <td className="px-3 py-2.5 font-mono text-slate-600">
-                          {fm.nik ? (
-                            fm.nik
-                          ) : (
-                            <span className="text-[11px] text-slate-400 font-sans italic">Belum Ada NIK</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <Badge variant="outline">{fm.relation || 'Anggota'}</Badge>
-                        </td>
-                        <td className="px-3 py-2.5 text-slate-600">{fm.gender || '-'}</td>
-                        <td className="px-3 py-2.5 text-slate-600">
-                          {fm.birth_date
-                            ? new Date(fm.birth_date).toLocaleDateString('id-ID', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric',
-                              })
-                            : '-'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nama</TableHead>
+                    <TableHead>NIK</TableHead>
+                    <TableHead>Hubungan</TableHead>
+                    <TableHead>Jenis Kelamin</TableHead>
+                    <TableHead>Tanggal Lahir</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {resident.family_members.map((fm) => (
+                    <TableRow key={fm.id}>
+                      <TableCell className="font-semibold text-[#1d1d1f]">{fm.full_name}</TableCell>
+                      <TableCell className="font-mono text-xs text-[#707070]">
+                        {fm.nik ? (
+                          fm.nik
+                        ) : (
+                          <span className="text-[11px] text-[#858585] font-sans italic">Belum Ada NIK</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{fm.relation || 'Anggota'}</Badge>
+                      </TableCell>
+                      <TableCell className="text-[#707070]">{fm.gender || '-'}</TableCell>
+                      <TableCell className="text-[#707070]">
+                        {fm.birth_date
+                          ? new Date(fm.birth_date).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                          : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             ) : (
               <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-lg border border-dashed border-slate-200 text-center">
                 Belum ada data anggota keluarga lain pada KK ini.

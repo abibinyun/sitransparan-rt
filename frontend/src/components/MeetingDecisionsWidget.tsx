@@ -92,9 +92,9 @@ export const MeetingDecisionsWidget: React.FC = () => {
           onClose={() => setSelectedMeeting(null)}
           title=""
           description=""
-          className="bg-white rounded-lg max-w-2xl sm:max-w-3xl w-full p-0 shadow-2xl overflow-hidden border border-[#d2d2d7] text-[#1d1d1f]"
+          className="max-w-2xl sm:max-w-3xl w-full"
         >
-          <div className="max-h-[85vh] flex flex-col overflow-hidden">
+          <div className="flex flex-col">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-[#d2d2d7] flex items-start justify-between gap-4 bg-[#f5f5f7]">
               <div className="space-y-1">

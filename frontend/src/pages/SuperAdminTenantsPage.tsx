@@ -6,6 +6,7 @@ import type { Tenant } from '../types/auth';
 import { SimpleDialog } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 import { getTenantBaseDomain, getTenantUrl } from '../utils/tenant';
 import { LogIn } from 'lucide-react';
 
@@ -132,63 +133,61 @@ export const SuperAdminTenantsPage: React.FC = () => {
         ) : isError ? (
           <div className="p-6 text-sm text-red-500 text-center">Gagal memuat daftar tenant.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama RT</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug (Identifier)</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain (Default / Custom)</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {tenants && tenants.length > 0 ? (
-                  tenants.map((t) => (
-                    <tr key={t.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{t.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-indigo-600">{t.slug}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{t.domain || `${t.slug}.${baseDomain}`}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEnterTenant(t)}
-                          disabled={switchTenantMutation.isPending}
-                          className="text-emerald-700 border-emerald-200 hover:bg-emerald-50 gap-1"
-                          title="Masuk sebagai superadmin ke tenant ini"
-                        >
-                          <LogIn className="h-3.5 w-3.5" /> Masuk
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditModal(t)}
-                          className="text-gray-700 hover:text-indigo-600"
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(t.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          Hapus
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500">
-                      Belum ada tenant RT terdaftar.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nama RT</TableHead>
+                <TableHead>Slug (Identifier)</TableHead>
+                <TableHead>Domain (Default / Custom)</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tenants && tenants.length > 0 ? (
+                tenants.map((t) => (
+                  <TableRow key={t.id}>
+                    <TableCell className="font-semibold text-[#1d1d1f]">{t.name}</TableCell>
+                    <TableCell className="font-mono text-xs text-[#0066cc]">{t.slug}</TableCell>
+                    <TableCell className="font-mono text-xs text-[#707070]">{t.domain || `${t.slug}.${baseDomain}`}</TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEnterTenant(t)}
+                        disabled={switchTenantMutation.isPending}
+                        className="text-[#0066cc] border-[#d2d2d7] hover:bg-[#f4f8fb] gap-1"
+                        title="Masuk sebagai superadmin ke tenant ini"
+                      >
+                        <LogIn className="h-3.5 w-3.5" /> Masuk
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditModal(t)}
+                        className="text-[#1d1d1f] hover:text-[#0071e3]"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(t.id)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        Hapus
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="px-6 py-8 text-center text-sm text-[#707070]">
+                    Belum ada tenant RT terdaftar.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         )}
       </div>
 
@@ -199,7 +198,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
         description={editingTenant ? 'Perbarui informasi tenant RT' : 'Daftarkan tenant RT baru ke dalam sistem'}
         className="max-w-3xl"
       >
-        <form id="tenant-form" onSubmit={handleSave} data-testid="tenant-form" className="space-y-4 pt-2">
+        <form id="tenant-form" onSubmit={handleSave} data-testid="tenant-form" className="space-y-4">
           <div>
             <label htmlFor="tenant-name" className="block text-sm font-medium text-gray-700">Nama RT</label>
             <Input

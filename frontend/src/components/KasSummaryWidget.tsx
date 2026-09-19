@@ -88,9 +88,10 @@ const KasDetailModal: React.FC<KasDetailModalProps> = ({ selectedFund, selectedC
       onClose={onClose}
       title={title || (isFund ? 'Kantong Kas RT' : 'Pos Iuran Warga')}
       description={`Saldo Bersih: ${formatRupiah(balance)}`}
-      className="w-[96vw] sm:w-[92vw] max-w-2xl rounded-xl bg-white shadow-2xl border border-[#d2d2d7] p-0 text-[#1d1d1f]"
+      className="w-[96vw] sm:w-[92vw] max-w-2xl"
+      contentClassName="p-0"
     >
-      <div className="flex flex-col max-h-[82vh]">
+      <div className="flex flex-col">
         {/* Sub-badge Utama jika fund default */}
         {selectedFund?.is_default && (
           <div className="px-3.5 sm:px-4 pt-2.5">
