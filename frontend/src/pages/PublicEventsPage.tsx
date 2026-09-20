@@ -133,19 +133,19 @@ export const PublicEventsPage: React.FC = () => {
 
           {/* Quick Metrics Bar (Apple Cards) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-            <div className="bg-[#f5f5f7] border border-[#d2d2d7] rounded-lg p-3.5 shadow-2xs">
+            <div className="apple-card p-3.5">
               <span className="text-[#707070] text-[11px] block font-normal">Total Agenda</span>
               <span className="text-xl font-semibold text-[#1d1d1f] tabular-nums">{stats.total}</span>
             </div>
-            <div className="bg-[#f5f5f7] border border-[#d2d2d7] rounded-lg p-3.5 shadow-2xs">
+            <div className="apple-card p-3.5">
               <span className="text-[#0066cc] text-[11px] block font-normal">Rencana / Terjadwal</span>
               <span className="text-xl font-semibold text-[#0066cc] tabular-nums">{stats.planned}</span>
             </div>
-            <div className="bg-[#f5f5f7] border border-[#d2d2d7] rounded-lg p-3.5 shadow-2xs">
+            <div className="apple-card p-3.5">
               <span className="text-amber-700 text-[11px] block font-normal">Sedang Berlangsung</span>
               <span className="text-xl font-semibold text-amber-700 tabular-nums">{stats.ongoing}</span>
             </div>
-            <div className="bg-[#f5f5f7] border border-[#d2d2d7] rounded-lg p-3.5 shadow-2xs">
+            <div className="apple-card p-3.5">
               <span className="text-emerald-700 text-[11px] block font-normal">Telah Terlaksana</span>
               <span className="text-xl font-semibold text-emerald-700 tabular-nums">{stats.completed}</span>
             </div>
@@ -205,7 +205,7 @@ export const PublicEventsPage: React.FC = () => {
                 onClick={() => setTimelineTab(tab.id as FilterTimeline)}
                 className={`text-xs px-3.5 py-1.5 rounded-full transition-colors ${
                   timelineTab === tab.id
-                    ? 'bg-[#1d1d1f] text-white font-medium shadow-2xs'
+                    ? 'bg-[#1d1d1f] text-white font-medium shadow-xs'
                     : 'text-[#707070] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]'
                 }`}
               >
@@ -265,7 +265,7 @@ export const PublicEventsPage: React.FC = () => {
                 <div key={evt.id} className="relative group">
                   {/* Timeline Dot Indicator */}
                   <div
-                    className={`absolute -left-[23px] sm:-left-[31px] top-6 w-3.5 h-3.5 rounded-full border-2 border-white shadow-2xs ring-2 ring-[#d2d2d7] ${cfg.dot}`}
+                    className={`absolute -left-[23px] sm:-left-[31px] top-6 w-3.5 h-3.5 rounded-full border-2 border-white shadow-xs ring-1 ring-[#d2d2d7] ${cfg.dot}`}
                   />
 
                   {/* Card Event */}

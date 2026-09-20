@@ -44,19 +44,19 @@ export const PublicAspirationsPage: React.FC = () => {
     switch (cat) {
       case 'suggestion':
         return (
-          <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-800 border border-blue-200/80 px-2.5 py-1 rounded-lg text-xs font-bold">
-            <Lightbulb className="w-3.5 h-3.5 text-blue-600" /> Usulan / Gagasan
+          <span className="inline-flex items-center gap-1.5 bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] px-2.5 py-1 rounded-full text-xs font-semibold">
+            <Lightbulb className="w-3.5 h-3.5 text-[#0071e3]" /> Usulan / Gagasan
           </span>
         );
       case 'complaint':
         return (
-          <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-800 border border-rose-200/80 px-2.5 py-1 rounded-lg text-xs font-bold">
+          <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full text-xs font-semibold">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Laporan Keluhan
           </span>
         );
       default:
         return (
-          <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+          <span className="bg-[#f5f5f7] text-[#707070] border border-[#d2d2d7] px-2.5 py-1 rounded-full text-xs font-semibold">
             {cat}
           </span>
         );
@@ -67,31 +67,31 @@ export const PublicAspirationsPage: React.FC = () => {
     switch (status) {
       case 'submitted':
         return (
-          <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold">
-            <Clock className="w-3.5 h-3.5 text-slate-500" /> Terkirim
+          <span className="inline-flex items-center gap-1 bg-[#f5f5f7] text-[#707070] border border-[#d2d2d7] px-2.5 py-1 rounded-full text-xs font-semibold">
+            <Clock className="w-3.5 h-3.5 text-[#707070]" /> Terkirim
           </span>
         );
       case 'under_review':
         return (
-          <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+          <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full text-xs font-semibold">
             <Clock className="w-3.5 h-3.5 text-amber-600" /> Ditinjau Pengurus
           </span>
         );
       case 'resolved':
         return (
-          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full text-xs font-semibold">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Selesai / Ditindaklanjuti
           </span>
         );
       case 'rejected':
         return (
-          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full text-xs font-semibold">
             <XCircle className="w-3.5 h-3.5 text-rose-600" /> Belum Relevan
           </span>
         );
       default:
         return (
-          <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+          <span className="bg-[#f5f5f7] text-[#707070] border border-[#d2d2d7] px-2.5 py-1 rounded-full text-xs font-semibold">
             {status}
           </span>
         );

@@ -72,7 +72,7 @@ export const PublicProgramsPage: React.FC = () => {
               onClick={() => handleTabChange('waste')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm transition-all ${
                 activeTab === 'waste'
-                  ? 'bg-[#1d1d1f] text-white font-medium shadow-2xs'
+                  ? 'bg-[#1d1d1f] text-white font-medium shadow-xs'
                   : 'bg-white text-[#707070] border border-[#d2d2d7] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]'
               }`}
             >
@@ -82,7 +82,7 @@ export const PublicProgramsPage: React.FC = () => {
               onClick={() => handleTabChange('environment')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm transition-all ${
                 activeTab === 'environment'
-                  ? 'bg-[#1d1d1f] text-white font-medium shadow-2xs'
+                  ? 'bg-[#1d1d1f] text-white font-medium shadow-xs'
                   : 'bg-white text-[#707070] border border-[#d2d2d7] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]'
               }`}
             >

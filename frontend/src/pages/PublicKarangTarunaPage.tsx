@@ -173,7 +173,7 @@ export const PublicKarangTarunaPage: React.FC = () => {
                       key={idx}
                       className="apple-card p-5 space-y-3 text-center flex flex-col items-center justify-center hover:border-[#0071e3] transition-colors"
                     >
-                      <div className="w-16 h-16 rounded-full bg-[#f4f8fb] border border-[#d2d2d7] flex items-center justify-center text-[#0066cc] font-semibold text-lg overflow-hidden shadow-2xs">
+                      <div className="w-16 h-16 rounded-full bg-[#f4f8fb] border border-[#d2d2d7] flex items-center justify-center text-[#0066cc] font-semibold text-lg overflow-hidden shadow-xs">
                         {m.photo_url ? (
                           <img src={m.photo_url} alt={m.name} className="w-full h-full object-cover" />
                         ) : (
