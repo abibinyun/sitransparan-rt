@@ -124,6 +124,10 @@ func (u *financialUsecase) RecordDuesPayment(ctx context.Context, tenantID uuid.
 	return u.repo.CreateDuesPayment(ctx, payment)
 }
 
+func (u *financialUsecase) GetDuesPaymentByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.DuesPayment, error) {
+	return u.repo.GetDuesPaymentByID(ctx, tenantID, id)
+}
+
 func (u *financialUsecase) VerifyDuesPayment(ctx context.Context, tenantID, id uuid.UUID, status string, verifierID uuid.UUID) (*domain.DuesPayment, error) {
 	if status != "verified" && status != "rejected" {
 		return nil, ErrInvalidInput

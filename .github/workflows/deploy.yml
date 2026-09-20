@@ -1,0 +1,97 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - refactor/enhancement # Staging triggers
+      - main                 # Production triggers
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-and-test:
+    name: Lint, Test & Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: backend/go.sum
+
+      - name: Backend Vet & Test
+        run: |
+          cd backend
+          go vet ./...
+          go test -v ./...
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend Typecheck & Build
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+  deploy-staging:
+    name: Deploy to Staging (iscube.web.id)
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/refactor/enhancement' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH to Staging Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_SSH_HOST }}
+          username: ${{ secrets.STAGING_SSH_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: ${{ secrets.STAGING_SSH_PORT || 22 }}
+          script: |
+            set -e
+            echo "Deploying to Staging (iscube.web.id)..."
+            cd /opt/sitransparan-staging || cd ~/sitransparan
+            git fetch origin refactor/enhancement
+            git reset --hard origin/refactor/enhancement
+            docker compose -f infrastructure/docker-compose.yml build --no-cache backend frontend
+            docker compose -f infrastructure/docker-compose.yml up -d
+            echo "Staging deployment complete."
+
+  deploy-production:
+    name: Deploy to Production
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH to Production Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.PROD_SSH_PORT || 22 }}
+          script: |
+            set -e
+            echo "Deploying to Production..."
+            cd /opt/sitransparan-prod || cd ~/sitransparan-prod
+            git fetch origin main
+            git reset --hard origin/main
+            docker compose -f infrastructure/docker-compose.prod.yml build --no-cache backend frontend
+            docker compose -f infrastructure/docker-compose.prod.yml up -d
+            echo "Production deployment complete."

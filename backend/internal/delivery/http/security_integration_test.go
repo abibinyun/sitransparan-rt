@@ -285,7 +285,7 @@ func TestSecurity_CrossTenantMatrix(t *testing.T) {
 	// A -> A: admin A can read its own residents.
 	rec, parsed := doJSON(fx.handler, "GET", "/api/v1/residents", fx.aToken, nil, nil)
 	if rec.Code != http.StatusOK {
-		t.Fatalf("A->A list expected 200, got %d", rec.Code)
+		t.Fatalf("A->A list expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 	if data := fmt.Sprintf("%v", parsed["data"]); !strings.Contains(data, "SECRET-RESIDENT-A") {
 		t.Errorf("A->A list should contain SECRET-RESIDENT-A, got %s", data)

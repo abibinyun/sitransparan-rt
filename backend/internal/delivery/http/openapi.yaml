@@ -499,6 +499,7 @@ paths:
                 amount: { type: number }
                 period: { type: string, enum: [monthly, one_time] }
                 description: { type: string }
+                pic_user_id: { type: string, format: uuid, nullable: true }
       responses:
         '201':
           description: Kategori dibuat
@@ -528,6 +529,7 @@ paths:
                 amount: { type: number }
                 period: { type: string, enum: [monthly, one_time] }
                 description: { type: string }
+                pic_user_id: { type: string, format: uuid, nullable: true }
       responses:
         '200':
           description: Kategori diupdate
@@ -1208,6 +1210,7 @@ paths:
                 type: { type: string, enum: [operational, social, youth, infrastructure, other] }
                 description: { type: string }
                 is_default: { type: boolean }
+                pic_user_id: { type: string, format: uuid, nullable: true }
       responses:
         '201':
           description: Kantong kas dibuat

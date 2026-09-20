@@ -29,7 +29,7 @@ export function useFunds() {
 export function useCreateFund() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { name: string; type: FundType; description?: string; is_default?: boolean }) => {
+    mutationFn: async (payload: { name: string; type: FundType; description?: string; is_default?: boolean; pic_user_id?: string | null }) => {
       const res = await api.post<Fund>('/financial/funds', payload);
       return res.data;
     },
@@ -42,7 +42,7 @@ export function useCreateFund() {
 export function useUpdateFund() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...payload }: { id: string; name: string; type: FundType; description?: string; is_default?: boolean }) => {
+    mutationFn: async ({ id, ...payload }: { id: string; name: string; type: FundType; description?: string; is_default?: boolean; pic_user_id?: string | null }) => {
       const res = await api.put<Fund>(`/financial/funds/${id}`, payload);
       return res.data;
     },
@@ -80,7 +80,7 @@ export function useFeeCategories() {
 export function useCreateFeeCategory() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { name: string; amount: number; period: FeePeriod; description?: string }) => {
+    mutationFn: async (payload: { name: string; amount: number; period: FeePeriod; description?: string; pic_user_id?: string | null }) => {
       const res = await api.post<FeeCategory>('/financial/categories', payload);
       return res.data;
     },
@@ -93,7 +93,7 @@ export function useCreateFeeCategory() {
 export function useUpdateFeeCategory() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...payload }: { id: string; name: string; amount: number; period: FeePeriod; description?: string }) => {
+    mutationFn: async ({ id, ...payload }: { id: string; name: string; amount: number; period: FeePeriod; description?: string; pic_user_id?: string | null }) => {
       const res = await api.put<FeeCategory>(`/financial/categories/${id}`, payload);
       return res.data;
     },

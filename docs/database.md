@@ -214,5 +214,6 @@ Termasuk tabel inti tata kelola, transparansi kas, rapat warga, Karang Taruna (`
 | 000038_create_announcement_comments | Sakelar `allow_comments` & tabel `announcement_comments` |
 | 000039_add_announcement_category | Kolom `category VARCHAR(50)` pada announcements (pengumuman, kegiatan, santai, info) |
 | 000040_add_announcement_feed_indexes | Indeks komposit feed publik & filter kategori untuk performa tinggi |
+| 000041_add_pic_to_funds_and_categories | Kolom `pic_user_id` pada tabel `funds` dan `fee_categories` untuk delegasi penanggung jawab per-user |
 
 Catatan seed: 000001 UUID valid untuk `superadmin@platform.local`; 000013 guard instalasi lama nil UUID.

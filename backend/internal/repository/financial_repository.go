@@ -30,8 +30,8 @@ func NewFinancialRepository(db *sql.DB, minioClient *minio.Client) domain.Financ
 // Funds methods
 func (r *financialRepository) CreateFund(ctx context.Context, fund *domain.Fund) error {
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, tenant_id, name, type, description, is_default, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+		INSERT INTO %s (id, tenant_id, name, type, description, is_default, pic_user_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`, TenantTable(ctx, "funds"))
 	if fund.ID == uuid.Nil {
@@ -47,14 +47,16 @@ func (r *financialRepository) CreateFund(ctx context.Context, fund *domain.Fund)
 		fund.Type,
 		fund.Description,
 		fund.IsDefault,
+		fund.PICUserID,
 	).Scan(&fund.CreatedAt, &fund.UpdatedAt)
 }
 
 func (r *financialRepository) GetFundByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.Fund, error) {
 	query := fmt.Sprintf(`
-		SELECT id, tenant_id, name, type, description, is_default, created_at, updated_at
-		FROM %s
-		WHERE tenant_id = $1 AND id = $2
+		SELECT f.id, f.tenant_id, f.name, f.type, f.description, f.is_default, f.pic_user_id, u.name, u.email, f.created_at, f.updated_at
+		FROM %s f
+		LEFT JOIN public.users u ON u.id = f.pic_user_id
+		WHERE f.tenant_id = $1 AND f.id = $2
 	`, TenantTable(ctx, "funds"))
 	var f domain.Fund
 	err := r.db.QueryRowContext(ctx, query, tenantID, id).Scan(
@@ -64,6 +66,9 @@ func (r *financialRepository) GetFundByID(ctx context.Context, tenantID, id uuid
 		&f.Type,
 		&f.Description,
 		&f.IsDefault,
+		&f.PICUserID,
+		&f.PICName,
+		&f.PICEmail,
 		&f.CreatedAt,
 		&f.UpdatedAt,
 	)
@@ -79,8 +84,8 @@ func (r *financialRepository) GetFundByID(ctx context.Context, tenantID, id uuid
 func (r *financialRepository) UpdateFund(ctx context.Context, fund *domain.Fund) error {
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET name = $1, type = $2, description = $3, is_default = $4, updated_at = NOW()
-		WHERE tenant_id = $5 AND id = $6
+		SET name = $1, type = $2, description = $3, is_default = $4, pic_user_id = $5, updated_at = NOW()
+		WHERE tenant_id = $6 AND id = $7
 		RETURNING updated_at
 	`, TenantTable(ctx, "funds"))
 	err := r.db.QueryRowContext(ctx, query,
@@ -88,6 +93,7 @@ func (r *financialRepository) UpdateFund(ctx context.Context, fund *domain.Fund)
 		fund.Type,
 		fund.Description,
 		fund.IsDefault,
+		fund.PICUserID,
 		fund.TenantID,
 		fund.ID,
 	).Scan(&fund.UpdatedAt)
@@ -116,10 +122,11 @@ func (r *financialRepository) DeleteFund(ctx context.Context, tenantID, id uuid.
 func (r *financialRepository) ListFunds(ctx context.Context, tenantID uuid.UUID) ([]*domain.Fund, error) {
 	fundsTable := TenantTable(ctx, "funds")
 	query := fmt.Sprintf(`
-		SELECT id, tenant_id, name, type, description, is_default, created_at, updated_at
-		FROM %s
-		WHERE tenant_id = $1
-		ORDER BY is_default DESC, created_at ASC
+		SELECT f.id, f.tenant_id, f.name, f.type, f.description, f.is_default, f.pic_user_id, u.name, u.email, f.created_at, f.updated_at
+		FROM %s f
+		LEFT JOIN public.users u ON u.id = f.pic_user_id
+		WHERE f.tenant_id = $1
+		ORDER BY f.is_default DESC, f.created_at ASC
 	`, fundsTable)
 	rows, err := r.db.QueryContext(ctx, query, tenantID)
 	if err != nil {
@@ -137,6 +144,9 @@ func (r *financialRepository) ListFunds(ctx context.Context, tenantID uuid.UUID)
 			&f.Type,
 			&f.Description,
 			&f.IsDefault,
+			&f.PICUserID,
+			&f.PICName,
+			&f.PICEmail,
 			&f.CreatedAt,
 			&f.UpdatedAt,
 		); err != nil {
@@ -150,8 +160,8 @@ func (r *financialRepository) ListFunds(ctx context.Context, tenantID uuid.UUID)
 // FeeCategory methods
 func (r *financialRepository) CreateFeeCategory(ctx context.Context, category *domain.FeeCategory) error {
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, tenant_id, name, amount, period, description, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+		INSERT INTO %s (id, tenant_id, name, amount, period, description, pic_user_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`, TenantTable(ctx, "fee_categories"))
 	if category.ID == uuid.Nil {
@@ -164,14 +174,16 @@ func (r *financialRepository) CreateFeeCategory(ctx context.Context, category *d
 		category.Amount,
 		category.Period,
 		category.Description,
+		category.PICUserID,
 	).Scan(&category.CreatedAt, &category.UpdatedAt)
 }
 
 func (r *financialRepository) GetFeeCategoryByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.FeeCategory, error) {
 	query := fmt.Sprintf(`
-		SELECT id, tenant_id, name, amount, period, description, created_at, updated_at
-		FROM %s
-		WHERE tenant_id = $1 AND id = $2
+		SELECT fc.id, fc.tenant_id, fc.name, fc.amount, fc.period, fc.description, fc.pic_user_id, u.name, u.email, fc.created_at, fc.updated_at
+		FROM %s fc
+		LEFT JOIN public.users u ON u.id = fc.pic_user_id
+		WHERE fc.tenant_id = $1 AND fc.id = $2
 	`, TenantTable(ctx, "fee_categories"))
 	var cat domain.FeeCategory
 	err := r.db.QueryRowContext(ctx, query, tenantID, id).Scan(
@@ -181,6 +193,9 @@ func (r *financialRepository) GetFeeCategoryByID(ctx context.Context, tenantID, 
 		&cat.Amount,
 		&cat.Period,
 		&cat.Description,
+		&cat.PICUserID,
+		&cat.PICName,
+		&cat.PICEmail,
 		&cat.CreatedAt,
 		&cat.UpdatedAt,
 	)
@@ -196,8 +211,8 @@ func (r *financialRepository) GetFeeCategoryByID(ctx context.Context, tenantID, 
 func (r *financialRepository) UpdateFeeCategory(ctx context.Context, category *domain.FeeCategory) error {
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET name = $1, amount = $2, period = $3, description = $4, updated_at = NOW()
-		WHERE tenant_id = $5 AND id = $6
+		SET name = $1, amount = $2, period = $3, description = $4, pic_user_id = $5, updated_at = NOW()
+		WHERE tenant_id = $6 AND id = $7
 		RETURNING updated_at
 	`, TenantTable(ctx, "fee_categories"))
 	err := r.db.QueryRowContext(ctx, query,
@@ -205,6 +220,7 @@ func (r *financialRepository) UpdateFeeCategory(ctx context.Context, category *d
 		category.Amount,
 		category.Period,
 		category.Description,
+		category.PICUserID,
 		category.TenantID,
 		category.ID,
 	).Scan(&category.UpdatedAt)
@@ -239,10 +255,11 @@ func (r *financialRepository) ListFeeCategories(ctx context.Context, tenantID uu
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, tenant_id, name, amount, period, description, created_at, updated_at
-		FROM %s
-		WHERE tenant_id = $1
-		ORDER BY created_at DESC LIMIT $2 OFFSET $3
+		SELECT fc.id, fc.tenant_id, fc.name, fc.amount, fc.period, fc.description, fc.pic_user_id, u.name, u.email, fc.created_at, fc.updated_at
+		FROM %s fc
+		LEFT JOIN public.users u ON u.id = fc.pic_user_id
+		WHERE fc.tenant_id = $1
+		ORDER BY fc.created_at DESC LIMIT $2 OFFSET $3
 	`, catsTable)
 	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
 	if err != nil {
@@ -260,6 +277,9 @@ func (r *financialRepository) ListFeeCategories(ctx context.Context, tenantID uu
 			&cat.Amount,
 			&cat.Period,
 			&cat.Description,
+			&cat.PICUserID,
+			&cat.PICName,
+			&cat.PICEmail,
 			&cat.CreatedAt,
 			&cat.UpdatedAt,
 		); err != nil {

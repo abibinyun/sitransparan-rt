@@ -11,6 +11,9 @@ export interface Fund {
   description?: string;
   is_default: boolean;
   balance?: number;
+  pic_user_id?: string;
+  pic_name?: string;
+  pic_email?: string;
   created_at: string;
   updated_at: string;
 }
@@ -23,6 +26,9 @@ export interface FeeCategory {
   period: FeePeriod;
   description?: string;
   balance?: number;
+  pic_user_id?: string;
+  pic_name?: string;
+  pic_email?: string;
   created_at: string;
   updated_at: string;
 }

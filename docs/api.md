@@ -122,22 +122,22 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 
 | Metode | Path | Akses | Keterangan |
 |---|---|---|---|
-| GET | `/api/v1/financial/funds` | AUTH | List kantong kas (multi-fund). |
-| POST | `/api/v1/financial/funds` | ADMIN | Buat kantong kas. Body: `{name, type: operational\|social\|youth\|infrastructure\|other, description?, is_default?}`. `is_default` unik per tenant (guard). |
+| GET | `/api/v1/financial/funds` | AUTH | List kantong kas (multi-fund) beserta informasi PIC (`pic_user_id`, `pic_name`, `pic_email`). |
+| POST | `/api/v1/financial/funds` | ADMIN | Buat kantong kas. Body: `{name, type: operational\|social\|youth\|infrastructure\|other, description?, is_default?, pic_user_id?}`. `is_default` unik per tenant (guard). |
 | GET | `/api/v1/financial/funds/{id}` | AUTH | Detail kantong kas. |
-| PUT | `/api/v1/financial/funds/{id}` | ADMIN | Update kantong kas. |
+| PUT | `/api/v1/financial/funds/{id}` | ADMIN | Update kantong kas & PIC. |
 | DELETE | `/api/v1/financial/funds/{id}` | ADMIN | Hapus kantong kas (default fund tidak boleh dihapus jika masih dipakai). |
-| GET | `/api/v1/financial/categories` | AUTH | List kategori iuran. |
-| POST | `/api/v1/financial/categories` | ADMIN | Buat kategori. Body: `{name, amount, period: monthly\|one_time, description?}`. |
+| GET | `/api/v1/financial/categories` | AUTH | List kategori iuran beserta informasi PIC (`pic_user_id`, `pic_name`, `pic_email`). |
+| POST | `/api/v1/financial/categories` | ADMIN | Buat kategori. Body: `{name, amount, period: monthly\|one_time, description?, pic_user_id?}`. |
 | GET | `/api/v1/financial/categories/{id}` | AUTH | Detail kategori. |
-| PUT | `/api/v1/financial/categories/{id}` | ADMIN | Update kategori. |
+| PUT | `/api/v1/financial/categories/{id}` | ADMIN | Update kategori & PIC. |
 | DELETE | `/api/v1/financial/categories/{id}` | ADMIN | Hapus kategori. |
 | GET | `/api/v1/financial/summary` | AUTH | Ringkasan kas: `{current_balance, monthly_income, monthly_expense, spending_breakdown}`. |
 | GET | `/api/v1/financial/dues` | AUTH | List iuran. Query: `resident_id`, `status=pending\|verified\|rejected`, `limit`, `offset`. Menyertakan `resident_name` & `fee_category_name` (LEFT JOIN). |
-| POST | `/api/v1/financial/dues` | ADMIN | Catat pembayaran iuran. |
-| POST | `/api/v1/financial/dues/{id}/verify` | ADMIN | Verifikasi. Body: `{status: "verified"\|"rejected"}`. |
+| POST | `/api/v1/financial/dues` | ADMIN / PIC | Catat pembayaran iuran (Admin RT atau PIC pos iuran terkait). |
+| POST | `/api/v1/financial/dues/{id}/verify` | ADMIN / PIC | Verifikasi setoran (Admin RT atau PIC pos iuran terkait). Body: `{status: "verified"\|"rejected"}`. |
 | GET | `/api/v1/financial/transactions` | AUTH | List transaksi. Query: `type=income\|expense`, `limit`, `offset`. |
-| POST | `/api/v1/financial/transactions` | ADMIN | Catat transaksi. Body opsional `fund_id` + `proof_url`. |
+| POST | `/api/v1/financial/transactions` | ADMIN / PIC | Catat transaksi kas (Admin RT atau PIC kantong kas/pos terkait). Body opsional `fund_id` + `proof_url`. |
 | GET | `/api/v1/financial/transactions/{id}` | AUTH | Detail transaksi. |
 | PUT | `/api/v1/financial/transactions/{id}` | — | **405** append-only. |
 | DELETE | `/api/v1/financial/transactions/{id}` | — | **405** deletion disabled. |

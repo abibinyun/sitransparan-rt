@@ -9,26 +9,32 @@ import (
 )
 
 type Fund struct {
-	ID          uuid.UUID `json:"id"`
-	TenantID    uuid.UUID `json:"tenant_id"`
-	Name        string    `json:"name"`
-	Type        string    `json:"type"` // 'operational', 'social', 'youth', 'infrastructure', 'other'
-	Description *string   `json:"description,omitempty"`
-	IsDefault   bool      `json:"is_default"`
-	Balance     float64   `json:"balance,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          uuid.UUID  `json:"id"`
+	TenantID    uuid.UUID  `json:"tenant_id"`
+	Name        string     `json:"name"`
+	Type        string     `json:"type"` // 'operational', 'social', 'youth', 'infrastructure', 'other'
+	Description *string    `json:"description,omitempty"`
+	IsDefault   bool       `json:"is_default"`
+	Balance     float64    `json:"balance,omitempty"`
+	PICUserID   *uuid.UUID `json:"pic_user_id,omitempty"`
+	PICName     *string    `json:"pic_name,omitempty"`
+	PICEmail    *string    `json:"pic_email,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 type FeeCategory struct {
-	ID          uuid.UUID `json:"id"`
-	TenantID    uuid.UUID `json:"tenant_id"`
-	Name        string    `json:"name"`
-	Amount      float64   `json:"amount"`
-	Period      string    `json:"period"` // 'monthly' or 'one_time'
-	Description *string   `json:"description,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          uuid.UUID  `json:"id"`
+	TenantID    uuid.UUID  `json:"tenant_id"`
+	Name        string     `json:"name"`
+	Amount      float64    `json:"amount"`
+	Period      string     `json:"period"` // 'monthly' or 'one_time'
+	Description *string    `json:"description,omitempty"`
+	PICUserID   *uuid.UUID `json:"pic_user_id,omitempty"`
+	PICName     *string    `json:"pic_name,omitempty"`
+	PICEmail    *string    `json:"pic_email,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 type DuesPayment struct {
@@ -129,6 +135,7 @@ type FinancialUsecase interface {
 
 	// Record Dues Payment & Verify
 	RecordDuesPayment(ctx context.Context, tenantID uuid.UUID, payment *DuesPayment) error
+	GetDuesPaymentByID(ctx context.Context, tenantID, id uuid.UUID) (*DuesPayment, error)
 	VerifyDuesPayment(ctx context.Context, tenantID, id uuid.UUID, status string, verifierID uuid.UUID) (*DuesPayment, error)
 	ListDuesPayments(ctx context.Context, tenantID uuid.UUID, residentID *uuid.UUID, status string, limit, offset int) ([]*DuesPayment, int64, error)
 

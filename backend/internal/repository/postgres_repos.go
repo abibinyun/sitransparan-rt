@@ -221,11 +221,31 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 			title VARCHAR(255) NOT NULL,
 			content TEXT NOT NULL,
 			attachment_url TEXT,
+			media_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+			file_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+			category VARCHAR(50) NOT NULL DEFAULT 'pengumuman',
 			target VARCHAR(50) NOT NULL CHECK (target IN ('all', 'residents_only')),
+			allow_comments BOOLEAN NOT NULL DEFAULT FALSE,
 			created_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+			deleted_at TIMESTAMPTZ,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);`,
+		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.announcement_comments (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			announcement_id UUID NOT NULL REFERENCES ` + pq.QuoteIdentifier(schemaName) + `.announcements(id) ON DELETE CASCADE,
+			user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+			author_name VARCHAR(255) NOT NULL,
+			house_block VARCHAR(100),
+			content VARCHAR(255) NOT NULL,
+			deleted_at TIMESTAMPTZ,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_` + strings.ReplaceAll(slug, "-", "_") + `_announcements_feed
+			ON ` + pq.QuoteIdentifier(schemaName) + `.announcements (deleted_at, target, created_at DESC);`,
+		`CREATE INDEX IF NOT EXISTS idx_` + strings.ReplaceAll(slug, "-", "_") + `_announcements_cat_feed
+			ON ` + pq.QuoteIdentifier(schemaName) + `.announcements (deleted_at, category, created_at DESC);`,
 		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.documents (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
@@ -318,10 +338,6 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 			UNIQUE (poll_id, user_id),
 			CHECK (option_index >= 0)
 		);`,
-		`ALTER TABLE ` + pq.QuoteIdentifier(schemaName) + `.announcements
-			ADD COLUMN IF NOT EXISTS media_urls JSONB NOT NULL DEFAULT '[]'::jsonb;`,
-		`ALTER TABLE ` + pq.QuoteIdentifier(schemaName) + `.announcements
-			ADD COLUMN IF NOT EXISTS file_urls JSONB NOT NULL DEFAULT '[]'::jsonb;`,
 		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.houses (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			block_number VARCHAR(50) NOT NULL,

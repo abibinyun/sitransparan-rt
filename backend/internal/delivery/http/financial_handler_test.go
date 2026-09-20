@@ -132,6 +132,14 @@ func (m *mockFinancialUsecase) RecordDuesPayment(ctx context.Context, tenantID u
 	return nil
 }
 
+func (m *mockFinancialUsecase) GetDuesPaymentByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.DuesPayment, error) {
+	p, ok := m.duesPayments[id]
+	if !ok || p.TenantID != tenantID {
+		return nil, repository.ErrNotFound
+	}
+	return p, nil
+}
+
 func (m *mockFinancialUsecase) VerifyDuesPayment(ctx context.Context, tenantID, id uuid.UUID, status string, verifierID uuid.UUID) (*domain.DuesPayment, error) {
 	p, ok := m.duesPayments[id]
 	if !ok || p.TenantID != tenantID {

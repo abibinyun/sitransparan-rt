@@ -391,14 +391,23 @@ func (h *FinancialHandler) listDues(w http.ResponseWriter, r *http.Request, tena
 }
 
 func (h *FinancialHandler) recordDues(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
-		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
-		return
-	}
+	// SuperAdmin, AdminRT, atau PIC kategori iuran
+	userID := middleware.GetUserIDFromContext(r.Context())
+	role := middleware.GetRoleFromContext(r.Context())
+
 	var payment domain.DuesPayment
 	if err := json.NewDecoder(r.Body).Decode(&payment); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
 		return
+	}
+
+	if role != domain.RoleSuperAdmin && role != domain.RoleAdminRT {
+		// Periksa apakah user adalah PIC dari fee_category ini
+		cat, err := h.usecase.GetFeeCategoryByID(r.Context(), tenantID, payment.FeeCategoryID)
+		if err != nil || cat == nil || cat.PICUserID == nil || *cat.PICUserID != userID {
+			http.Error(w, `{"error":"forbidden: hanya PIC pos iuran ini atau Pengurus RT yang berwenang mencatat pembayaran"}`, http.StatusForbidden)
+			return
+		}
 	}
 
 	if err := h.usecase.RecordDuesPayment(r.Context(), tenantID, &payment); err != nil {
@@ -412,11 +421,24 @@ func (h *FinancialHandler) recordDues(w http.ResponseWriter, r *http.Request, te
 }
 
 func (h *FinancialHandler) verifyDues(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
-		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+	userID := middleware.GetUserIDFromContext(r.Context())
+	role := middleware.GetRoleFromContext(r.Context())
+
+	payment, err := h.usecase.GetDuesPaymentByID(r.Context(), tenantID, id)
+	if err != nil || payment == nil {
+		http.Error(w, `{"error":"pembayaran iuran tidak ditemukan"}`, http.StatusNotFound)
 		return
 	}
-	verifierID := middleware.GetUserIDFromContext(r.Context())
+
+	if role != domain.RoleSuperAdmin && role != domain.RoleAdminRT {
+		// Periksa apakah user adalah PIC dari fee_category ini
+		cat, err := h.usecase.GetFeeCategoryByID(r.Context(), tenantID, payment.FeeCategoryID)
+		if err != nil || cat == nil || cat.PICUserID == nil || *cat.PICUserID != userID {
+			http.Error(w, `{"error":"forbidden: hanya PIC pos iuran ini atau Pengurus RT yang berwenang memverifikasi"}`, http.StatusForbidden)
+			return
+		}
+	}
+
 	var req struct {
 		Status string `json:"status"`
 	}
@@ -425,7 +447,7 @@ func (h *FinancialHandler) verifyDues(w http.ResponseWriter, r *http.Request, te
 		return
 	}
 
-	payment, err := h.usecase.VerifyDuesPayment(r.Context(), tenantID, id, req.Status, verifierID)
+	verifiedPayment, err := h.usecase.VerifyDuesPayment(r.Context(), tenantID, id, req.Status, userID)
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 		return
@@ -433,7 +455,7 @@ func (h *FinancialHandler) verifyDues(w http.ResponseWriter, r *http.Request, te
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(payment)
+	_ = json.NewEncoder(w).Encode(verifiedPayment)
 }
 
 // /api/v1/financial/transactions
@@ -507,15 +529,45 @@ func (h *FinancialHandler) listTransactions(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *FinancialHandler) createTransaction(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
-		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
-		return
-	}
 	userID := middleware.GetUserIDFromContext(r.Context())
+	role := middleware.GetRoleFromContext(r.Context())
+
 	var tx domain.FinancialTransaction
 	if err := json.NewDecoder(r.Body).Decode(&tx); err != nil {
 		http.Error(w, `{"error":"invalid request payload"}`, http.StatusBadRequest)
 		return
+	}
+
+	if role != domain.RoleSuperAdmin && role != domain.RoleAdminRT {
+		// Validasi apakah user adalah PIC dari fund yang dituju atau PIC dari fee_category sumber
+		isAuthorized := false
+
+		// Cek apakah user adalah PIC dari Fund
+		if tx.FundID != nil && *tx.FundID != uuid.Nil {
+			fund, err := h.usecase.GetFundByID(r.Context(), tenantID, *tx.FundID)
+			if err == nil && fund != nil && fund.PICUserID != nil && *fund.PICUserID == userID {
+				isAuthorized = true
+			}
+		}
+
+		// Cek jika kategori iuran (IURAN_KELUAR atau IURAN_PINDAH_KAS)
+		if !isAuthorized && (strings.HasPrefix(tx.Category, "IURAN_KELUAR: ") || strings.HasPrefix(tx.Category, "IURAN_PINDAH_KAS: ")) {
+			catName := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(tx.Category, "IURAN_KELUAR: "), "IURAN_PINDAH_KAS: "))
+			feeCats, _, catErr := h.usecase.ListFeeCategories(r.Context(), tenantID, 100, 0)
+			if catErr == nil {
+				for _, fc := range feeCats {
+					if fc.Name == catName && fc.PICUserID != nil && *fc.PICUserID == userID {
+						isAuthorized = true
+						break
+					}
+				}
+			}
+		}
+
+		if !isAuthorized {
+			http.Error(w, `{"error":"forbidden: hanya PIC pos kas/iuran terkait atau Pengurus RT yang berwenang mencatat transaksi"}`, http.StatusForbidden)
+			return
+		}
 	}
 
 	if err := h.usecase.CreateFinancialTransaction(r.Context(), tenantID, &tx, userID); err != nil {

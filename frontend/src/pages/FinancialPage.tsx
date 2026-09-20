@@ -11,9 +11,12 @@ import {
   useDeleteFeeCategory,
   useFunds,
   useCreateFund,
+  useUpdateFund,
   useDeleteFund,
+  useUpdateFeeCategory,
   useResetFinancialData,
 } from '../services/financial';
+import { useUsers } from '../services/user';
 import { DuesPaymentModal } from '../components/DuesPaymentModal';
 import { DuesDisbursementModal } from '../components/DuesDisbursementModal';
 import { TransactionModal } from '../components/TransactionModal';
@@ -36,6 +39,12 @@ export const FinancialPage: React.FC = () => {
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   const [isFundModalOpen, setIsFundModalOpen] = useState(false);
+  const [editingFund, setEditingFund] = useState<any | null>(null);
+  const [editingCategory, setEditingCategory] = useState<any | null>(null);
+
+  // Users list untuk pemilihan PIC
+  const { data: usersData } = useUsers(100, 0);
+  const userList = usersData?.data || [];
 
   // Sub-tab for categories: iuran vs kas
   const [categorySubTab, setCategorySubTab] = useState<'dues' | 'cash'>('dues');
@@ -71,11 +80,13 @@ export const FinancialPage: React.FC = () => {
   const [catAmount, setCatAmount] = useState<number>(0);
   const [catPeriod, setCatPeriod] = useState<FeePeriod>('monthly');
   const [catDesc, setCatDesc] = useState('');
+  const [catPicUserId, setCatPicUserId] = useState<string>('');
 
   // Fund form state
   const [fundName, setFundName] = useState('');
   const [fundType, setFundType] = useState<FundType>('operational');
   const [fundDesc, setFundDesc] = useState('');
+  const [fundPicUserId, setFundPicUserId] = useState<string>('');
 
   // Filter & Pagination for Dues
   const [duesViewMode, setDuesViewMode] = useState<'resident' | 'history' | 'disbursements'>('resident');
@@ -132,8 +143,10 @@ export const FinancialPage: React.FC = () => {
 
   const verifyDues = useVerifyDuesPayment();
   const createFeeCat = useCreateFeeCategory();
+  const updateFeeCat = useUpdateFeeCategory();
   const deleteFeeCat = useDeleteFeeCategory();
   const createFund = useCreateFund();
+  const updateFund = useUpdateFund();
   const deleteFund = useDeleteFund();
   const resetFinancialData = useResetFinancialData();
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -350,21 +363,46 @@ export const FinancialPage: React.FC = () => {
     e.preventDefault();
     if (!catName || catAmount <= 0) return;
     try {
-      await createFeeCat.mutateAsync({
-        name: catName,
-        amount: catAmount,
-        period: catPeriod,
-        description: catDesc || undefined,
-      });
+      if (editingCategory) {
+        await updateFeeCat.mutateAsync({
+          id: editingCategory.id,
+          name: catName,
+          amount: catAmount,
+          period: catPeriod,
+          description: catDesc || undefined,
+          pic_user_id: catPicUserId || null,
+        });
+        showFeedback('success', 'Kategori iuran berhasil diperbarui.');
+      } else {
+        await createFeeCat.mutateAsync({
+          name: catName,
+          amount: catAmount,
+          period: catPeriod,
+          description: catDesc || undefined,
+          pic_user_id: catPicUserId || null,
+        });
+        showFeedback('success', 'Kategori iuran berhasil ditambahkan.');
+      }
       setIsCatModalOpen(false);
+      setEditingCategory(null);
       setCatName('');
       setCatAmount(0);
       setCatPeriod('monthly');
       setCatDesc('');
-      showFeedback('success', 'Kategori iuran berhasil ditambahkan.');
+      setCatPicUserId('');
     } catch (err: any) {
-      showFeedback('error', err?.response?.data?.error || 'Gagal membuat kategori iuran.');
+      showFeedback('error', err?.response?.data?.error || 'Gagal menyimpan kategori iuran.');
     }
+  };
+
+  const handleEditCategory = (cat: any) => {
+    setEditingCategory(cat);
+    setCatName(cat.name);
+    setCatAmount(cat.amount);
+    setCatPeriod(cat.period);
+    setCatDesc(cat.description || '');
+    setCatPicUserId(cat.pic_user_id || '');
+    setIsCatModalOpen(true);
   };
 
   const handleDeleteCategory = async (id: string) => {
@@ -441,19 +479,42 @@ export const FinancialPage: React.FC = () => {
     e.preventDefault();
     if (!fundName) return;
     try {
-      await createFund.mutateAsync({
-        name: fundName,
-        type: fundType,
-        description: fundDesc || undefined,
-      });
+      if (editingFund) {
+        await updateFund.mutateAsync({
+          id: editingFund.id,
+          name: fundName,
+          type: fundType,
+          description: fundDesc || undefined,
+          pic_user_id: fundPicUserId || null,
+        });
+        showFeedback('success', 'Kantong kas berhasil diperbarui.');
+      } else {
+        await createFund.mutateAsync({
+          name: fundName,
+          type: fundType,
+          description: fundDesc || undefined,
+          pic_user_id: fundPicUserId || null,
+        });
+        showFeedback('success', 'Kantong kas berhasil ditambahkan.');
+      }
       setIsFundModalOpen(false);
+      setEditingFund(null);
       setFundName('');
       setFundType('operational');
       setFundDesc('');
-      showFeedback('success', 'Kantong kas berhasil ditambahkan.');
+      setFundPicUserId('');
     } catch (err: any) {
-      showFeedback('error', err?.response?.data?.error || 'Gagal membuat kantong kas.');
+      showFeedback('error', err?.response?.data?.error || 'Gagal menyimpan kantong kas.');
     }
+  };
+
+  const handleEditFund = (fund: any) => {
+    setEditingFund(fund);
+    setFundName(fund.name);
+    setFundType(fund.type);
+    setFundDesc(fund.description || '');
+    setFundPicUserId(fund.pic_user_id || '');
+    setIsFundModalOpen(true);
   };
 
   const handleDeleteFund = async (id: string, isDefault: boolean) => {
@@ -1368,6 +1429,7 @@ export const FinancialPage: React.FC = () => {
                 <TableRow>
                   <TableHead>Nama Kantong Kas</TableHead>
                   <TableHead>Tipe</TableHead>
+                  <TableHead>PIC / Penanggung Jawab</TableHead>
                   <TableHead>Saldo Saat Ini</TableHead>
                   <TableHead>Deskripsi / Peruntukan</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
@@ -1384,22 +1446,43 @@ export const FinancialPage: React.FC = () => {
                         {f.type}
                       </span>
                     </TableCell>
+                    <TableCell>
+                      {f.pic_name ? (
+                        <div className="text-xs">
+                          <div className="font-medium text-[#1d1d1f]">{f.pic_name}</div>
+                          <div className="text-[10px] text-[#707070]">{f.pic_email}</div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400 italic">Pengurus RT Utama</span>
+                      )}
+                    </TableCell>
                     <TableCell className="font-semibold text-[#1d1d1f] tabular-nums">
                       Rp {(f.balance || 0).toLocaleString('id-ID')}
                     </TableCell>
                     <TableCell className="text-xs text-[#707070]">{f.description || '-'}</TableCell>
                     <TableCell className="text-right">
-                      {!f.is_default && (
+                      <div className="flex justify-end items-center gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteFund(f.id, f.is_default)}
-                          className="text-rose-600 hover:text-rose-800"
-                          title="Hapus Kantong Kas"
+                          onClick={() => handleEditFund(f)}
+                          className="text-slate-600 hover:text-slate-900"
+                          title="Edit Kantong Kas & PIC"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Edit2 className="h-4 w-4" />
                         </Button>
-                      )}
+                        {!f.is_default && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteFund(f.id, f.is_default)}
+                            className="text-rose-600 hover:text-rose-800"
+                            title="Hapus Kantong Kas"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1458,6 +1541,7 @@ export const FinancialPage: React.FC = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nama Iuran</TableHead>
+                      <TableHead>PIC / Penanggung Jawab</TableHead>
                       <TableHead>Tarif / Nominal</TableHead>
                       <TableHead>Periode</TableHead>
                       <TableHead>Keterangan</TableHead>
@@ -1468,6 +1552,16 @@ export const FinancialPage: React.FC = () => {
                     {catList.map((cat: any) => (
                       <TableRow key={cat.id}>
                         <TableCell className="font-semibold text-[#1d1d1f]">{cat.name}</TableCell>
+                        <TableCell>
+                          {cat.pic_name ? (
+                            <div className="text-xs">
+                              <div className="font-medium text-[#1d1d1f]">{cat.pic_name}</div>
+                              <div className="text-[10px] text-[#707070]">{cat.pic_email}</div>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">Pengurus RT Utama</span>
+                          )}
+                        </TableCell>
                         <TableCell className="font-semibold text-[#1d1d1f] tabular-nums">Rp {Number(cat.amount).toLocaleString('id-ID')}</TableCell>
                         <TableCell>
                           <span className="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase border bg-gray-50 text-[#707070] border-[#d2d2d7]">
@@ -1476,15 +1570,26 @@ export const FinancialPage: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-xs text-[#707070]">{cat.description || '-'}</TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteCategory(cat.id)}
-                            className="text-rose-600 hover:text-rose-800"
-                            title="Hapus Kategori"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex justify-end items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditCategory(cat)}
+                              className="text-slate-600 hover:text-slate-900"
+                              title="Edit Kategori & PIC"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteCategory(cat.id)}
+                              className="text-rose-600 hover:text-rose-800"
+                              title="Hapus Kategori"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1682,8 +1787,16 @@ export const FinancialPage: React.FC = () => {
       {/* Master Fee Category Modal */}
       <SimpleDialog
         isOpen={isCatModalOpen}
-        onClose={() => setIsCatModalOpen(false)}
-        title="Tambah Jenis / Kategori Iuran"
+        onClose={() => {
+          setIsCatModalOpen(false);
+          setEditingCategory(null);
+          setCatName('');
+          setCatAmount(0);
+          setCatPeriod('monthly');
+          setCatDesc('');
+          setCatPicUserId('');
+        }}
+        title={editingCategory ? 'Edit Jenis / Kategori Iuran' : 'Tambah Jenis / Kategori Iuran'}
         className="max-w-3xl"
       >
         <form onSubmit={handleCreateCategory} className="space-y-4">
@@ -1697,6 +1810,24 @@ export const FinancialPage: React.FC = () => {
               onChange={(e) => setCatName(e.target.value)}
               required
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="catPic">Penanggung Jawab (PIC Pos Iuran)</Label>
+            <Select
+              id="catPic"
+              value={catPicUserId}
+              onChange={(e) => setCatPicUserId(e.target.value)}
+            >
+              <option value="">-- Pengurus RT Utama (Default) --</option>
+              {userList.map((u: any) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.email}) - {u.role_name || u.role}
+                </option>
+              ))}
+            </Select>
+            <p className="text-[11px] text-[#707070]">
+              PIC yang ditunjuk memiliki wewenang mencatat dan memverifikasi setoran iuran warga pada pos ini.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="catAmount">Nominal Tarif (Rp) *</Label>
@@ -1732,10 +1863,22 @@ export const FinancialPage: React.FC = () => {
             />
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsCatModalOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsCatModalOpen(false);
+                setEditingCategory(null);
+                setCatName('');
+                setCatAmount(0);
+                setCatPeriod('monthly');
+                setCatDesc('');
+                setCatPicUserId('');
+              }}
+            >
               Batal
             </Button>
-            <Button type="submit">Simpan Kategori</Button>
+            <Button type="submit">{editingCategory ? 'Simpan Perubahan' : 'Simpan Kategori'}</Button>
           </div>
         </form>
       </SimpleDialog>
@@ -1743,8 +1886,15 @@ export const FinancialPage: React.FC = () => {
       {/* Master Kantong Kas (Fund) Modal */}
       <SimpleDialog
         isOpen={isFundModalOpen}
-        onClose={() => setIsFundModalOpen(false)}
-        title="Tambah Kantong Kas Baru"
+        onClose={() => {
+          setIsFundModalOpen(false);
+          setEditingFund(null);
+          setFundName('');
+          setFundType('operational');
+          setFundDesc('');
+          setFundPicUserId('');
+        }}
+        title={editingFund ? 'Edit Kantong Kas' : 'Tambah Kantong Kas Baru'}
         className="max-w-3xl"
       >
         <form onSubmit={handleCreateFund} className="space-y-4">
@@ -1758,6 +1908,24 @@ export const FinancialPage: React.FC = () => {
               onChange={(e) => setFundName(e.target.value)}
               required
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="fundPic">Penanggung Jawab (PIC Kantong Kas)</Label>
+            <Select
+              id="fundPic"
+              value={fundPicUserId}
+              onChange={(e) => setFundPicUserId(e.target.value)}
+            >
+              <option value="">-- Pengurus RT Utama (Default) --</option>
+              {userList.map((u: any) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.email}) - {u.role_name || u.role}
+                </option>
+              ))}
+            </Select>
+            <p className="text-[11px] text-[#707070]">
+              PIC yang ditunjuk memiliki wewenang mencatat transaksi mutasi pemasukan/pengeluaran pada kantong kas ini.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="fundType">Tipe / Kategori Kas *</Label>
@@ -1784,10 +1952,21 @@ export const FinancialPage: React.FC = () => {
             />
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsFundModalOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsFundModalOpen(false);
+                setEditingFund(null);
+                setFundName('');
+                setFundType('operational');
+                setFundDesc('');
+                setFundPicUserId('');
+              }}
+            >
               Batal
             </Button>
-            <Button type="submit">Simpan Kantong Kas</Button>
+            <Button type="submit">{editingFund ? 'Simpan Perubahan' : 'Simpan Kantong Kas'}</Button>
           </div>
         </form>
       </SimpleDialog>
