@@ -139,7 +139,7 @@ README.md                          - project summary, quick start, credential ta
 docs/architecture.md               - current architecture & multi-tenancy model
 docs/api.md                        - verified endpoint inventory (methods, roles)
 docs/authentication-authorization.md - auth, JWT, RBAC matrix, tenant isolation
-docs/database.md                   - schema & migrations (000001-000015)
+docs/database.md                   - schema & migrations (000001-000040)
 docs/setup.md                      - environment, commands, credentials
 docs/testing.md                    - test suites & commands
 docs/deployment.md                 - Docker/Traefik deployment
@@ -1466,9 +1466,9 @@ tests/e2e/                      Playwright regression suite
 | Finance | **funds** (multi-kantong, `is_default`), fee categories, dues (record & verify, `status` filter), cash transactions (**append-only**), summary, CSV/PDF export via backend blob |
 | Events | event CRUD (budget `budget` on list), RAB/budget (RAB card visible + toast), attachments/reports (proposal & LPJ), committee roles, sponsors, donation receipts, timeline transparency view |
 | Aspirations | submit (public anonymous & internal), status + response (admin), community needs CRUD |
-| Announcements & Documents | announcement CRUD (with multi-image `media_urls` & multi-file `file_urls`, detail modal on click, public endpoint `GET /t/{slug}/announcements/{id}`), document CRUD (create/read/update/delete, PUT `/documents/{id}`) |
+| Announcements & Documents | announcement CRUD (with multi-image `media_urls`, multi-file `file_urls`, category `pengumuman/kegiatan/santai/info`, comments toggle & citizen comments, detail modal on click, public endpoint `GET /t/{slug}/announcements/{id}` + infinite query), document CRUD (create/read/update/delete, PUT `/documents/{id}`) |
 | Dashboard | summary metrics, financial report export via `GET /dashboard/reports/financial/export?format=csv|pdf` (blob) |
-| Public Portal | `/kabar` (announcements & detail modal), `/usulan` (aspirations), `/agenda` (events), `/karang-taruna`, `/bank-sampah` + legacy `/public/*` redirects; `/api/v1/t/{slug}/...` + KPI `feed_view/share_opened` |
+| Public Portal | `/kabar` (announcements, category filter, infinite scroll & detail modal), `/usulan` (aspirations), `/agenda` (events), `/karang-taruna`, `/bank-sampah` + legacy `/public/*` redirects; `/api/v1/t/{slug}/...` + KPI `feed_view/share_opened` |
 | Social | reactions (`support/like/applause` 1-1) + polls (2–6 opsi) + `PollsPage` `/admin/polls` (create/close) + badge `Warga Baru → Utusan Warga` |
 | Meetings | CRUD, visibility `public/internal/confidential` enforced, attendees/decisions/action-items |
 | PWA | offline caching via Workbox + IndexedDB; navigasi HTML NetworkOnly tanpa index.html precache untuk mencegah stale view saat hard-refresh |

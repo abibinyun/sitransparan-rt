@@ -148,6 +148,7 @@ paths:
         - { name: slug, in: path, required: true, schema: { type: string } }
         - { name: limit, in: query, schema: { type: integer } }
         - { name: offset, in: query, schema: { type: integer } }
+        - { name: category, in: query, schema: { type: string, enum: [pengumuman, kegiatan, santai, info] } }
       responses:
         '200':
           description: '{ data: Announcement[], total }'

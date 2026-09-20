@@ -148,8 +148,11 @@ Termasuk tabel inti tata kelola, transparansi kas, rapat warga, Karang Taruna (`
 ### community_needs
 `id`, `tenant_id`, `title`, `description`, `estimated_cost`, `status` (`proposed`/`approved`/`in_progress`/`completed`), `progress_notes`, `created_at`, `updated_at`.
 
-### announcements (media_urls 000019, file_urls 000034)
-`id`, `tenant_id`, `title`, `content`, `attachment_url`, `media_urls JSONB DEFAULT '[]'` (max 10), `file_urls JSONB DEFAULT '[]'` (max 10), `target` (`all`/`residents_only`), `created_by`, `created_at`, `updated_at`.
+### announcements (media_urls 000019, file_urls 000034, allow_comments 000038, category 000039, feed_indexes 000040)
+`id`, `tenant_id`, `title`, `content`, `attachment_url`, `media_urls JSONB DEFAULT '[]'` (max 10), `file_urls JSONB DEFAULT '[]'` (max 10), `category VARCHAR(50) DEFAULT 'pengumuman'`, `target` (`all`/`residents_only`), `allow_comments BOOLEAN DEFAULT false`, `created_by`, `created_at`, `updated_at`, `deleted_at`; idx `(deleted_at, target, created_at DESC)`, idx `(deleted_at, category, created_at DESC)`.
+
+### announcement_comments (000038)
+`id`, `announcement_id` (FK CASCADE), `user_id` (FK CASCADE), `author_name`, `house_block`, `content VARCHAR(255)`, `created_at`, `updated_at`, `deleted_at`; idx `announcement_id`, idx `user_id`, idx `created_at DESC`.
 
 ### documents
 `id`, `tenant_id`, `title`, `category` (`financial_report`/`minutes`/`letter`/`other`), `file_url`, `uploaded_by`, `created_at`, `updated_at`.
@@ -167,7 +170,7 @@ Termasuk tabel inti tata kelola, transparansi kas, rapat warga, Karang Taruna (`
 - `polls`: `id`, `question`, `options JSONB` (2–6), `status` (`open`/`closed`), `created_by`, `created_at`, `closed_at`.
 - `poll_votes`: `id`, `poll_id` (CASCADE), `user_id` (CASCADE), `option_index SMALLINT >=0`, `created_at`, UNIQUE (poll_id, user_id).
 
-## 4. Daftar Migrasi
+## 4. Daftar Migrasi (000001–000040)
 
 | Migrasi | Isi |
 |---|---|
@@ -189,18 +192,27 @@ Termasuk tabel inti tata kelola, transparansi kas, rapat warga, Karang Taruna (`
 | 000016_create_funds | `public.funds` + `tenant_*.funds` + `financial_transactions.fund_id`; seed 3 funds default + backfill |
 | 000017_create_meetings | `meetings`, `meeting_attendees`, `meeting_decisions`, `meeting_action_items` per tenant |
 | 000018_create_reactions_polls | `reactions`, `polls`, `poll_votes` per tenant (+ index) |
-| 000019_create_push_subscriptions | `push_subscriptions` di public schema (Web Push) |
-| 000020_alter_announcements_media_urls | `media_urls JSONB` pada announcements |
+| 000019_announcement_media | `announcements.media_urls JSONB` + `portal_events` (KPI) |
+| 000020_push_subscriptions | `push_subscriptions` di public schema (Web Push) |
 | 000021_create_karang_taruna | `karang_taruna_periods`, `karang_taruna_configs`, `karang_taruna_members` |
-| 000022_create_house_tokens | `house_tokens` (1 Rumah = 1 Token QR Access) |
+| 000022_add_photo_to_karang_taruna_members | `photo_url` pada `karang_taruna_members` |
 | 000023_enhance_audit_logs | `audit_logs` (ip_address, user_agent, metadata, status, target_table, record_id) |
-| 000024_create_portal_events | KPI tracking portal views & shares |
-| 000025_add_fund_categories | Kategori multi-kantong kas |
+| 000024_create_houses_and_qr_access | Master data rumah, penomoran stiker QR, token versi |
+| 000025_support_public_push_subscriptions | Push subscription lingkup publik/tenant |
 | 000026_ensure_tenant_default_funds | 4 kantong kas standar: `operational`, `youth`, `social`, `infrastructure` |
 | 000027_create_waste_bank | `waste_categories`, `waste_deposits`, `waste_deposit_items` (Bank Sampah) |
-| 000033_add_event_attachments | `event_attachments` |
-| 000034_announcement_file_urls | `file_urls JSONB` pada `announcements` |
-| 000019_announcement_media | `announcements.media_urls JSONB` + `portal_events` (KPI) |
-| 000020_push_subscriptions | `push_subscriptions` (public) |
+| 000028_cleanup_superadmin_tenant_users | Pembersihan mapping tenant user superadmin redundan |
+| 000029_add_soft_delete_columns | Kolom `deleted_at` dan indeks soft delete di tabel utama |
+| 000030_add_house_pin_and_token_version | PIN rumah & token versioning untuk akses stiker QR |
+| 000031_allow_house_poll_voting | Hak voting polling berbasis rumah/token QR |
+| 000032_align_default_funds_and_dues | Sinkronisasi alokasi kantong kas default & iuran warga |
+| 000033_add_event_attachments | Berkas proposal (`attachment_url`) dan LPJ (`report_url`) pada events |
+| 000034_announcement_file_urls | Multi-file dokumen lampiran `file_urls JSONB` pada announcements |
+| 000035_add_aspiration_author_and_responder | Nama pengusul & penanggap resmi pada aspirasi |
+| 000036_add_user_id_to_houses | Relasi `user_id` pada tabel `houses` |
+| 000037_create_inventory | Peminjaman & master inventaris warga (`inventory_items`, `inventory_borrowings`) |
+| 000038_create_announcement_comments | Sakelar `allow_comments` & tabel `announcement_comments` |
+| 000039_add_announcement_category | Kolom `category VARCHAR(50)` pada announcements (pengumuman, kegiatan, santai, info) |
+| 000040_add_announcement_feed_indexes | Indeks komposit feed publik & filter kategori untuk performa tinggi |
 
 Catatan seed: 000001 UUID valid untuk `superadmin@platform.local`; 000013 guard instalasi lama nil UUID.

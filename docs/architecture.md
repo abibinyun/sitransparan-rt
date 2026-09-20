@@ -26,7 +26,7 @@ Dokumen ini menggambarkan arsitektur **aktual** project berdasarkan source code,
 | Layer | Teknologi |
 |---|---|
 | Backend | Go 1.25 (standard library `net/http` — method-pattern `ServeMux`), Clean Architecture (delivery → usecase → repository → domain) |
-| Database | PostgreSQL 16, schema-per-tenant, 27 migrasi (000001–000027), 26+ tabel tenant |
+| Database | PostgreSQL 16, schema-per-tenant, 40 migrasi (000001–000040), 27+ tabel tenant |
 | Storage | MinIO (S3-compatible) — bucket `sitransparan-files`, prefix per-tenant `tenant_<slug>/<category>/`, `MINIO_PUBLIC_URL` untuk URL host-reachable; fallback `/uploads/...` jika storage nil |
 | Frontend | React 18, TypeScript, Vite, TailwindCSS, Shadcn-style UI primitives, TanStack Query v5, Zustand, React Router v6 |
 | PWA | `vite-plugin-pwa` (injectManifest) + Workbox service worker + IndexedDB offline cache |
@@ -46,7 +46,7 @@ Dokumen ini menggambarkan arsitektur **aktual** project berdasarkan source code,
 │   │   │   └── middleware/       # Auth (JWT), Tenant, RBAC, CORS, rate limit, security headers, hostname
 │   │   ├── usecase/              # Business logic (auth, resident, financial, event, aspiration_need, announcement_doc, dashboard, meeting, social, push)
 │   │   └── repository/           # PostgreSQL (schema-qualified queries via TenantTable)
-│   ├── migrations/               # 000001–000020 (raw SQL)
+│   ├── migrations/               # 000001–000040 (raw SQL)
 │   └── pkg/                      # config, crypto (AES-256-GCM + HMAC, panic jika NIK_ENCRYPTION_KEY !=32 di prod), storage/minio
 ├── frontend/                     # React PWA
 │   ├── src/pages/                # Pages (React.lazy): Login, Dashboard, Residents, Financial, Events, Meetings, Aspirations, Announcements, Polls, Users, SuperAdminTenants, Public*

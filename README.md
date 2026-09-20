@@ -11,7 +11,7 @@ Platform SaaS PWA multi-tenant untuk transparansi tata kelola lingkungan RT/RW: 
 - **Kegiatan & RAB** — events (budget ter-embed di list), RAB/budget, panitia, RSVP (toast), sponsor, kuitansi donasi, transparansi.
 - **Notulen rapat** — meetings + attendees + decisions + action-items, visibilitas `public|internal|confidential` ditegakkan server-side.
 - **Aspirasi & kebutuhan** — aspirasi (anonim publik & internal) + respons admin, community_needs.
-- **Pengumuman & dokumen** — pengumuman dengan multi-foto galeri (`media_urls` max 10), multi-file lampiran dokumen (`file_urls` max 10), modal interaktif publik, serta dokumen publik (`PUT /documents/{id}`).
+- **Pengumuman & dokumen** — pengumuman dengan multi-foto galeri (`media_urls` max 10), multi-file lampiran dokumen (`file_urls` max 10), kategori postingan (`category`: pengumuman, kegiatan, santai, info), linimasa sosmed infinite scroll, komentar warga terbuka, modal interaktif publik, serta dokumen publik (`PUT /documents/{id}`).
 - **Sosial** — reaksi `support|like|applause` (1 user 1 reaksi per target) + polling 2–6 opsi (1 user 1 suara) + badge partisipasi.
 - **Portal transparansi publik** — `/kabar` (announcements & detail modal), `/usulan` (aspirations), `/agenda` (events) tanpa login; legacy `/public/*` redirect; endpoint publik `GET /t/{slug}/info|announcements|announcements/{id}|documents|aspirations|needs|meetings|events|financial-summary|polls/{id}` + KPI `feed_view/share_opened`.
 - **PWA + Push** — service worker Workbox (navigasi HTML NetworkOnly tanpa cache usang, asset StaleWhileRevalidate) + IndexedDB; Web Push VAPID (`GET /push/config`, `POST /push/subscribe` via `api` auth, graceful disable jika keys kosong).
@@ -19,7 +19,7 @@ Platform SaaS PWA multi-tenant untuk transparansi tata kelola lingkungan RT/RW: 
 
 ## Tech Stack
 
-Go 1.25 (`net/http` ServeMux, Clean Architecture) · PostgreSQL 16 (20 migrations 000001–000020, 23+ tenant tables) · MinIO (bucket `sitransparan-files`, prefix per-tenant `tenant_<slug>/<category>/`, fallback `/uploads`) · React 18 + TypeScript + Vite + Tailwind + TanStack Query + Zustand + React Router v6 · PWA Workbox + IndexedDB · Docker Compose + Traefik 3.6 / Nginx.
+Go 1.25 (`net/http` ServeMux, Clean Architecture) · PostgreSQL 16 (40 migrations 000001–000040, 27+ tenant tables) · MinIO (bucket `sitransparan-files`, prefix per-tenant `tenant_<slug>/<category>/`, fallback `/uploads`) · React 18 + TypeScript + Vite + Tailwind + TanStack Query + Zustand + React Router v6 · PWA Workbox + IndexedDB · Docker Compose + Traefik 3.6 / Nginx.
 
 ## Quick Start
 

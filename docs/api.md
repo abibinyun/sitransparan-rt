@@ -30,8 +30,11 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 |---|---|---|
 | GET | `/api/v1/t/resolve` | Resolusi hostname/custom domain ke slug tenant aktif. Query: `host={domain}`. Response: `{"slug":"..."}`. |
 | GET | `/api/v1/t/{slug}/info` | Info tenant publik (id, name, slug, domain, logo_url). |
-| GET | `/api/v1/t/{slug}/announcements` | List pengumuman publik. Query: `limit`, `offset`. |
+| GET | `/api/v1/t/{slug}/announcements` | List pengumuman publik (target `all`). Query: `limit`, `offset`, `category` (`pengumuman`/`kegiatan`/`santai`/`info`). Respon menyertakan `comments_count`. |
 | GET | `/api/v1/t/{slug}/announcements/{id}` | Detail pengumuman publik (target `all`). |
+| GET | `/api/v1/t/{slug}/announcements/{id}/comments` | List komentar publik pengumuman (jika `allow_comments=true`). |
+| POST | `/api/v1/announcements/{id}/comments` | Kirim komentar pengumuman (AUTH warga/admin). Body: `{content}`. |
+| DELETE | `/api/v1/announcements/{id}/comments/{commentId}` | Hapus komentar (ADMIN only). |
 | GET | `/api/v1/t/{slug}/documents` | List dokumen publik. |
 | GET | `/api/v1/t/{slug}/aspirations` | List aspirasi publik (tanpa identitas resident). |
 | POST | `/api/v1/t/{slug}/aspirations` | Submit aspirasi publik anonim (`resident_id` diabaikan). |
