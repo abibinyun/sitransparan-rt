@@ -35,6 +35,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
   const [attachmentUrl, setAttachmentUrl] = useState(initialData?.attachment_url || '');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [fileUrls, setFileUrls] = useState<string[]>([]);
+  const [category, setCategory] = useState<string>(initialData?.category || 'pengumuman');
   const [target, setTarget] = useState<AnnouncementTarget>(initialData?.target || 'all');
   const [allowComments, setAllowComments] = useState<boolean>(initialData?.allow_comments ?? false);
   const [customImageUrl, setCustomImageUrl] = useState('');
@@ -47,6 +48,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       setAttachmentUrl(initialData?.attachment_url || '');
       setMediaUrls(initialData?.media_urls || []);
       setFileUrls(initialData?.file_urls || []);
+      setCategory(initialData?.category || 'pengumuman');
       setTarget(initialData?.target || 'all');
       setAllowComments(initialData?.allow_comments ?? false);
       setCustomImageUrl('');
@@ -59,13 +61,27 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
     setUploadingImage(true);
     try {
       const files = Array.from(e.target.files);
+      const uploadedUrls: string[] = [];
+
       for (const file of files) {
         const compressed = await compressImage(file, { maxWidth: 1920, maxHeight: 1920, quality: 0.8 });
         const res = await uploadMutation.mutateAsync(compressed);
+        if (res.proof_url) {
+          uploadedUrls.push(res.proof_url);
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
         if (!attachmentUrl) {
-          setAttachmentUrl(res.proof_url);
+          // Gambar pertama jadi gambar utama
+          setAttachmentUrl(uploadedUrls[0]);
+          // Sisanya masuk ke foto tambahan
+          if (uploadedUrls.length > 1) {
+            setMediaUrls((prev) => [...prev, ...uploadedUrls.slice(1)]);
+          }
         } else {
-          setMediaUrls((prev) => [...prev, res.proof_url]);
+          // Jika sudah ada gambar utama, semua gambar baru masuk ke foto tambahan
+          setMediaUrls((prev) => [...prev, ...uploadedUrls]);
         }
       }
     } catch {
@@ -74,6 +90,24 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       setUploadingImage(false);
       e.target.value = '';
     }
+  };
+
+  // Fungsi untuk menjadikan foto tertentu dari mediaUrls sebagai gambar utama (cover)
+  const setAsCoverPhoto = (idx: number) => {
+    const chosenUrl = mediaUrls[idx];
+    if (!chosenUrl) return;
+    const oldCover = attachmentUrl;
+    setAttachmentUrl(chosenUrl);
+    // Masukkan cover lama ke mediaUrls menggantikan chosenUrl
+    setMediaUrls((prev) => {
+      const updated = [...prev];
+      if (oldCover) {
+        updated[idx] = oldCover;
+      } else {
+        updated.splice(idx, 1);
+      }
+      return updated;
+    });
   };
 
   const handleUploadFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,6 +161,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       attachment_url: attachmentUrl || undefined,
       media_urls: mediaUrls,
       file_urls: fileUrls,
+      category,
       target,
       allow_comments: allowComments,
     });
@@ -213,7 +248,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
               <span className="text-[11px] font-medium text-slate-600">Foto Tambahan ({mediaUrls.length}):</span>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {mediaUrls.map((url, idx) => (
-                  <div key={idx} className="relative group border border-slate-200 rounded-lg overflow-hidden bg-slate-50 aspect-video flex items-center justify-center">
+                  <div key={idx} className="relative group border border-[#d2d2d7] rounded-lg overflow-hidden bg-[#f5f5f7] aspect-video flex items-center justify-center">
                     <img
                       src={getFileUrl(url)}
                       alt={`Foto ${idx + 1}`}
@@ -222,14 +257,24 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
                         (e.currentTarget as HTMLElement).style.display = 'none';
                       }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => removeMedia(idx)}
-                      className="absolute top-1 right-1 bg-rose-600 text-white rounded-md p-1 shadow-sm opacity-90 hover:opacity-100 transition-opacity"
-                      title="Hapus foto"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setAsCoverPhoto(idx)}
+                        className="bg-white text-[#1d1d1f] hover:bg-[#f5f5f7] text-[10px] font-semibold px-2 py-1 rounded shadow-xs"
+                        title="Jadikan gambar utama"
+                      >
+                        Jadikan Utama
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeMedia(idx)}
+                        className="bg-rose-600 text-white rounded p-1 shadow-xs hover:bg-rose-700 transition"
+                        title="Hapus foto"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -360,17 +405,35 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
           </div>
         </div>
 
-        {/* Target */}
-        <div className="space-y-2 pt-2 border-t border-slate-100">
-          <Label htmlFor="target">Target Penerima</Label>
-          <Select
-            id="target"
-            value={target}
-            onChange={(e) => setTarget(e.target.value as AnnouncementTarget)}
-          >
-            <option value="all">Semua (Publik & Warga)</option>
-            <option value="residents_only">Khusus Warga RT</option>
-          </Select>
+        {/* Kategori Konten Timeline & Visibilitas Penerima */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#d2d2d7]">
+          <div className="space-y-1.5">
+            <Label htmlFor="category" className="text-xs sm:text-sm font-semibold">Kategori Konten</Label>
+            <Select
+              id="category"
+              value={category}
+              onValueChange={(val) => setCategory(val)}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="pengumuman">📢 Pengumuman Resmi RT</option>
+              <option value="kegiatan">🗓️ Kegiatan &amp; Gotong Royong</option>
+              <option value="santai">☕ Kabar Santai / Nongkrong</option>
+              <option value="info">ℹ️ Informasi / Tips Lingkungan</option>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="target" className="text-xs sm:text-sm font-semibold">Visibilitas Akses</Label>
+            <Select
+              id="target"
+              value={target}
+              onValueChange={(val) => setTarget(val as AnnouncementTarget)}
+              onChange={(e) => setTarget(e.target.value as AnnouncementTarget)}
+            >
+              <option value="all">🌐 Publik &amp; Warga (Semua Orang)</option>
+              <option value="residents_only">🔒 Khusus Internal Warga RT</option>
+            </Select>
+          </div>
         </div>
 
         {/* Sakelar Kolom Komentar */}

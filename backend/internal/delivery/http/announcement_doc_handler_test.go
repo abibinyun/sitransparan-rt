@@ -74,7 +74,7 @@ func (m *mockAnnDocUsecase) GetAnnouncement(ctx context.Context, tenantID, id uu
 	return nil, repository.ErrNotFound
 }
 
-func (m *mockAnnDocUsecase) ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, limit, offset int) ([]*domain.Announcement, int64, error) {
+func (m *mockAnnDocUsecase) ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, categoryFilter *string, limit, offset int) ([]*domain.Announcement, int64, error) {
 	var list []*domain.Announcement
 	for _, a := range m.announcements {
 		if a.TenantID != tenantID {

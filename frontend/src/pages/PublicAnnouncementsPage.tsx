@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { usePublicAnnouncements, usePublicDocuments } from '../services/announcement_doc';
+import React, { useState, useEffect, useRef } from 'react';
+import { useInfinitePublicAnnouncements, usePublicDocuments } from '../services/announcement_doc';
 import { usePublicTenantQuery } from '../services/public_tenant';
 import { ShareCardModal, ShareableAnnouncement } from '../components/ShareCardModal';
 import { AnnouncementDetailModal } from '../components/AnnouncementDetailModal';
@@ -18,17 +18,37 @@ import {
   Download,
   Search,
   Megaphone,
-  Calendar,
   AlertCircle,
   FileCheck,
   Share2,
   Bell,
   BellRing,
-  Check
+  Check,
+  MessageCircle,
+  CalendarCheck,
+  Coffee,
+  Info,
+  Loader2,
 } from 'lucide-react';
 
+const CATEGORY_TABS = [
+  { id: 'all', label: 'Semua Kabar', icon: null },
+  { id: 'pengumuman', label: 'Pengumuman Resmi', icon: Megaphone },
+  { id: 'kegiatan', label: 'Kegiatan & Gotong Royong', icon: CalendarCheck },
+  { id: 'santai', label: 'Kabar Santai / Nongkrong', icon: Coffee },
+  { id: 'info', label: 'Info & Tips Lingkungan', icon: Info },
+];
+
 export const PublicAnnouncementsPage: React.FC = () => {
-  const { data: announcementsData, isLoading: loadingAnnouncements } = usePublicAnnouncements();
+  const [selectedTimelineCategory, setSelectedTimelineCategory] = useState<string>('all');
+  const {
+    data: infiniteData,
+    isLoading: loadingAnnouncements,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfinitePublicAnnouncements(selectedTimelineCategory, 6);
+
   const { data: documentsData, isLoading: loadingDocuments } = usePublicDocuments();
   const { data: tenantInfo } = usePublicTenantQuery();
   const tenantName = tenantInfo?.name || 'Portal RT';
@@ -44,6 +64,22 @@ export const PublicAnnouncementsPage: React.FC = () => {
   });
   const [pushErrorMsg, setPushErrorMsg] = useState<string>('');
 
+  // Intersection Observer untuk Infinite Scroll Sosmed
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!loadMoreRef.current || !hasNextPage || isFetchingNextPage) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   React.useEffect(() => {
     let isMounted = true;
     checkPushSubscriptionActive().then((isActive) => {
@@ -51,7 +87,6 @@ export const PublicAnnouncementsPage: React.FC = () => {
         if (isActive) {
           setPushStatus('enabled');
         } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          // Izin browser granted, namun subscription belum tercatat di PushManager/SW
           setPushStatus('enabled');
         }
       }
@@ -85,10 +120,11 @@ export const PublicAnnouncementsPage: React.FC = () => {
       .catch(() => {});
   };
 
-  const announcements = announcementsData?.data || [];
+  // Kumpulkan semua halaman pengumuman dari infinite query
+  const allAnnouncements = infiniteData?.pages?.flatMap((page) => page.data || []) || [];
   const documents = documentsData?.data || [];
 
-  const filteredAnnouncements = announcements.filter((item) => {
+  const filteredAnnouncements = allAnnouncements.filter((item) => {
     const matchesSearch =
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.content.toLowerCase().includes(searchQuery.toLowerCase());
@@ -102,6 +138,36 @@ export const PublicAnnouncementsPage: React.FC = () => {
     const matchesCat = selectedCategory === 'ALL' || doc.category === selectedCategory;
     return matchesSearch && matchesCat;
   });
+
+  // Helper badge kategori konten
+  const renderCategoryBadge = (cat?: string) => {
+    switch (cat) {
+      case 'kegiatan':
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <CalendarCheck className="w-3 h-3 text-emerald-600" /> Kegiatan
+          </span>
+        );
+      case 'santai':
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+            <Coffee className="w-3 h-3 text-amber-600" /> Kabar Santai
+          </span>
+        );
+      case 'info':
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
+            <Info className="w-3 h-3 text-sky-600" /> Info
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
+            <Megaphone className="w-3 h-3 text-[#0071e3]" /> Pengumuman
+          </span>
+        );
+    }
+  };
 
   return (
     <div className="pb-16 bg-[#f5f5f7] text-[#1d1d1f]">
@@ -186,29 +252,54 @@ export const PublicAnnouncementsPage: React.FC = () => {
           {/* Widget Polling Terbuka Warga */}
           <PollWidget />
 
-          {/* Section Pengumuman Terbaru */}
+          {/* Section Timeline Kabar & Sosmed Warga */}
           <section className="space-y-5" aria-label="Daftar Pengumuman">
-            <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
-                <h2 className="text-lg font-extrabold text-slate-900">Kabar &amp; Edaran Pengurus</h2>
+            <div className="space-y-3 border-b border-[#d2d2d7] pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#0071e3]" />
+                  <h2 className="text-lg font-semibold text-[#1d1d1f]">Kabar &amp; Linimasa Warga</h2>
+                </div>
+                <span className="text-xs font-semibold text-[#707070] tabular-nums">
+                  {filteredAnnouncements.length} postingan
+                </span>
               </div>
-              <span className="text-xs font-semibold text-slate-500 tabular-nums">
-                {filteredAnnouncements.length} edaran
-              </span>
+
+              {/* Filter Bar Kategori Sosmed Warga */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {CATEGORY_TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = selectedTimelineCategory === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setSelectedTimelineCategory(tab.id)}
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all active:scale-[0.98] ${
+                        isActive
+                          ? 'bg-[#1d1d1f] text-white shadow-xs'
+                          : 'bg-white text-[#707070] border border-[#d2d2d7] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
+                      }`}
+                    >
+                      {Icon && <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#0071e3]'}`} />}
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {loadingAnnouncements ? (
               <div className="space-y-4">
                 {[1, 2].map((i) => (
-                  <div key={i} className="h-44 rounded-2xl bg-slate-100 animate-pulse" />
+                  <div key={i} className="h-44 rounded-xl bg-white border border-[#d2d2d7] animate-pulse" />
                 ))}
               </div>
             ) : filteredAnnouncements.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center space-y-2 bg-white">
-                <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" />
-                <p className="font-bold text-sm text-slate-700">Belum Ada Pengumuman</p>
-                <p className="text-xs text-slate-500">Kabar terbaru dari pengurus RT akan muncul di sini.</p>
+              <div className="rounded-xl border border-dashed border-[#d2d2d7] p-10 text-center space-y-2 bg-white">
+                <AlertCircle className="w-8 h-8 text-[#858585] mx-auto" />
+                <p className="font-semibold text-sm text-[#1d1d1f]">Belum Ada Postingan</p>
+                <p className="text-xs text-[#707070]">Kabar dan linimasa terbaru untuk kategori ini akan muncul di sini.</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -222,10 +313,17 @@ export const PublicAnnouncementsPage: React.FC = () => {
                         className="space-y-1.5 cursor-pointer flex-1 group"
                         onClick={() => setDetailAnnouncement(item)}
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="apple-badge">
-                            <Megaphone className="w-2.5 h-2.5 text-[#0071e3]" /> {item.target === 'residents_only' ? 'Warga RT' : 'Umum'}
-                          </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Badge Kategori Konten Nyata */}
+                          {renderCategoryBadge(item.category)}
+
+                          {/* Badge Visibilitas (Jika Khusus Warga) */}
+                          {item.target === 'residents_only' && (
+                            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                              Khusus Warga
+                            </span>
+                          )}
+
                           <span className="text-[11px] text-[#707070] font-normal">
                             {new Date(item.created_at).toLocaleDateString('id-ID', {
                               day: 'numeric',
@@ -314,22 +412,51 @@ export const PublicAnnouncementsPage: React.FC = () => {
                       );
                     })()}
 
-                    {/* Footer kartu: Tanggal & Reaksi Sosial Warga */}
-                    <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-                      <span className="text-slate-400 flex items-center gap-1.5 font-medium">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {new Date(item.created_at).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
-                      </span>
-
-                      {/* Reaksi Gotong Royong Warga */}
-                      <ReactionButton targetType="announcement" targetId={item.id} />
+                    {/* Footer kartu: Reaksi Gotong Royong Warga + Icon Comment dengan Count */}
+                    <div className="pt-3 border-t border-[#d2d2d7] flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <ReactionButton targetType="announcement" targetId={item.id} />
+                        {item.allow_comments && (
+                          <button
+                            type="button"
+                            onClick={() => setDetailAnnouncement(item)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-full border border-[#d2d2d7] bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e2e2e5] transition-all"
+                            title="Buka komentar pengumuman"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 text-[#0066cc]" />
+                            <span className="hidden sm:inline">Komentar</span>
+                            {typeof item.comments_count === 'number' && item.comments_count > 0 && (
+                              <span className="tabular-nums font-bold text-[#0066cc]">
+                                {item.comments_count}
+                              </span>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </article>
                 ))}
+
+                {/* Infinite Scroll Trigger & Spinner */}
+                <div ref={loadMoreRef} className="pt-2 text-center">
+                  {isFetchingNextPage ? (
+                    <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#0066cc] bg-white border border-[#d2d2d7] px-4 py-2 rounded-full shadow-2xs">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Memuat linimasa berikutnya...
+                    </div>
+                  ) : hasNextPage ? (
+                    <button
+                      type="button"
+                      onClick={() => fetchNextPage()}
+                      className="text-xs font-semibold text-[#0066cc] hover:text-[#0071e3] py-2"
+                    >
+                      Muat lebih banyak linimasa &darr;
+                    </button>
+                  ) : filteredAnnouncements.length > 5 ? (
+                    <p className="text-[11px] text-[#858585] py-2">
+                      Seluruh kabar linimasa telah ditampilkan.
+                    </p>
+                  ) : null}
+                </div>
               </div>
             )}
           </section>

@@ -83,7 +83,7 @@ func (u *announcementDocUsecase) GetAnnouncement(ctx context.Context, tenantID, 
 	return u.repo.GetAnnouncementByID(ctx, tenantID, id)
 }
 
-func (u *announcementDocUsecase) ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, limit, offset int) ([]*domain.Announcement, int64, error) {
+func (u *announcementDocUsecase) ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, categoryFilter *string, limit, offset int) ([]*domain.Announcement, int64, error) {
 	if tenantID == uuid.Nil {
 		return nil, 0, errors.New("tenant_id is required")
 	}
@@ -93,7 +93,7 @@ func (u *announcementDocUsecase) ListAnnouncements(ctx context.Context, tenantID
 	if offset < 0 {
 		offset = 0
 	}
-	return u.repo.ListAnnouncements(ctx, tenantID, targetFilter, limit, offset)
+	return u.repo.ListAnnouncements(ctx, tenantID, targetFilter, categoryFilter, limit, offset)
 }
 
 func (u *announcementDocUsecase) UpdateAnnouncement(ctx context.Context, tenantID uuid.UUID, a *domain.Announcement) error {

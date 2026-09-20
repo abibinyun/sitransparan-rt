@@ -12,14 +12,39 @@ import {
 
 import { getTenantSlugOrFallback } from '../utils/tenant';
 
-// Public Announcements & Documents
-export function usePublicAnnouncements(params?: { limit?: number; offset?: number }) {
+import { useInfiniteQuery } from '@tanstack/react-query';
+
+// Public Announcements & Documents with Category & Infinite Scrolling
+export function usePublicAnnouncements(params?: { limit?: number; offset?: number; category?: string }) {
   const tenantSlug = getTenantSlugOrFallback();
   return useQuery({
     queryKey: ['public-announcements', tenantSlug, params],
     queryFn: async () => {
       const res = await api.get<{ data: Announcement[]; total: number }>(`/t/${tenantSlug}/announcements`, { params });
       return res.data;
+    },
+  });
+}
+
+export function useInfinitePublicAnnouncements(category?: string, limit = 6) {
+  const tenantSlug = getTenantSlugOrFallback();
+  return useInfiniteQuery({
+    queryKey: ['infinite-public-announcements', tenantSlug, category],
+    queryFn: async ({ pageParam = 0 }) => {
+      const params: Record<string, any> = { limit, offset: pageParam };
+      if (category && category !== 'all') {
+        params.category = category;
+      }
+      const res = await api.get<{ data: Announcement[]; total: number }>(`/t/${tenantSlug}/announcements`, { params });
+      return res.data;
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedCount = allPages.reduce((acc, p) => acc + (p.data?.length || 0), 0);
+      if (loadedCount < (lastPage.total || 0)) {
+        return loadedCount;
+      }
+      return undefined;
     },
   });
 }
@@ -69,6 +94,7 @@ export function useCreateAnnouncement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
       queryClient.invalidateQueries({ queryKey: ['public-announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['infinite-public-announcements'] });
     },
   });
 }
@@ -83,6 +109,7 @@ export function useUpdateAnnouncement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
       queryClient.invalidateQueries({ queryKey: ['public-announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['infinite-public-announcements'] });
     },
   });
 }
@@ -96,6 +123,7 @@ export function useDeleteAnnouncement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
       queryClient.invalidateQueries({ queryKey: ['public-announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['infinite-public-announcements'] });
     },
   });
 }

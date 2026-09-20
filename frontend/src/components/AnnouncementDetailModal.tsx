@@ -40,8 +40,8 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
 }) => {
   const { user } = useAuthStore();
   const roleLower = String(user?.role || '').toLowerCase();
-  const isAdmin = roleLower === 'rt_admin' || roleLower === 'superadmin' || roleLower === 'super_admin';
-  const isResident = roleLower === 'resident' || isAdmin;
+  const isAdmin = roleLower === 'rt_admin' || roleLower === 'admin_rt' || roleLower === 'superadmin' || roleLower === 'super_admin';
+  const canComment = Boolean(user);
 
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [commentText, setCommentText] = useState('');
@@ -237,26 +237,30 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
             </h4>
             <div className="grid gap-2">
               {files.map((fileUrl, idx) => {
-                const fileName = fileUrl.split('/').pop() || `Berkas-Lampiran-${idx + 1}.pdf`;
+                const rawName = fileUrl.split('/').pop() || `Berkas-Lampiran-${idx + 1}.pdf`;
+                // Bersihkan timestamp unik/prefix jika ada agar tampilan nama manusiawi
+                const displayName = decodeURIComponent(rawName);
                 return (
                   <div
                     key={idx}
-                    className="flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 hover:shadow-xs transition-all"
+                    className="flex items-center justify-between gap-3 p-3 rounded-xl border border-[#d2d2d7] bg-white hover:border-[#858585] shadow-2xs transition-all overflow-hidden"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="w-8 h-8 rounded-lg bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] flex items-center justify-center shrink-0">
                         <FileText className="w-4 h-4" />
                       </div>
-                      <div className="truncate">
-                        <p className="text-xs font-bold text-slate-900 truncate">{fileName}</p>
-                        <p className="text-[11px] text-slate-400">Klik untuk melihat atau mengunduh</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-[#1d1d1f] truncate" title={displayName}>
+                          {displayName}
+                        </p>
+                        <p className="text-[11px] text-[#707070]">Klik untuk melihat atau mengunduh</p>
                       </div>
                     </div>
                     <a
                       href={getFileUrl(fileUrl)}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors shrink-0"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#0066cc] bg-[#f4f8fb] border border-[#d2d2d7] hover:bg-[#e2e2e5] px-3 py-1.5 rounded-lg transition-colors shrink-0"
                     >
                       <Download className="w-3.5 h-3.5" /> Buka
                     </a>
@@ -323,8 +327,8 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
               </div>
             )}
 
-            {/* Form Input Komentar (Warga Login) */}
-            {isResident ? (
+            {/* Form Input Komentar (Pengguna Login) */}
+            {canComment ? (
               <form onSubmit={handleSendComment} className="space-y-2 pt-2 border-t border-[#d2d2d7]">
                 <div className="flex gap-2">
                   <input

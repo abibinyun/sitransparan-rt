@@ -16,8 +16,10 @@ type Announcement struct {
 	AttachmentURL *string    `json:"attachment_url,omitempty"`
 	MediaURLs     []string   `json:"media_urls,omitempty"` // galeri foto feed (Fase 2)
 	FileURLs      []string   `json:"file_urls,omitempty"`  // lampiran file/dokumen multi
+	Category      string     `json:"category"`             // 'pengumuman', 'kegiatan', 'santai', 'info', dll
 	Target        string     `json:"target"`               // 'all', 'residents_only'
 	AllowComments bool       `json:"allow_comments"`       // Sakelar komentar warga per-kabar
+	CommentsCount int        `json:"comments_count"`       // Jumlah komentar aktif
 	CreatedBy     *uuid.UUID `json:"created_by,omitempty"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
@@ -49,7 +51,7 @@ type Document struct {
 type AnnouncementDocRepository interface {
 	CreateAnnouncement(ctx context.Context, announcement *Announcement) error
 	GetAnnouncementByID(ctx context.Context, tenantID, id uuid.UUID) (*Announcement, error)
-	ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, limit, offset int) ([]*Announcement, int64, error)
+	ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, categoryFilter *string, limit, offset int) ([]*Announcement, int64, error)
 	UpdateAnnouncement(ctx context.Context, announcement *Announcement) error
 	DeleteAnnouncement(ctx context.Context, tenantID, id uuid.UUID) error
 
@@ -70,7 +72,7 @@ type AnnouncementDocRepository interface {
 type AnnouncementDocUsecase interface {
 	CreateAnnouncement(ctx context.Context, tenantID uuid.UUID, announcement *Announcement) error
 	GetAnnouncement(ctx context.Context, tenantID, id uuid.UUID) (*Announcement, error)
-	ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, limit, offset int) ([]*Announcement, int64, error)
+	ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, categoryFilter *string, limit, offset int) ([]*Announcement, int64, error)
 	UpdateAnnouncement(ctx context.Context, tenantID uuid.UUID, announcement *Announcement) error
 	DeleteAnnouncement(ctx context.Context, tenantID, id uuid.UUID) error
 

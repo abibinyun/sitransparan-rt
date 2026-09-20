@@ -41,11 +41,14 @@ func (m *mockAnnouncementDocRepo) GetAnnouncementByID(ctx context.Context, tenan
 	return a, nil
 }
 
-func (m *mockAnnouncementDocRepo) ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, limit, offset int) ([]*domain.Announcement, int64, error) {
+func (m *mockAnnouncementDocRepo) ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, categoryFilter *string, limit, offset int) ([]*domain.Announcement, int64, error) {
 	var list []*domain.Announcement
 	for _, a := range m.announcements {
 		if a.TenantID == tenantID {
 			if targetFilter != nil && *targetFilter != "" && a.Target != *targetFilter {
+				continue
+			}
+			if categoryFilter != nil && *categoryFilter != "" && *categoryFilter != "all" && a.Category != *categoryFilter {
 				continue
 			}
 			list = append(list, a)
@@ -162,7 +165,7 @@ func TestAnnouncementDocUsecase(t *testing.T) {
 	})
 
 	t.Run("List Announcements", func(t *testing.T) {
-		list, total, err := uc.ListAnnouncements(ctx, tenantID, nil, 10, 0)
+		list, total, err := uc.ListAnnouncements(ctx, tenantID, nil, nil, 10, 0)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}

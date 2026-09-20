@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"backend/internal/domain"
@@ -53,13 +54,25 @@ func scanMedia(dest interface{}) ([]string, error) {
 	return urls, nil
 }
 
-const announcementCols = `id, tenant_id, title, content, attachment_url, media_urls, file_urls, target, allow_comments, created_by, created_at, updated_at`
+const announcementCols = `id, tenant_id, title, content, attachment_url, media_urls, file_urls, target, allow_comments, category, created_by, created_at, updated_at`
 
 func scanAnnouncement(scan func(dest ...interface{}) error) (*domain.Announcement, error) {
 	a := &domain.Announcement{}
 	var mediaRaw []byte
 	var fileRaw []byte
-	if err := scan(&a.ID, &a.TenantID, &a.Title, &a.Content, &a.AttachmentURL, &mediaRaw, &fileRaw, &a.Target, &a.AllowComments, &a.CreatedBy, &a.CreatedAt, &a.UpdatedAt); err != nil {
+	if err := scan(&a.ID, &a.TenantID, &a.Title, &a.Content, &a.AttachmentURL, &mediaRaw, &fileRaw, &a.Target, &a.AllowComments, &a.Category, &a.CreatedBy, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		return nil, err
+	}
+	a.MediaURLs, _ = scanMedia(mediaRaw)
+	a.FileURLs, _ = scanMedia(fileRaw)
+	return a, nil
+}
+
+func scanAnnouncementWithCount(scan func(dest ...interface{}) error) (*domain.Announcement, error) {
+	a := &domain.Announcement{}
+	var mediaRaw []byte
+	var fileRaw []byte
+	if err := scan(&a.ID, &a.TenantID, &a.Title, &a.Content, &a.AttachmentURL, &mediaRaw, &fileRaw, &a.Target, &a.AllowComments, &a.Category, &a.CreatedBy, &a.CreatedAt, &a.UpdatedAt, &a.CommentsCount); err != nil {
 		return nil, err
 	}
 	a.MediaURLs, _ = scanMedia(mediaRaw)
@@ -77,17 +90,20 @@ func (r *announcementDocRepository) CreateAnnouncement(ctx context.Context, a *d
 	if a.Target == "" {
 		a.Target = "all"
 	}
+	if a.Category == "" {
+		a.Category = "pengumuman"
+	}
 
 	if r.db == nil {
 		return nil
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, tenant_id, title, content, attachment_url, media_urls, file_urls, target, allow_comments, created_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		INSERT INTO %s (id, tenant_id, title, content, attachment_url, media_urls, file_urls, target, allow_comments, category, created_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	`, TenantTable(ctx, "announcements"))
 	_, err := r.db.ExecContext(ctx, query,
-		a.ID, a.TenantID, a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.AllowComments, a.CreatedBy, a.CreatedAt, a.UpdatedAt,
+		a.ID, a.TenantID, a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.AllowComments, a.Category, a.CreatedBy, a.CreatedAt, a.UpdatedAt,
 	)
 	return err
 }
@@ -112,46 +128,47 @@ func (r *announcementDocRepository) GetAnnouncementByID(ctx context.Context, ten
 	return a, nil
 }
 
-func (r *announcementDocRepository) ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, limit, offset int) ([]*domain.Announcement, int64, error) {
+func (r *announcementDocRepository) ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, categoryFilter *string, limit, offset int) ([]*domain.Announcement, int64, error) {
 	if r.db == nil {
 		return []*domain.Announcement{}, 0, nil
 	}
 
 	annTable := TenantTable(ctx, "announcements")
 	var count int64
-	var countQuery string
-	var query string
 	var args []interface{}
+	whereClauses := []string{fmt.Sprintf("%s.tenant_id = $1", "a"), fmt.Sprintf("%s.deleted_at IS NULL", "a")}
+	args = append(args, tenantID)
 
 	if targetFilter != nil && *targetFilter != "" {
-		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND target = $2 AND deleted_at IS NULL`, annTable)
-		if err := r.db.QueryRowContext(ctx, countQuery, tenantID, *targetFilter).Scan(&count); err != nil {
-			return nil, 0, err
-		}
-		query = fmt.Sprintf(`
-			SELECT ` + announcementCols + `
-			FROM %s
-			WHERE tenant_id = $1 AND target = $2 AND deleted_at IS NULL
-			ORDER BY created_at DESC
-			LIMIT $3 OFFSET $4
-		`, annTable)
-		args = []interface{}{tenantID, *targetFilter, limit, offset}
-	} else {
-		countQuery = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND deleted_at IS NULL`, annTable)
-		if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
-			return nil, 0, err
-		}
-		query = fmt.Sprintf(`
-			SELECT ` + announcementCols + `
-			FROM %s
-			WHERE tenant_id = $1 AND deleted_at IS NULL
-			ORDER BY created_at DESC
-			LIMIT $2 OFFSET $3
-		`, annTable)
-		args = []interface{}{tenantID, limit, offset}
+		args = append(args, *targetFilter)
+		whereClauses = append(whereClauses, fmt.Sprintf("a.target = $%d", len(args)))
+	}
+	if categoryFilter != nil && *categoryFilter != "" && *categoryFilter != "all" {
+		args = append(args, *categoryFilter)
+		whereClauses = append(whereClauses, fmt.Sprintf("a.category = $%d", len(args)))
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	whereSQL := strings.Join(whereClauses, " AND ")
+
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s a WHERE %s`, annTable, whereSQL)
+	if err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&count); err != nil {
+		return nil, 0, err
+	}
+
+	queryCols := `a.id, a.tenant_id, a.title, a.content, a.attachment_url, a.media_urls, a.file_urls, a.target, a.allow_comments, a.category, a.created_by, a.created_at, a.updated_at,
+		COALESCE((SELECT COUNT(*) FROM ` + TenantTable(ctx, "announcement_comments") + ` c WHERE c.announcement_id = a.id AND c.deleted_at IS NULL), 0)`
+
+	queryArgs := append([]interface{}{}, args...)
+	queryArgs = append(queryArgs, limit, offset)
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM %s a
+		WHERE %s
+		ORDER BY a.created_at DESC
+		LIMIT $%d OFFSET $%d
+	`, queryCols, annTable, whereSQL, len(queryArgs)-1, len(queryArgs))
+
+	rows, err := r.db.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -159,7 +176,7 @@ func (r *announcementDocRepository) ListAnnouncements(ctx context.Context, tenan
 
 	list := []*domain.Announcement{}
 	for rows.Next() {
-		a, err := scanAnnouncement(rows.Scan)
+		a, err := scanAnnouncementWithCount(rows.Scan)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -175,13 +192,17 @@ func (r *announcementDocRepository) UpdateAnnouncement(ctx context.Context, a *d
 		return nil
 	}
 
+	if a.Category == "" {
+		a.Category = "pengumuman"
+	}
+
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET title = $1, content = $2, attachment_url = $3, media_urls = $4, file_urls = $5, target = $6, allow_comments = $7, updated_at = $8
-		WHERE id = $9 AND tenant_id = $10 AND deleted_at IS NULL
+		SET title = $1, content = $2, attachment_url = $3, media_urls = $4, file_urls = $5, target = $6, allow_comments = $7, category = $8, updated_at = $9
+		WHERE id = $10 AND tenant_id = $11 AND deleted_at IS NULL
 	`, TenantTable(ctx, "announcements"))
 	res, err := r.db.ExecContext(ctx, query,
-		a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.AllowComments, a.UpdatedAt, a.ID, a.TenantID,
+		a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.AllowComments, a.Category, a.UpdatedAt, a.ID, a.TenantID,
 	)
 	if err != nil {
 		return err

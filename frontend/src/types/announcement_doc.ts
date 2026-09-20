@@ -1,6 +1,8 @@
 // Lowercase values match the backend/DB enum (target IN ('all','residents_only')).
 export type AnnouncementTarget = 'all' | 'residents_only';
 
+export type AnnouncementCategory = 'pengumuman' | 'kegiatan' | 'santai' | 'info';
+
 export interface Announcement {
   id: string;
   tenant_id: string;
@@ -9,8 +11,10 @@ export interface Announcement {
   attachment_url?: string;
   media_urls?: string[];
   file_urls?: string[];
+  category: AnnouncementCategory | string;
   target: AnnouncementTarget;
   allow_comments?: boolean;
+  comments_count?: number;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -22,6 +26,7 @@ export interface CreateAnnouncementPayload {
   attachment_url?: string;
   media_urls?: string[];
   file_urls?: string[];
+  category?: AnnouncementCategory | string;
   target?: AnnouncementTarget;
   allow_comments?: boolean;
 }
@@ -32,6 +37,7 @@ export interface UpdateAnnouncementPayload {
   attachment_url?: string;
   media_urls?: string[];
   file_urls?: string[];
+  category?: AnnouncementCategory | string;
   target?: AnnouncementTarget;
   allow_comments?: boolean;
 }

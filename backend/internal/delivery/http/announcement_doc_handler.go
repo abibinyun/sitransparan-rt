@@ -305,6 +305,11 @@ func (h *AnnouncementDocHandler) handleDeleteComment(w http.ResponseWriter, r *h
 func (h *AnnouncementDocHandler) publicListAnnouncements(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	category := r.URL.Query().Get("category")
+	var categoryFilter *string
+	if category != "" && category != "all" {
+		categoryFilter = &category
+	}
 
 	// The anonymous public feed may only see announcements targeted at
 	// everyone ("all"). Never honor a caller-supplied target filter here —
@@ -312,7 +317,7 @@ func (h *AnnouncementDocHandler) publicListAnnouncements(w http.ResponseWriter, 
 	all := "all"
 	targetFilter := &all
 
-	announcements, total, err := h.usecase.ListAnnouncements(r.Context(), tenantID, targetFilter, limit, offset)
+	announcements, total, err := h.usecase.ListAnnouncements(r.Context(), tenantID, targetFilter, categoryFilter, limit, offset)
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 		return
@@ -386,8 +391,13 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 			if target != "" {
 				targetFilter = &target
 			}
+			category := r.URL.Query().Get("category")
+			var categoryFilter *string
+			if category != "" && category != "all" {
+				categoryFilter = &category
+			}
 
-			list, total, err := h.usecase.ListAnnouncements(r.Context(), tenant.ID, targetFilter, limit, offset)
+			list, total, err := h.usecase.ListAnnouncements(r.Context(), tenant.ID, targetFilter, categoryFilter, limit, offset)
 			if err != nil {
 				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 				return
@@ -417,6 +427,9 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 			userID := middleware.GetUserIDFromContext(r.Context())
 			if userID != uuid.Nil {
 				req.CreatedBy = &userID
+			}
+			if req.Category == "" {
+				req.Category = "pengumuman"
 			}
 			if err := h.usecase.CreateAnnouncement(r.Context(), tenant.ID, &req); err != nil {
 				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)

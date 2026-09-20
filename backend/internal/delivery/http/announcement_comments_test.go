@@ -91,7 +91,7 @@ func (u *mockCommentIntegrationUsecase) CreateAnnouncement(ctx context.Context, 
 func (u *mockCommentIntegrationUsecase) GetAnnouncement(ctx context.Context, tenantID, id uuid.UUID) (*domain.Announcement, error) {
 	return u.repo.announcements[id], nil
 }
-func (u *mockCommentIntegrationUsecase) ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, limit, offset int) ([]*domain.Announcement, int64, error) {
+func (u *mockCommentIntegrationUsecase) ListAnnouncements(ctx context.Context, tenantID uuid.UUID, targetFilter *string, categoryFilter *string, limit, offset int) ([]*domain.Announcement, int64, error) {
 	return nil, 0, nil
 }
 func (u *mockCommentIntegrationUsecase) UpdateAnnouncement(ctx context.Context, tenantID uuid.UUID, a *domain.Announcement) error {
