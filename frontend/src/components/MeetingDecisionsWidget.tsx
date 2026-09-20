@@ -27,6 +27,8 @@ export const MeetingDecisionsWidget: React.FC = () => {
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
+  const [filterYear, setFilterYear] = useState<string>('ALL');
+  const [filterMonth, setFilterMonth] = useState<string>('ALL');
 
   if (isLoading) {
     return <div className="h-32 animate-pulse rounded-2xl bg-slate-100" aria-label="Memuat notulen rapat" />;
@@ -34,13 +36,30 @@ export const MeetingDecisionsWidget: React.FC = () => {
 
   if (!meetings || meetings.length === 0) return null;
 
+  // Ekstraksi daftar tahun unik dari rapat
+  const availableYears = Array.from(
+    new Set(
+      meetings.map((m) => {
+        const d = new Date(m.meeting_date);
+        return isNaN(d.getFullYear()) ? '' : String(d.getFullYear());
+      }).filter(Boolean)
+    )
+  ).sort((a, b) => Number(b) - Number(a));
+
   const filteredMeetings = meetings.filter((m) => {
+    const d = new Date(m.meeting_date);
+    const mYear = String(d.getFullYear());
+    const mMonth = String(d.getMonth() + 1); // 1-12
+
     const matchSearch =
       m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (m.agenda || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.location.toLowerCase().includes(searchQuery.toLowerCase());
     const matchType = filterType === 'ALL' || m.meeting_type === filterType;
-    return matchSearch && matchType;
+    const matchYear = filterYear === 'ALL' || mYear === filterYear;
+    const matchMonth = filterMonth === 'ALL' || mMonth === filterMonth;
+
+    return matchSearch && matchType && matchYear && matchMonth;
   });
 
   return (
@@ -276,36 +295,105 @@ export const MeetingDecisionsWidget: React.FC = () => {
                 </button>
               </div>
 
-              {/* Filter Type & Search Bar */}
-              <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                <input
-                  type="text"
-                  placeholder="Cari notulen rapat..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 text-xs px-3 py-1.5 rounded-full bg-white border border-[#d2d2d7] focus:outline-none focus:border-[#0071e3]"
-                />
-                <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
-                  {[
-                    { id: 'ALL', label: 'Semua' },
-                    { id: 'regular', label: 'Rutin' },
-                    { id: 'emergency', label: 'Darurat' },
-                    { id: 'karang_taruna', label: 'Pemuda' },
-                    { id: 'rtrw_pleno', label: 'Pleno' },
-                  ].map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setFilterType(t.id)}
-                      className={`text-[11px] px-2.5 py-1 rounded-full whitespace-nowrap font-medium transition ${
-                        filterType === t.id
-                          ? 'bg-[#1d1d1f] text-white shadow-xs'
-                          : 'bg-white text-[#707070] border border-[#d2d2d7] hover:bg-[#f5f5f7]'
-                      }`}
+              {/* Filter Bar: Search, Pill Type, dan Dropdown Date (Bulan/Tahun) */}
+              <div className="space-y-2 pt-1">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Cari kata kunci, topik, atau lokasi musyawarah..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full text-xs pl-3 pr-8 py-2 rounded-full bg-white border border-[#d2d2d7] focus:outline-none focus:border-[#0071e3]"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Dropdown Bulan & Tahun */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <select
+                      value={filterMonth}
+                      onChange={(e) => setFilterMonth(e.target.value)}
+                      aria-label="Filter Bulan"
+                      className="text-xs px-3 py-2 rounded-full bg-white border border-[#d2d2d7] text-[#1d1d1f] focus:outline-none focus:border-[#0071e3]"
                     >
-                      {t.label}
+                      <option value="ALL">Semua Bulan</option>
+                      <option value="1">Januari</option>
+                      <option value="2">Februari</option>
+                      <option value="3">Maret</option>
+                      <option value="4">April</option>
+                      <option value="5">Mei</option>
+                      <option value="6">Juni</option>
+                      <option value="7">Juli</option>
+                      <option value="8">Agustus</option>
+                      <option value="9">September</option>
+                      <option value="10">Oktober</option>
+                      <option value="11">November</option>
+                      <option value="12">Desember</option>
+                    </select>
+
+                    <select
+                      value={filterYear}
+                      onChange={(e) => setFilterYear(e.target.value)}
+                      aria-label="Filter Tahun"
+                      className="text-xs px-3 py-2 rounded-full bg-white border border-[#d2d2d7] text-[#1d1d1f] focus:outline-none focus:border-[#0071e3]"
+                    >
+                      <option value="ALL">Semua Tahun</option>
+                      {availableYears.map((yr) => (
+                        <option key={yr} value={yr}>
+                          {yr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Pill Kategori Jenis Rapat */}
+                <div className="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-[#e2e2e5]">
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none max-w-full">
+                    {[
+                      { id: 'ALL', label: 'Semua Rapat' },
+                      { id: 'regular', label: 'Rapat Rutin' },
+                      { id: 'emergency', label: 'Darurat / Luar Biasa' },
+                      { id: 'karang_taruna', label: 'Kepemudaan' },
+                      { id: 'rtrw_pleno', label: 'Pleno RT/RW' },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setFilterType(t.id)}
+                        className={`text-xs px-3 py-1.5 rounded-full whitespace-nowrap font-medium transition active:scale-[0.98] ${
+                          filterType === t.id
+                            ? 'bg-[#1d1d1f] text-white shadow-xs'
+                            : 'bg-white text-[#707070] border border-[#d2d2d7] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {(searchQuery || filterType !== 'ALL' || filterMonth !== 'ALL' || filterYear !== 'ALL') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setFilterType('ALL');
+                        setFilterMonth('ALL');
+                        setFilterYear('ALL');
+                      }}
+                      className="text-[11px] text-[#0071e3] hover:underline shrink-0"
+                    >
+                      Reset Filter
                     </button>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
