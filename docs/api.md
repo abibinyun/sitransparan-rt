@@ -85,7 +85,7 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 | POST | `/api/v1/superadmin/tenants` | SUPERADMIN | Buat tenant. Body: `{name, slug, domain?, logo_url?}`. Schema `tenant_<slug>` dibuat otomatis. Domain default: `<slug>.<TENANT_BASE_DOMAIN>`. |
 | GET | `/api/v1/superadmin/tenants/{id}` | SUPERADMIN | Detail tenant. |
 | PUT | `/api/v1/superadmin/tenants/{id}` | SUPERADMIN | Update tenant. |
-| DELETE | `/api/v1/superadmin/tenants/{id}` | SUPERADMIN | Hapus tenant **beserta schema `tenant_<slug>`** (`DROP SCHEMA CASCADE`). 204. |
+| DELETE | `/api/v1/superadmin/tenants/{id}` | SUPERADMIN | Hapus tenant secara aman (**soft-delete**, `deleted_at = NOW()`, `status = 'inactive'`). Data dan schema tetap terlindungi dari drop tidak sengaja. 204. |
 
 ---
 

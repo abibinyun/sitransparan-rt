@@ -410,7 +410,7 @@ func (r *tenantRepository) SetSearchPath(ctx context.Context, slug string) error
 }
 
 func (r *tenantRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Tenant, error) {
-	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants WHERE id = $1`
+	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants WHERE id = $1 AND deleted_at IS NULL`
 	var t domain.Tenant
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&t.ID, &t.Name, &t.Slug, &t.Domain, &t.LogoURL, &t.Status, &t.CreatedAt, &t.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -420,7 +420,7 @@ func (r *tenantRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.T
 }
 
 func (r *tenantRepository) GetBySlug(ctx context.Context, slug string) (*domain.Tenant, error) {
-	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants WHERE slug = $1`
+	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants WHERE slug = $1 AND deleted_at IS NULL`
 	var t domain.Tenant
 	err := r.db.QueryRowContext(ctx, query, slug).Scan(&t.ID, &t.Name, &t.Slug, &t.Domain, &t.LogoURL, &t.Status, &t.CreatedAt, &t.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -430,7 +430,7 @@ func (r *tenantRepository) GetBySlug(ctx context.Context, slug string) (*domain.
 }
 
 func (r *tenantRepository) GetByDomain(ctx context.Context, domainName string) (*domain.Tenant, error) {
-	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants WHERE domain = $1`
+	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants WHERE domain = $1 AND deleted_at IS NULL`
 	var t domain.Tenant
 	err := r.db.QueryRowContext(ctx, query, domainName).Scan(&t.ID, &t.Name, &t.Slug, &t.Domain, &t.LogoURL, &t.Status, &t.CreatedAt, &t.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -446,7 +446,7 @@ func (r *tenantRepository) Update(ctx context.Context, tenant *domain.Tenant) er
 	query := `
 		UPDATE tenants
 		SET name = $1, slug = $2, domain = $3, logo_url = $4, status = $5, updated_at = NOW()
-		WHERE id = $6
+		WHERE id = $6 AND deleted_at IS NULL
 		RETURNING updated_at
 	`
 	res := r.db.QueryRowContext(ctx, query, tenant.Name, tenant.Slug, tenant.Domain, tenant.LogoURL, tenant.Status, tenant.ID)
@@ -454,14 +454,11 @@ func (r *tenantRepository) Update(ctx context.Context, tenant *domain.Tenant) er
 }
 
 func (r *tenantRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	// Fetch the slug first so the tenant schema can be dropped alongside the
-	// tenant row (schema-per-tenant isolation must not leak orphan schemas).
-	tenant, err := r.GetByID(ctx, id)
-	if err != nil {
-		return ErrNotFound
-	}
-
-	query := `DELETE FROM tenants WHERE id = $1`
+	query := `
+		UPDATE tenants
+		SET deleted_at = NOW(), status = 'inactive', updated_at = NOW()
+		WHERE id = $1 AND deleted_at IS NULL
+	`
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
@@ -473,24 +470,17 @@ func (r *tenantRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	if rows == 0 {
 		return ErrNotFound
 	}
-
-	if tenant.Slug != "" {
-		schemaName := "tenant_" + strings.ReplaceAll(tenant.Slug, "-", "_")
-		if _, err := r.db.ExecContext(ctx, "DROP SCHEMA IF EXISTS "+pq.QuoteIdentifier(schemaName)+" CASCADE"); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
 func (r *tenantRepository) List(ctx context.Context, limit, offset int) ([]*domain.Tenant, int64, error) {
 	var count int64
-	countQuery := `SELECT COUNT(*) FROM tenants`
+	countQuery := `SELECT COUNT(*) FROM tenants WHERE deleted_at IS NULL`
 	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&count); err != nil {
 		return nil, 0, err
 	}
 
-	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants ORDER BY created_at DESC LIMIT $1 OFFSET $2`
+	query := `SELECT id, name, slug, domain, logo_url, status, created_at, updated_at FROM tenants WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT $1 OFFSET $2`
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -775,7 +765,7 @@ func (r *tenantUserRepository) ListTenantsByUserID(ctx context.Context, userID u
 		SELECT t.id, t.name, t.slug, t.domain, t.logo_url, t.created_at, t.updated_at
 		FROM tenants t
 		JOIN tenant_users tu ON t.id = tu.tenant_id
-		WHERE tu.user_id = $1
+		WHERE tu.user_id = $1 AND t.deleted_at IS NULL
 		ORDER BY t.created_at DESC
 	`
 	rows, err := r.db.QueryContext(ctx, query, userID)

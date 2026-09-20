@@ -228,4 +228,13 @@ func TestAuthHandler_SuperAdminTenants(t *testing.T) {
 	if recList.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", recList.Code)
 	}
+
+	// Delete Tenant (Soft Delete)
+	reqDelete := httptest.NewRequest("DELETE", "/api/v1/superadmin/tenants/00000000-0000-0000-0000-000000000001", nil)
+	recDelete := httptest.NewRecorder()
+	handler.SuperAdminTenants(recDelete, reqDelete)
+
+	if recDelete.Code != http.StatusNoContent {
+		t.Fatalf("expected status 204, got %d", recDelete.Code)
+	}
 }

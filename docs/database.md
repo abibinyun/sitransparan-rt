@@ -7,7 +7,7 @@ Database: PostgreSQL 16, nama default `transparansi_rt`.
 ## 1. Model Isolasi
 
 - **Schema `public`** — data global/platform: `tenants`, `users`, `roles`, `tenant_users`, `audit_logs`, `portal_events`, `push_subscriptions`.
-- **Schema `tenant_<slug>`** — data operasional per tenant (slug `-` diganti `_`, misal `tenant_sitransparan_rt`). Dibuat otomatis saat tenant dibuat (`CreateTenantSchema`) dan dihapus (`DROP SCHEMA ... CASCADE`) saat tenant dihapus.
+- **Schema `tenant_<slug>`** — data operasional per tenant (slug `-` diganti `_`, misal `tenant_sitransparan_rt`). Dibuat otomatis saat tenant dibuat (`CreateTenantSchema`). Saat tenant dihapus, sistem menerapkan **soft-delete** (`deleted_at = NOW()`, `status = 'inactive'`) sehingga data dan schema tetap utuh dan dapat direstore sewaktu-waktu.
 - Semua query runtime tenant menggunakan nama tabel schema-qualified `tenant_<slug>.<table>` (helper `TenantTable`).
 - Migrasi 000002–000009 mendefinisikan DDL tabel di schema default (public) — tabel ini juga menjadi **sumber seed** yang disalin ke schema tenant oleh `000012_backfill_tenant_schemas` (idempotent). `000016–000027` menambah funds/meetings/reactions/polls/media/push/houses/waste_bank.
 

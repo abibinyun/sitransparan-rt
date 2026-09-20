@@ -106,7 +106,7 @@ Model: **PostgreSQL schema-per-tenant**.
 
 - Tabel global (`tenants`, `users`, `roles`, `tenant_users`, `audit_logs`, `portal_events`, `push_subscriptions`) ada di schema **public**.
 - Setiap tenant memiliki schema **`tenant_<slug>`** (karakter `-` diganti `_`) yang berisi tabel operasional: `residents`, `family_members`, `fee_categories`, `dues_payments`, `financial_transactions`, `funds`, `events`, `event_budgets`, `event_participants`, `event_sponsors`, `event_roles`, `event_receipts`, `aspirations`, `community_needs`, `announcements`, `documents`, `meetings`, `meeting_attendees`, `meeting_decisions`, `meeting_action_items`, `reactions`, `polls`, `poll_votes`.
-- Schema tenant dibuat otomatis saat tenant dibuat (`CreateTenantSchema`) dan **dihapus** (`DROP SCHEMA ... CASCADE`) saat tenant dihapus.
+- Schema tenant dibuat otomatis saat tenant dibuat (`CreateTenantSchema`). Penghapusan tenant menerapkan arsitektur **soft-delete** (`deleted_at = NOW()`, `status = 'inactive'`) untuk menjaga integritas data dan mencegah kehilangan data permanen.
 - Migrasi `000012_backfill_tenant_schemas` memprovisikan schema untuk tenant yang dibuat sebelum fitur ini ada (idempotent); `000016` seed 3 funds default; `000017–000020` tambah meetings/reactions/polls/push.
 
 ### 5.1 Resolusi Tenant (Backend)

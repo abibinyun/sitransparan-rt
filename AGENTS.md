@@ -1445,8 +1445,7 @@ tests/e2e/                      Playwright regression suite
   aspirations, community_needs, announcements, documents, meetings, meeting_attendees, meeting_decisions,
   meeting_action_items, reactions, polls, poll_options, poll_votes, karang_taruna_periods, karang_taruna_configs,
   karang_taruna_members, houses, house_residents, house_qr_tokens, waste_categories, waste_deposits, waste_deposit_items).
-- Creating a tenant auto-provisions its schema; deleting a tenant drops it
-  (`DROP SCHEMA ... CASCADE`).
+- Creating a tenant auto-provisions its schema. Deleting a tenant executes a **soft-delete** (`deleted_at = NOW()`, `status = 'inactive'`) preserving schema data integrity.
 - Public portal endpoints resolve the tenant from the **slug in the path**
   (`/api/v1/t/{slug}/info|announcements|documents|aspirations|needs|karang-taruna|waste-bank/summary|waste-bank/categories`) and reject
   `inactive` tenants (404). Hostname consistency is enforced: if the hostname is a tenant
