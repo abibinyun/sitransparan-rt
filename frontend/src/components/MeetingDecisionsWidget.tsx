@@ -24,12 +24,24 @@ const MEETING_TYPE_LABEL: Record<string, string> = {
 export const MeetingDecisionsWidget: React.FC = () => {
   const { data: meetings, isLoading } = usePublicMeetings();
   const [selectedMeeting, setSelectedMeeting] = useState<PublicMeeting | null>(null);
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<string>('ALL');
 
   if (isLoading) {
     return <div className="h-32 animate-pulse rounded-2xl bg-slate-100" aria-label="Memuat notulen rapat" />;
   }
 
   if (!meetings || meetings.length === 0) return null;
+
+  const filteredMeetings = meetings.filter((m) => {
+    const matchSearch =
+      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (m.agenda || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.location.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchType = filterType === 'ALL' || m.meeting_type === filterType;
+    return matchSearch && matchType;
+  });
 
   return (
     <>
@@ -38,7 +50,13 @@ export const MeetingDecisionsWidget: React.FC = () => {
           <h2 className="flex items-center gap-2 text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#1d1d1f]">
             <ScrollText className="h-4 w-4 text-[#0071e3]" /> Keputusan Musyawarah
           </h2>
-          <span className="text-[10px] text-[#707070] font-medium">Klik untuk rincian</span>
+          <button
+            type="button"
+            onClick={() => setIsArchiveModalOpen(true)}
+            className="text-[11px] text-[#0071e3] hover:underline font-semibold"
+          >
+            Lihat Semua ({meetings.length})
+          </button>
         </div>
         <ul className="divide-y divide-[#d2d2d7] space-y-1">
           {meetings.slice(0, 4).map((m) => (
@@ -226,6 +244,123 @@ export const MeetingDecisionsWidget: React.FC = () => {
               >
                 Tutup
               </button>
+            </div>
+          </div>
+        </Dialog>
+      )}
+      {/* Modal Arsip Riwayat Semua Musyawarah */}
+      {isArchiveModalOpen && (
+        <Dialog
+          isOpen={true}
+          onClose={() => setIsArchiveModalOpen(false)}
+          title=""
+          description=""
+          className="max-w-3xl w-full"
+        >
+          <div className="flex flex-col max-h-[85vh]">
+            <div className="px-6 py-4 border-b border-[#d2d2d7] bg-[#f5f5f7] space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-[#1d1d1f] flex items-center gap-2">
+                    <ScrollText className="w-4 h-4 text-[#0071e3]" /> Arsip Notulen &amp; Keputusan Musyawarah
+                  </h2>
+                  <p className="text-xs text-[#707070]">
+                    Dokumentasi hasil rapat terbuka warga, notula, dan poin keputusan bersama.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsArchiveModalOpen(false)}
+                  className="apple-btn-secondary text-xs px-3 py-1"
+                >
+                  Tutup
+                </button>
+              </div>
+
+              {/* Filter Type & Search Bar */}
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <input
+                  type="text"
+                  placeholder="Cari notulen rapat..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 text-xs px-3 py-1.5 rounded-full bg-white border border-[#d2d2d7] focus:outline-none focus:border-[#0071e3]"
+                />
+                <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
+                  {[
+                    { id: 'ALL', label: 'Semua' },
+                    { id: 'regular', label: 'Rutin' },
+                    { id: 'emergency', label: 'Darurat' },
+                    { id: 'karang_taruna', label: 'Pemuda' },
+                    { id: 'rtrw_pleno', label: 'Pleno' },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setFilterType(t.id)}
+                      className={`text-[11px] px-2.5 py-1 rounded-full whitespace-nowrap font-medium transition ${
+                        filterType === t.id
+                          ? 'bg-[#1d1d1f] text-white shadow-xs'
+                          : 'bg-white text-[#707070] border border-[#d2d2d7] hover:bg-[#f5f5f7]'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-3">
+              {filteredMeetings.length === 0 ? (
+                <div className="p-8 text-center text-xs text-[#707070]">
+                  Tidak ada notulen musyawarah yang cocok dengan filter.
+                </div>
+              ) : (
+                filteredMeetings.map((m) => (
+                  <div
+                    key={m.id}
+                    onClick={() => {
+                      setSelectedMeeting(m);
+                    }}
+                    className="apple-card p-4 hover:border-[#0071e3] cursor-pointer transition space-y-2 group"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="apple-badge text-[10px]">
+                            {MEETING_TYPE_LABEL[m.meeting_type] || m.meeting_type}
+                          </span>
+                          <span className="text-[11px] text-[#707070]">
+                            {new Date(m.meeting_date).toLocaleDateString('id-ID', {
+                              weekday: 'short',
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        </div>
+                        <h3 className="font-semibold text-sm text-[#1d1d1f] group-hover:text-[#0071e3] transition mt-1">
+                          {m.title}
+                        </h3>
+                      </div>
+                      <ExternalLink className="w-3.5 h-3.5 text-[#0071e3] shrink-0 opacity-0 group-hover:opacity-100 transition" />
+                    </div>
+                    {m.agenda && (
+                      <p className="text-xs text-[#474747] line-clamp-2">{m.agenda}</p>
+                    )}
+                    <div className="flex items-center gap-2 text-[11px] text-[#707070] pt-1 border-t border-slate-100">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-[#0071e3]" /> {m.location}
+                      </span>
+                      {m.decisions && m.decisions.length > 0 && (
+                        <span className="text-[#0066cc] bg-[#f4f8fb] px-2 py-0.5 rounded-full border border-[#d2d2d7] font-semibold text-[10px]">
+                          {m.decisions.length} Keputusan
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </Dialog>
