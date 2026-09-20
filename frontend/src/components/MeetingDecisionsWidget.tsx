@@ -316,8 +316,21 @@ export const MeetingDecisionsWidget: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Dropdown Bulan & Tahun */}
-                  <div className="flex items-center gap-2 shrink-0">
+                  {/* Dropdown Filter Group: Jenis Rapat, Bulan, & Tahun */}
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
+                    <select
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value)}
+                      aria-label="Filter Jenis Musyawarah"
+                      className="text-xs px-3 py-2 rounded-full bg-white border border-[#d2d2d7] text-[#1d1d1f] focus:outline-none focus:border-[#0071e3]"
+                    >
+                      <option value="ALL">Semua Jenis Rapat</option>
+                      <option value="regular">Rapat Rutin</option>
+                      <option value="emergency">Darurat / Luar Biasa</option>
+                      <option value="karang_taruna">Kepemudaan</option>
+                      <option value="rtrw_pleno">Pleno RT/RW</option>
+                    </select>
+
                     <select
                       value={filterMonth}
                       onChange={(e) => setFilterMonth(e.target.value)}
@@ -352,48 +365,22 @@ export const MeetingDecisionsWidget: React.FC = () => {
                         </option>
                       ))}
                     </select>
-                  </div>
-                </div>
 
-                {/* Pill Kategori Jenis Rapat */}
-                <div className="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-[#e2e2e5]">
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none max-w-full">
-                    {[
-                      { id: 'ALL', label: 'Semua Rapat' },
-                      { id: 'regular', label: 'Rapat Rutin' },
-                      { id: 'emergency', label: 'Darurat / Luar Biasa' },
-                      { id: 'karang_taruna', label: 'Kepemudaan' },
-                      { id: 'rtrw_pleno', label: 'Pleno RT/RW' },
-                    ].map((t) => (
+                    {(searchQuery || filterType !== 'ALL' || filterMonth !== 'ALL' || filterYear !== 'ALL') && (
                       <button
-                        key={t.id}
                         type="button"
-                        onClick={() => setFilterType(t.id)}
-                        className={`text-xs px-3 py-1.5 rounded-full whitespace-nowrap font-medium transition active:scale-[0.98] ${
-                          filterType === t.id
-                            ? 'bg-[#1d1d1f] text-white shadow-xs'
-                            : 'bg-white text-[#707070] border border-[#d2d2d7] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
-                        }`}
+                        onClick={() => {
+                          setSearchQuery('');
+                          setFilterType('ALL');
+                          setFilterMonth('ALL');
+                          setFilterYear('ALL');
+                        }}
+                        className="text-[11px] text-[#0071e3] hover:underline font-semibold whitespace-nowrap px-1"
                       >
-                        {t.label}
+                        Reset
                       </button>
-                    ))}
+                    )}
                   </div>
-
-                  {(searchQuery || filterType !== 'ALL' || filterMonth !== 'ALL' || filterYear !== 'ALL') && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setFilterType('ALL');
-                        setFilterMonth('ALL');
-                        setFilterYear('ALL');
-                      }}
-                      className="text-[11px] text-[#0071e3] hover:underline shrink-0"
-                    >
-                      Reset Filter
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
