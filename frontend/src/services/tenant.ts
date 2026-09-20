@@ -15,6 +15,7 @@ export interface UpdateTenantPayload {
   slug: string;
   domain?: string;
   logo_url?: string;
+  status?: string;
 }
 
 export interface ListTenantsResponse {

@@ -101,10 +101,42 @@ export const SuperAdminTenantsPage: React.FC = () => {
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus Tenant RT ini?')) {
-      deleteMutation.mutate(id, {
+  const handleToggleStatus = (tenant: Tenant) => {
+    const isCurrentlyActive = tenant.status !== 'inactive';
+    const newStatus = isCurrentlyActive ? 'inactive' : 'active';
+    const actionLabel = isCurrentlyActive ? 'menonaktifkan' : 'mengaktifkan kembali';
+
+    if (confirm(`Apakah Anda yakin ingin ${actionLabel} Tenant "${tenant.name}"?`)) {
+      updateMutation.mutate(
+        {
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug,
+          domain: tenant.domain || undefined,
+          status: newStatus,
+        },
+        {
+          onSuccess: () => refetch(),
+          onError: (err: any) => {
+            alert(err?.response?.data?.error || err?.message || `Gagal ${actionLabel} tenant`);
+          },
+        }
+      );
+    }
+  };
+
+  const handleDelete = (tenant: Tenant) => {
+    if (tenant.status !== 'inactive') {
+      alert('Tenant harus dinonaktifkan terlebih dahulu sebelum dapat dihapus.');
+      return;
+    }
+
+    if (confirm(`Apakah Anda yakin ingin menghapus Tenant "${tenant.name}"? Tindakan ini akan mengarsipkan tenant.`)) {
+      deleteMutation.mutate(tenant.id, {
         onSuccess: () => refetch(),
+        onError: (err: any) => {
+          alert(err?.response?.data?.error || err?.message || 'Gagal menghapus tenant');
+        },
       });
     }
   };
@@ -137,6 +169,7 @@ export const SuperAdminTenantsPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Nama RT</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Slug (Identifier)</TableHead>
                 <TableHead>Domain (Default / Custom)</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
@@ -144,44 +177,83 @@ export const SuperAdminTenantsPage: React.FC = () => {
             </TableHeader>
             <TableBody>
               {tenants && tenants.length > 0 ? (
-                tenants.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell className="font-semibold text-[#1d1d1f]">{t.name}</TableCell>
-                    <TableCell className="font-mono text-xs text-[#0066cc]">{t.slug}</TableCell>
-                    <TableCell className="font-mono text-xs text-[#707070]">{t.domain || `${t.slug}.${baseDomain}`}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEnterTenant(t)}
-                        disabled={switchTenantMutation.isPending}
-                        className="text-[#0066cc] border-[#d2d2d7] hover:bg-[#f4f8fb] gap-1"
-                        title="Masuk sebagai superadmin ke tenant ini"
-                      >
-                        <LogIn className="h-3.5 w-3.5" /> Masuk
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditModal(t)}
-                        className="text-[#1d1d1f] hover:text-[#0071e3]"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(t.id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        Hapus
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                tenants.map((t) => {
+                  const isActive = t.status !== 'inactive';
+                  return (
+                    <TableRow key={t.id} className={!isActive ? 'bg-slate-50 opacity-80' : ''}>
+                      <TableCell className="font-semibold text-[#1d1d1f]">
+                        {t.name}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                            isActive
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                              isActive ? 'bg-emerald-500' : 'bg-amber-500'
+                            }`}
+                          />
+                          {isActive ? 'Aktif' : 'Nonaktif'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-[#0066cc]">{t.slug}</TableCell>
+                      <TableCell className="font-mono text-xs text-[#707070]">{t.domain || `${t.slug}.${baseDomain}`}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        {isActive && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEnterTenant(t)}
+                            disabled={switchTenantMutation.isPending}
+                            className="text-[#0066cc] border-[#d2d2d7] hover:bg-[#f4f8fb] gap-1"
+                            title="Masuk sebagai superadmin ke tenant ini"
+                          >
+                            <LogIn className="h-3.5 w-3.5" /> Masuk
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditModal(t)}
+                          className="text-[#1d1d1f] hover:text-[#0071e3]"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleStatus(t)}
+                          disabled={updateMutation.isPending}
+                          className={
+                            isActive
+                              ? 'text-amber-700 border-amber-200 hover:bg-amber-50'
+                              : 'text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                          }
+                          title={isActive ? 'Nonaktifkan akses tenant' : 'Aktifkan kembali tenant'}
+                        >
+                          {isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(t)}
+                          disabled={deleteMutation.isPending || isActive}
+                          title={isActive ? 'Nonaktifkan tenant terlebih dahulu sebelum menghapus' : 'Hapus tenant'}
+                          className={isActive ? 'opacity-40 cursor-not-allowed' : ''}
+                        >
+                          Hapus
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="px-6 py-8 text-center text-sm text-[#707070]">
+                  <TableCell colSpan={5} className="px-6 py-8 text-center text-sm text-[#707070]">
                     Belum ada tenant RT terdaftar.
                   </TableCell>
                 </TableRow>

@@ -492,6 +492,13 @@ func (u *authUsecase) UpdateTenant(ctx context.Context, id uuid.UUID, name, slug
 }
 
 func (u *authUsecase) DeleteTenant(ctx context.Context, id uuid.UUID) error {
+	tenant, err := u.tenantRepo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if tenant.Status != "inactive" {
+		return fmt.Errorf("tenant harus dinonaktifkan terlebih dahulu sebelum dapat dihapus")
+	}
 	return u.tenantRepo.Delete(ctx, id)
 }
 

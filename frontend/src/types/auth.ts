@@ -6,6 +6,7 @@ export interface Tenant {
   slug: string;
   domain?: string;
   logo_url?: string;
+  status?: string; // 'active' | 'inactive'
   code?: string;
 }
 
