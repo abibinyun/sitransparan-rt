@@ -37,52 +37,108 @@ Untuk subdomain lokal, tambah ke `/etc/hosts`:
 
 Tenant baru otomatis domain `<slug>.<TENANT_BASE_DOMAIN>` (lihat `auth_usecase.go: CreateTenant`). **Wildcard DNS hanya routing**: tenant existence + status + auth tetap backend (`TenantMiddleware`).
 
-## 2. Mode Produksi (Sederhana)
+## 2. Mode Produksi & Konfigurasi Lengkap
 
-`docker-compose.prod.yml` komposisi minimal tanpa Traefik:
+### 2.1 Checklist Environment Variables Wajib (Production Checklist)
 
-- PostgreSQL (`platform-rt-db`, `5432`)
-- MinIO (`platform-rt-minio`, `9000`/`9001`)
-- Backend (`platform-rt-backend`, `8080`)
-- Frontend (`platform-rt-frontend`, `80`)
+Semua variabel berikut **wajib** dikonfigurasi saat deploy ke staging maupun production agar sistem aman dan tidak panic saat startup:
+
+| Variabel | Lingkup | Tipe / Format | Keterangan & Cara Generate |
+|---|---|---|---|
+| `JWT_SECRET` | Backend | String (Min. 32 char) | **WAJIB KRUSIAL**. Rahasia penandatanganan token JWT. Server menolak start jika kosong/default. Generate: `openssl rand -base64 48` |
+| `NIK_ENCRYPTION_KEY` | Backend | String (Tepat 32 bytes) | **WAJIB**. Kunci enkripsi AES-256-GCM NIK/identitas penduduk. Wajib 32 karakter jika `APP_ENV=production`. Generate: `openssl rand -base64 32 \| head -c 32` |
+| `NIK_HMAC_SECRET` | Backend | String (Min. 32 char) | **WAJIB**. Kunci hashing HMAC pencarian NIK terenkripsi. Generate: `openssl rand -base64 32` |
+| `TENANT_BASE_DOMAIN` | Backend | String (FQDN/CSV) | Domain induk multi-tenant (contoh: `iscube.web.id` atau `openrt.com`). |
+| `VITE_TENANT_BASE_DOMAIN` | Frontend (Build Arg) | String (FQDN) | Wajib sama persis dengan `TENANT_BASE_DOMAIN` agar frontend dapat menurunkan tenant slug dari URL browser. |
+| `TRUSTED_PROXY_IPS` | Backend | CSV (IP / CIDR) | IP/subnet reverse proxy (Nginx/Traefik/Docker gateway, mis. `172.16.0.0/12`) agar header `X-Forwarded-For` diakui untuk per-IP rate-limiting. |
+| `POSTGRES_USER` | DB & Backend | String | Akun database PostgreSQL (ganti dari `postgres`). |
+| `POSTGRES_PASSWORD` | DB & Backend | String | Password kuat database PostgreSQL (ganti dari default). |
+| `POSTGRES_DB` | DB & Backend | String | Nama database (mis. `platform_rt` atau `transparansi_rt`). |
+| `MINIO_ROOT_USER` | MinIO & Backend | String | Akun admin MinIO/S3 (ganti dari `minioadmin`). |
+| `MINIO_ROOT_PASSWORD` | MinIO & Backend | String | Password admin MinIO/S3 (ganti dari `minioadmin`). |
+| `MINIO_ENDPOINT` | Backend | `host:port` | Endpoint koneksi internal backend ke MinIO (mis. `minio:9000`). |
+| `MINIO_PUBLIC_URL` | Backend | URL | Base URL publik yang diakses browser warga untuk unduh berkas/foto (mis. `https://storage.iscube.web.id` atau `https://minio.openrt.com`). |
+| `MINIO_USE_SSL` | Backend | Boolean | Set `true` jika MinIO publik memakai HTTPS. |
+| `VAPID_PUBLIC_KEY` | Backend | String | Kunci publik Web Push Notification (opsional, nonaktif jika kosong). Generate: `npx web-push generate-vapid-keys` |
+| `VAPID_PRIVATE_KEY` | Backend | String | Kunci privat Web Push Notification. |
+| `VAPID_SUBJECT` | Backend | `mailto:...` | Kontak email pengirim push (mis. `mailto:admin@openrt.com`). |
+| `RATE_LIMIT_CAPACITY` | Backend | Integer | Kapasitas token bucket rate-limit global per IP (default `1000`). |
+| `RATE_LIMIT_REFILL` | Backend | Float | Kecepatan refill token per detik (default `100`). |
+| `AUTH_RATE_LIMIT_CAPACITY` | Backend | Integer | Kapasitas rate-limit khusus endpoint auth login/register (default `20`). |
+| `AUTH_RATE_LIMIT_REFILL` | Backend | Float | Kecepatan refill token auth per detik (default `5`). |
+
+---
+
+### 2.2 Mode Produksi Docker Compose
+
+File `infrastructure/docker-compose.prod.yml` digunakan untuk runtime server produksi:
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f infrastructure/docker-compose.prod.yml up -d --build
 ```
 
-> `.env.example` root hanya vars PG/MinIO. Produksi wajib `JWT_SECRET` kuat + ganti password default. **Wajib:** `TRUSTED_PROXY_IPS` ke IP/CIDR proxy (rate-limit per-IP; tanpa ini semua via proxy dihitung satu IP). Tuning: `RATE_LIMIT_CAPACITY`, `RATE_LIMIT_REFILL`, `AUTH_RATE_LIMIT_CAPACITY`, `AUTH_RATE_LIMIT_REFILL` (default 1000/100 dan 20/5).
+Layanan yang dijalankan:
+- **PostgreSQL 16** (`platform-rt-db`, port internal `5432`)
+- **MinIO S3 Storage** (`platform-rt-minio`, port `9000` API & `9001` Console)
+- **Backend Go** (`platform-rt-backend`, port `8080`)
+- **Frontend Nginx** (`platform-rt-frontend`, port `80`)
 
-## 3. Mode Produksi Target (Wildcard `*.openrt.com`)
+---
+
+## 3. Mode Produksi Target (Wildcard DNS & Reverse Proxy)
+
+Arsitektur lalu lintas publik:
 
 ```text
-*.openrt.com (wildcard DNS A/AAAA)
-  → Traefik (router wildcard, websecure)
-  → Frontend (Nginx) → Backend (proxy /api)
-  → TenantMiddleware (hostname → tenant lookup → active → match JWT)
+*.iscube.web.id / *.openrt.com (wildcard DNS A/AAAA)
+  → Reverse Proxy (Traefik / Nginx / Cloudflare SSL)
+  → Frontend (Nginx container) → Backend Go (proxy /api)
+  → TenantMiddleware (hostname → tenant lookup → status active → match JWT claims)
   → schema tenant_<slug>
 ```
 
-Persyaratan operator:
+Persyaratan wajib operator & tim DevOps:
 
-1. **Wildcard DNS** `*.openrt.com` → IP server.
-2. **TLS wildcard** `*.openrt.com` (Let's Encrypt wildcard butuh **DNS-01 challenge**).
-3. **Traefik v3.6+** dengan router wildcard anchored + `websecure` + `tls.certresolver`/file.
-4. **Konfig**: `TENANT_BASE_DOMAIN=openrt.com` (backend) dan build arg `VITE_TENANT_BASE_DOMAIN=openrt.com` (frontend) — harus sama.
-5. **Registrasi tenant** via SuperAdmin (no source change): buat → schema provisi → `active` → routable. `inactive` → hostname ditolak (403/404).
-6. **Per-IP rate limiting**: `TRUSTED_PROXY_IPS` ke IP/CIDR Traefik (mis. `172.16.0.0/12`). `/health` & `/swagger/` exempt; auth budget ketat 20/5.
+1. **Wildcard DNS**: Record A `*.domainanda.com` mengarah ke IP publik server host.
+2. **Wildcard TLS/SSL**: Sertifikat SSL wildcard (Let's Encrypt via DNS-01 Challenge, Cloudflare SSL, atau SSL custom).
+3. **Penyelarasan Domain Induk**: `TENANT_BASE_DOMAIN` (backend) dan build arg `VITE_TENANT_BASE_DOMAIN` (frontend) **harus identik**.
+4. **Proxy IP Whitelist**: Isi `TRUSTED_PROXY_IPS` dengan IP/subnet Traefik/Nginx agar rate-limit per-IP bekerja akurat dan tidak memblokir proxy.
+5. **Akses Subdomain Tenant**:
+   - Tenant aktif: langsung dapat diakses via `<slug>.domainanda.com`.
+   - Tenant nonaktif (`inactive`): ditolak dengan respons 403/404 oleh `TenantMiddleware`.
+   - Tenant dihapus (**soft-delete**): status menjadi `inactive` dan `deleted_at` terisi; data dan skema database PostgreSQL tetap aman dan dapat dipulihkan.
 
-Jika infra prod belum tersedia, tandai `UNTESTED/BLOCKED`.
+---
 
-## 4. Docker Images
+## 4. Pipeline CI/CD Multi-Environment (GitHub Actions)
+
+Alur otomatisasi deployment diatur melalui `.github/workflows/deploy.yml`:
+
+1. **Lint, Test & Build Check** (berjalan pada setiap push & PR):
+   - Backend Go: `go vet ./...` dan `go test -v ./...`.
+   - Frontend React: `npm ci` dan `npm run build` (`tsc && vite build`).
+2. **Deploy Staging** (trigger: push ke branch `refactor/enhancement`):
+   - Deploy otomatis via SSH ke server staging (`iscube.web.id`).
+   - GitHub Secrets yang dibutuhkan: `STAGING_SSH_HOST`, `STAGING_SSH_USER`, `STAGING_SSH_KEY`, `STAGING_SSH_PORT`.
+3. **Deploy Production** (trigger: push ke branch `main`):
+   - Deploy otomatis via SSH ke server production.
+   - GitHub Secrets yang dibutuhkan: `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_SSH_PORT`.
+
+## 5. Docker Images
 
 | Dockerfile | Isi |
 |---|---|
 | `infrastructure/Dockerfile.backend` | Multi-stage Go (compose dev) |
+| `infrastructure/Dockerfile.backend.dev` | Live-reload / dev Go |
 | `Dockerfile.backend` (root) | Untuk `docker-compose.prod.yml` |
 | `infrastructure/Dockerfile.frontend` | Vite → Nginx (compose dev); arg `VITE_TENANT_BASE_DOMAIN` |
 | `Dockerfile.frontend` (root) | Untuk `docker-compose.prod.yml` |
 
-## 5. Environment untuk Backend di Docker
+## 6. Prosedur PWA & Service Worker Produksi
+
+- Di lingkungan development lokal (`Vite dev`), Service Worker otomatis dimatikan agar tidak terjadi konflik MIME type HTML fallback.
+- Di lingkungan produksi (saat dibuild via Docker atau `npm run build`), Service Worker (`dist/sw.js`) otomatis diinjeksi oleh `vite-plugin-pwa` dengan strategi `injectManifest`.
+- Cache halaman HTML navigasi memakai strategi `NetworkOnly` untuk menjamin warga dan admin selalu mendapatkan rilis kode terbaru saat browser di-refresh.
 
 Kompose suntik ke backend:
 

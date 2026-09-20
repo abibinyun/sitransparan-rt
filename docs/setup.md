@@ -34,10 +34,11 @@ Variabel backend (`backend/pkg/config/config.go`):
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | `localhost` / `5432` / `postgres` / `postgres` / `transparansi_rt` | Koneksi PG (bisa `DATABASE_URL`/`DB_URL`) |
 | `DB_SSLMODE` | `disable` | SSL mode |
 | `JWT_SECRET` | **(wajib)** | Secret JWT HS256. **Wajib** ≥32 char; backend menolak start jika kosong/pendek/nilai publik lama. `openssl rand -base64 48` |
-| `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` / `MINIO_USE_SSL` / `MINIO_PUBLIC_URL` / `MINIO_BUCKET` | — | Storage (docker-compose set; `MINIO_PUBLIC_URL` default `http://localhost:9000` untuk URL host-reachable; bucket `sitransparan-files`) |
-| `TENANT_BASE_DOMAIN` | `openrt.local` | Domain dasar subdomain tenant (`<slug>.<TENANT_BASE_DOMAIN>`). Dev `openrt.local`, prod `openrt.com`. Tidak hardcode |
-| `NIK_ENCRYPTION_KEY` | `0123456789abcdef0123456789abcdef` (dev fallback) | **32 byte** AES-256-GCM+HMAC. Dev boleh fallback; **prod panic jika ≠32** (fail-closed) |
-| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | *(kosong)* | Web Push. Kosong → push disabled graceful |
+| `MINIO_ENDPOINT` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` / `MINIO_USE_SSL` / `MINIO_PUBLIC_URL` / `MINIO_BUCKET` | — | Storage (docker-compose set; `MINIO_PUBLIC_URL` default `http://localhost:9000` untuk URL host-reachable; bucket `sitransparan-files`). Di prod wajib URL publik HTTPS valid. |
+| `TENANT_BASE_DOMAIN` | `openrt.local` | Domain dasar subdomain tenant (`<slug>.<TENANT_BASE_DOMAIN>`). Dev `openrt.local`, staging `iscube.web.id`, prod `openrt.com`. Tidak hardcode |
+| `NIK_ENCRYPTION_KEY` | `sitransparan-nik-encrypt-key-32b` (dev fallback) | **Tepat 32 bytes** AES-256-GCM. Dev boleh fallback; **prod panic jika ≠32 bytes** (fail-closed). Generate: `openssl rand -base64 32 \| head -c 32` |
+| `NIK_HMAC_SECRET` | `sitransparan-nik-hmac-secret-key` (dev fallback) | **Min. 32 char** HMAC lookup. Prod panic jika kosong saat `APP_ENV=production`. Generate: `openssl rand -base64 32` |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | *(kosong)* | Web Push. Kosong → push disabled graceful. Generate: `npx web-push generate-vapid-keys` |
 | `RATE_LIMIT_CAPACITY` | `1000` | Token bucket per-IP |
 | `RATE_LIMIT_REFILL` | `100` | Refill per detik per IP |
 | `AUTH_RATE_LIMIT_CAPACITY` | `20` | Budget per-IP `/auth/login` & `/register` |
