@@ -547,14 +547,14 @@ export const FinancialPage: React.FC = () => {
       )}
 
       {/* Header & Quick Action */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-[#d2d2d7]">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 mb-1.5">
-            <Wallet className="h-3.5 w-3.5 text-indigo-600" />
-            Pembukuan & Kas Warga
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] mb-1.5">
+            <Wallet className="h-3.5 w-3.5 text-[#0071e3]" />
+            Pembukuan &amp; Kas Warga
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Transparansi Keuangan RT</h1>
-          <p className="text-sm text-slate-500">Tata kelola iuran warga dan arus kas operasional berbasis kantong dana (multi-fund).</p>
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Transparansi Keuangan RT</h1>
+          <p className="text-sm text-[#707070]">Tata kelola iuran warga dan arus kas operasional berbasis kantong dana (multi-fund).</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -562,7 +562,7 @@ export const FinancialPage: React.FC = () => {
             <>
               <Button
                 onClick={() => setIsDuesModalOpen(true)}
-                className="h-9 gap-1.5 font-medium text-xs"
+                className="h-9 gap-1.5 font-medium text-xs apple-btn-primary"
               >
                 <Coins className="h-3.5 w-3.5" />
                 Catat Iuran Warga
@@ -570,7 +570,7 @@ export const FinancialPage: React.FC = () => {
               <Button
                 onClick={() => setIsTxModalOpen(true)}
                 variant="outline"
-                className="h-9 gap-1.5 font-medium text-xs text-[#0066cc]"
+                className="h-9 gap-1.5 font-medium text-xs text-[#0066cc] border-[#d2d2d7] hover:bg-[#f4f8fb]"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Transaksi Kas RT
@@ -578,9 +578,9 @@ export const FinancialPage: React.FC = () => {
               <Button
                 onClick={() => setIsFundModalOpen(true)}
                 variant="outline"
-                className="h-9 gap-1.5 font-medium text-xs"
+                className="h-9 gap-1.5 font-medium text-xs text-[#1d1d1f] border-[#d2d2d7] hover:bg-[#f5f5f7]"
               >
-                <Wallet className="h-3.5 w-3.5 text-[#858585]" />
+                <Wallet className="h-3.5 w-3.5 text-[#707070]" />
                 Kantong Kas Baru
               </Button>
             </>
@@ -610,7 +610,7 @@ export const FinancialPage: React.FC = () => {
 
       {/* Primary KPI Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="relative overflow-hidden rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-2xs">
+        <div className="apple-card p-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-[#707070]">Total Saldo Kas</span>
             <div className="rounded-lg bg-[#f4f8fb] border border-[#d2d2d7] p-2 text-[#0066cc]">
@@ -618,14 +618,14 @@ export const FinancialPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+            <span className="text-2xl font-bold tracking-tight text-[#1d1d1f] tabular-nums">
               {isSummaryLoading ? '...' : `Rp ${(summary?.current_balance || 0).toLocaleString('id-ID')}`}
             </span>
           </div>
           <p className="mt-1 text-[11px] text-[#707070]">Total likuiditas seluruh kantong dana aktif</p>
         </div>
 
-        <div className="relative overflow-hidden rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-2xs">
+        <div className="apple-card p-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-[#707070]">Arus Masuk (Income)</span>
             <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2 text-emerald-600">
@@ -633,14 +633,14 @@ export const FinancialPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-emerald-600">
+            <span className="text-2xl font-bold tracking-tight text-emerald-600 tabular-nums">
               {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_income || 0).toLocaleString('id-ID')}`}
             </span>
           </div>
-          <p className="mt-1 text-[11px] text-[#707070]">Akumulasi iuran terverifikasi & pemasukan kas</p>
+          <p className="mt-1 text-[11px] text-[#707070]">Akumulasi iuran terverifikasi &amp; pemasukan kas</p>
         </div>
 
-        <div className="relative overflow-hidden rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-2xs">
+        <div className="apple-card p-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-[#707070]">Arus Keluar (Expense)</span>
             <div className="rounded-lg bg-rose-50 border border-rose-200 p-2 text-rose-600">
@@ -648,18 +648,18 @@ export const FinancialPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+            <span className="text-2xl font-bold tracking-tight text-[#1d1d1f] tabular-nums">
               {isSummaryLoading ? '...' : `Rp ${(summary?.monthly_expense || 0).toLocaleString('id-ID')}`}
             </span>
           </div>
-          <p className="mt-1 text-[11px] text-[#707070]">Pengeluaran operasional & belanja pos kegiatan</p>
+          <p className="mt-1 text-[11px] text-[#707070]">Pengeluaran operasional &amp; belanja pos kegiatan</p>
         </div>
       </div>
 
       {/* Allocation Overview: Split Section between Kas Kantong and Pos Iuran */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Kolom Kiri: Kantong Kas RT (Funds) */}
-        <div className="lg:col-span-5 rounded-xl border border-[#d2d2d7] bg-white shadow-2xs overflow-hidden flex flex-col">
+        <div className="lg:col-span-5 apple-card overflow-hidden flex flex-col p-0">
           <div className="px-4 py-3 border-b border-[#d2d2d7] flex items-center justify-between bg-[#f5f5f7]">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-[#0071e3]" />
@@ -678,7 +678,7 @@ export const FinancialPage: React.FC = () => {
             )}
           </div>
 
-          <div className="p-3 divide-y divide-slate-100 flex-1 overflow-y-auto max-h-[280px]">
+          <div className="p-3 divide-y divide-[#e2e2e5] flex-1 overflow-y-auto max-h-[280px]">
             {fundList.length === 0 ? (
               <p className="py-6 text-center text-xs text-[#858585]">Belum ada kantong kas</p>
             ) : (
@@ -693,9 +693,9 @@ export const FinancialPage: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">{f.description || f.type}</p>
+                    <p className="text-[11px] text-[#707070] truncate mt-0.5">{f.description || f.type}</p>
                   </div>
-                  <span className={`text-xs font-bold whitespace-nowrap ${(f.balance || 0) >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>
+                  <span className={`text-xs font-bold tabular-nums whitespace-nowrap ${(f.balance || 0) >= 0 ? 'text-[#1d1d1f]' : 'text-rose-600'}`}>
                     Rp {(f.balance || 0).toLocaleString('id-ID')}
                   </span>
                 </div>
@@ -705,12 +705,12 @@ export const FinancialPage: React.FC = () => {
         </div>
 
         {/* Kolom Kanan: Pos Iuran & Penyaluran */}
-        <div className="lg:col-span-7 rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col">
-          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="lg:col-span-7 apple-card overflow-hidden flex flex-col p-0">
+          <div className="px-4 py-3 border-b border-[#d2d2d7] flex items-center justify-between bg-[#f5f5f7]">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Saldo Pos Iuran Warga</h2>
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#1d1d1f]">Saldo Pos Iuran Warga</h2>
+              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-white border border-[#d2d2d7] text-[#707070]">
                 {catList.length}
               </span>
             </div>
@@ -720,29 +720,29 @@ export const FinancialPage: React.FC = () => {
                   setActiveTab('categories');
                   setCategorySubTab('dues');
                 }}
-                className="text-xs text-slate-500 hover:text-slate-800 font-medium"
+                className="text-xs text-[#0066cc] hover:text-[#0071e3] font-medium"
               >
-                Master Iuran →
+                Master Iuran &rarr;
               </button>
             )}
           </div>
 
           <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 flex-1 overflow-y-auto max-h-[280px]">
             {catList.length === 0 ? (
-              <p className="col-span-full py-6 text-center text-xs text-slate-400">Belum ada pos iuran</p>
+              <p className="col-span-full py-6 text-center text-xs text-[#858585]">Belum ada pos iuran</p>
             ) : (
               catList.map((c: any) => {
                 const b = duesCategoryBalances[c.id] || { collected: 0, spent: 0, balance: 0, verifiedCount: 0, pendingCount: 0 };
                 return (
-                  <div key={c.id} className="p-3 rounded-lg border border-slate-100 bg-slate-50/40 hover:bg-slate-50 transition-colors flex flex-col justify-between gap-2">
+                  <div key={c.id} className="p-3 rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/60 hover:bg-[#f5f5f7] transition-colors flex flex-col justify-between gap-2">
                     <div>
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs font-semibold text-slate-800 leading-tight">{c.name}</span>
-                        <span className={`text-xs font-bold ${b.balance >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                        <span className="text-xs font-semibold text-[#1d1d1f] leading-tight">{c.name}</span>
+                        <span className={`text-xs font-bold tabular-nums ${b.balance >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
                           Rp {b.balance.toLocaleString('id-ID')}
                         </span>
                       </div>
-                      <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
+                      <div className="mt-1 flex items-center justify-between text-[10px] text-[#707070]">
                         <span>Masuk: Rp {b.collected.toLocaleString('id-ID')}</span>
                         <span>Keluar: Rp {b.spent.toLocaleString('id-ID')}</span>
                       </div>
@@ -826,7 +826,7 @@ export const FinancialPage: React.FC = () => {
       {activeTab === 'dues' && (
         <div className="space-y-4">
           {/* Sub-view Toggle: Per Warga vs Riwayat Iuran Masuk vs Riwayat Pengeluaran Iuran */}
-          <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-xs">
+          <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 p-3 bg-white border border-[#d2d2d7] rounded-xl shadow-xs">
             <div className="flex items-center overflow-x-auto scrollbar-none pb-1 lg:pb-0">
               <div className="inline-flex rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] p-1 text-xs font-semibold whitespace-nowrap">
                 <button
@@ -873,7 +873,7 @@ export const FinancialPage: React.FC = () => {
                     setDuesCategoryFilter(e.target.value);
                     setDuesPage(1);
                   }}
-                  className="text-xs h-9 bg-white"
+                  className="text-xs h-9 bg-white border-[#d2d2d7]"
                 >
                   <option value="all">Semua Pos Iuran</option>
                   {catList.map((c) => (
@@ -885,7 +885,7 @@ export const FinancialPage: React.FC = () => {
               </div>
 
               {duesViewMode === 'history' && (
-                <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-semibold">
+                <div className="inline-flex rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] p-0.5 text-xs font-semibold">
                   {(['all', 'pending', 'verified', 'rejected'] as const).map((st) => (
                     <button
                       key={st}
@@ -905,7 +905,7 @@ export const FinancialPage: React.FC = () => {
                 </div>
               )}
               <div className="relative w-full sm:w-56">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[#858585]" />
                 <Input
                   type="text"
                   placeholder={duesViewMode === 'resident' ? 'Cari nama warga...' : 'Cari keterangan / pos...'}
@@ -914,7 +914,7 @@ export const FinancialPage: React.FC = () => {
                     setDuesSearch(e.target.value);
                     setDuesPage(1);
                   }}
-                  className="pl-8 text-xs h-9 bg-white"
+                  className="pl-8 text-xs h-9 bg-white border-[#d2d2d7]"
                 />
               </div>
             </div>
@@ -922,45 +922,45 @@ export const FinancialPage: React.FC = () => {
 
           {/* View 1: Buku Iuran per Warga (Matriks Apa Saja yang Sudah Dibayar) */}
           {duesViewMode === 'resident' && (
-            <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-200 bg-gray-50/70 flex justify-between items-center">
+            <div className="rounded-xl border border-[#d2d2d7] bg-white shadow-xs overflow-hidden">
+              <div className="p-4 border-b border-[#d2d2d7] bg-[#f5f5f7] flex justify-between items-center">
                 <div>
-                  <h3 className="font-semibold text-sm text-gray-900">Rekapitulasi Iuran Setiap Warga</h3>
-                  <p className="text-xs text-gray-500">
+                  <h3 className="font-semibold text-sm text-[#1d1d1f]">Rekapitulasi Iuran Setiap Warga</h3>
+                  <p className="text-xs text-[#707070]">
                     Melihat pos iuran apa saja yang sudah lunas dan status pembayaran masing-masing warga
                   </p>
                 </div>
               </div>
 
               {isDuesLoading || isResidentsLoading ? (
-                <div className="p-6 text-center text-gray-500">Memuat rekapitulasi iuran warga...</div>
+                <div className="p-6 text-center text-[#707070]">Memuat rekapitulasi iuran warga...</div>
               ) : residentDuesSummary.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">
+                <div className="p-6 text-center text-[#707070]">
                   {duesSearch ? 'Tidak ada data warga yang cocok dengan pencarian.' : 'Belum ada data warga terdaftar.'}
                 </div>
               ) : (
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-[#e2e2e5]">
                   {residentDuesSummary.map((res) => {
                     const catEntries = Object.values(res.categories);
                     return (
-                      <div key={res.resident_id} className="p-4 hover:bg-slate-50/60 transition-colors">
+                      <div key={res.resident_id} className="p-4 hover:bg-[#f5f5f7]/60 transition-colors">
                         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-slate-900">{res.resident_name}</span>
+                              <span className="font-bold text-sm text-[#1d1d1f]">{res.resident_name}</span>
                               {res.pending_count > 0 && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
                                   {res.pending_count} Perlu Verifikasi
                                 </span>
                               )}
                               {res.verified_count > 0 && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                                   {res.verified_count} Transaksi Lunas
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-slate-500">
-                              Total Disetor: <strong className="text-slate-900">Rp {res.total_paid.toLocaleString('id-ID')}</strong> ({res.items.length} catatan pembayaran)
+                            <p className="text-xs text-[#707070]">
+                              Total Disetor: <strong className="text-[#1d1d1f] tabular-nums">Rp {res.total_paid.toLocaleString('id-ID')}</strong> ({res.items.length} catatan pembayaran)
                             </p>
                           </div>
 
@@ -968,7 +968,7 @@ export const FinancialPage: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => setSelectedResidentId(res.resident_id)}
-                            className="text-xs h-8 gap-1.5 self-start sm:self-auto text-[#0066cc]"
+                            className="text-xs h-8 gap-1.5 self-start sm:self-auto text-[#0066cc] border-[#d2d2d7] hover:bg-[#f4f8fb]"
                           >
                             Rincian Pembayaran <ChevronRight className="h-3.5 w-3.5" />
                           </Button>
@@ -977,18 +977,18 @@ export const FinancialPage: React.FC = () => {
                         {/* Badges of paid categories */}
                         <div className="mt-3 flex flex-wrap gap-2">
                           {catEntries.length === 0 ? (
-                            <span className="text-[11px] text-slate-400 italic">Belum ada riwayat pembayaran iuran</span>
+                            <span className="text-[11px] text-[#858585] italic">Belum ada riwayat pembayaran iuran</span>
                           ) : (
                             catEntries.map((c) => (
                               <div
                                 key={c.category_name}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-xs"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#f5f5f7] border border-[#d2d2d7] text-xs"
                               >
-                                <span className="font-semibold text-slate-700">{c.category_name}:</span>
-                                <span className="text-emerald-700 font-bold">
+                                <span className="font-semibold text-[#1d1d1f]">{c.category_name}:</span>
+                                <span className="text-emerald-700 font-bold tabular-nums">
                                   Rp {c.total.toLocaleString('id-ID')}
                                 </span>
-                                <span className="text-[10px] text-slate-500">
+                                <span className="text-[10px] text-[#707070]">
                                   ({c.count}x bayar • {c.latest_period})
                                 </span>
                               </div>
@@ -1005,11 +1005,11 @@ export const FinancialPage: React.FC = () => {
 
           {/* View 2: Riwayat Transaksi Iuran (Tabel Lengkap dengan Verifikasi & Filter) */}
           {duesViewMode === 'history' && (
-            <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div className="rounded-xl border border-[#d2d2d7] bg-white shadow-xs overflow-hidden">
               {isDuesLoading ? (
-                <div className="p-6 text-center text-gray-500">Memuat data iuran...</div>
+                <div className="p-6 text-center text-[#707070]">Memuat data iuran...</div>
               ) : filteredDues.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">
+                <div className="p-6 text-center text-[#707070]">
                   {duesSearch || duesStatusFilter !== 'all'
                     ? 'Tidak ada data iuran yang cocok dengan filter.'
                     : 'Belum ada riwayat iuran warga'}
@@ -1071,13 +1071,13 @@ export const FinancialPage: React.FC = () => {
                               <>
                                 <button
                                   onClick={() => handleVerify(item.id, 'verified')}
-                                  className="apple-btn-secondary text-xs px-2.5 py-1 text-emerald-700"
+                                  className="apple-btn-secondary text-xs px-2.5 py-1 text-emerald-700 hover:bg-emerald-50 border-emerald-200"
                                 >
                                   Verifikasi
                                 </button>
                                 <button
                                   onClick={() => handleVerify(item.id, 'rejected')}
-                                  className="apple-btn-secondary text-xs px-2.5 py-1 text-rose-600"
+                                  className="apple-btn-secondary text-xs px-2.5 py-1 text-rose-600 hover:bg-rose-50 border-rose-200"
                                 >
                                   Tolak
                                 </button>
@@ -1090,8 +1090,8 @@ export const FinancialPage: React.FC = () => {
                   </Table>
 
                 {/* Pagination */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50/50">
-                    <span className="text-xs text-slate-500 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3 border-t border-[#d2d2d7] bg-[#f5f5f7]">
+                    <span className="text-xs text-[#707070] text-center sm:text-left">
                       Menampilkan {paginatedDues.length} dari {filteredDues.length} iuran
                     </span>
                     <div className="flex items-center gap-2">
@@ -1100,10 +1100,11 @@ export const FinancialPage: React.FC = () => {
                         size="sm"
                         disabled={duesPage <= 1}
                         onClick={() => setDuesPage((p) => p - 1)}
+                        className="text-xs border-[#d2d2d7]"
                       >
                         Sebelumnya
                       </Button>
-                      <span className="text-xs font-semibold text-slate-700 px-2">
+                      <span className="text-xs font-semibold text-[#1d1d1f] px-2 tabular-nums">
                         {duesPage} / {totalDuesPages}
                       </span>
                       <Button
@@ -1111,6 +1112,7 @@ export const FinancialPage: React.FC = () => {
                         size="sm"
                         disabled={duesPage >= totalDuesPages}
                         onClick={() => setDuesPage((p) => p + 1)}
+                        className="text-xs border-[#d2d2d7]"
                       >
                         Selanjutnya
                       </Button>
@@ -1123,19 +1125,19 @@ export const FinancialPage: React.FC = () => {
 
           {/* View 3: Riwayat Pengeluaran & Penyaluran Iuran */}
           {duesViewMode === 'disbursements' && (
-            <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-200 bg-rose-50/40 flex justify-between items-center">
+            <div className="rounded-xl border border-[#d2d2d7] bg-white shadow-xs overflow-hidden">
+              <div className="p-4 border-b border-[#d2d2d7] bg-[#f5f5f7] flex justify-between items-center">
                 <div>
                   <h3 className="text-sm font-bold text-rose-950 flex items-center gap-2">
-                    <ArrowUpRight className="h-4 w-4 text-rose-600" /> Riwayat Pengeluaran & Penyaluran Dana Iuran
+                    <ArrowUpRight className="h-4 w-4 text-rose-600" /> Riwayat Pengeluaran &amp; Penyaluran Dana Iuran
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-[#707070] mt-0.5">
                     Daftar belanja langsung keperluan pos dan pemindahan alokasi ke kantong kas RT
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-slate-500 block">Total Pengeluaran Iuran:</span>
-                  <span className="text-sm font-bold text-rose-600">
+                  <span className="text-xs text-[#707070] block">Total Pengeluaran Iuran:</span>
+                  <span className="text-sm font-bold text-rose-600 tabular-nums">
                     Rp{' '}
                     {filteredDisbursements
                       .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0)
@@ -1228,9 +1230,9 @@ export const FinancialPage: React.FC = () => {
       {activeTab === 'transactions' && (
         <div className="space-y-3">
           {/* Controls: Filter & Search */}
-          <div className="p-3 bg-white border border-gray-200 rounded-lg shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div className="p-3 bg-white border border-[#d2d2d7] rounded-xl shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-semibold">
+              <div className="inline-flex rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] p-0.5 text-xs font-semibold">
                 <button
                   onClick={() => {
                     setTxTypeFilter('all');
@@ -1268,7 +1270,7 @@ export const FinancialPage: React.FC = () => {
 
               {fundList.length > 0 && (
                 <div className="flex items-center gap-1.5">
-                  <Label htmlFor="txFundFilter" className="text-xs text-slate-500 whitespace-nowrap">
+                  <Label htmlFor="txFundFilter" className="text-xs text-[#707070] whitespace-nowrap">
                     Kantong:
                   </Label>
                   <Select
@@ -1278,7 +1280,7 @@ export const FinancialPage: React.FC = () => {
                       setTxFundFilter(e.target.value);
                       setTxPage(1);
                     }}
-                    className="text-xs h-8 py-0"
+                    className="text-xs h-8 py-0 bg-white border-[#d2d2d7]"
                   >
                     <option value="all">Semua Kantong Kas</option>
                     {fundList.map((f: any) => (
@@ -1292,7 +1294,7 @@ export const FinancialPage: React.FC = () => {
             </div>
 
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[#858585]" />
               <Input
                 type="text"
                 placeholder="Cari kategori / deskripsi..."
@@ -1301,14 +1303,14 @@ export const FinancialPage: React.FC = () => {
                   setTxSearch(e.target.value);
                   setTxPage(1);
                 }}
-                className="pl-8 text-xs h-9"
+                className="pl-8 text-xs h-9 bg-white border-[#d2d2d7]"
               />
             </div>
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="rounded-xl border border-[#d2d2d7] bg-white shadow-xs overflow-hidden">
             {isTxLoading ? (
-              <div className="p-6 text-center text-gray-500">Memuat data transaksi...</div>
+              <div className="p-6 text-center text-[#707070]">Memuat data transaksi...</div>
             ) : filteredTransactions.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
                 {txSearch || txTypeFilter !== 'all' || txFundFilter !== 'all'
@@ -1375,8 +1377,8 @@ export const FinancialPage: React.FC = () => {
                 </Table>
 
               {/* Pagination */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50/50">
-                  <span className="text-xs text-slate-500 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3 border-t border-[#d2d2d7] bg-[#f5f5f7]">
+                  <span className="text-xs text-[#707070] text-center sm:text-left">
                     Menampilkan {paginatedTx.length} dari {filteredTransactions.length} transaksi
                   </span>
                   <div className="flex items-center gap-2">
@@ -1385,10 +1387,11 @@ export const FinancialPage: React.FC = () => {
                       size="sm"
                       disabled={txPage <= 1}
                       onClick={() => setTxPage((p) => p - 1)}
+                      className="text-xs border-[#d2d2d7]"
                     >
                       Sebelumnya
                     </Button>
-                    <span className="text-xs font-semibold text-slate-700 px-2">
+                    <span className="text-xs font-semibold text-[#1d1d1f] px-2 tabular-nums">
                       {txPage} / {totalTxPages}
                     </span>
                     <Button
@@ -1396,6 +1399,7 @@ export const FinancialPage: React.FC = () => {
                       size="sm"
                       disabled={txPage >= totalTxPages}
                       onClick={() => setTxPage((p) => p + 1)}
+                      className="text-xs border-[#d2d2d7]"
                     >
                       Selanjutnya
                     </Button>
@@ -1409,20 +1413,20 @@ export const FinancialPage: React.FC = () => {
 
       {/* Tab Content: Funds (Kantong Kas Multi-Fund) */}
       {activeTab === 'funds' && (
-        <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+        <div className="rounded-xl border border-[#d2d2d7] bg-white shadow-xs overflow-hidden">
+          <div className="p-4 border-b border-[#d2d2d7] flex justify-between items-center bg-[#f5f5f7]">
             <div>
-              <h3 className="font-semibold text-gray-900">Daftar Kantong Kas RT (Multi-Fund)</h3>
-              <p className="text-xs text-gray-500">Pemisahan dana kas khusus operasional, sosial, kepemudaan, atau pembangunan</p>
+              <h3 className="font-semibold text-sm text-[#1d1d1f]">Daftar Kantong Kas RT (Multi-Fund)</h3>
+              <p className="text-xs text-[#707070]">Pemisahan dana kas khusus operasional, sosial, kepemudaan, atau pembangunan</p>
             </div>
-            <Button size="sm" onClick={() => setIsFundModalOpen(true)} className="gap-1.5">
+            <Button size="sm" onClick={() => setIsFundModalOpen(true)} className="gap-1.5 apple-btn-primary">
               <Plus className="h-4 w-4" /> Tambah Kantong Kas
             </Button>
           </div>
           {isFundsLoading ? (
-            <div className="p-6 text-center text-gray-500">Memuat data kantong kas...</div>
+            <div className="p-6 text-center text-[#707070]">Memuat data kantong kas...</div>
           ) : fundList.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">Belum ada kantong kas</div>
+            <div className="p-6 text-center text-[#707070]">Belum ada kantong kas</div>
           ) : (
             <Table>
               <TableHeader>
@@ -1520,22 +1524,22 @@ export const FinancialPage: React.FC = () => {
           </div>
 
           {categorySubTab === 'dues' && (
-            <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+            <div className="rounded-xl border border-[#d2d2d7] bg-white shadow-xs overflow-hidden">
+              <div className="p-4 border-b border-[#d2d2d7] flex justify-between items-center bg-[#f5f5f7]">
                 <div>
-                  <h3 className="font-semibold text-gray-900">Daftar Jenis / Tarif Iuran Warga</h3>
-                  <p className="text-xs text-gray-500">
+                  <h3 className="font-semibold text-sm text-[#1d1d1f]">Daftar Jenis / Tarif Iuran Warga</h3>
+                  <p className="text-xs text-[#707070]">
                     Pos iuran kewajiban warga (misal: Iuran Sampah, Keamanan, Kas Lingkungan)
                   </p>
                 </div>
-                <Button size="sm" onClick={() => setIsCatModalOpen(true)} className="gap-1.5">
+                <Button size="sm" onClick={() => setIsCatModalOpen(true)} className="gap-1.5 apple-btn-primary">
                   <Plus className="h-4 w-4" /> Tambah Jenis Iuran
                 </Button>
               </div>
               {isCatsLoading ? (
-                <div className="p-6 text-center text-gray-500">Memuat master kategori iuran...</div>
+                <div className="p-6 text-center text-[#707070]">Memuat master kategori iuran...</div>
               ) : catList.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">Belum ada jenis iuran. Silakan tambahkan baru.</div>
+                <div className="p-6 text-center text-[#707070]">Belum ada jenis iuran. Silakan tambahkan baru.</div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -1559,12 +1563,12 @@ export const FinancialPage: React.FC = () => {
                               <div className="text-[10px] text-[#707070]">{cat.pic_email}</div>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-400 italic">Pengurus RT Utama</span>
+                            <span className="text-xs text-[#858585] italic">Pengurus RT Utama</span>
                           )}
                         </TableCell>
                         <TableCell className="font-semibold text-[#1d1d1f] tabular-nums">Rp {Number(cat.amount).toLocaleString('id-ID')}</TableCell>
                         <TableCell>
-                          <span className="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase border bg-gray-50 text-[#707070] border-[#d2d2d7]">
+                          <span className="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase border bg-[#f5f5f7] text-[#707070] border-[#d2d2d7]">
                             {cat.period === 'monthly' ? 'Bulanan' : 'Sekali Bayar (Insidental)'}
                           </span>
                         </TableCell>
@@ -1575,7 +1579,7 @@ export const FinancialPage: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditCategory(cat)}
-                              className="text-slate-600 hover:text-slate-900"
+                              className="text-[#707070] hover:text-[#1d1d1f]"
                               title="Edit Kategori & PIC"
                             >
                               <Edit2 className="h-4 w-4" />
@@ -1603,24 +1607,24 @@ export const FinancialPage: React.FC = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Kategori Pemasukan */}
-                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-                  <div className="flex justify-between items-center">
+                <div className="rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-xs space-y-3">
+                  <div className="flex justify-between items-center pb-2 border-b border-[#d2d2d7]">
                     <h4 className="font-semibold text-sm text-emerald-800 flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-emerald-500"></span> Kategori Kas Masuk (Income)
                     </h4>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-[#707070] font-mono">
                       {cashCats.filter((c) => c.type === 'income').length} kategori
                     </span>
                   </div>
-                  <ul className="divide-y divide-slate-100 text-xs text-slate-700 max-h-72 overflow-y-auto">
+                  <ul className="divide-y divide-[#e2e2e5] text-xs text-[#1d1d1f] max-h-72 overflow-y-auto">
                     {cashCats.filter((c) => c.type === 'income').length === 0 ? (
-                      <li className="py-4 text-center text-slate-400 italic">Belum ada kategori pemasukan.</li>
+                      <li className="py-4 text-center text-[#858585] italic">Belum ada kategori pemasukan.</li>
                     ) : (
                       cashCats.filter((c) => c.type === 'income').map((c) => (
-                        <li key={c.id} className="py-2.5 flex justify-between items-center hover:bg-slate-50 px-1 rounded">
+                        <li key={c.id} className="py-2.5 flex justify-between items-center hover:bg-[#f5f5f7] px-1.5 rounded transition">
                           <div>
-                            <span className="font-semibold text-emerald-950">{c.name}</span>
-                            {c.desc && <p className="text-[10px] text-slate-400 font-normal">{c.desc}</p>}
+                            <span className="font-semibold text-[#1d1d1f]">{c.name}</span>
+                            {c.desc && <p className="text-[10px] text-[#707070] font-normal">{c.desc}</p>}
                           </div>
                           <div className="flex items-center gap-1">
                             <Button
@@ -1649,24 +1653,24 @@ export const FinancialPage: React.FC = () => {
                 </div>
 
                 {/* Kategori Pengeluaran */}
-                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-                  <div className="flex justify-between items-center">
+                <div className="rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-xs space-y-3">
+                  <div className="flex justify-between items-center pb-2 border-b border-[#d2d2d7]">
                     <h4 className="font-semibold text-sm text-rose-800 flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-rose-500"></span> Kategori Kas Keluar (Expense)
                     </h4>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-[#707070] font-mono">
                       {cashCats.filter((c) => c.type === 'expense').length} kategori
                     </span>
                   </div>
-                  <ul className="divide-y divide-slate-100 text-xs text-slate-700 max-h-72 overflow-y-auto">
+                  <ul className="divide-y divide-[#e2e2e5] text-xs text-[#1d1d1f] max-h-72 overflow-y-auto">
                     {cashCats.filter((c) => c.type === 'expense').length === 0 ? (
-                      <li className="py-4 text-center text-slate-400 italic">Belum ada kategori pengeluaran.</li>
+                      <li className="py-4 text-center text-[#858585] italic">Belum ada kategori pengeluaran.</li>
                     ) : (
                       cashCats.filter((c) => c.type === 'expense').map((c) => (
-                        <li key={c.id} className="py-2.5 flex justify-between items-center hover:bg-slate-50 px-1 rounded">
+                        <li key={c.id} className="py-2.5 flex justify-between items-center hover:bg-[#f5f5f7] px-1.5 rounded transition">
                           <div>
-                            <span className="font-semibold text-rose-950">{c.name}</span>
-                            {c.desc && <p className="text-[10px] text-slate-400 font-normal">{c.desc}</p>}
+                            <span className="font-semibold text-[#1d1d1f]">{c.name}</span>
+                            {c.desc && <p className="text-[10px] text-[#707070] font-normal">{c.desc}</p>}
                           </div>
                           <div className="flex items-center gap-1">
                             <Button
@@ -1696,13 +1700,13 @@ export const FinancialPage: React.FC = () => {
               </div>
 
               {/* Form Tambah / Edit Kategori Kas */}
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
+              <div className="rounded-xl border border-[#d2d2d7] bg-white p-5 shadow-xs">
                 <div className="mb-4 flex justify-between items-center">
                   <div>
-                    <h4 className="font-semibold text-sm text-slate-900">
+                    <h4 className="font-semibold text-sm text-[#1d1d1f]">
                       {editingCashCat ? `Edit Kategori Kas: ${editingCashCat.name}` : 'Tambah Master Kategori Kas Baru'}
                     </h4>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-[#707070]">
                       {editingCashCat
                         ? 'Perbarui nama atau keterangan kategori kas yang dipilih'
                         : 'Buat pos kategori baru untuk transaksi kas buku besar RT'}
