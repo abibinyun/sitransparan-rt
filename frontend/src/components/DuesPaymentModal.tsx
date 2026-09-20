@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
+import { SearchableResidentSelect } from './ui/SearchableResidentSelect';
 
 interface DuesPaymentModalProps {
   isOpen: boolean;
@@ -88,20 +89,15 @@ export const DuesPaymentModal: React.FC<DuesPaymentModalProps> = ({ isOpen, onCl
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="duesResident">Warga *</Label>
-          <Select
+          <Label htmlFor="duesResident">Warga / Wajib Iuran *</Label>
+          <SearchableResidentSelect
             id="duesResident"
             value={residentId}
-            onChange={(e) => setResidentId(e.target.value)}
+            onChange={(val) => setResidentId(val)}
+            residents={residents}
             required
-          >
-            <option value="">-- Pilih Warga --</option>
-            {residents.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.full_name} ({r.nik})
-              </option>
-            ))}
-          </Select>
+            placeholder="Ketik untuk mencari nama atau NIK warga..."
+          />
         </div>
 
         <div className="space-y-2">

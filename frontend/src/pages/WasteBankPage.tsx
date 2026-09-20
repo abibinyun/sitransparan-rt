@@ -8,6 +8,7 @@ import {
   HouseholdAccumulation 
 } from '../services/wasteBank';
 import { useResidents } from '../services/resident';
+import { SearchableResidentSelect } from '../components/ui/SearchableResidentSelect';
 import { useHouses } from '../services/house';
 import { 
   Recycle, 
@@ -499,7 +500,7 @@ const DepositModal: React.FC<{
   ]);
 
   // Load master data residents & houses
-  const { data: residentsData, isLoading: isResidentsLoading } = useResidents({
+  const { data: residentsData } = useResidents({
     limit: 100,
   });
   const { data: housesData, isLoading: isHousesLoading } = useHouses({
@@ -611,26 +612,17 @@ const DepositModal: React.FC<{
           </div>
 
           {/* Integrasi Master Data Warga */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-            <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+          <div className="p-3 bg-[#f5f5f7] border border-[#d2d2d7] rounded-xl space-y-2">
+            <label className="block text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
               <UserCheck className="w-4 h-4 text-emerald-600" />
               Pilih dari Master Data Penduduk (Opsional)
             </label>
-            <Select
+            <SearchableResidentSelect
               value={selectedResidentId}
-              onValueChange={(val) => handleSelectResident(val)}
-            >
-              <option value="">-- Isi Manual atau Pilih Warga Terdaftar --</option>
-              {isResidentsLoading ? (
-                <option disabled value="">Memuat master warga...</option>
-              ) : (
-                residentsList.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.full_name} {r.kk_number ? `(KK: ${r.kk_number})` : ''} {r.rt_rw ? `- RT/RW ${r.rt_rw}` : ''}
-                  </option>
-                ))
-              )}
-            </Select>
+              onChange={(val) => handleSelectResident(val)}
+              residents={residentsList}
+              placeholder="Cari warga terdaftar (otomatis mengisi data KK & RT/RW)..."
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

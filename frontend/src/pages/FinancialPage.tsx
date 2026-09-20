@@ -26,28 +26,28 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
+import { Card } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { Plus, Trash2, Wallet, Coins, Search, Users, ChevronRight, Edit2, ArrowDownRight, ArrowUpRight, RotateCcw } from 'lucide-react';
 import { FeePeriod, FundType } from '../types/financial';
 import { getFileUrl } from '../utils/file';
 import { useResidents } from '../services/resident';
 
 export const FinancialPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dues' | 'transactions' | 'funds' | 'categories'>('dues');
+  const [activeTab, setActiveTab] = useState<'transactions' | 'dues' | 'master'>('transactions');
   const [isDuesModalOpen, setIsDuesModalOpen] = useState(false);
   const [isDisburseModalOpen, setIsDisburseModalOpen] = useState(false);
   const [selectedDisburseCatId, setSelectedDisburseCatId] = useState('');
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   const [isFundModalOpen, setIsFundModalOpen] = useState(false);
+  const [isCashCatModalOpen, setIsCashCatModalOpen] = useState(false);
   const [editingFund, setEditingFund] = useState<any | null>(null);
   const [editingCategory, setEditingCategory] = useState<any | null>(null);
 
   // Users list untuk pemilihan PIC
   const { data: usersData } = useUsers(100, 0);
   const userList = usersData?.data || [];
-
-  // Sub-tab for categories: iuran vs kas
-  const [categorySubTab, setCategorySubTab] = useState<'dues' | 'cash'>('dues');
 
   // Master Kategori Kas (Fully editable & deletable CRUD)
   const initialCashCategories = [
@@ -565,7 +565,7 @@ export const FinancialPage: React.FC = () => {
                 className="h-9 gap-1.5 font-medium text-xs apple-btn-primary"
               >
                 <Coins className="h-3.5 w-3.5" />
-                Catat Iuran Warga
+                Transaksi Iuran Warga
               </Button>
               <Button
                 onClick={() => setIsTxModalOpen(true)}
@@ -575,14 +575,14 @@ export const FinancialPage: React.FC = () => {
                 <Plus className="h-3.5 w-3.5" />
                 Transaksi Kas RT
               </Button>
-              <Button
+              {/* <Button
                 onClick={() => setIsFundModalOpen(true)}
                 variant="outline"
                 className="h-9 gap-1.5 font-medium text-xs text-[#1d1d1f] border-[#d2d2d7] hover:bg-[#f5f5f7]"
               >
                 <Wallet className="h-3.5 w-3.5 text-[#707070]" />
                 Kantong Kas Baru
-              </Button>
+              </Button> */}
             </>
           )}
           {!isResident && (
@@ -610,7 +610,7 @@ export const FinancialPage: React.FC = () => {
 
       {/* Primary KPI Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="apple-card p-4">
+        <Card className="p-4 border-[#d2d2d7] shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-[#707070]">Total Saldo Kas</span>
             <div className="rounded-lg bg-[#f4f8fb] border border-[#d2d2d7] p-2 text-[#0066cc]">
@@ -623,9 +623,9 @@ export const FinancialPage: React.FC = () => {
             </span>
           </div>
           <p className="mt-1 text-[11px] text-[#707070]">Total likuiditas seluruh kantong dana aktif</p>
-        </div>
+        </Card>
 
-        <div className="apple-card p-4">
+        <Card className="p-4 border-[#d2d2d7] shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-[#707070]">Arus Masuk (Income)</span>
             <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2 text-emerald-600">
@@ -638,9 +638,9 @@ export const FinancialPage: React.FC = () => {
             </span>
           </div>
           <p className="mt-1 text-[11px] text-[#707070]">Akumulasi iuran terverifikasi &amp; pemasukan kas</p>
-        </div>
+        </Card>
 
-        <div className="apple-card p-4">
+        <Card className="p-4 border-[#d2d2d7] shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-[#707070]">Arus Keluar (Expense)</span>
             <div className="rounded-lg bg-rose-50 border border-rose-200 p-2 text-rose-600">
@@ -653,124 +653,25 @@ export const FinancialPage: React.FC = () => {
             </span>
           </div>
           <p className="mt-1 text-[11px] text-[#707070]">Pengeluaran operasional &amp; belanja pos kegiatan</p>
-        </div>
+        </Card>
       </div>
 
-      {/* Allocation Overview: Split Section between Kas Kantong and Pos Iuran */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Kolom Kiri: Kantong Kas RT (Funds) */}
-        <div className="lg:col-span-5 apple-card overflow-hidden flex flex-col p-0">
-          <div className="px-4 py-3 border-b border-[#d2d2d7] flex items-center justify-between bg-[#f5f5f7]">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[#0071e3]" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#1d1d1f]">Kantong Kas RT</h2>
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-white border border-[#d2d2d7] text-[#707070]">
-                {fundList.length}
-              </span>
-            </div>
-            {!isResident && (
-              <button
-                onClick={() => setActiveTab('funds')}
-                className="text-xs text-[#0066cc] hover:text-[#0071e3] font-medium"
-              >
-                Kelola &rarr;
-              </button>
-            )}
-          </div>
-
-          <div className="p-3 divide-y divide-[#e2e2e5] flex-1 overflow-y-auto max-h-[280px]">
-            {fundList.length === 0 ? (
-              <p className="py-6 text-center text-xs text-[#858585]">Belum ada kantong kas</p>
-            ) : (
-              fundList.map((f: any) => (
-                <div key={f.id} className="py-2.5 first:pt-1 last:pb-1 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-semibold text-[#1d1d1f] truncate">{f.name}</p>
-                      {f.is_default && (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
-                          Utama
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-[#707070] truncate mt-0.5">{f.description || f.type}</p>
-                  </div>
-                  <span className={`text-xs font-bold tabular-nums whitespace-nowrap ${(f.balance || 0) >= 0 ? 'text-[#1d1d1f]' : 'text-rose-600'}`}>
-                    Rp {(f.balance || 0).toLocaleString('id-ID')}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Kolom Kanan: Pos Iuran & Penyaluran */}
-        <div className="lg:col-span-7 apple-card overflow-hidden flex flex-col p-0">
-          <div className="px-4 py-3 border-b border-[#d2d2d7] flex items-center justify-between bg-[#f5f5f7]">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#1d1d1f]">Saldo Pos Iuran Warga</h2>
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-white border border-[#d2d2d7] text-[#707070]">
-                {catList.length}
-              </span>
-            </div>
-            {!isResident && (
-              <button
-                onClick={() => {
-                  setActiveTab('categories');
-                  setCategorySubTab('dues');
-                }}
-                className="text-xs text-[#0066cc] hover:text-[#0071e3] font-medium"
-              >
-                Master Iuran &rarr;
-              </button>
-            )}
-          </div>
-
-          <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 flex-1 overflow-y-auto max-h-[280px]">
-            {catList.length === 0 ? (
-              <p className="col-span-full py-6 text-center text-xs text-[#858585]">Belum ada pos iuran</p>
-            ) : (
-              catList.map((c: any) => {
-                const b = duesCategoryBalances[c.id] || { collected: 0, spent: 0, balance: 0, verifiedCount: 0, pendingCount: 0 };
-                return (
-                  <div key={c.id} className="p-3 rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/60 hover:bg-[#f5f5f7] transition-colors flex flex-col justify-between gap-2">
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs font-semibold text-[#1d1d1f] leading-tight">{c.name}</span>
-                        <span className={`text-xs font-bold tabular-nums ${b.balance >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
-                          Rp {b.balance.toLocaleString('id-ID')}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center justify-between text-[10px] text-[#707070]">
-                        <span>Masuk: Rp {b.collected.toLocaleString('id-ID')}</span>
-                        <span>Keluar: Rp {b.spent.toLocaleString('id-ID')}</span>
-                      </div>
-                    </div>
-
-                    {!isResident && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedDisburseCatId(c.id);
-                          setIsDisburseModalOpen(true);
-                        }}
-                        className="w-full py-1 text-[11px] font-medium rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition-colors text-center"
-                      >
-                        Salurkan Dana
-                      </button>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs Navigasi Utama (Scrollable on Mobile) */}
+      {/* Tabs Navigasi 3 Pilar Utama (Scrollable on Mobile) */}
       <div className="border-b border-[#d2d2d7] -mx-4 px-4 sm:mx-0 sm:px-0">
         <nav className="-mb-px flex space-x-6 sm:space-x-8 overflow-x-auto scrollbar-none touch-pan-x">
+          {!isResident && (
+            <button
+              id="tab-transactions"
+              onClick={() => setActiveTab('transactions')}
+              className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
+                activeTab === 'transactions'
+                  ? 'border-[#0071e3] text-[#0066cc] font-semibold'
+                  : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
+              }`}
+            >
+              1. Buku Kas RT ({txList.length})
+            </button>
+          )}
           <button
             id="tab-dues"
             onClick={() => setActiveTab('dues')}
@@ -780,44 +681,20 @@ export const FinancialPage: React.FC = () => {
                 : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
             }`}
           >
-            {isResident ? 'Iuran Keluarga Saya' : `Iuran Warga (${duesList.length})`}
+            {isResident ? 'Iuran Keluarga Saya' : `2. Iuran Warga (${duesList.length})`}
           </button>
           {!isResident && (
-            <>
-              <button
-                id="tab-transactions"
-                onClick={() => setActiveTab('transactions')}
-                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
-                  activeTab === 'transactions'
-                    ? 'border-[#0071e3] text-[#0066cc] font-semibold'
-                    : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
-                }`}
-              >
-                Transaksi Kas RT ({txList.length})
-              </button>
-              <button
-                id="tab-funds"
-                onClick={() => setActiveTab('funds')}
-                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
-                  activeTab === 'funds'
-                    ? 'border-[#0071e3] text-[#0066cc] font-semibold'
-                    : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
-                }`}
-              >
-                Kantong Kas ({fundList.length})
-              </button>
-              <button
-                id="tab-categories"
-                onClick={() => setActiveTab('categories')}
-                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
-                  activeTab === 'categories'
-                    ? 'border-[#0071e3] text-[#0066cc] font-semibold'
-                    : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
-                }`}
-              >
-                Master Kategori Iuran & Kas
-              </button>
-            </>
+            <button
+              id="tab-master"
+              onClick={() => setActiveTab('master')}
+              className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
+                activeTab === 'master'
+                  ? 'border-[#0071e3] text-[#0066cc] font-semibold'
+                  : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
+              }`}
+            >
+              3. Pengaturan Pos &amp; Kantong Kas ({fundList.length + catList.length})
+            </button>
           )}
         </nav>
       </div>
@@ -825,6 +702,57 @@ export const FinancialPage: React.FC = () => {
       {/* Tab Content: Dues (Iuran Warga) */}
       {activeTab === 'dues' && (
         <div className="space-y-4">
+          {/* Ringkasan Saldo per Pos Iuran Warga */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {catList.map((c: any) => {
+              const b = duesCategoryBalances[c.id] || { collected: 0, spent: 0, balance: 0, verifiedCount: 0, pendingCount: 0 };
+              return (
+                <Card
+                  key={c.id}
+                  onClick={() => {
+                    setDuesCategoryFilter(duesCategoryFilter === c.id ? 'all' : c.id);
+                    setDuesPage(1);
+                  }}
+                  className={`p-3 cursor-pointer transition-all flex flex-col justify-between gap-1.5 border-[#d2d2d7] ${
+                    duesCategoryFilter === c.id
+                      ? 'border-[#0071e3] ring-1 ring-[#0071e3] bg-[#f4f8fb]'
+                      : 'hover:border-[#0071e3]'
+                  }`}
+                  title="Klik untuk filter iuran pos ini"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-semibold text-[#1d1d1f] truncate">{c.name}</span>
+                      <span className="text-[10px] text-[#707070] shrink-0 font-medium">
+                        {c.period === 'monthly' ? 'Bulanan' : 'Insidental'}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-base font-bold text-[#1d1d1f] tabular-nums">
+                      Rp {b.balance.toLocaleString('id-ID')}
+                    </div>
+                    <div className="text-[10px] text-[#707070] truncate mt-0.5">
+                      Masuk: Rp {b.collected.toLocaleString('id-ID')}
+                    </div>
+                  </div>
+
+                  {!isResident && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDisburseCatId(c.id);
+                        setIsDisburseModalOpen(true);
+                      }}
+                      className="mt-1 text-left text-[11px] text-[#0071e3] hover:underline font-semibold"
+                    >
+                      Salurkan Dana &rarr;
+                    </button>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+
           {/* Sub-view Toggle: Per Warga vs Riwayat Iuran Masuk vs Riwayat Pengeluaran Iuran */}
           <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 p-3 bg-white border border-[#d2d2d7] rounded-xl shadow-xs">
             <div className="flex items-center overflow-x-auto scrollbar-none pb-1 lg:pb-0">
@@ -885,23 +813,21 @@ export const FinancialPage: React.FC = () => {
               </div>
 
               {duesViewMode === 'history' && (
-                <div className="inline-flex rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] p-0.5 text-xs font-semibold">
-                  {(['all', 'pending', 'verified', 'rejected'] as const).map((st) => (
-                    <button
-                      key={st}
-                      onClick={() => {
-                        setDuesStatusFilter(st);
-                        setDuesPage(1);
-                      }}
-                      className={`px-2.5 py-1 rounded-md transition-all capitalize ${
-                        duesStatusFilter === st
-                          ? 'bg-white text-[#0066cc] shadow-xs'
-                          : 'text-[#707070] hover:text-[#1d1d1f]'
-                      }`}
-                    >
-                      {st === 'all' ? 'Semua' : st}
-                    </button>
-                  ))}
+                <div className="w-full sm:w-36">
+                  <Select
+                    value={duesStatusFilter}
+                    onChange={(e) => {
+                      setDuesStatusFilter(e.target.value as any);
+                      setDuesPage(1);
+                    }}
+                    aria-label="Filter Status Verifikasi Iuran"
+                    className="text-xs h-9 bg-white border-[#d2d2d7]"
+                  >
+                    <option value="all">Semua Status</option>
+                    <option value="pending">Menunggu Verifikasi</option>
+                    <option value="verified">Lunas / Terverifikasi</option>
+                    <option value="rejected">Ditolak</option>
+                  </Select>
                 </div>
               )}
               <div className="relative w-full sm:w-56">
@@ -949,14 +875,14 @@ export const FinancialPage: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-sm text-[#1d1d1f]">{res.resident_name}</span>
                               {res.pending_count > 0 && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200 text-[10px]">
                                   {res.pending_count} Perlu Verifikasi
-                                </span>
+                                </Badge>
                               )}
                               {res.verified_count > 0 && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[10px]">
                                   {res.verified_count} Transaksi Lunas
-                                </span>
+                                </Badge>
                               )}
                             </div>
                             <p className="text-xs text-[#707070]">
@@ -1040,8 +966,9 @@ export const FinancialPage: React.FC = () => {
                             Rp {item.amount.toLocaleString('id-ID')}
                           </TableCell>
                           <TableCell>
-                            <span
-                              className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase border ${
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] uppercase font-semibold ${
                                 item.status === 'verified'
                                   ? 'bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7]'
                                   : item.status === 'rejected'
@@ -1050,7 +977,7 @@ export const FinancialPage: React.FC = () => {
                               }`}
                             >
                               {item.status}
-                            </span>
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             {item.proof_url ? (
@@ -1069,18 +996,22 @@ export const FinancialPage: React.FC = () => {
                           <TableCell className="text-right space-x-2">
                             {item.status === 'pending' && !isResident && (
                               <>
-                                <button
+                                <Button
+                                  variant="outline"
+                                  size="sm"
                                   onClick={() => handleVerify(item.id, 'verified')}
-                                  className="apple-btn-secondary text-xs px-2.5 py-1 text-emerald-700 hover:bg-emerald-50 border-emerald-200"
+                                  className="text-xs h-7 px-2.5 text-emerald-700 hover:bg-emerald-50 border-emerald-200"
                                 >
                                   Verifikasi
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
                                   onClick={() => handleVerify(item.id, 'rejected')}
-                                  className="apple-btn-secondary text-xs px-2.5 py-1 text-rose-600 hover:bg-rose-50 border-rose-200"
+                                  className="text-xs h-7 px-2.5 text-rose-600 hover:bg-rose-50 border-rose-200"
                                 >
                                   Tolak
-                                </button>
+                                </Button>
                               </>
                             )}
                           </TableCell>
@@ -1228,7 +1159,41 @@ export const FinancialPage: React.FC = () => {
 
       {/* Tab Content: Transactions (Buku Kas RT) */}
       {activeTab === 'transactions' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
+          {/* Ringkasan Saldo per Kantong Kas RT */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {fundList.map((f: any) => (
+              <Card
+                key={f.id}
+                onClick={() => {
+                  setTxFundFilter(txFundFilter === f.id ? 'all' : f.id);
+                  setTxPage(1);
+                }}
+                className={`p-3 cursor-pointer transition-all border-[#d2d2d7] ${
+                  txFundFilter === f.id
+                    ? 'border-[#0071e3] ring-1 ring-[#0071e3] bg-[#f4f8fb]'
+                    : 'hover:border-[#0071e3]'
+                }`}
+                title="Klik untuk filter transaksi kantong ini"
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-xs font-semibold text-[#1d1d1f] truncate">{f.name}</span>
+                  {f.is_default && (
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">
+                      Utama
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1 text-base font-bold text-[#1d1d1f] tabular-nums">
+                  Rp {(f.balance || 0).toLocaleString('id-ID')}
+                </div>
+                <div className="text-[10px] text-[#707070] truncate mt-0.5">
+                  {f.pic_name ? `PIC: ${f.pic_name}` : 'PIC: Pengurus RT'}
+                </div>
+              </Card>
+            ))}
+          </div>
+
           {/* Controls: Filter & Search */}
           <div className="p-3 bg-white border border-[#d2d2d7] rounded-xl shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -1411,378 +1376,372 @@ export const FinancialPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tab Content: Funds (Kantong Kas Multi-Fund) */}
-      {activeTab === 'funds' && (
-        <div className="rounded-xl border border-[#d2d2d7] bg-white shadow-xs overflow-hidden">
-          <div className="p-4 border-b border-[#d2d2d7] flex justify-between items-center bg-[#f5f5f7]">
-            <div>
-              <h3 className="font-semibold text-sm text-[#1d1d1f]">Daftar Kantong Kas RT (Multi-Fund)</h3>
-              <p className="text-xs text-[#707070]">Pemisahan dana kas khusus operasional, sosial, kepemudaan, atau pembangunan</p>
+      {/* Tab Content: Master Pos & Kantong Kas (Terpadu: Kantong Kas + Kategori Iuran + Kategori Kas) */}
+      {activeTab === 'master' && (
+        <div className="space-y-6">
+          {/* Bagian 1: Master Kantong Kas RT (Multi-Fund) */}
+          <div className="rounded-xl border border-[#d2d2d7] bg-white shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-[#d2d2d7] flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#f5f5f7]">
+              <div>
+                <h3 className="font-semibold text-sm text-[#1d1d1f] flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-[#0071e3]" /> Master Kantong Kas RT (Multi-Fund)
+                </h3>
+                <p className="text-xs text-[#707070]">Pemisahan likuiditas kas operasional, sosial, kepemudaan, atau pembangunan</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsCashCatModalOpen(true)}
+                  className="gap-1.5 text-xs text-[#1d1d1f] border-[#d2d2d7] hover:bg-white"
+                >
+                  Kategori Kas Masuk &amp; Keluar ({cashCats.length})
+                </Button>
+                <Button size="sm" onClick={() => setIsFundModalOpen(true)} className="gap-1.5 apple-btn-primary">
+                  <Plus className="h-4 w-4" /> Tambah Kantong Kas
+                </Button>
+              </div>
             </div>
-            <Button size="sm" onClick={() => setIsFundModalOpen(true)} className="gap-1.5 apple-btn-primary">
-              <Plus className="h-4 w-4" /> Tambah Kantong Kas
-            </Button>
-          </div>
-          {isFundsLoading ? (
-            <div className="p-6 text-center text-[#707070]">Memuat data kantong kas...</div>
-          ) : fundList.length === 0 ? (
-            <div className="p-6 text-center text-[#707070]">Belum ada kantong kas</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nama Kantong Kas</TableHead>
-                  <TableHead>Tipe</TableHead>
-                  <TableHead>PIC / Penanggung Jawab</TableHead>
-                  <TableHead>Saldo Saat Ini</TableHead>
-                  <TableHead>Deskripsi / Peruntukan</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {fundList.map((f: any) => (
-                  <TableRow key={f.id}>
-                    <TableCell className="font-semibold text-[#1d1d1f]">
-                      {f.name} {f.is_default && <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] font-semibold">Utama</span>}
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase border bg-gray-50 text-[#707070] border-[#d2d2d7]">
-                        {f.type}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {f.pic_name ? (
-                        <div className="text-xs">
-                          <div className="font-medium text-[#1d1d1f]">{f.pic_name}</div>
-                          <div className="text-[10px] text-[#707070]">{f.pic_email}</div>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400 italic">Pengurus RT Utama</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-semibold text-[#1d1d1f] tabular-nums">
-                      Rp {(f.balance || 0).toLocaleString('id-ID')}
-                    </TableCell>
-                    <TableCell className="text-xs text-[#707070]">{f.description || '-'}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditFund(f)}
-                          className="text-slate-600 hover:text-slate-900"
-                          title="Edit Kantong Kas & PIC"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        {!f.is_default && (
+            {isFundsLoading ? (
+              <div className="p-6 text-center text-[#707070]">Memuat data kantong kas...</div>
+            ) : fundList.length === 0 ? (
+              <div className="p-6 text-center text-[#707070]">Belum ada kantong kas</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nama Kantong Kas</TableHead>
+                    <TableHead>Tipe</TableHead>
+                    <TableHead>PIC / Penanggung Jawab</TableHead>
+                    <TableHead>Saldo Saat Ini</TableHead>
+                    <TableHead>Deskripsi / Peruntukan</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {fundList.map((f: any) => (
+                    <TableRow key={f.id}>
+                      <TableCell className="font-semibold text-[#1d1d1f]">
+                        {f.name} {f.is_default && <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7] font-semibold">Utama</span>}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px] uppercase font-semibold border bg-[#f5f5f7] text-[#707070] border-[#d2d2d7]">
+                          {f.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {f.pic_name ? (
+                          <div className="text-xs">
+                            <div className="font-medium text-[#1d1d1f]">{f.pic_name}</div>
+                            <div className="text-[10px] text-[#707070]">{f.pic_email}</div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[#858585] italic">Pengurus RT Utama</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-semibold text-[#1d1d1f] tabular-nums">
+                        Rp {(f.balance || 0).toLocaleString('id-ID')}
+                      </TableCell>
+                      <TableCell className="text-xs text-[#707070]">{f.description || '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end items-center gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteFund(f.id, f.is_default)}
-                            className="text-rose-600 hover:text-rose-800"
-                            title="Hapus Kantong Kas"
+                            onClick={() => handleEditFund(f)}
+                            className="text-[#707070] hover:text-[#1d1d1f]"
+                            title="Edit Kantong Kas & PIC"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Edit2 className="h-4 w-4" />
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-      )}
-
-      {/* Tab Content: Master Categories (Pemisahan Kategori Iuran vs Kategori Kas) */}
-      {activeTab === 'categories' && (
-        <div className="space-y-4">
-          {/* Sub-tab selection: Iuran vs Kas */}
-          <div className="flex border-b border-[#d2d2d7] gap-4">
-            <button
-              onClick={() => setCategorySubTab('dues')}
-              className={`pb-3 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
-                categorySubTab === 'dues'
-                  ? 'border-[#0071e3] text-[#0071e3]'
-                  : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
-              }`}
-            >
-              1. Master Kategori & Tarif Iuran Warga ({catList.length})
-            </button>
-            <button
-              onClick={() => setCategorySubTab('cash')}
-              className={`pb-3 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
-                categorySubTab === 'cash'
-                  ? 'border-[#0071e3] text-[#0071e3]'
-                  : 'border-transparent text-[#707070] hover:text-[#1d1d1f]'
-              }`}
-            >
-              2. Master Kategori Kas Masuk & Keluar ({cashCats.length})
-            </button>
-          </div>
-
-          {categorySubTab === 'dues' && (
-            <div className="rounded-xl border border-[#d2d2d7] bg-white shadow-xs overflow-hidden">
-              <div className="p-4 border-b border-[#d2d2d7] flex justify-between items-center bg-[#f5f5f7]">
-                <div>
-                  <h3 className="font-semibold text-sm text-[#1d1d1f]">Daftar Jenis / Tarif Iuran Warga</h3>
-                  <p className="text-xs text-[#707070]">
-                    Pos iuran kewajiban warga (misal: Iuran Sampah, Keamanan, Kas Lingkungan)
-                  </p>
-                </div>
-                <Button size="sm" onClick={() => setIsCatModalOpen(true)} className="gap-1.5 apple-btn-primary">
-                  <Plus className="h-4 w-4" /> Tambah Jenis Iuran
-                </Button>
-              </div>
-              {isCatsLoading ? (
-                <div className="p-6 text-center text-[#707070]">Memuat master kategori iuran...</div>
-              ) : catList.length === 0 ? (
-                <div className="p-6 text-center text-[#707070]">Belum ada jenis iuran. Silakan tambahkan baru.</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nama Iuran</TableHead>
-                      <TableHead>PIC / Penanggung Jawab</TableHead>
-                      <TableHead>Tarif / Nominal</TableHead>
-                      <TableHead>Periode</TableHead>
-                      <TableHead>Keterangan</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {catList.map((cat: any) => (
-                      <TableRow key={cat.id}>
-                        <TableCell className="font-semibold text-[#1d1d1f]">{cat.name}</TableCell>
-                        <TableCell>
-                          {cat.pic_name ? (
-                            <div className="text-xs">
-                              <div className="font-medium text-[#1d1d1f]">{cat.pic_name}</div>
-                              <div className="text-[10px] text-[#707070]">{cat.pic_email}</div>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-[#858585] italic">Pengurus RT Utama</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-semibold text-[#1d1d1f] tabular-nums">Rp {Number(cat.amount).toLocaleString('id-ID')}</TableCell>
-                        <TableCell>
-                          <span className="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase border bg-[#f5f5f7] text-[#707070] border-[#d2d2d7]">
-                            {cat.period === 'monthly' ? 'Bulanan' : 'Sekali Bayar (Insidental)'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-xs text-[#707070]">{cat.description || '-'}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end items-center gap-1">
+                          {!f.is_default && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleEditCategory(cat)}
-                              className="text-[#707070] hover:text-[#1d1d1f]"
-                              title="Edit Kategori & PIC"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteCategory(cat.id)}
+                              onClick={() => handleDeleteFund(f.id, f.is_default)}
                               className="text-rose-600 hover:text-rose-800"
-                              title="Hapus Kategori"
+                              title="Hapus Kantong Kas"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-          )}
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
 
-          {categorySubTab === 'cash' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Kategori Pemasukan */}
-                <div className="rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-xs space-y-3">
-                  <div className="flex justify-between items-center pb-2 border-b border-[#d2d2d7]">
-                    <h4 className="font-semibold text-sm text-emerald-800 flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500"></span> Kategori Kas Masuk (Income)
-                    </h4>
-                    <span className="text-xs text-[#707070] font-mono">
-                      {cashCats.filter((c) => c.type === 'income').length} kategori
-                    </span>
-                  </div>
-                  <ul className="divide-y divide-[#e2e2e5] text-xs text-[#1d1d1f] max-h-72 overflow-y-auto">
-                    {cashCats.filter((c) => c.type === 'income').length === 0 ? (
-                      <li className="py-4 text-center text-[#858585] italic">Belum ada kategori pemasukan.</li>
-                    ) : (
-                      cashCats.filter((c) => c.type === 'income').map((c) => (
-                        <li key={c.id} className="py-2.5 flex justify-between items-center hover:bg-[#f5f5f7] px-1.5 rounded transition">
-                          <div>
-                            <span className="font-semibold text-[#1d1d1f]">{c.name}</span>
-                            {c.desc && <p className="text-[10px] text-[#707070] font-normal">{c.desc}</p>}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditCashCat(c)}
-                              className="text-[#0066cc] hover:text-[#0071e3] h-7 w-7 p-0"
-                              title="Edit Kategori"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteCashCat(c.id, c.name)}
-                              className="text-rose-600 hover:text-rose-800 h-7 w-7 p-0"
-                              title="Hapus Kategori"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                </div>
-
-                {/* Kategori Pengeluaran */}
-                <div className="rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-xs space-y-3">
-                  <div className="flex justify-between items-center pb-2 border-b border-[#d2d2d7]">
-                    <h4 className="font-semibold text-sm text-rose-800 flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-rose-500"></span> Kategori Kas Keluar (Expense)
-                    </h4>
-                    <span className="text-xs text-[#707070] font-mono">
-                      {cashCats.filter((c) => c.type === 'expense').length} kategori
-                    </span>
-                  </div>
-                  <ul className="divide-y divide-[#e2e2e5] text-xs text-[#1d1d1f] max-h-72 overflow-y-auto">
-                    {cashCats.filter((c) => c.type === 'expense').length === 0 ? (
-                      <li className="py-4 text-center text-[#858585] italic">Belum ada kategori pengeluaran.</li>
-                    ) : (
-                      cashCats.filter((c) => c.type === 'expense').map((c) => (
-                        <li key={c.id} className="py-2.5 flex justify-between items-center hover:bg-[#f5f5f7] px-1.5 rounded transition">
-                          <div>
-                            <span className="font-semibold text-[#1d1d1f]">{c.name}</span>
-                            {c.desc && <p className="text-[10px] text-[#707070] font-normal">{c.desc}</p>}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditCashCat(c)}
-                              className="text-[#0066cc] hover:text-[#0071e3] h-7 w-7 p-0"
-                              title="Edit Kategori"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteCashCat(c.id, c.name)}
-                              className="text-rose-600 hover:text-rose-800 h-7 w-7 p-0"
-                              title="Hapus Kategori"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                </div>
+          {/* Bagian 2: Master Kategori & Tarif Pos Iuran Warga */}
+          <div className="rounded-xl border border-[#d2d2d7] bg-white shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-[#d2d2d7] flex justify-between items-center bg-[#f5f5f7]">
+              <div>
+                <h3 className="font-semibold text-sm text-[#1d1d1f] flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-[#0071e3]" /> Master Kategori &amp; Tarif Pos Iuran Warga ({catList.length})
+                </h3>
+                <p className="text-xs text-[#707070]">
+                  Pos iuran kewajiban warga (misal: Iuran Sampah, Keamanan, Kas Lingkungan)
+                </p>
               </div>
-
-              {/* Form Tambah / Edit Kategori Kas */}
-              <div className="rounded-xl border border-[#d2d2d7] bg-white p-5 shadow-xs">
-                <div className="mb-4 flex justify-between items-center">
-                  <div>
-                    <h4 className="font-semibold text-sm text-[#1d1d1f]">
-                      {editingCashCat ? `Edit Kategori Kas: ${editingCashCat.name}` : 'Tambah Master Kategori Kas Baru'}
-                    </h4>
-                    <p className="text-xs text-[#707070]">
-                      {editingCashCat
-                        ? 'Perbarui nama atau keterangan kategori kas yang dipilih'
-                        : 'Buat pos kategori baru untuk transaksi kas buku besar RT'}
-                    </p>
-                  </div>
-                  {editingCashCat && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditingCashCat(null);
-                        setNewCashCatName('');
-                        setNewCashCatDesc('');
-                        setNewCashCatType('income');
-                      }}
-                      className="text-xs h-8"
-                    >
-                      Batal Edit
-                    </Button>
-                  )}
-                </div>
-                <form onSubmit={handleSaveCashCategory} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="newCashCatName" className="text-xs font-medium text-slate-700">Nama Kategori *</Label>
-                      <Input
-                        id="newCashCatName"
-                        placeholder="Contoh: BANTUAN_DUKA, POSYANDU"
-                        value={newCashCatName}
-                        onChange={(e) => setNewCashCatName(e.target.value)}
-                        className="text-xs h-10 bg-slate-50/50"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="newCashCatType" className="text-xs font-medium text-slate-700">Tipe Kas *</Label>
-                      <Select
-                        id="newCashCatType"
-                        value={newCashCatType}
-                        onChange={(e) => setNewCashCatType(e.target.value as any)}
-                        className="text-xs h-10 bg-slate-50/50"
-                      >
-                        <option value="income">Pemasukan (Income)</option>
-                        <option value="expense">Pengeluaran (Expense)</option>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="newCashCatDesc" className="text-xs font-medium text-slate-700">Keterangan (Opsional)</Label>
-                      <Input
-                        id="newCashCatDesc"
-                        placeholder="Catatan peruntukan pos kas"
-                        value={newCashCatDesc}
-                        onChange={(e) => setNewCashCatDesc(e.target.value)}
-                        className="text-xs h-10 bg-slate-50/50"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end pt-2">
-                    <Button type="submit" size="sm" className="gap-1.5 px-4 h-9 font-medium">
-                      {editingCashCat ? (
-                        <>
-                          <Edit2 className="h-4 w-4" /> Simpan Perubahan Kategori
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="h-4 w-4" /> Simpan Kategori Kas
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </div>
+              <Button size="sm" onClick={() => setIsCatModalOpen(true)} className="gap-1.5 apple-btn-primary">
+                <Plus className="h-4 w-4" /> Tambah Jenis Iuran
+              </Button>
             </div>
-          )}
+            {isCatsLoading ? (
+              <div className="p-6 text-center text-[#707070]">Memuat master kategori iuran...</div>
+            ) : catList.length === 0 ? (
+              <div className="p-6 text-center text-[#707070]">Belum ada jenis iuran. Silakan tambahkan baru.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nama Iuran</TableHead>
+                    <TableHead>PIC / Penanggung Jawab</TableHead>
+                    <TableHead>Tarif / Nominal</TableHead>
+                    <TableHead>Periode</TableHead>
+                    <TableHead>Keterangan</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {catList.map((cat: any) => (
+                    <TableRow key={cat.id}>
+                      <TableCell className="font-semibold text-[#1d1d1f]">{cat.name}</TableCell>
+                      <TableCell>
+                        {cat.pic_name ? (
+                          <div className="text-xs">
+                            <div className="font-medium text-[#1d1d1f]">{cat.pic_name}</div>
+                            <div className="text-[10px] text-[#707070]">{cat.pic_email}</div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[#858585] italic">Pengurus RT Utama</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-semibold text-[#1d1d1f] tabular-nums">Rp {Number(cat.amount).toLocaleString('id-ID')}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px] font-semibold uppercase border bg-[#f5f5f7] text-[#707070] border-[#d2d2d7]">
+                          {cat.period === 'monthly' ? 'Bulanan' : 'Sekali Bayar (Insidental)'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-[#707070]">{cat.description || '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditCategory(cat)}
+                            className="text-[#707070] hover:text-[#1d1d1f]"
+                            title="Edit Kategori & PIC"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            className="text-rose-600 hover:text-rose-800"
+                            title="Hapus Kategori"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
         </div>
       )}
+
+      {/* Modal Master Kategori Kas Masuk & Keluar */}
+      <SimpleDialog
+        isOpen={isCashCatModalOpen}
+        onClose={() => {
+          setIsCashCatModalOpen(false);
+          setEditingCashCat(null);
+          setNewCashCatName('');
+          setNewCashCatDesc('');
+          setNewCashCatType('income');
+        }}
+        title="Master Kategori Kas Masuk & Keluar"
+        description="Kelola pos kategori untuk transaksi pemasukan dan pengeluaran kas buku besar RT"
+        className="max-w-4xl"
+      >
+        <div className="space-y-6">
+          {/* Form Tambah / Edit Kategori Kas (Dipindahkan ke Atas) */}
+          <div className="rounded-xl border border-[#d2d2d7] bg-[#f5f5f7] p-4">
+            <div className="mb-3 flex justify-between items-center">
+              <h4 className="font-semibold text-xs text-[#1d1d1f]">
+                {editingCashCat ? `Edit Kategori: ${editingCashCat.name}` : 'Tambah Kategori Kas Baru'}
+              </h4>
+              {editingCashCat && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditingCashCat(null);
+                    setNewCashCatName('');
+                    setNewCashCatDesc('');
+                    setNewCashCatType('income');
+                  }}
+                  className="text-xs h-7"
+                >
+                  Batal Edit
+                </Button>
+              )}
+            </div>
+            <form onSubmit={handleSaveCashCategory} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="newCashCatName" className="text-xs font-medium text-[#1d1d1f]">Nama Kategori *</Label>
+                  <Input
+                    id="newCashCatName"
+                    placeholder="Contoh: BANTUAN_DUKA"
+                    value={newCashCatName}
+                    onChange={(e) => setNewCashCatName(e.target.value)}
+                    className="text-xs h-9 bg-white"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="newCashCatType" className="text-xs font-medium text-[#1d1d1f]">Tipe Kas *</Label>
+                  <Select
+                    id="newCashCatType"
+                    value={newCashCatType}
+                    onChange={(e) => setNewCashCatType(e.target.value as any)}
+                    className="text-xs h-9 bg-white"
+                  >
+                    <option value="income">Pemasukan (Income)</option>
+                    <option value="expense">Pengeluaran (Expense)</option>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="newCashCatDesc" className="text-xs font-medium text-[#1d1d1f]">Keterangan (Opsional)</Label>
+                  <Input
+                    id="newCashCatDesc"
+                    placeholder="Catatan peruntukan pos kas"
+                    value={newCashCatDesc}
+                    onChange={(e) => setNewCashCatDesc(e.target.value)}
+                    className="text-xs h-9 bg-white"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end pt-1">
+                <Button type="submit" size="sm" className="gap-1.5 px-4 h-8 text-xs font-medium apple-btn-primary">
+                  {editingCashCat ? (
+                    <>
+                      <Edit2 className="h-3.5 w-3.5" /> Simpan Perubahan
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-3.5 w-3.5" /> Simpan Kategori
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          {/* Daftar Kategori Pemasukan & Pengeluaran */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Kategori Pemasukan */}
+            <div className="rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-xs space-y-3">
+              <div className="flex justify-between items-center pb-2 border-b border-[#d2d2d7]">
+                <h4 className="font-semibold text-sm text-emerald-800 flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500"></span> Kategori Kas Masuk (Income)
+                </h4>
+                <span className="text-xs text-[#707070] font-mono">
+                  {cashCats.filter((c) => c.type === 'income').length} kategori
+                </span>
+              </div>
+              <ul className="divide-y divide-[#e2e2e5] text-xs text-[#1d1d1f] max-h-56 overflow-y-auto">
+                {cashCats.filter((c) => c.type === 'income').length === 0 ? (
+                  <li className="py-4 text-center text-[#858585] italic">Belum ada kategori pemasukan.</li>
+                ) : (
+                  cashCats.filter((c) => c.type === 'income').map((c) => (
+                    <li key={c.id} className="py-2 flex justify-between items-center hover:bg-[#f5f5f7] px-1.5 rounded transition">
+                      <div>
+                        <span className="font-semibold text-[#1d1d1f]">{c.name}</span>
+                        {c.desc && <p className="text-[10px] text-[#707070] font-normal">{c.desc}</p>}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditCashCat(c)}
+                          className="text-[#0066cc] hover:text-[#0071e3] h-7 w-7 p-0"
+                          title="Edit Kategori"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteCashCat(c.id, c.name)}
+                          className="text-rose-600 hover:text-rose-800 h-7 w-7 p-0"
+                          title="Hapus Kategori"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+
+            {/* Kategori Pengeluaran */}
+            <div className="rounded-xl border border-[#d2d2d7] bg-white p-4 shadow-xs space-y-3">
+              <div className="flex justify-between items-center pb-2 border-b border-[#d2d2d7]">
+                <h4 className="font-semibold text-sm text-rose-800 flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-rose-500"></span> Kategori Kas Keluar (Expense)
+                </h4>
+                <span className="text-xs text-[#707070] font-mono">
+                  {cashCats.filter((c) => c.type === 'expense').length} kategori
+                </span>
+              </div>
+              <ul className="divide-y divide-[#e2e2e5] text-xs text-[#1d1d1f] max-h-56 overflow-y-auto">
+                {cashCats.filter((c) => c.type === 'expense').length === 0 ? (
+                  <li className="py-4 text-center text-[#858585] italic">Belum ada kategori pengeluaran.</li>
+                ) : (
+                  cashCats.filter((c) => c.type === 'expense').map((c) => (
+                    <li key={c.id} className="py-2 flex justify-between items-center hover:bg-[#f5f5f7] px-1.5 rounded transition">
+                      <div>
+                        <span className="font-semibold text-[#1d1d1f]">{c.name}</span>
+                        {c.desc && <p className="text-[10px] text-[#707070] font-normal">{c.desc}</p>}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditCashCat(c)}
+                          className="text-[#0066cc] hover:text-[#0071e3] h-7 w-7 p-0"
+                          title="Edit Kategori"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteCashCat(c.id, c.name)}
+                          className="text-rose-600 hover:text-rose-800 h-7 w-7 p-0"
+                          title="Hapus Kategori"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </SimpleDialog>
 
       {/* Modals */}
       <DuesPaymentModal isOpen={isDuesModalOpen} onClose={() => setIsDuesModalOpen(false)} />

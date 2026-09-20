@@ -9,13 +9,13 @@ import {
   House 
 } from '../services/house';
 import { useResidents } from '../services/resident';
+import { SearchableResidentSelect } from '../components/ui/SearchableResidentSelect';
 import { useAuthStore } from '../store/useAuthStore';
 import { getTenantUrl } from '../utils/tenant';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Dialog } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
-import { Select } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
@@ -432,20 +432,15 @@ export const HousesPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">
               Tautkan Kepala Keluarga (Opsional)
             </label>
-            <Select
+            <SearchableResidentSelect
               value={headResidentId}
-              onValueChange={(val) => setHeadResidentId(val)}
-            >
-              <option value="">-- Belum Ditautkan --</option>
-              {residents.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.full_name} ({r.nik})
-                </option>
-              ))}
-            </Select>
+              onChange={(val) => setHeadResidentId(val)}
+              residents={residents}
+              placeholder="Cari warga untuk ditautkan sebagai kepala keluarga..."
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t">

@@ -22,6 +22,7 @@ import {
   useDeleteKTMember,
 } from '../services/karang_taruna';
 import { useResidents } from '../services/resident';
+import { SearchableResidentSelect } from '../components/ui/SearchableResidentSelect';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -602,20 +603,15 @@ export const KarangTarunaPage: React.FC = () => {
         <form onSubmit={handleMemberSubmit} className="space-y-4">
           {!editingMember && (
             <div className="space-y-2">
-              <Label htmlFor="residentSelect">Pilih Warga</Label>
-              <Select
+              <Label htmlFor="residentSelect">Pilih Warga *</Label>
+              <SearchableResidentSelect
                 id="residentSelect"
                 required
                 value={memberForm.resident_id}
-                onChange={(e) => setMemberForm({ ...memberForm, resident_id: e.target.value })}
-              >
-                <option value="">-- Pilih Warga RT --</option>
-                {residents.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.full_name} ({r.nik})
-                  </option>
-                ))}
-              </Select>
+                onChange={(val) => setMemberForm({ ...memberForm, resident_id: val })}
+                residents={residents}
+                placeholder="Cari nama atau NIK warga..."
+              />
             </div>
           )}
 
