@@ -470,20 +470,30 @@ export const PublicAnnouncementsPage: React.FC = () => {
               </div>
 
               {/* Filter Kategori Dokumen */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
-                {['ALL', 'financial_report', 'minutes', 'letter', 'other'].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs transition-colors ${
-                      selectedCategory === cat
-                        ? 'bg-[#1d1d1f] text-white font-medium shadow-xs'
-                        : 'bg-white text-[#707070] border border-[#d2d2d7] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]'
-                    }`}
-                  >
-                    {cat === 'ALL' ? 'Semua Berkas' : cat.replace('_', ' ').toUpperCase()}
-                  </button>
-                ))}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+                {[
+                  { id: 'ALL', label: 'Semua Berkas' },
+                  { id: 'financial_report', label: 'Laporan Keuangan' },
+                  { id: 'minutes', label: 'Notula Rapat' },
+                  { id: 'letter', label: 'Surat & Edaran' },
+                  { id: 'other', label: 'Lainnya' },
+                ].map((cat) => {
+                  const isActive = selectedCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all active:scale-[0.98] ${
+                        isActive
+                          ? 'bg-[#1d1d1f] text-white shadow-xs'
+                          : 'bg-white text-[#707070] border border-[#d2d2d7] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
