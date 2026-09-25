@@ -59,9 +59,6 @@ func (u *announcementDocUsecase) CreateAnnouncement(ctx context.Context, tenantI
 	if a.Title == "" {
 		return errors.New("title is required")
 	}
-	if a.Content == "" {
-		return errors.New("content is required")
-	}
 	if err := validateMediaURLs(a.MediaURLs); err != nil {
 		return err
 	}
@@ -102,9 +99,6 @@ func (u *announcementDocUsecase) UpdateAnnouncement(ctx context.Context, tenantI
 	}
 	if a.Title == "" {
 		return errors.New("title is required")
-	}
-	if a.Content == "" {
-		return errors.New("content is required")
 	}
 	if err := validateMediaURLs(a.MediaURLs); err != nil {
 		return err

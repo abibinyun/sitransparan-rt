@@ -18,11 +18,19 @@ const (
 	UserContextKey   contextKey = "user_id"
 	RoleContextKey   contextKey = "role"
 	HouseContextKey  contextKey = "house_id"
+	ResidentContextKey contextKey = "resident_id"
 )
 
 func GetTenantFromContext(ctx context.Context) *domain.Tenant {
 	if t, ok := ctx.Value(TenantContextKey).(*domain.Tenant); ok {
 		return t
+	}
+	return nil
+}
+
+func GetResidentIDFromContext(ctx context.Context) *uuid.UUID {
+	if id, ok := ctx.Value(ResidentContextKey).(*uuid.UUID); ok {
+		return id
 	}
 	return nil
 }
@@ -82,6 +90,9 @@ func WithClaims(ctx context.Context, claims *domain.JWTClaims) context.Context {
 	ctx = context.WithValue(ctx, RoleContextKey, claims.Role)
 	if claims.HouseID != nil {
 		ctx = context.WithValue(ctx, HouseContextKey, claims.HouseID)
+	}
+	if claims.ResidentID != nil {
+		ctx = context.WithValue(ctx, ResidentContextKey, claims.ResidentID)
 	}
 	ctx = context.WithValue(ctx, jwtClaimsContextKey, claims)
 	return ctx
@@ -296,4 +307,9 @@ func RequireAnyRole(r *http.Request, roles ...domain.RoleName) bool {
 		}
 	}
 	return false
+}
+
+// RequireOperatorOrAdmin mengizinkan superadmin, admin_rt, dan operator (staf operasional)
+func RequireOperatorOrAdmin(r *http.Request) bool {
+	return RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT, domain.RoleOperator)
 }

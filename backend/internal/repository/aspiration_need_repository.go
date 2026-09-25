@@ -133,6 +133,22 @@ func (r *aspirationNeedRepository) UpdateAspiration(ctx context.Context, asp *do
 	return nil
 }
 
+func (r *aspirationNeedRepository) DeleteAspiration(ctx context.Context, tenantID, id uuid.UUID) error {
+	if r.db == nil {
+		return nil
+	}
+	query := fmt.Sprintf(`DELETE FROM %s WHERE id = $1 AND tenant_id = $2`, TenantTable(ctx, "aspirations"))
+	res, err := r.db.ExecContext(ctx, query, id, tenantID)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err == nil && rows == 0 {
+		return errors.New("aspiration not found")
+	}
+	return nil
+}
+
 func (r *aspirationNeedRepository) CreateCommunityNeed(ctx context.Context, need *domain.CommunityNeed) error {
 	if need.ID == uuid.Nil {
 		need.ID = uuid.New()
@@ -229,6 +245,22 @@ func (r *aspirationNeedRepository) UpdateCommunityNeed(ctx context.Context, need
 	res, err := r.db.ExecContext(ctx, query,
 		need.Title, need.Description, need.EstimatedCost, need.Status, need.ProgressNotes, need.UpdatedAt, need.ID, need.TenantID,
 	)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err == nil && rows == 0 {
+		return errors.New("community need not found")
+	}
+	return nil
+}
+
+func (r *aspirationNeedRepository) DeleteCommunityNeed(ctx context.Context, tenantID, id uuid.UUID) error {
+	if r.db == nil {
+		return nil
+	}
+	query := fmt.Sprintf(`DELETE FROM %s WHERE id = $1 AND tenant_id = $2`, TenantTable(ctx, "community_needs"))
+	res, err := r.db.ExecContext(ctx, query, id, tenantID)
 	if err != nil {
 		return err
 	}

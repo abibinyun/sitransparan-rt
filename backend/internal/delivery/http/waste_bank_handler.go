@@ -263,7 +263,7 @@ func (h *WasteBankHandler) handleDepositsCRUD(w http.ResponseWriter, r *http.Req
 			return
 		}
 		if r.Method == http.MethodPost {
-			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+			if !middleware.RequireOperatorOrAdmin(r) {
 				http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
 				return
 			}

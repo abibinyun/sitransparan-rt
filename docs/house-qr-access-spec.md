@@ -61,16 +61,50 @@ sequenceDiagram
 
 ## 4. Skema Database & Model Data
 
-### 4.1 Modifikasi Schema Tenant (`tenant_<slug>`)
+### 4.1 Hubungan 3 Entitas: Rumah (houses), Penduduk (residents), Pengguna (users)
+
+Sistem memisahkan secara tegas 3 lapisan data agar tidak terjadi tumpang tindih:
+
+1. **Rumah (`houses`) — Fisik Hunian:**
+   - Menyimpan penomoran/identitas fisik (`block_number`, misal: `No. 38` atau `Blok A1/05`), alamat/keterangan lokasi (`address`, misal: `Gg. Langgar`), token QR stiker (`access_token`), PIN 4-digit verifikasi (`pin_code`), dan tautan Kepala Keluarga (`head_resident_id`).
+2. **Penduduk (`residents`) — Sensus Warga:**
+   - Menyimpan profil sensus kependudukan riil: NIK terenkripsi AES-256-GCM + HMAC search, No KK, Nama Lengkap, nomor HP, status Kepala Keluarga (`is_head_of_family`), dan tautan rumah hunian (`house_id`).
+3. **Pengguna (`users` / `tenant_users`) — Kredensial Login:**
+   - Menyimpan akun login web konvensional (Email, Password Hash, Role). Dapat dibuat otomatis oleh sistem saat QR stiker di-scan pertama kali (`rumah-<tenant>-<blok>@warga.local`), atau dibuat manual oleh pengurus RT di `/admin/users` via `SearchableResidentSelect` untuk auto-fill nama dan kontak warga.
+
+```mermaid
+erDiagram
+    HOUSES ||--o| RESIDENTS : "head_resident_id (ON DELETE SET NULL)"
+    RESIDENTS ||--o| HOUSES : "house_id (ON DELETE SET NULL)"
+    HOUSES ||--o| USERS : "user_id (ON DELETE SET NULL)"
+    USERS ||--o{ TENANT_USERS : "user_id (ON DELETE CASCADE)"
+```
+
+### 4.2 Aturan Penghapusan & Integritas Data (Lifecycle Skema Hapus)
+
+Penghapusan bersifat **independen dan aman (ON DELETE SET NULL)**, tidak ada cascade delete antar entitas utama untuk mencegah hilangnya data audit dan pembukuan kas:
+
+| Entitas Dihapus | Dampak ke Rumah (`houses`) | Dampak ke Penduduk (`residents`) | Dampak ke Pengguna (`users`) | Alasan Tata Kelola |
+|---|---|---|---|---|
+| **Hapus Rumah** | Soft delete (`deleted_at = NOW()`), QR token dinonaktifkan. | **Tetap Ada.** Kolom `resident.house_id` menjadi `NULL`. | **Tetap Ada.** Riwayat login/audit user tetap aman. | Warga pindah/rumah dibongkar tidak boleh menghapus data sensus penduduk dan riwayat iuran warga. |
+| **Hapus Penduduk** | **Tetap Ada.** Kolom `house.head_resident_id` menjadi `NULL`. | Soft delete (`deleted_at = NOW()`). | **Tetap Ada.** | Stiker QR fisik yang sudah tertempel di pintu tetap bisa dipakai oleh penghuni baru berikutnya. |
+| **Hapus Pengguna** | **Tetap Ada.** Kolom `house.user_id` menjadi `NULL`. | **Tetap Ada.** Profil NIK/KK kependudukan tidak berubah. | Hak login dicabut (`tenant_users` atau `users` deleted). | Mencabut akses login portal tidak boleh menghilangkan catatan sensus penduduk RT. |
+
+### 4.3 Modifikasi Schema Tenant (`tenant_<slug>`)
 
 ```sql
 -- Tabel entitas rumah / kartu keluarga
 CREATE TABLE IF NOT EXISTS houses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    block_number VARCHAR(20) NOT NULL, -- Contoh: "Blok A1", "No. 12"
+    block_number VARCHAR(50) NOT NULL, -- "Atas Nama" / Nomor / Blok Hunian (contoh: "no.38", "Blok A1 No. 05")
+    address TEXT,                     -- Alamat / Nama Jalan / Keterangan Lokasi (contoh: "Gg. Langgar")
     head_resident_id UUID REFERENCES residents(id) ON DELETE SET NULL,
+    user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
     access_token VARCHAR(64) UNIQUE NOT NULL, -- Token acak URL-safe (cth: "hsk_9f82kd92a...")
     token_status VARCHAR(20) DEFAULT 'active' CHECK (token_status IN ('active', 'revoked', 'suspended')),
+    pin_code VARCHAR(10),             -- PIN 4-digit untuk verifikasi / reset
+    token_version INT DEFAULT 1,      -- Versioning token untuk kill-switch sesi
+    deleted_at TIMESTAMPTZ,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

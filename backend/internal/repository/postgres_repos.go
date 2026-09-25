@@ -556,11 +556,11 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domain.
 func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
 	query := `
 		UPDATE users
-		SET name = $1, phone = $2, password_hash = $3, role_id = $4, updated_at = NOW()
-		WHERE id = $5
+		SET name = $1, email = $2, phone = $3, password_hash = $4, role_id = $5, updated_at = NOW()
+		WHERE id = $6
 		RETURNING updated_at
 	`
-	return r.db.QueryRowContext(ctx, query, user.Name, user.Phone, user.PasswordHash, user.RoleID, user.ID).Scan(&user.UpdatedAt)
+	return r.db.QueryRowContext(ctx, query, user.Name, user.Email, user.Phone, user.PasswordHash, user.RoleID, user.ID).Scan(&user.UpdatedAt)
 }
 
 func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
@@ -592,7 +592,7 @@ func (r *userRepository) ListByTenant(ctx context.Context, tenantID uuid.UUID, l
 	}
 
 	query := `
-		SELECT u.id, u.email, u.name, u.phone, u.created_at, u.updated_at, r.name as role_name, tu.tenant_id, COALESCE(t.name, '') as tenant_name
+		SELECT u.id, u.email, u.name, u.phone, u.created_at, u.updated_at, r.name as role_name, tu.tenant_id, COALESCE(t.name, '') as tenant_name, tu.resident_id
 		FROM users u
 		JOIN tenant_users tu ON u.id = tu.user_id
 		JOIN roles r ON tu.role_id = r.id
@@ -611,10 +611,12 @@ func (r *userRepository) ListByTenant(ctx context.Context, tenantID uuid.UUID, l
 	for rows.Next() {
 		var u domain.UserWithRole
 		var tid uuid.UUID
-		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Phone, &u.CreatedAt, &u.UpdatedAt, &u.RoleName, &tid, &u.TenantName); err != nil {
+		var resID *uuid.UUID
+		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Phone, &u.CreatedAt, &u.UpdatedAt, &u.RoleName, &tid, &u.TenantName, &resID); err != nil {
 			return nil, 0, err
 		}
 		u.TenantID = &tid
+		u.ResidentID = resID
 		list = append(list, &u)
 	}
 	return list, count, rows.Err()
@@ -632,7 +634,7 @@ func (r *userRepository) ListAll(ctx context.Context, limit, offset int) ([]*dom
 	}
 
 	query := `
-		SELECT u.id, u.email, u.name, u.phone, u.created_at, u.updated_at, COALESCE(r.name, ur.name, 'resident') as role_name, tu.tenant_id, COALESCE(t.name, '') as tenant_name
+		SELECT u.id, u.email, u.name, u.phone, u.created_at, u.updated_at, COALESCE(r.name, ur.name, 'resident') as role_name, tu.tenant_id, COALESCE(t.name, '') as tenant_name, tu.resident_id
 		FROM users u
 		LEFT JOIN roles ur ON u.role_id = ur.id
 		LEFT JOIN tenant_users tu ON u.id = tu.user_id
@@ -651,10 +653,12 @@ func (r *userRepository) ListAll(ctx context.Context, limit, offset int) ([]*dom
 	for rows.Next() {
 		var u domain.UserWithRole
 		var tid *uuid.UUID
-		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Phone, &u.CreatedAt, &u.UpdatedAt, &u.RoleName, &tid, &u.TenantName); err != nil {
+		var resID *uuid.UUID
+		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Phone, &u.CreatedAt, &u.UpdatedAt, &u.RoleName, &tid, &u.TenantName, &resID); err != nil {
 			return nil, 0, err
 		}
 		u.TenantID = tid
+		u.ResidentID = resID
 		list = append(list, &u)
 	}
 	return list, count, rows.Err()
@@ -670,8 +674,8 @@ func NewTenantUserRepository(db *sql.DB) domain.TenantUserRepository {
 
 func (r *tenantUserRepository) Create(ctx context.Context, tu *domain.TenantUser) error {
 	query := `
-		INSERT INTO tenant_users (id, tenant_id, user_id, role_id, status, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+		INSERT INTO tenant_users (id, tenant_id, user_id, role_id, status, resident_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
 	if tu.ID == uuid.Nil {
@@ -680,20 +684,20 @@ func (r *tenantUserRepository) Create(ctx context.Context, tu *domain.TenantUser
 	if tu.Status == "" {
 		tu.Status = "active"
 	}
-	return r.db.QueryRowContext(ctx, query, tu.ID, tu.TenantID, tu.UserID, tu.RoleID, tu.Status).
+	return r.db.QueryRowContext(ctx, query, tu.ID, tu.TenantID, tu.UserID, tu.RoleID, tu.Status, tu.ResidentID).
 		Scan(&tu.CreatedAt, &tu.UpdatedAt)
 }
 
 func (r *tenantUserRepository) GetByTenantAndUser(ctx context.Context, tenantID, userID uuid.UUID) (*domain.TenantUser, error) {
 	query := `
-		SELECT tu.id, tu.tenant_id, tu.user_id, tu.role_id, r.name, tu.status, tu.created_at, tu.updated_at
+		SELECT tu.id, tu.tenant_id, tu.user_id, tu.role_id, r.name, tu.status, tu.created_at, tu.updated_at, tu.resident_id
 		FROM tenant_users tu
 		JOIN roles r ON tu.role_id = r.id
 		WHERE tu.tenant_id = $1 AND tu.user_id = $2
 	`
 	var tu domain.TenantUser
 	err := r.db.QueryRowContext(ctx, query, tenantID, userID).
-		Scan(&tu.ID, &tu.TenantID, &tu.UserID, &tu.RoleID, &tu.RoleName, &tu.Status, &tu.CreatedAt, &tu.UpdatedAt)
+		Scan(&tu.ID, &tu.TenantID, &tu.UserID, &tu.RoleID, &tu.RoleName, &tu.Status, &tu.CreatedAt, &tu.UpdatedAt, &tu.ResidentID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -718,6 +722,16 @@ func (r *tenantUserRepository) UpdateRole(ctx context.Context, tenantID, userID,
 		return ErrNotFound
 	}
 	return nil
+}
+
+func (r *tenantUserRepository) UpdateResidentID(ctx context.Context, tenantID, userID uuid.UUID, residentID *uuid.UUID) error {
+	query := `
+		UPDATE tenant_users
+		SET resident_id = $1, updated_at = NOW()
+		WHERE tenant_id = $2 AND user_id = $3
+	`
+	_, err := r.db.ExecContext(ctx, query, residentID, tenantID, userID)
+	return err
 }
 
 func (r *tenantUserRepository) Delete(ctx context.Context, tenantID, userID uuid.UUID) error {

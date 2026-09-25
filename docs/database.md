@@ -170,7 +170,12 @@ Termasuk tabel inti tata kelola, transparansi kas, rapat warga, Karang Taruna (`
 - `polls`: `id`, `question`, `options JSONB` (2–6), `status` (`open`/`closed`), `created_by`, `created_at`, `closed_at`.
 - `poll_votes`: `id`, `poll_id` (CASCADE), `user_id` (CASCADE), `option_index SMALLINT >=0`, `created_at`, UNIQUE (poll_id, user_id).
 
-## 4. Daftar Migrasi (000001–000040)
+### houses + house_residents + house_qr_tokens (000024, 000030, 000036)
+- `houses`: `id`, `block_number` (VARCHAR(50) — Atas Nama / Blok Rumah), `address` (TEXT — Alamat / Keterangan Lokasi), `head_resident_id` (FK → residents SET NULL), `user_id` (FK → public.users SET NULL), `access_token` (VARCHAR(64) UNIQUE), `token_status` (`active`/`revoked`/`suspended`), `pin_code` (VARCHAR(10)), `token_version` (INT default 1), `deleted_at`, `created_at`, `updated_at`.
+  - *Aturan Penghapusan:* Menggunakan `ON DELETE SET NULL`. Hapus rumah tidak menghapus warga/user; hapus warga tidak menghapus rumah fisik; hapus user tidak menghapus data kependudukan dan stiker QR rumah.
+- `residents`: Ditambahkan relasi `house_id UUID REFERENCES houses(id) ON DELETE SET NULL`.
+
+## 4. Daftar Migrasi (000001–000042)
 
 | Migrasi | Isi |
 |---|---|

@@ -85,7 +85,9 @@ func (r *announcementDocRepository) CreateAnnouncement(ctx context.Context, a *d
 		a.ID = uuid.New()
 	}
 	now := time.Now()
-	a.CreatedAt = now
+	if a.CreatedAt.IsZero() {
+		a.CreatedAt = now
+	}
 	a.UpdatedAt = now
 	if a.Target == "" {
 		a.Target = "all"
@@ -198,11 +200,16 @@ func (r *announcementDocRepository) UpdateAnnouncement(ctx context.Context, a *d
 
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET title = $1, content = $2, attachment_url = $3, media_urls = $4, file_urls = $5, target = $6, allow_comments = $7, category = $8, updated_at = $9
+		SET title = $1, content = $2, attachment_url = $3, media_urls = $4, file_urls = $5, target = $6, allow_comments = $7, category = $8, updated_at = $9,
+		    created_at = CASE WHEN $12::timestamptz IS NOT NULL THEN $12::timestamptz ELSE created_at END
 		WHERE id = $10 AND tenant_id = $11 AND deleted_at IS NULL
 	`, TenantTable(ctx, "announcements"))
+	var customCreatedAt *time.Time
+	if !a.CreatedAt.IsZero() {
+		customCreatedAt = &a.CreatedAt
+	}
 	res, err := r.db.ExecContext(ctx, query,
-		a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.AllowComments, a.Category, a.UpdatedAt, a.ID, a.TenantID,
+		a.Title, a.Content, a.AttachmentURL, mediaJSON(a.MediaURLs), mediaJSON(a.FileURLs), a.Target, a.AllowComments, a.Category, a.UpdatedAt, a.ID, a.TenantID, customCreatedAt,
 	)
 	if err != nil {
 		return err

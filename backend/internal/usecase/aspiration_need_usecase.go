@@ -80,6 +80,10 @@ func (u *aspirationNeedUsecase) UpdateAspirationStatus(ctx context.Context, tena
 	return asp, nil
 }
 
+func (u *aspirationNeedUsecase) DeleteAspiration(ctx context.Context, tenantID, id uuid.UUID) error {
+	return u.repo.DeleteAspiration(ctx, tenantID, id)
+}
+
 func (u *aspirationNeedUsecase) CreateCommunityNeed(ctx context.Context, tenantID uuid.UUID, need *domain.CommunityNeed) error {
 	if need.Title == "" {
 		return errors.New("title is required")
@@ -122,6 +126,10 @@ func (u *aspirationNeedUsecase) UpdateCommunityNeed(ctx context.Context, tenantI
 	}
 
 	return u.repo.UpdateCommunityNeed(ctx, existing)
+}
+
+func (u *aspirationNeedUsecase) DeleteCommunityNeed(ctx context.Context, tenantID, id uuid.UUID) error {
+	return u.repo.DeleteCommunityNeed(ctx, tenantID, id)
 }
 
 func (u *aspirationNeedUsecase) CreateEventSponsor(ctx context.Context, tenantID uuid.UUID, sponsor *domain.EventSponsor) error {

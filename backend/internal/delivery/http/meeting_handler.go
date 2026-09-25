@@ -77,7 +77,7 @@ func writeMeetingError(w http.ResponseWriter, status int, msg string) {
 // isMeetingAdmin reports whether the requester may see confidential and
 // internal meetings. Residents are limited to public meetings.
 func isMeetingAdmin(r *http.Request) bool {
-	return middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT)
+	return middleware.RequireOperatorOrAdmin(r)
 }
 
 // HandleMeetings handles GET (list) and POST (create)

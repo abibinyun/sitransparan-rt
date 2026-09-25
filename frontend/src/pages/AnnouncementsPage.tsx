@@ -173,9 +173,13 @@ export const AnnouncementsPage: React.FC = () => {
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-[#0066cc] bg-[#f4f8fb] border border-[#d2d2d7] px-2 py-0.5 rounded-full">
                           {item.category === 'kegiatan' ? 'Kegiatan' : item.category === 'santai' ? 'Kabar Santai' : item.category === 'info' ? 'Info' : 'Pengumuman'}
                         </span>
-                        {item.target === 'residents_only' && (
+                        {item.target === 'residents_only' ? (
                           <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
                             Khusus Warga
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            Publik
                           </span>
                         )}
                         <span className="text-xs text-gray-400">

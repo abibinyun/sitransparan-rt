@@ -168,12 +168,14 @@ func (u *authUsecase) Login(ctx context.Context, email, password string, tenantI
 	// Role and tenant scope come exclusively from the database mapping
 	// (tenant_users JOIN roles). No role is ever derived from the email address
 	// or from client input. Only active mappings grant a role/tenant scope.
+	var resID *uuid.UUID
 	tus, err := u.tenantUserRepo.ListByUser(ctx, user.ID)
 	if err == nil && len(tus) > 0 {
 		selected := selectLoginTenantUser(activeTenantUsers(tus), tenantID)
 		if selected != nil {
 			role = selected.RoleName
 			tid = selected.TenantID
+			resID = selected.ResidentID
 		}
 	}
 
@@ -188,9 +190,10 @@ func (u *authUsecase) Login(ctx context.Context, email, password string, tenantI
 	}
 
 	claims := domain.JWTClaims{
-		UserID:   user.ID,
-		TenantID: tid,
-		Role:     role,
+		UserID:     user.ID,
+		TenantID:   tid,
+		ResidentID: resID,
+		Role:       role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(u.jwtDuration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

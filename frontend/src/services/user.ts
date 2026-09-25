@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
 
-export type RoleName = 'superadmin' | 'admin_rt' | 'resident';
+export type RoleName = 'superadmin' | 'admin_rt' | 'operator' | 'resident';
 
 export interface UserWithRole {
   id: string;
@@ -11,6 +11,7 @@ export interface UserWithRole {
   role_name: RoleName;
   tenant_id?: string;
   tenant_name?: string;
+  resident_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +30,7 @@ export interface CreateUserPayload {
   phone?: string;
   role: RoleName;
   tenant_id?: string;
+  resident_id?: string;
 }
 
 export interface UpdateUserPayload {
@@ -38,6 +40,7 @@ export interface UpdateUserPayload {
   role: RoleName;
   password?: string;
   tenant_id?: string;
+  resident_id?: string;
 }
 
 export function useUsers(limit = 10, offset = 0) {

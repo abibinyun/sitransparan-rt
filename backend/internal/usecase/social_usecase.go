@@ -64,19 +64,19 @@ func (u *socialUsecase) CreatePoll(ctx context.Context, p *domain.Poll) error {
 	return u.repo.CreatePoll(ctx, p)
 }
 
-func (u *socialUsecase) Poll(ctx context.Context, id uuid.UUID, viewerID, houseID *uuid.UUID, includeViewer bool) (*domain.Poll, error) {
-	return u.repo.GetPoll(ctx, id, viewerID, houseID, includeViewer)
+func (u *socialUsecase) Poll(ctx context.Context, id uuid.UUID, viewerID, houseID, residentID *uuid.UUID, includeViewer bool) (*domain.Poll, error) {
+	return u.repo.GetPoll(ctx, id, viewerID, houseID, residentID, includeViewer)
 }
 
-func (u *socialUsecase) OpenPolls(ctx context.Context, viewerID, houseID *uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
-	return u.repo.ListOpenPolls(ctx, viewerID, houseID, includeViewer)
+func (u *socialUsecase) OpenPolls(ctx context.Context, viewerID, houseID, residentID *uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
+	return u.repo.ListOpenPolls(ctx, viewerID, houseID, residentID, includeViewer)
 }
 
-func (u *socialUsecase) Vote(ctx context.Context, pollID uuid.UUID, userID, houseID *uuid.UUID, optionIndex int) error {
-	if (userID == nil || *userID == uuid.Nil) && (houseID == nil || *houseID == uuid.Nil) {
-		return errors.New("user or house context required")
+func (u *socialUsecase) Vote(ctx context.Context, pollID uuid.UUID, userID, houseID, residentID *uuid.UUID, optionIndex int) error {
+	if (userID == nil || *userID == uuid.Nil) && (houseID == nil || *houseID == uuid.Nil) && (residentID == nil || *residentID == uuid.Nil) {
+		return errors.New("user, house, or resident context required")
 	}
-	return u.repo.VotePoll(ctx, pollID, userID, houseID, optionIndex)
+	return u.repo.VotePoll(ctx, pollID, userID, houseID, residentID, optionIndex)
 }
 
 func (u *socialUsecase) ClosePoll(ctx context.Context, id uuid.UUID) error {

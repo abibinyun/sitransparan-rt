@@ -46,14 +46,14 @@ func (r *residentRepository) Create(ctx context.Context, resident *domain.Reside
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
+		INSERT INTO %s (id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, house_id, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`, TenantTable(ctx, "residents"))
 	if resident.ID == uuid.Nil {
 		resident.ID = uuid.New()
 	}
-	return r.db.QueryRowContext(ctx, query,
+	err := r.db.QueryRowContext(ctx, query,
 		resident.ID,
 		resident.TenantID,
 		encNIK,
@@ -66,16 +66,33 @@ func (r *residentRepository) Create(ctx context.Context, resident *domain.Reside
 		resident.Address,
 		resident.RTRW,
 		resident.Phone,
+		resident.HouseID,
 		resident.IsHeadOfFamily,
 		resident.Status,
 		resident.KTPURL,
 		resident.KKURL,
 	).Scan(&resident.CreatedAt, &resident.UpdatedAt)
+	if err != nil {
+		return err
+	}
+
+	// Sinkronisasi otomatis: Jika warga ini adalah Kepala Keluarga dan ditautkan ke suatu rumah,
+	// pasang head_resident_id pada tabel houses agar stiker QR rumah langsung mengenali kepala keluarga.
+	if resident.HouseID != nil && *resident.HouseID != uuid.Nil && resident.IsHeadOfFamily != nil && *resident.IsHeadOfFamily {
+		syncHouseQuery := fmt.Sprintf(`
+			UPDATE %s
+			SET head_resident_id = $1, updated_at = NOW()
+			WHERE id = $2 AND deleted_at IS NULL
+		`, TenantTable(ctx, "houses"))
+		_, _ = r.db.ExecContext(ctx, syncHouseQuery, resident.ID, *resident.HouseID)
+	}
+
+	return nil
 }
 
 func (r *residentRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.Resident, error) {
 	query := fmt.Sprintf(`
-		SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
+		SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, house_id, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
 		FROM %s
 		WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL
 	`, TenantTable(ctx, "residents"))
@@ -94,6 +111,7 @@ func (r *residentRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID
 		&res.Address,
 		&res.RTRW,
 		&res.Phone,
+		&res.HouseID,
 		&res.IsHeadOfFamily,
 		&res.Status,
 		&res.KTPURL,
@@ -142,8 +160,8 @@ func (r *residentRepository) Update(ctx context.Context, resident *domain.Reside
 
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET nik = $1, nik_hash = $2, kk_number = $3, full_name = $4, gender = $5, birth_place = $6, birth_date = $7, address = $8, rt_rw = $9, phone = $10, is_head_of_family = $11, status = COALESCE(NULLIF($12, ''), status), ktp_url = $13, kk_url = $14, updated_at = NOW()
-		WHERE tenant_id = $15 AND id = $16
+		SET nik = $1, nik_hash = $2, kk_number = $3, full_name = $4, gender = $5, birth_place = $6, birth_date = $7, address = $8, rt_rw = $9, phone = $10, house_id = $11, is_head_of_family = $12, status = COALESCE(NULLIF($13, ''), status), ktp_url = $14, kk_url = $15, updated_at = NOW()
+		WHERE tenant_id = $16 AND id = $17
 		RETURNING updated_at
 	`, TenantTable(ctx, "residents"))
 	err := r.db.QueryRowContext(ctx, query,
@@ -157,6 +175,7 @@ func (r *residentRepository) Update(ctx context.Context, resident *domain.Reside
 		resident.Address,
 		resident.RTRW,
 		resident.Phone,
+		resident.HouseID,
 		resident.IsHeadOfFamily,
 		resident.Status,
 		resident.KTPURL,
@@ -167,7 +186,22 @@ func (r *residentRepository) Update(ctx context.Context, resident *domain.Reside
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotFound
 	}
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Sinkronisasi otomatis: Jika warga ini adalah Kepala Keluarga dan ditautkan ke suatu rumah,
+	// pasang head_resident_id pada tabel houses agar stiker QR rumah langsung mengenali kepala keluarga.
+	if resident.HouseID != nil && *resident.HouseID != uuid.Nil && resident.IsHeadOfFamily != nil && *resident.IsHeadOfFamily {
+		syncHouseQuery := fmt.Sprintf(`
+			UPDATE %s
+			SET head_resident_id = $1, updated_at = NOW()
+			WHERE id = $2 AND deleted_at IS NULL
+		`, TenantTable(ctx, "houses"))
+		_, _ = r.db.ExecContext(ctx, syncHouseQuery, resident.ID, *resident.HouseID)
+	}
+
+	return nil
 }
 
 func (r *residentRepository) Delete(ctx context.Context, tenantID, id uuid.UUID) error {
@@ -232,7 +266,7 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 		}
 
 		query = fmt.Sprintf(`
-			SELECT r.id, r.tenant_id, r.nik, r.nik_hash, r.kk_number, r.full_name, r.gender, r.birth_place, r.birth_date, r.address, r.rt_rw, r.phone, r.is_head_of_family, r.status, r.ktp_url, r.kk_url, r.created_at, r.updated_at
+			SELECT r.id, r.tenant_id, r.nik, r.nik_hash, r.kk_number, r.full_name, r.gender, r.birth_place, r.birth_date, r.address, r.rt_rw, r.phone, r.house_id, r.is_head_of_family, r.status, r.ktp_url, r.kk_url, r.created_at, r.updated_at
 			FROM %s r
 			WHERE r.tenant_id = $1 AND r.deleted_at IS NULL AND (
 				r.full_name ILIKE $2
@@ -258,7 +292,7 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 		}
 
 		query = fmt.Sprintf(`
-			SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
+			SELECT id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date, address, rt_rw, phone, house_id, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
 			FROM %s
 			WHERE tenant_id = $1 AND deleted_at IS NULL%s
 			ORDER BY created_at DESC LIMIT $2 OFFSET $3
@@ -289,6 +323,7 @@ func (r *residentRepository) List(ctx context.Context, tenantID uuid.UUID, q str
 			&res.Address,
 			&res.RTRW,
 			&res.Phone,
+			&res.HouseID,
 			&res.IsHeadOfFamily,
 			&res.Status,
 			&res.KTPURL,
@@ -512,7 +547,7 @@ func (r *residentRepository) PromoteFamilyMemberToHead(ctx context.Context, tena
 
 	// 1. Ambil data kepala keluarga saat ini
 	currentHeadQuery := fmt.Sprintf(`
-		SELECT id, kk_number, full_name, nik, gender, birth_date, birth_place, address, rt_rw, phone, status, ktp_url, kk_url
+		SELECT id, kk_number, full_name, nik, gender, birth_date, birth_place, address, rt_rw, phone, house_id, status, ktp_url, kk_url
 		FROM %s
 		WHERE tenant_id = $1 AND id = $2
 		FOR UPDATE
@@ -530,6 +565,7 @@ func (r *residentRepository) PromoteFamilyMemberToHead(ctx context.Context, tena
 		&cHead.Address,
 		&cHead.RTRW,
 		&cHead.Phone,
+		&cHead.HouseID,
 		&cHead.Status,
 		&cHead.KTPURL,
 		&cHead.KKURL,
@@ -577,10 +613,10 @@ func (r *residentRepository) PromoteFamilyMemberToHead(ctx context.Context, tena
 	insertNewHeadQuery := fmt.Sprintf(`
 		INSERT INTO %s (
 			id, tenant_id, nik, nik_hash, kk_number, full_name, gender, birth_place, birth_date,
-			address, rt_rw, phone, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
+			address, rt_rw, phone, house_id, is_head_of_family, status, ktp_url, kk_url, created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9,
-			$10, $11, $12, TRUE, 'approved', NULL, $13, NOW(), NOW()
+			$10, $11, $12, $13, TRUE, 'approved', NULL, $14, NOW(), NOW()
 		)
 	`, TenantTable(ctx, "residents"))
 
@@ -597,6 +633,7 @@ func (r *residentRepository) PromoteFamilyMemberToHead(ctx context.Context, tena
 		cHead.Address,
 		cHead.RTRW,
 		cHead.Phone,
+		cHead.HouseID,
 		cHead.KKURL,
 	); err != nil {
 		return fmt.Errorf("insert new head: %w", err)

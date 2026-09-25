@@ -58,6 +58,11 @@ func (m *mockAspirationNeedRepo) UpdateAspiration(ctx context.Context, asp *doma
 	return nil
 }
 
+func (m *mockAspirationNeedRepo) DeleteAspiration(ctx context.Context, tenantID, id uuid.UUID) error {
+	delete(m.aspirations, id)
+	return nil
+}
+
 func (m *mockAspirationNeedRepo) CreateCommunityNeed(ctx context.Context, need *domain.CommunityNeed) error {
 	if need.ID == uuid.Nil {
 		need.ID = uuid.New()
@@ -89,6 +94,11 @@ func (m *mockAspirationNeedRepo) UpdateCommunityNeed(ctx context.Context, need *
 		return errors.New("not found")
 	}
 	m.communityNeeds[need.ID] = need
+	return nil
+}
+
+func (m *mockAspirationNeedRepo) DeleteCommunityNeed(ctx context.Context, tenantID, id uuid.UUID) error {
+	delete(m.communityNeeds, id)
 	return nil
 }
 

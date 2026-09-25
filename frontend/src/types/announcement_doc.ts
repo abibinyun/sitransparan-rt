@@ -29,6 +29,7 @@ export interface CreateAnnouncementPayload {
   category?: AnnouncementCategory | string;
   target?: AnnouncementTarget;
   allow_comments?: boolean;
+  created_at?: string;
 }
 
 export interface UpdateAnnouncementPayload {
@@ -40,6 +41,7 @@ export interface UpdateAnnouncementPayload {
   category?: AnnouncementCategory | string;
   target?: AnnouncementTarget;
   allow_comments?: boolean;
+  created_at?: string;
 }
 
 export interface AnnouncementComment {

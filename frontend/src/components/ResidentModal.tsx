@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Resident, CreateResidentPayload } from '../types/resident';
 import { useCreateResident, useUpdateResident, useUploadResidentDoc } from '../services/resident';
-import { useHouses } from '../services/house';
+import { useHouses, useCreateHouse, useUpdateHouse } from '../services/house';
 import { dateOnlyToISO } from '../utils/date';
 import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
@@ -22,6 +22,8 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
   const createMutation = useCreateResident();
   const updateMutation = useUpdateResident();
   const uploadDocMutation = useUploadResidentDoc();
+  const createHouseMutation = useCreateHouse();
+  const updateHouseMutation = useUpdateHouse();
   const [uploadingKtp, setUploadingKtp] = useState(false);
   const [uploadingKk, setUploadingKk] = useState(false);
 
@@ -35,10 +37,16 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
     address: '',
     rt_rw: '',
     phone: '',
+    house_id: undefined,
     is_head_of_family: false,
     ktp_url: '',
     kk_url: '',
   });
+
+  const [isCreatingNewHouse, setIsCreatingNewHouse] = useState(false);
+  const [newBlockNumber, setNewBlockNumber] = useState('');
+  const [newHouseAddress, setNewHouseAddress] = useState('');
+  const [creatingHouseError, setCreatingHouseError] = useState<string | null>(null);
 
   useEffect(() => {
     if (resident) {
@@ -52,6 +60,7 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
         address: resident.address || '',
         rt_rw: resident.rt_rw || '',
         phone: resident.phone || '',
+        house_id: resident.house_id || undefined,
         is_head_of_family: resident.is_head_of_family || false,
         ktp_url: resident.ktp_url || '',
         kk_url: resident.kk_url || '',
@@ -67,11 +76,16 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
         address: '',
         rt_rw: '',
         phone: '',
+        house_id: undefined,
         is_head_of_family: false,
         ktp_url: '',
         kk_url: '',
       });
     }
+    setIsCreatingNewHouse(false);
+    setNewBlockNumber('');
+    setNewHouseAddress('');
+    setCreatingHouseError(null);
   }, [resident, isOpen]);
 
   const { data: housesData } = useHouses({ limit: 100 });
@@ -79,7 +93,10 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSelectHouse = (houseId: string) => {
-    if (!houseId) return;
+    if (!houseId) {
+      setFormData((prev) => ({ ...prev, house_id: undefined }));
+      return;
+    }
     const foundHouse = housesList.find(h => h.id === houseId);
     if (foundHouse) {
       const fullAddress = foundHouse.address 
@@ -87,8 +104,39 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
         : foundHouse.block_number;
       setFormData((prev) => ({
         ...prev,
-        address: fullAddress,
+        house_id: houseId,
+        address: prev.address || fullAddress,
       }));
+    } else {
+      setFormData((prev) => ({ ...prev, house_id: houseId }));
+    }
+  };
+
+  const handleCreateInlineHouse = async () => {
+    if (!newBlockNumber.trim()) {
+      setCreatingHouseError('Nama / Keterangan Rumah wajib diisi');
+      return;
+    }
+    setCreatingHouseError(null);
+    try {
+      const created = await createHouseMutation.mutateAsync({
+        block_number: newBlockNumber.trim(),
+        address: newHouseAddress.trim() || undefined,
+        head_resident_id: resident?.id || undefined,
+      });
+      const fullAddress = created.address 
+        ? `${created.block_number}, ${created.address}` 
+        : created.block_number;
+      setFormData((prev) => ({
+        ...prev,
+        house_id: created.id,
+        address: prev.address || fullAddress,
+      }));
+      setIsCreatingNewHouse(false);
+      setNewBlockNumber('');
+      setNewHouseAddress('');
+    } catch (err: any) {
+      setCreatingHouseError(err.response?.data?.error || 'Gagal menambahkan rumah');
     }
   };
 
@@ -97,11 +145,30 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
     setSubmitError(null);
     try {
       const payload = { ...formData, birth_date: dateOnlyToISO(formData.birth_date) };
+      let savedResident: Resident;
       if (resident) {
-        await updateMutation.mutateAsync({ id: resident.id, payload });
+        savedResident = await updateMutation.mutateAsync({ id: resident.id, payload });
       } else {
-        await createMutation.mutateAsync(payload);
+        savedResident = await createMutation.mutateAsync(payload);
       }
+
+      // Jika warga ini adalah Kepala Keluarga dan memilih rumah, pastikan rumah mencatat head_resident_id
+      const targetHouseId = formData.house_id;
+      const residentIdToSync = savedResident?.id || resident?.id;
+      if (targetHouseId && formData.is_head_of_family && residentIdToSync) {
+        const currentHouse = housesList.find((h) => h.id === targetHouseId);
+        try {
+          await updateHouseMutation.mutateAsync({
+            id: targetHouseId,
+            block_number: currentHouse?.block_number || '',
+            address: currentHouse?.address,
+            head_resident_id: residentIdToSync,
+          });
+        } catch {
+          // Ignore background sync error
+        }
+      }
+
       onClose();
     } catch (err: any) {
       setSubmitError(err.response?.data?.error || err.message || 'Gagal menyimpan data warga');
@@ -127,38 +194,39 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="nik">NIK</Label>
+            <Label htmlFor="nik">NIK (Opsional)</Label>
             <Input
               id="nik"
               type="text"
-              required
               maxLength={16}
               value={formData.nik}
               onChange={(e) => setFormData({ ...formData, nik: e.target.value })}
+              placeholder="Nomor Induk Kependudukan 16 digit"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="kk_number">No KK</Label>
+            <Label htmlFor="kk_number">No KK (Opsional)</Label>
             <Input
               id="kk_number"
               type="text"
-              required
               maxLength={16}
               value={formData.kk_number}
               onChange={(e) => setFormData({ ...formData, kk_number: e.target.value })}
+              placeholder="Nomor Kartu Keluarga 16 digit"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="full_name">Nama Lengkap</Label>
+            <Label htmlFor="full_name">Nama Lengkap *</Label>
             <Input
               id="full_name"
               type="text"
               required
               value={formData.full_name}
               onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              placeholder="Nama lengkap sesuai KTP"
             />
           </div>
           <div className="space-y-2">
@@ -195,42 +263,117 @@ export const ResidentModal: React.FC<ResidentModalProps> = ({ isOpen, onClose, r
           </div>
         </div>
 
-        {/* Selector Rumah / Blok Warga */}
-        <div className="p-3 bg-[#f4f8fb] border border-[#d2d2d7] rounded-lg space-y-1.5">
-          <Label htmlFor="house_select" className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
-            <Home className="w-4 h-4 text-[#0071e3]" />
-            Tautkan ke Data Rumah / Blok (Otomatis Isi Alamat)
-          </Label>
-          <Select
-            id="house_select"
-            onValueChange={(val) => handleSelectHouse(val)}
-          >
-            <option value="">-- Pilih Rumah / Blok Terdaftar --</option>
-            {housesList.map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.block_number} {h.address ? `- ${h.address}` : ''}
-              </option>
-            ))}
-          </Select>
+        {/* Selector Rumah / Blok Warga & Quick Add */}
+        <div className="p-3.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-xl space-y-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="house_select" className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
+              <Home className="w-4 h-4 text-[#0071e3]" />
+              Tautkan ke Data Rumah / Blok Fisik
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setIsCreatingNewHouse(!isCreatingNewHouse);
+                setCreatingHouseError(null);
+              }}
+              className="text-xs h-7 px-2.5 bg-white border-[#d2d2d7] text-[#0071e3] hover:text-[#0077ed]"
+            >
+              {isCreatingNewHouse ? 'Batal Tambah' : '+ Rumah Baru'}
+            </Button>
+          </div>
+
+          {!isCreatingNewHouse ? (
+            <div className="space-y-1">
+              <Select
+                id="house_select"
+                value={formData.house_id || ''}
+                onValueChange={(val) => handleSelectHouse(val)}
+              >
+                <option value="">-- Pilih Rumah / Blok Terdaftar (Opsional) --</option>
+                {housesList.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    Blok/No: {h.block_number} {h.address ? `(${h.address})` : ''}
+                  </option>
+                ))}
+              </Select>
+              <p className="text-[11px] text-[#86868b]">
+                Menautkan rumah akan menyinkronkan akses stiker QR dan otomatis mengisi alamat.
+              </p>
+            </div>
+          ) : (
+            <div className="p-3 bg-white border border-[#0071e3]/30 rounded-lg space-y-2.5">
+              <div className="text-xs font-medium text-[#1d1d1f]">
+                Tambah Rumah Baru Cepat
+              </div>
+              {creatingHouseError && (
+                <div className="p-2 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded">
+                  {creatingHouseError}
+                </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="new_block_number" className="text-[11px] text-[#6e6e73]">
+                    Atas Nama / Nomor Rumah *
+                  </Label>
+                  <Input
+                    id="new_block_number"
+                    value={newBlockNumber}
+                    onChange={(e) => setNewBlockNumber(e.target.value)}
+                    placeholder="Contoh: Bpk. Bambang Pamungkas / No. 38"
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new_house_address" className="text-[11px] text-[#6e6e73]">
+                    Alamat / Keterangan Lokasi
+                  </Label>
+                  <Input
+                    id="new_house_address"
+                    value={newHouseAddress}
+                    onChange={(e) => setNewHouseAddress(e.target.value)}
+                    placeholder="Contoh: Jl. Melati Raya RT 05 / Gg. Langgar"
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleCreateInlineHouse}
+                  disabled={createHouseMutation.isPending}
+                  className="h-7 text-xs px-3"
+                >
+                  {createHouseMutation.isPending ? 'Menyimpan...' : 'Simpan & Tautkan'}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="address">Alamat</Label>
+            <Label htmlFor="address">Alamat *</Label>
             <Input
               id="address"
               type="text"
+              required
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              placeholder="Contoh: Jl. Melati No. 12"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="rt_rw">RT/RW</Label>
+            <Label htmlFor="rt_rw">RT/RW *</Label>
             <Input
               id="rt_rw"
               type="text"
+              required
               value={formData.rt_rw}
               onChange={(e) => setFormData({ ...formData, rt_rw: e.target.value })}
+              placeholder="Contoh: 003/005"
             />
           </div>
         </div>

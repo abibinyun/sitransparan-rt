@@ -254,7 +254,7 @@ func (h *EventHandler) list(w http.ResponseWriter, r *http.Request, tenantID uui
 }
 
 func (h *EventHandler) create(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+	if !middleware.RequireOperatorOrAdmin(r) {
 		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
 		return
 	}
@@ -292,7 +292,7 @@ func (h *EventHandler) getByID(w http.ResponseWriter, r *http.Request, tenantID,
 }
 
 func (h *EventHandler) update(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+	if !middleware.RequireOperatorOrAdmin(r) {
 		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
 		return
 	}

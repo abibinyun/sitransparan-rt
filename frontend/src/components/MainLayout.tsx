@@ -216,6 +216,7 @@ export const MainLayout: React.FC = () => {
       (user?.role as string) === 'super_admin';
     const isAdminRT =
       user?.role === 'RT_ADMIN' || (user?.role as string) === 'admin_rt';
+    const isOperator = (user?.role as string)?.toLowerCase() === 'operator';
 
     const hostSlug = (() => { try { return getTenantSlugFromHost(); } catch { return null; } })();
     const isInTenant = Boolean(isSuperAdmin && hostSlug);
@@ -233,6 +234,14 @@ export const MainLayout: React.FC = () => {
         { to: '/admin/tenants', label: 'SuperAdmin RT', icon: Shield },
         { to: '/admin/users', label: 'Manajemen Pengguna', icon: Users },
         { to: '/', label: 'Landing Page Platform', icon: Bell, end: true },
+      ];
+    }
+
+    if (isOperator) {
+      // Role operator: semua modul operasional RT, kecuali Pengaturan & Akun
+      return [
+        ...baseNavItems.filter((item) => item.to !== '/admin/users'),
+        ...publicNavItems,
       ];
     }
 

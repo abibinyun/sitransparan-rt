@@ -22,6 +22,7 @@ type CreateUserParam struct {
 	Phone      *string
 	Role       domain.RoleName
 	CallerRole domain.RoleName
+	ResidentID *uuid.UUID
 }
 
 type UpdateUserParam struct {
@@ -33,6 +34,7 @@ type UpdateUserParam struct {
 	Role       domain.RoleName
 	Password   *string
 	CallerRole domain.RoleName
+	ResidentID *uuid.UUID
 }
 
 type UserUsecase interface {
@@ -136,11 +138,12 @@ func (u *userUsecase) CreateUser(ctx context.Context, p CreateUserParam) (*domai
 	}
 
 	tu := &domain.TenantUser{
-		ID:       uuid.New(),
-		TenantID: p.TenantID,
-		UserID:   user.ID,
-		RoleID:   roleObj.ID,
-		Status:   "active",
+		ID:         uuid.New(),
+		TenantID:   p.TenantID,
+		UserID:     user.ID,
+		RoleID:     roleObj.ID,
+		ResidentID: p.ResidentID,
+		Status:     "active",
 	}
 
 	if err := u.tenantUserRepo.Create(ctx, tu); err != nil {
@@ -148,9 +151,10 @@ func (u *userUsecase) CreateUser(ctx context.Context, p CreateUserParam) (*domai
 	}
 
 	return &domain.UserWithRole{
-		User:     *user,
-		RoleName: p.Role,
-		TenantID: &p.TenantID,
+		User:       *user,
+		RoleName:   p.Role,
+		TenantID:   &p.TenantID,
+		ResidentID: p.ResidentID,
 	}, nil
 }
 
@@ -185,9 +189,10 @@ func (u *userUsecase) GetUserByID(ctx context.Context, tenantID, userID uuid.UUI
 	}
 
 	return &domain.UserWithRole{
-		User:     *user,
-		RoleName: tu.RoleName,
-		TenantID: &tenantID,
+		User:       *user,
+		RoleName:   tu.RoleName,
+		TenantID:   &tenantID,
+		ResidentID: tu.ResidentID,
 	}, nil
 }
 
@@ -285,10 +290,15 @@ func (u *userUsecase) UpdateUser(ctx context.Context, p UpdateUserParam) (*domai
 		retTenantID = &p.TenantID
 	}
 
+	if p.ResidentID != nil && p.TenantID != uuid.Nil {
+		_ = u.tenantUserRepo.UpdateResidentID(ctx, p.TenantID, p.UserID, p.ResidentID)
+	}
+
 	return &domain.UserWithRole{
-		User:     *user,
-		RoleName: retRole,
-		TenantID: retTenantID,
+		User:       *user,
+		RoleName:   retRole,
+		TenantID:   retTenantID,
+		ResidentID: p.ResidentID,
 	}, nil
 }
 

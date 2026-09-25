@@ -161,7 +161,8 @@ export const Dialog: React.FC<SimpleDialogProps> = ({
     <DialogRoot
       open={isOpen}
       onOpenChange={(open) => {
-        if (!open) {
+        // Cegah modal auto-close saat browser HP membuka file picker / galeri OS
+        if (!open && !preventOutsideClose) {
           onClose();
         }
       }}

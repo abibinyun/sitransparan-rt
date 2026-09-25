@@ -109,3 +109,29 @@ export function useUpdateCommunityNeed() {
     },
   });
 }
+
+export function useDeleteAspiration() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/aspirations/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['aspirations'] });
+      queryClient.invalidateQueries({ queryKey: ['public-aspirations'] });
+    },
+  });
+}
+
+export function useDeleteCommunityNeed() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/needs/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['community-needs'] });
+      queryClient.invalidateQueries({ queryKey: ['public-community-needs'] });
+    },
+  });
+}

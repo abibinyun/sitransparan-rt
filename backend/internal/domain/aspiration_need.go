@@ -51,11 +51,13 @@ type AspirationNeedRepository interface {
 	GetAspirationByID(ctx context.Context, tenantID, id uuid.UUID) (*Aspiration, error)
 	ListAspirations(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*Aspiration, int64, error)
 	UpdateAspiration(ctx context.Context, asp *Aspiration) error
+	DeleteAspiration(ctx context.Context, tenantID, id uuid.UUID) error
 
 	CreateCommunityNeed(ctx context.Context, need *CommunityNeed) error
 	GetCommunityNeedByID(ctx context.Context, tenantID, id uuid.UUID) (*CommunityNeed, error)
 	ListCommunityNeeds(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*CommunityNeed, int64, error)
 	UpdateCommunityNeed(ctx context.Context, need *CommunityNeed) error
+	DeleteCommunityNeed(ctx context.Context, tenantID, id uuid.UUID) error
 
 	CreateEventSponsor(ctx context.Context, sponsor *EventSponsor) error
 	ListEventSponsorsByEventID(ctx context.Context, tenantID, eventID uuid.UUID) ([]*EventSponsor, error)
@@ -67,11 +69,13 @@ type AspirationNeedUsecase interface {
 	GetAspiration(ctx context.Context, tenantID, id uuid.UUID) (*Aspiration, error)
 	ListAspirations(ctx context.Context, tenantID uuid.UUID, isPublic bool, limit, offset int) ([]*Aspiration, int64, error)
 	UpdateAspirationStatus(ctx context.Context, tenantID, id uuid.UUID, status string, response *string, responderName *string) (*Aspiration, error)
+	DeleteAspiration(ctx context.Context, tenantID, id uuid.UUID) error
 
 	CreateCommunityNeed(ctx context.Context, tenantID uuid.UUID, need *CommunityNeed) error
 	GetCommunityNeed(ctx context.Context, tenantID, id uuid.UUID) (*CommunityNeed, error)
 	ListCommunityNeeds(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*CommunityNeed, int64, error)
 	UpdateCommunityNeed(ctx context.Context, tenantID uuid.UUID, need *CommunityNeed) error
+	DeleteCommunityNeed(ctx context.Context, tenantID, id uuid.UUID) error
 
 	CreateEventSponsor(ctx context.Context, tenantID uuid.UUID, sponsor *EventSponsor) error
 	ListEventSponsors(ctx context.Context, tenantID, eventID uuid.UUID) ([]*EventSponsor, error)

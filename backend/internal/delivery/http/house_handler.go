@@ -29,14 +29,24 @@ func (h *HouseHandler) ClaimToken(w http.ResponseWriter, r *http.Request) {
 
 	slug := r.URL.Query().Get("slug")
 	token := r.URL.Query().Get("token")
+	pin := r.URL.Query().Get("pin")
 
 	if slug == "" || token == "" {
 		http.Error(w, `{"error":"slug dan token wajib diisi"}`, http.StatusBadRequest)
 		return
 	}
 
-	res, err := h.houseUC.ClaimAccessToken(r.Context(), slug, token)
+	res, err := h.houseUC.ClaimAccessToken(r.Context(), slug, token, pin)
 	if err != nil {
+		if err.Error() == "pin_required" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionRequired)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error": "pin_required",
+				"message": "Masukkan 4 digit PIN stiker rumah untuk melanjutkan",
+			})
+			return
+		}
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusUnauthorized)
 		return
 	}
@@ -74,6 +84,12 @@ func (h *HouseHandler) MyHouse(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"house":         house,
 		"head_resident": headResident,
+		"family_members": func() interface{} {
+			if headResident != nil && len(headResident.FamilyMembers) > 0 {
+				return headResident.FamilyMembers
+			}
+			return []interface{}{}
+		}(),
 	})
 }
 

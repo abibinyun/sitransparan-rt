@@ -189,8 +189,9 @@ export const ResidentsPage: React.FC = () => {
       ) : residents.length === 0 ? (
         <Card className="p-8 text-center text-slate-500">Tidak ada data warga ditemukan.</Card>
       ) : (
-        <div className="space-y-4">
-          <Table>
+        <Card className="overflow-hidden border border-[#d2d2d7] shadow-xs">
+          <CardContent className="p-0">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Nama Lengkap / NIK</TableHead>
@@ -300,14 +301,16 @@ export const ResidentsPage: React.FC = () => {
                           >
                             <Edit3 className="h-4 w-4 text-slate-600" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(r.id, r.full_name)}
-                            title="Hapus Warga"
-                          >
-                            <Trash2 className="h-4 w-4 text-rose-600" />
-                          </Button>
+                          {(user?.role === 'admin_rt' || user?.role === 'superadmin' || user?.role === 'RT_ADMIN' || user?.role === 'SUPER_ADMIN') && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(r.id, r.full_name)}
+                              title="Hapus Warga"
+                            >
+                              <Trash2 className="h-4 w-4 text-rose-600" />
+                            </Button>
+                          )}
                         </>
                       )}
                     </TableCell>
@@ -403,35 +406,38 @@ export const ResidentsPage: React.FC = () => {
             </TableBody>
           </Table>
 
-          {/* Pagination */}
-          <div className="flex justify-between items-center pt-2">
-            <span className="text-xs text-slate-500">
-              Menampilkan {residents.length} dari {total} data warga
+          {/* Pagination Footer Apple Standard */}
+          <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-[#d2d2d7] bg-[#fbfbfd] gap-3 text-xs sm:text-sm">
+            <span className="text-slate-500 font-medium">
+              Menampilkan {(page - 1) * limit + 1} - {Math.min(page * limit, total)} dari {total} data warga
             </span>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="h-8 px-3 text-xs border-[#d2d2d7]"
               >
                 Sebelumnya
               </Button>
-              <span className="px-3 py-1 text-sm font-semibold text-slate-700">
-                {page} / {totalPages}
-              </span>
+              <div className="px-3 py-1 font-semibold text-slate-700 text-xs bg-white border border-[#d2d2d7] rounded-lg">
+                Halaman {page} dari {totalPages || 1}
+              </div>
               <Button
                 variant="outline"
                 size="sm"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
+                className="h-8 px-3 text-xs border-[#d2d2d7]"
               >
                 Selanjutnya
               </Button>
             </div>
           </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
+    )}
 
       {/* Modal Tambah / Edit Warga */}
       <ResidentModal

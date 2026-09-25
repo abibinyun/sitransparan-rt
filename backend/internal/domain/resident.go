@@ -21,6 +21,7 @@ type Resident struct {
 	Address        *string         `json:"address,omitempty"`
 	RTRW           *string         `json:"rt_rw,omitempty"`
 	Phone          *string         `json:"phone,omitempty"`
+	HouseID        *uuid.UUID      `json:"house_id,omitempty"`
 	IsHeadOfFamily *bool           `json:"is_head_of_family,omitempty"`
 	Status         string          `json:"status"` // 'pending', 'approved', 'rejected', 'moved', 'deceased'
 	KTPURL         *string         `json:"ktp_url,omitempty"`

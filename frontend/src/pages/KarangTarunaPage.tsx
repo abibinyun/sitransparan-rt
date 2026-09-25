@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Users,
   Calendar,
-  Settings,
   Plus,
   Trash2,
   Edit2,
-  Award,
   Phone,
   Layers,
 } from 'lucide-react';
@@ -21,6 +19,17 @@ import {
   useUpdateKTMember,
   useDeleteKTMember,
 } from '../services/karang_taruna';
+import {
+  useRTPeriods,
+  useRTMembers,
+  useCreateRTPeriod,
+  useUpdateRTPeriod,
+  useAddRTMember,
+  useUpdateRTMember,
+  useDeleteRTMember,
+  RTMember,
+  RTPeriod,
+} from '../services/rt_structure';
 import { useResidents } from '../services/resident';
 import { SearchableResidentSelect } from '../components/ui/SearchableResidentSelect';
 import { Button } from '../components/ui/button';
@@ -32,13 +41,13 @@ import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { KarangTarunaPeriod, KarangTarunaMember } from '../types/karang_taruna';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
-import { Flame, Recycle } from 'lucide-react';
+import { Flame, Recycle, ShieldCheck, UserCheck } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
 export const KarangTarunaPage: React.FC = () => {
   const { user } = useAuthStore();
   const isResident = String(user?.role || '').toLowerCase() === 'resident';
-  const [activeTab, setActiveTab] = useState<'structure' | 'periods' | 'config'>('structure');
+  const [activeTab, setActiveTab] = useState<'rt_structure' | 'kt_structure'>('rt_structure');
 
   // Queries
   const { data: activePeriod, isLoading: loadingActive } = useKTActivePeriod();
@@ -55,13 +64,149 @@ export const KarangTarunaPage: React.FC = () => {
   const { data: residentsRes } = useResidents({ limit: 1000 });
   const residents = Array.isArray(residentsRes) ? residentsRes : residentsRes?.data || [];
 
-  // Mutations
+  // Ratakan data kepala keluarga dan seluruh anggota keluarga (anak/istri)
+  // agar pemuda Karang Taruna yang masih menumpang KK orang tua bisa langsung dipilih
+  const allSelectableResidents = useMemo(() => {
+    const list: Array<{
+      id: string;
+      full_name: string;
+      nik?: string;
+      phone?: string;
+      house_number?: string;
+    }> = [];
+
+    residents.forEach((r) => {
+      // Masukkan warga utama (Kepala Keluarga / Individu)
+      list.push({
+        id: r.id,
+        full_name: r.full_name || 'Tanpa Nama',
+        nik: r.nik || '',
+        phone: r.phone || '',
+        house_number: r.address || '',
+      });
+      // Masukkan seluruh anggota keluarga yang terdaftar
+      if (r.family_members && r.family_members.length > 0) {
+        r.family_members.forEach((fm: any) => {
+          list.push({
+            id: fm.id,
+            full_name: `${fm.full_name} (${fm.relation || 'Anggota KK'} dari ${r.full_name})`,
+            nik: fm.nik || '',
+            phone: r.phone || '',
+            house_number: r.address || '',
+          });
+        });
+      }
+    });
+
+    return list;
+  }, [residents]);
+
+  // Queries RT Structure Resmi
+  const { data: rtPeriodsRes } = useRTPeriods();
+  const rtPeriods = rtPeriodsRes?.data || [];
+  const activeRTPeriod = rtPeriods.find((p) => p.status === 'active') || (rtPeriods.length > 0 ? rtPeriods[0] : null);
+  const [selectedRTPeriodId, setSelectedRTPeriodId] = useState<string>('');
+  const currentRTPeriodId = selectedRTPeriodId || activeRTPeriod?.id || '';
+  const currentRTPeriod = rtPeriods.find((p) => p.id === currentRTPeriodId) || activeRTPeriod;
+
+  const { data: rtMembersRes, isLoading: loadingRTMembers } = useRTMembers(currentRTPeriodId);
+  const rtMembers = rtMembersRes?.data || [];
+
+  // Mutations RT Structure
+  const createRTPeriod = useCreateRTPeriod();
+  const updateRTPeriod = useUpdateRTPeriod();
+  const addRTMember = useAddRTMember();
+  const updateRTMember = useUpdateRTMember();
+  const deleteRTMember = useDeleteRTMember();
+
+  // Modal States RT Structure
+  const [isRTMemberModalOpen, setIsRTMemberModalOpen] = useState(false);
+  const [editingRTMember, setEditingRTMember] = useState<RTMember | null>(null);
+  const [rtMemberForm, setRTMemberForm] = useState({
+    resident_id: '',
+    role: 'seksi',
+    section: '',
+    custom_title: '',
+    phone_override: '',
+    status: 'aktif',
+  });
+
+  // Master Seksi RT dengan localStorage fallback & dinamis CRUD
+  const [rtSectionsList, setRtSectionsList] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('sitransparan_rt_sections');
+      return saved
+        ? JSON.parse(saved)
+        : [
+            'Keamanan & Ketertiban',
+            'Kebersihan & Lingkungan Hidup',
+            'Sosial, Humas & Kematian',
+            'Pembangunan & Sarana',
+            'Kerohanian & Keagamaan',
+            'Pemberdayaan Perempuan & Posyandu',
+          ];
+    } catch {
+      return [
+        'Keamanan & Ketertiban',
+        'Kebersihan & Lingkungan Hidup',
+        'Sosial, Humas & Kematian',
+        'Pembangunan & Sarana',
+        'Kerohanian & Keagamaan',
+        'Pemberdayaan Perempuan & Posyandu',
+      ];
+    }
+  });
+  const [isAddingRTSection, setIsAddingRTSection] = useState(false);
+  const [newRTSectionName, setNewRTSectionName] = useState('');
+
+  const handleAddNewRTSection = () => {
+    if (!newRTSectionName.trim()) return;
+    const trimmed = newRTSectionName.trim();
+    if (rtSectionsList.includes(trimmed)) {
+      setRTMemberForm({ ...rtMemberForm, section: trimmed });
+      setIsAddingRTSection(false);
+      setNewRTSectionName('');
+      return;
+    }
+    const updated = [...rtSectionsList, trimmed];
+    setRtSectionsList(updated);
+    try {
+      localStorage.setItem('sitransparan_rt_sections', JSON.stringify(updated));
+    } catch {}
+    setRTMemberForm({ ...rtMemberForm, section: trimmed });
+    setIsAddingRTSection(false);
+    setNewRTSectionName('');
+  };
+
+  const handleDeleteRTSection = (secName: string) => {
+    if (!confirm(`Hapus seksi "${secName}" dari daftar pilihan RT?`)) return;
+    const updated = rtSectionsList.filter((s) => s !== secName);
+    setRtSectionsList(updated);
+    try {
+      localStorage.setItem('sitransparan_rt_sections', JSON.stringify(updated));
+    } catch {}
+    if (rtMemberForm.section === secName) {
+      setRTMemberForm({ ...rtMemberForm, section: '' });
+    }
+  };
+
+  const [isRTPeriodModalOpen, setIsRTPeriodModalOpen] = useState(false);
+  const [editingRTPeriod, setEditingRTPeriod] = useState<RTPeriod | null>(null);
+  const [rtPeriodForm, setRTPeriodForm] = useState({
+    name: '',
+    start_date: '',
+    end_date: '',
+    status: 'active',
+    sk_number: '',
+  });
+
+  // Mutations KT
   const createPeriod = useCreateKTPeriod();
   const updatePeriod = useUpdateKTPeriod();
-  const updateConfig = useUpdateKTConfig();
   const addMember = useAddKTMember();
   const updateMember = useUpdateKTMember();
   const deleteMember = useDeleteKTMember();
+  const updateConfig = useUpdateKTConfig();
 
   // Modal States
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
@@ -88,7 +233,48 @@ export const KarangTarunaPage: React.FC = () => {
   // Config State
   const [rolesList, setRolesList] = useState<string[]>([]);
   const [sectionsList, setSectionsList] = useState<string[]>([]);
-  const [newSection, setNewSection] = useState('');
+  const [isAddingSection, setIsAddingSection] = useState(false);
+  const [newSectionName, setNewSectionName] = useState('');
+
+  const handleAddNewSection = async () => {
+    if (!newSectionName.trim()) return;
+    const trimmed = newSectionName.trim();
+    if (sectionsList.includes(trimmed)) {
+      setMemberForm({ ...memberForm, section: trimmed });
+      setIsAddingSection(false);
+      setNewSectionName('');
+      return;
+    }
+    const updated = [...sectionsList, trimmed];
+    setSectionsList(updated);
+    setMemberForm({ ...memberForm, section: trimmed });
+    setIsAddingSection(false);
+    setNewSectionName('');
+
+    if (currentPeriodId) {
+      await updateConfig.mutateAsync({
+        periodId: currentPeriodId,
+        allowed_roles: rolesList,
+        allowed_sections: updated,
+      });
+    }
+  };
+
+  const handleDeleteSection = async (secName: string) => {
+    if (!confirm(`Hapus seksi "${secName}" dari daftar master?`)) return;
+    const updated = sectionsList.filter((s) => s !== secName);
+    setSectionsList(updated);
+    if (memberForm.section === secName) {
+      setMemberForm({ ...memberForm, section: '' });
+    }
+    if (currentPeriodId) {
+      await updateConfig.mutateAsync({
+        periodId: currentPeriodId,
+        allowed_roles: rolesList,
+        allowed_sections: updated,
+      });
+    }
+  };
 
   // Sync config when period changes
   React.useEffect(() => {
@@ -200,148 +386,352 @@ export const KarangTarunaPage: React.FC = () => {
     }
   };
 
-  // Handlers Config
-  const handleSaveConfig = async () => {
-    if (!currentPeriodId) return;
-    await updateConfig.mutateAsync({
-      periodId: currentPeriodId,
-      allowed_roles: rolesList,
-      allowed_sections: sectionsList,
-    });
-    alert('Konfigurasi seksi dan peran berhasil disimpan!');
-  };
-
-  const addSection = () => {
-    if (newSection.trim() && !sectionsList.includes(newSection.trim())) {
-      setSectionsList([...sectionsList, newSection.trim()]);
-      setNewSection('');
-    }
-  };
-
-  const removeSection = (sec: string) => {
-    setSectionsList(sectionsList.filter((s) => s !== sec));
-  };
-
   const empowermentTabs = [
-    { to: '/admin/karang-taruna', label: 'Karang Taruna & Pemuda', icon: Flame },
+    { to: '/admin/karang-taruna', label: 'Struktur Organisasi RT & Pemuda', icon: ShieldCheck },
     { to: '/admin/waste-bank', label: 'Bank Sampah Digital', icon: Recycle },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeaderTabs
-        title="Unit Pemberdayaan & Inisiatif Lingkungan"
-        description="Kelola organisasi kepemudaan Karang Taruna dan program ekonomi sirkular Bank Sampah warga."
+        title="Struktur Organisasi & Kepengurusan RT"
+        description="Kelola susunan pejabat pengurus RT/RW resmi, organisasi kepemudaan Karang Taruna, dan masa bakti SK."
         tabs={empowermentTabs}
         actions={
           !isResident ? (
             <div className="flex items-center gap-2">
-              {activeTab === 'structure' && (
-                <Button onClick={() => handleOpenMemberModal()} className="gap-2">
-                  <Plus className="h-4 w-4" /> Tambah Pengurus
-                </Button>
+              {activeTab === 'rt_structure' && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingRTPeriod(null);
+                      setRTPeriodForm({
+                        name: '',
+                        start_date: '',
+                        end_date: '',
+                        status: 'active',
+                        sk_number: '',
+                      });
+                      setIsRTPeriodModalOpen(true);
+                    }}
+                    className="gap-1.5 text-xs border-[#d2d2d7]"
+                  >
+                    <Calendar className="h-4 w-4 text-[#707070]" /> Masa Bakti Baru
+                  </Button>
+                  <Button onClick={() => {
+                    setEditingRTMember(null);
+                    setRTMemberForm({
+                      resident_id: '',
+                      role: 'seksi',
+                      section: '',
+                      custom_title: '',
+                      phone_override: '',
+                      status: 'aktif',
+                    });
+                    setIsRTMemberModalOpen(true);
+                  }} className="gap-2 apple-btn-primary">
+                    <Plus className="h-4 w-4" /> Tambah Pengurus RT
+                  </Button>
+                </>
               )}
-              {activeTab === 'periods' && (
-                <Button onClick={() => handleOpenPeriodModal()} className="gap-2">
-                  <Plus className="h-4 w-4" /> Periode Baru
-                </Button>
+              {activeTab === 'kt_structure' && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleOpenPeriodModal()}
+                    className="gap-1.5 text-xs border-[#d2d2d7]"
+                  >
+                    <Calendar className="h-4 w-4 text-[#707070]" /> Periode Pemuda Baru
+                  </Button>
+                  <Button onClick={() => handleOpenMemberModal()} className="gap-2 apple-btn-primary">
+                    <Plus className="h-4 w-4" /> Tambah Pengurus Pemuda
+                  </Button>
+                </>
               )}
             </div>
           ) : undefined
         }
       />
 
-      {/* Navigation Tabs */}
+      {/* Navigation Tabs (Hanya 2 Tab Utama) */}
       <div className="flex items-center gap-2 border-b border-[#d2d2d7] pb-2">
         <button
-          onClick={() => setActiveTab('structure')}
-          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition ${
-            activeTab === 'structure'
+          onClick={() => setActiveTab('rt_structure')}
+          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
+            activeTab === 'rt_structure'
               ? 'bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]'
               : 'text-[#707070] hover:bg-[#f5f5f7]'
           }`}
         >
-          <Users className="h-4 w-4" /> Struktur Pengurus
+          <ShieldCheck className="h-4 w-4 text-[#0071e3]" /> 1. Pengurus RT/RW ({rtMembers.length})
         </button>
         <button
-          onClick={() => setActiveTab('periods')}
-          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition ${
-            activeTab === 'periods'
+          onClick={() => setActiveTab('kt_structure')}
+          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
+            activeTab === 'kt_structure'
               ? 'bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]'
               : 'text-[#707070] hover:bg-[#f5f5f7]'
           }`}
         >
-          <Calendar className="h-4 w-4" /> Masa Bakti ({periods.length})
+          <Flame className="h-4 w-4 text-amber-600" /> 2. Karang Taruna ({members.length})
         </button>
-        {!isResident && (
-          <button
-            onClick={() => setActiveTab('config')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition ${
-              activeTab === 'config'
-                ? 'bg-slate-100 text-slate-900 border border-slate-300'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <Settings className="h-4 w-4" /> Konfigurasi Seksi & Peran
-          </button>
-        )}
       </div>
 
-      {/* Period Selector Header on Structure Tab */}
-      {activeTab === 'structure' && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-50 text-emerald-700 rounded-xl">
-              <Award className="h-5 w-5" />
+      {/* TAB 1: STRUKTUR PENGURUS RT/RW RESMI */}
+      {activeTab === 'rt_structure' && (
+        <div className="space-y-6">
+          {/* Period Selector Header on RT Structure */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#d2d2d7] shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#f4f8fb] text-[#0071e3] rounded-xl border border-[#d2d2d7]">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#707070]">Masa Bakti Pengurus RT</p>
+                <h3 className="text-sm font-bold text-[#1d1d1f] flex items-center gap-1.5">
+                  {currentRTPeriod?.name || 'Belum ada masa bakti aktif'}
+                  {currentRTPeriod?.status === 'active' && (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[10px]">
+                      Aktif
+                    </Badge>
+                  )}
+                </h3>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Periode Aktif</p>
-              <h3 className="text-base font-black text-slate-900">
-                {currentPeriod?.name || 'Belum ada periode'}
-                {currentPeriod?.status === 'active' && (
-                  <Badge variant="default" className="ml-2 bg-emerald-600 text-white text-[10px]">
-                    Aktif
-                  </Badge>
+
+            {rtPeriods.length > 0 && (
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Label htmlFor="rtPeriodSelect" className="text-xs text-[#707070] whitespace-nowrap">
+                  Masa Bakti:
+                </Label>
+                <Select
+                  id="rtPeriodSelect"
+                  value={currentRTPeriodId}
+                  onChange={(e) => setSelectedRTPeriodId(e.target.value)}
+                  className="text-xs font-semibold bg-white border-[#d2d2d7]"
+                >
+                  {rtPeriods.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} {p.status === 'active' ? '(Aktif)' : `(${p.status})`}
+                    </option>
+                  ))}
+                </Select>
+                {!isResident && currentRTPeriod && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingRTPeriod(currentRTPeriod);
+                      setRTPeriodForm({
+                        name: currentRTPeriod.name,
+                        start_date: currentRTPeriod.start_date.split('T')[0],
+                        end_date: currentRTPeriod.end_date.split('T')[0],
+                        status: currentRTPeriod.status,
+                        sk_number: currentRTPeriod.sk_number || '',
+                      });
+                      setIsRTPeriodModalOpen(true);
+                    }}
+                    className="h-8 text-xs border-[#d2d2d7]"
+                    title="Edit masa bakti RT aktif"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </Button>
                 )}
-              </h3>
-            </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Label htmlFor="periodSelect" className="text-xs text-slate-500 whitespace-nowrap">
-              Ganti Periode:
-            </Label>
-            <Select
-              id="periodSelect"
-              value={currentPeriodId}
-              onChange={(e) => setSelectedPeriodId(e.target.value)}
-              className="text-xs font-semibold"
-            >
-              {periods.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.status})
-                </option>
-              ))}
-            </Select>
-          </div>
+          {loadingRTMembers ? (
+            <div className="p-12 text-center text-[#707070]">Memuat susunan pengurus RT/RW...</div>
+          ) : rtMembers.length === 0 ? (
+            <Card className="p-12 text-center bg-white border-dashed border-[#d2d2d7]">
+              <UserCheck className="h-10 w-10 mx-auto text-[#858585] mb-3" />
+              <p className="font-bold text-[#1d1d1f]">Belum ada susunan pengurus RT di periode ini</p>
+              <p className="text-xs text-[#707070] mt-1 mb-4">
+                Tetapkan Ketua RT, Sekretaris, Bendahara, dan Koordinator Seksi Lingkungan.
+              </p>
+              {!isResident && (
+                <Button onClick={() => {
+                  setEditingRTMember(null);
+                  setRTMemberForm({
+                    resident_id: '',
+                    role: 'ketua',
+                    section: '',
+                    custom_title: 'Ketua RT',
+                    phone_override: '',
+                    status: 'aktif',
+                  });
+                  setIsRTMemberModalOpen(true);
+                }} size="sm" className="apple-btn-primary">
+                  <Plus className="h-4 w-4 mr-1" /> Tetapkan Ketua RT Pertama
+                </Button>
+              )}
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {rtMembers.map((m) => {
+                const isCore = ['ketua', 'wakil', 'sekretaris', 'bendahara'].includes(m.role);
+                return (
+                  <Card
+                    key={m.id}
+                    className={`p-5 flex flex-col justify-between transition hover:border-[#0071e3] ${
+                      m.role === 'ketua'
+                        ? 'border-[#0071e3] ring-1 ring-[#0071e3] bg-[#f4f8fb]/40'
+                        : isCore
+                        ? 'border-[#d2d2d7]'
+                        : 'border-[#d2d2d7]'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <Badge
+                          variant="outline"
+                          className={
+                            m.role === 'ketua'
+                              ? 'bg-[#0071e3] text-white border-transparent'
+                              : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#d2d2d7]'
+                          }
+                        >
+                          {m.role.toUpperCase()}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] ${
+                            m.status === 'aktif'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : 'bg-[#f5f5f7] text-[#707070] border-[#d2d2d7]'
+                          }`}
+                        >
+                          {m.status}
+                        </Badge>
+                      </div>
+
+                      <h4 className="mt-3 text-base font-bold text-[#1d1d1f] leading-snug">
+                        {m.resident_name || 'Nama Warga'}
+                      </h4>
+                      {m.custom_title && (
+                        <p className="text-xs font-semibold text-[#0066cc] mt-0.5">{m.custom_title}</p>
+                      )}
+                      {m.section && (
+                        <p className="text-xs text-[#707070] mt-1 flex items-center gap-1">
+                          <Layers className="h-3 w-3 text-[#0071e3]" /> {m.section}
+                        </p>
+                      )}
+                      {(m.phone_override || m.phone) && (
+                        <p className="text-xs text-[#707070] mt-1 flex items-center gap-1">
+                          <Phone className="h-3 w-3 text-[#858585]" /> {m.phone_override || m.phone}
+                        </p>
+                      )}
+                    </div>
+
+                    {!isResident && (
+                      <div className="mt-4 pt-3 border-t border-[#e2e2e5] flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditingRTMember(m);
+                            setRTMemberForm({
+                              resident_id: m.resident_id,
+                              role: m.role,
+                              section: m.section || '',
+                              custom_title: m.custom_title || '',
+                              phone_override: m.phone_override || '',
+                              status: m.status,
+                            });
+                            setIsRTMemberModalOpen(true);
+                          }}
+                          className="h-8 text-xs font-semibold text-[#707070] hover:text-[#1d1d1f]"
+                        >
+                          <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            if (confirm(`Hapus ${m.resident_name} dari kepengurusan RT?`)) {
+                              await deleteRTMember.mutateAsync(m.id);
+                            }
+                          }}
+                          className="h-8 text-xs font-semibold text-rose-600 hover:text-rose-800"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* TAB 1: STRUKTUR PENGURUS */}
-      {activeTab === 'structure' && (
+      {/* TAB 2: KARANG TARUNA & PEMUDA */}
+      {activeTab === 'kt_structure' && (
         <div className="space-y-6">
+          {/* Period Selector Header on KT Structure */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#d2d2d7] shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-50 text-amber-700 rounded-xl border border-amber-200">
+                <Flame className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#707070]">Periode Karang Taruna</p>
+                <h3 className="text-sm font-bold text-[#1d1d1f] flex items-center gap-1.5">
+                  {currentPeriod?.name || 'Belum ada periode aktif'}
+                  {currentPeriod?.status === 'active' && (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[10px]">
+                      Aktif
+                    </Badge>
+                  )}
+                </h3>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Label htmlFor="periodSelect" className="text-xs text-[#707070] whitespace-nowrap">
+                Ganti Periode:
+              </Label>
+              <Select
+                id="periodSelect"
+                value={currentPeriodId}
+                onChange={(e) => setSelectedPeriodId(e.target.value)}
+                className="text-xs font-semibold bg-white border-[#d2d2d7]"
+              >
+                {periods.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.status})
+                  </option>
+                ))}
+              </Select>
+              {!isResident && currentPeriod && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleOpenPeriodModal(currentPeriod)}
+                  className="h-8 text-xs border-[#d2d2d7]"
+                  title="Edit masa bakti pemuda"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+
           {loadingMembers || loadingActive ? (
-            <div className="p-12 text-center text-slate-400">Memuat struktur pengurus pemuda...</div>
+            <div className="p-12 text-center text-[#707070]">Memuat struktur pengurus pemuda...</div>
           ) : members.length === 0 ? (
-            <Card className="p-12 text-center bg-white border-dashed">
-              <Users className="h-10 w-10 mx-auto text-slate-300 mb-3" />
-              <p className="font-bold text-slate-700">Belum ada pengurus di periode ini</p>
-              <p className="text-xs text-slate-400 mt-1 mb-4">
-                Tambahkan warga sebagai ketua, pengurus inti, atau koordinator seksi.
+            <Card className="p-12 text-center bg-white border-dashed border-[#d2d2d7]">
+              <Users className="h-10 w-10 mx-auto text-[#858585] mb-3" />
+              <p className="font-bold text-[#1d1d1f]">Belum ada pengurus pemuda di periode ini</p>
+              <p className="text-xs text-[#707070] mt-1 mb-4">
+                Tambahkan warga muda sebagai ketua, sekretaris, bendahara, atau koordinator seksi.
               </p>
               {!isResident && (
-                <Button onClick={() => handleOpenMemberModal()} size="sm">
-                  <Plus className="h-4 w-4 mr-1" /> Tambah Pengurus Pertama
+                <Button onClick={() => handleOpenMemberModal()} size="sm" className="apple-btn-primary">
+                  <Plus className="h-4 w-4 mr-1" /> Tambah Pengurus Pemuda
                 </Button>
               )}
             </Card>
@@ -425,96 +815,272 @@ export const KarangTarunaPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: MANAJEMEN PERIODE */}
-      {activeTab === 'periods' && (
-        <div className="space-y-4">
-          <div className="grid gap-4">
-            {periods.map((p) => (
-              <div
-                key={p.id}
-                className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-black text-slate-900">{p.name}</h3>
-                    <Badge
-                      variant={p.status === 'active' ? 'default' : 'secondary'}
-                      className={p.status === 'active' ? 'bg-emerald-600 text-white' : ''}
-                    >
-                      {p.status.toUpperCase()}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {new Date(p.start_date).toLocaleDateString('id-ID', { year: 'numeric', month: 'short' })} s/d{' '}
-                    {new Date(p.end_date).toLocaleDateString('id-ID', { year: 'numeric', month: 'short' })}
-                    {p.sk_number && ` · SK: ${p.sk_number}`}
-                  </p>
-                </div>
-
-                {!isResident && (
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleOpenPeriodModal(p)}>
-                      <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit Masa Bakti
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
+      {/* Modal Periode RT */}
+      <SimpleDialog
+        isOpen={isRTPeriodModalOpen}
+        onClose={() => setIsRTPeriodModalOpen(false)}
+        title={editingRTPeriod ? 'Edit Masa Bakti Pengurus RT' : 'Buat Masa Bakti Pengurus RT Baru'}
+        description="Atur nama masa bakti (misal: Masa Bakti 2024-2029) dan nomor SK pengukuhan."
+        className="max-w-2xl"
+      >
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!rtPeriodForm.name || !rtPeriodForm.start_date || !rtPeriodForm.end_date) return;
+            try {
+              if (editingRTPeriod) {
+                await updateRTPeriod.mutateAsync({
+                  id: editingRTPeriod.id,
+                  ...rtPeriodForm,
+                });
+              } else {
+                await createRTPeriod.mutateAsync(rtPeriodForm);
+              }
+              setIsRTPeriodModalOpen(false);
+            } catch (err: any) {
+              alert(err?.response?.data?.error || 'Gagal menyimpan periode RT');
+            }
+          }}
+          className="space-y-4"
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="rtPeriodName">Nama Masa Bakti *</Label>
+            <Input
+              id="rtPeriodName"
+              required
+              placeholder="Contoh: Masa Bakti RT 03 Periode 2024 - 2029"
+              value={rtPeriodForm.name}
+              onChange={(e) => setRTPeriodForm({ ...rtPeriodForm, name: e.target.value })}
+            />
           </div>
-        </div>
-      )}
-
-      {/* TAB 3: KONFIGURASI SEKSI & PERAN */}
-      {activeTab === 'config' && (
-        <Card className="bg-white p-6 space-y-6">
-          <div>
-            <h3 className="text-lg font-black text-slate-900">Konfigurasi Bidang & Seksi Pemuda</h3>
-            <p className="text-xs text-slate-500">
-              Sesuaikan daftar divisi / bidang kegiatan pemuda pada periode {currentPeriod?.name || 'aktif'}.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Daftar Seksi / Bidang ({sectionsList.length})
-            </Label>
-            <div className="flex flex-wrap gap-2">
-              {sectionsList.map((sec) => (
-                <span
-                  key={sec}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 text-xs font-semibold"
-                >
-                  {sec}
-                  <button
-                    onClick={() => removeSection(sec)}
-                    className="hover:text-rose-600 text-slate-400 ml-1"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-
-            <div className="flex gap-2 pt-2 max-w-md">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="rtStartDate">Mulai *</Label>
               <Input
-                placeholder="Tambah nama seksi/bidang..."
-                value={newSection}
-                onChange={(e) => setNewSection(e.target.value)}
-                className="text-xs"
+                id="rtStartDate"
+                type="date"
+                required
+                value={rtPeriodForm.start_date}
+                onChange={(e) => setRTPeriodForm({ ...rtPeriodForm, start_date: e.target.value })}
               />
-              <Button type="button" variant="outline" size="sm" onClick={addSection}>
-                Tambah
-              </Button>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="rtEndDate">Selesai *</Label>
+              <Input
+                id="rtEndDate"
+                type="date"
+                required
+                value={rtPeriodForm.end_date}
+                onChange={(e) => setRTPeriodForm({ ...rtPeriodForm, end_date: e.target.value })}
+              />
             </div>
           </div>
-
-          <div className="pt-4 border-t flex justify-end">
-            <Button onClick={handleSaveConfig} className="bg-emerald-700 hover:bg-emerald-800">
-              Simpan Konfigurasi
+          <div className="space-y-1.5">
+            <Label htmlFor="rtStatus">Status</Label>
+            <Select
+              id="rtStatus"
+              value={rtPeriodForm.status}
+              onChange={(e) => setRTPeriodForm({ ...rtPeriodForm, status: e.target.value })}
+            >
+              <option value="active">Aktif (Utama)</option>
+              <option value="draft">Draft</option>
+              <option value="archived">Arsip / Demisioner</option>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="rtSKNumber">Nomor SK Pengukuhan (Opsional)</Label>
+            <Input
+              id="rtSKNumber"
+              placeholder="Contoh: SK.04/RW.05/KEL.MELATI/2024"
+              value={rtPeriodForm.sk_number}
+              onChange={(e) => setRTPeriodForm({ ...rtPeriodForm, sk_number: e.target.value })}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-4 border-t border-[#d2d2d7]">
+            <Button type="button" variant="outline" onClick={() => setIsRTPeriodModalOpen(false)}>
+              Batal
+            </Button>
+            <Button type="submit" className="apple-btn-primary">
+              {editingRTPeriod ? 'Simpan Perubahan' : 'Terbitkan Periode'}
             </Button>
           </div>
-        </Card>
-      )}
+        </form>
+      </SimpleDialog>
+
+      {/* Modal Anggota Pengurus RT */}
+      <SimpleDialog
+        isOpen={isRTMemberModalOpen}
+        onClose={() => setIsRTMemberModalOpen(false)}
+        title={editingRTMember ? 'Edit Data Pengurus RT' : 'Tambah / Tetapkan Pengurus RT'}
+        description="Tetapkan warga ke dalam jabatan struktur kepengurusan RT/RW resmi."
+        className="max-w-2xl"
+        preventOutsideClose={true}
+      >
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!currentRTPeriodId || !rtMemberForm.resident_id || !rtMemberForm.role) {
+              alert('Harap pilih masa bakti, warga, dan jabatan pengurus.');
+              return;
+            }
+            try {
+              if (editingRTMember) {
+                await updateRTMember.mutateAsync({
+                  id: editingRTMember.id,
+                  ...rtMemberForm,
+                });
+              } else {
+                await addRTMember.mutateAsync({
+                  period_id: currentRTPeriodId,
+                  ...rtMemberForm,
+                });
+              }
+              setIsRTMemberModalOpen(false);
+            } catch (err: any) {
+              alert(err?.response?.data?.error || 'Gagal menyimpan pengurus RT');
+            }
+          }}
+          className="space-y-4"
+        >
+          {!editingRTMember && (
+            <div className="space-y-1.5">
+              <Label htmlFor="rtResidentSelect">Pilih Warga *</Label>
+              <SearchableResidentSelect
+                id="rtResidentSelect"
+                required
+                value={rtMemberForm.resident_id}
+                onChange={(val) => setRTMemberForm({ ...rtMemberForm, resident_id: val })}
+                residents={allSelectableResidents}
+                placeholder="Cari nama atau NIK warga..."
+              />
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="rtRole">Jabatan Pokok *</Label>
+              <Select
+                id="rtRole"
+                value={rtMemberForm.role}
+                onChange={(e) => setRTMemberForm({ ...rtMemberForm, role: e.target.value })}
+              >
+                <option value="ketua">Ketua RT</option>
+                <option value="wakil">Wakil Ketua RT</option>
+                <option value="sekretaris">Sekretaris</option>
+                <option value="bendahara">Bendahara</option>
+                <option value="seksi">Koordinator Seksi</option>
+                <option value="penasihat">Penasihat / Tokoh Masyarakat</option>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="rtSection">Bidang / Seksi</Label>
+                {!isAddingRTSection ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingRTSection(true)}
+                    className="text-[11px] text-[#0071e3] hover:underline font-semibold"
+                  >
+                    + Buat Seksi Baru
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingRTSection(false)}
+                    className="text-[11px] text-[#707070] hover:underline"
+                  >
+                    Batal
+                  </button>
+                )}
+              </div>
+
+              {!isAddingRTSection ? (
+                <div className="flex items-center gap-1.5">
+                  <Select
+                    id="rtSection"
+                    value={rtMemberForm.section}
+                    onChange={(e) => setRTMemberForm({ ...rtMemberForm, section: e.target.value })}
+                    className="flex-1 text-xs"
+                  >
+                    <option value="">-- Tanpa Seksi (Pengurus Inti) --</option>
+                    {rtSectionsList.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </Select>
+                  {rtMemberForm.section && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteRTSection(rtMemberForm.section)}
+                      className="h-9 px-2 text-rose-600 hover:text-rose-800 hover:bg-rose-50"
+                      title="Hapus seksi ini dari daftar master RT"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    placeholder="Nama seksi baru (mis: Pemuda & Kreativitas)..."
+                    value={newRTSectionName}
+                    onChange={(e) => setNewRTSectionName(e.target.value)}
+                    className="text-xs h-9"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddNewRTSection();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleAddNewRTSection}
+                    className="h-9 text-xs apple-btn-primary shrink-0"
+                  >
+                    Simpan
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="rtCustomTitle">Gelar / Sebutan Jabatan (Opsional)</Label>
+              <Input
+                id="rtCustomTitle"
+                placeholder="Contoh: Ketua RT 03, Koordinator Pos Ronda"
+                value={rtMemberForm.custom_title}
+                onChange={(e) => setRTMemberForm({ ...rtMemberForm, custom_title: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="rtPhone">No. WhatsApp Resmi (Opsional)</Label>
+              <Input
+                id="rtPhone"
+                placeholder="Contoh: 081234567890"
+                value={rtMemberForm.phone_override}
+                onChange={(e) => setRTMemberForm({ ...rtMemberForm, phone_override: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-[#d2d2d7]">
+            <Button type="button" variant="outline" onClick={() => setIsRTMemberModalOpen(false)}>
+              Batal
+            </Button>
+            <Button type="submit" className="apple-btn-primary">
+              {editingRTMember ? 'Simpan Perubahan' : 'Tetapkan Pengurus'}
+            </Button>
+          </div>
+        </form>
+      </SimpleDialog>
 
       {/* Modal Periode */}
       <SimpleDialog
@@ -609,7 +1175,7 @@ export const KarangTarunaPage: React.FC = () => {
                 required
                 value={memberForm.resident_id}
                 onChange={(val) => setMemberForm({ ...memberForm, resident_id: val })}
-                residents={residents}
+                residents={allSelectableResidents}
                 placeholder="Cari nama atau NIK warga..."
               />
             </div>
@@ -632,19 +1198,80 @@ export const KarangTarunaPage: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="memberSection">Seksi / Bidang</Label>
-              <Select
-                id="memberSection"
-                value={memberForm.section}
-                onChange={(e) => setMemberForm({ ...memberForm, section: e.target.value })}
-              >
-                <option value="">-- Tanpa Seksi (Inti) --</option>
-                {sectionsList.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </Select>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="memberSection">Seksi / Bidang</Label>
+                {!isAddingSection ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingSection(true)}
+                    className="text-[11px] text-[#0071e3] hover:underline font-semibold"
+                  >
+                    + Buat Seksi Baru
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingSection(false)}
+                    className="text-[11px] text-[#707070] hover:underline"
+                  >
+                    Batal
+                  </button>
+                )}
+              </div>
+
+              {!isAddingSection ? (
+                <div className="flex items-center gap-1.5">
+                  <Select
+                    id="memberSection"
+                    value={memberForm.section}
+                    onChange={(e) => setMemberForm({ ...memberForm, section: e.target.value })}
+                    className="flex-1 text-xs"
+                  >
+                    <option value="">-- Tanpa Seksi (Inti) --</option>
+                    {sectionsList.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </Select>
+                  {memberForm.section && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteSection(memberForm.section)}
+                      className="h-9 px-2 text-rose-600 hover:text-rose-800 hover:bg-rose-50"
+                      title="Hapus seksi ini dari daftar master"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    placeholder="Nama seksi baru (mis: Olahraga, E-Sport)..."
+                    value={newSectionName}
+                    onChange={(e) => setNewSectionName(e.target.value)}
+                    className="text-xs h-9"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddNewSection();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleAddNewSection}
+                    className="h-9 text-xs apple-btn-primary shrink-0"
+                  >
+                    Simpan
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 

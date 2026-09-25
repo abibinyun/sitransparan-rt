@@ -3,8 +3,10 @@ import {
   useAspirations,
   useCommunityNeeds,
   useUpdateAspirationStatus,
+  useDeleteAspiration,
   useCreateCommunityNeed,
   useUpdateCommunityNeed,
+  useDeleteCommunityNeed,
   useSubmitAspiration,
 } from '../services/aspiration_need';
 import { useAuthStore } from '../store/useAuthStore';
@@ -24,7 +26,7 @@ import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
-import { FileText, MessageSquareHeart, Vote } from 'lucide-react';
+import { FileText, MessageSquareHeart, Vote, Trash2 } from 'lucide-react';
 
 export const AspirationsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'aspirations' | 'needs'>('aspirations');
@@ -67,8 +69,10 @@ export const AspirationsPage: React.FC = () => {
 
   const submitAspirationMutation = useSubmitAspiration();
   const updateAspirationStatusMutation = useUpdateAspirationStatus();
+  const deleteAspirationMutation = useDeleteAspiration();
   const createNeedMutation = useCreateCommunityNeed();
   const updateNeedMutation = useUpdateCommunityNeed();
+  const deleteNeedMutation = useDeleteCommunityNeed();
 
   const handleCreateAspiration = async (payload: CreateAspirationPayload) => {
     await submitAspirationMutation.mutateAsync(payload);
@@ -250,13 +254,31 @@ export const AspirationsPage: React.FC = () => {
                       <h3 className="text-base font-bold text-slate-900 break-words">{item.title}</h3>
                     </div>
                     {!isResident && (
-                      <div className="self-start sm:self-auto shrink-0">
+                      <div className="flex items-center gap-1.5 self-start sm:self-auto shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleOpenResponseModal(item)}
                         >
                           Tanggapi
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                          title="Hapus Aspirasi"
+                          disabled={deleteAspirationMutation.isPending}
+                          onClick={async () => {
+                            if (window.confirm('Hapus aspirasi ini?')) {
+                              try {
+                                await deleteAspirationMutation.mutateAsync(item.id);
+                              } catch (err: any) {
+                                alert(err?.response?.data?.error || err?.message || 'Gagal menghapus aspirasi');
+                              }
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     )}
@@ -307,13 +329,31 @@ export const AspirationsPage: React.FC = () => {
                   )}
                 </div>
                 {!isResident && (
-                  <div className="pt-2">
+                  <div className="pt-2 flex items-center gap-2">
                     <Button
                       variant="outline"
-                      className="w-full text-xs"
+                      className="flex-1 text-xs"
                       onClick={() => handleOpenNeedModal(need)}
                     >
                       Edit / Update Status
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 w-9 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                      title="Hapus Kebutuhan"
+                      disabled={deleteNeedMutation.isPending}
+                      onClick={async () => {
+                        if (window.confirm('Hapus usulan kebutuhan lingkungan ini?')) {
+                          try {
+                            await deleteNeedMutation.mutateAsync(need.id);
+                          } catch (err: any) {
+                            alert(err?.response?.data?.error || err?.message || 'Gagal menghapus kebutuhan');
+                          }
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 )}

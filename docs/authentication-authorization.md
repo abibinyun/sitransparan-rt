@@ -152,3 +152,26 @@ CRUD tenant (provisi/drop schema, `inactive` deny), user global (hanya boleh set
 ## 9. Pengujian Keamanan
 
 Lihat [testing.md](./testing.md) — 7 security tests (cross-tenant, escalation, RBAC, superadmin protection, public sanitasi, social isolation, meeting visibility) + E2E 64.
+
+## 10. Model Integrasi 3 Entitas (House, Resident, User)
+
+Aplikasi membedakan secara tegas antara **Hunian Fisik**, **Sensus Penduduk**, dan **Kredensial Akses Pengguna**:
+
+| Entitas | Lingkup | Primary Identifier | Catatan Keamanan & Akses |
+|---|---|---|---|
+| **Rumah (`houses`)** | Fisik Hunian RT | `id (UUID)` / `access_token` | Membawa stiker QR fisik pintu (`1 Rumah = 1 Token`), PIN 4-digit verifikasi, dan tautan Kepala Keluarga (`head_resident_id`). Digunakan untuk hak suara polling (1 Rumah = 1 Suara). |
+| **Penduduk (`residents`)** | Sensus Warga RT | `id (UUID)` / `nik_hash` | Data sensus kependudukan riil (NIK dienkripsi AES-256-GCM + HMAC lookup). Menghubungkan kartu keluarga dan mutasi kepala keluarga. Menautkan fisik hunian lewat `house_id`. |
+| **Pengguna (`users`)** | IAM / Akun Login | `id (UUID)` / `email` | Kredensial login web portal (`email` + `password_hash`). Terikat ke tenant via `tenant_users`. |
+
+### Alur Sinkronisasi & Pembuatan Akun
+1. **Zero-Friction Scan QR Pintu:**
+   - Warga scan stiker QR pintu (`/claim?token=...`).
+   - Sistem auto-generate akun warga jika belum ada (`rumah-<slug>-<blok>@warga.local`).
+   - Terbit JWT warga langsung tanpa input password.
+2. **Pembuatan Akun Manual oleh Pengurus (`/admin/users`):**
+   - Form pembuatan user menyediakan `SearchableResidentSelect` di header dialog.
+   - Memilih warga terdaftar otomatis mengisi *Nama Lengkap*, *Nomor HP/WA*, dan rekomendasi email warga.
+3. **Integritas Penghapusan (ON DELETE SET NULL):**
+   - **Hapus Rumah:** Rumah di-soft-delete, stiker dinonaktifkan. Data sensus warga tetap aman (`resident.house_id` menjadi `NULL`).
+   - **Hapus Penduduk:** Penduduk di-soft-delete. Rumah fisik tetap berdiri (`house.head_resident_id` menjadi `NULL`) dan stiker QR tetap bisa dipakai penghuni baru.
+   - **Hapus Pengguna:** Akses login dicabut. Sensus NIK/KK dan rumah fisik tidak terganggu.

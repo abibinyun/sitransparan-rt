@@ -17,8 +17,11 @@ export function useSeamlessUpdate() {
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (!refreshing) {
-        // Jangan reload jika ada modal dialog terbuka di layar
-        const isModalOpen = document.querySelector('[role="dialog"]') !== null;
+        // Jangan reload jika ada modal dialog atau elemen interaktif terbuka di layar
+        const isModalOpen =
+          document.querySelector('[role="dialog"]') !== null ||
+          document.querySelector('[data-state="open"]') !== null ||
+          document.querySelector('form') !== null;
         if (isModalOpen) {
           hasUpdateRef.current = true;
           return;
@@ -60,7 +63,10 @@ export function useSeamlessUpdate() {
   useEffect(() => {
     if (hasUpdateRef.current && registrationRef.current?.waiting) {
       // Pastikan tidak ada modal formulir yang sedang terbuka di layar
-      const isModalOpen = document.querySelector('[role="dialog"]') !== null;
+      const isModalOpen =
+        document.querySelector('[role="dialog"]') !== null ||
+        document.querySelector('[data-state="open"]') !== null ||
+        document.querySelector('form') !== null;
       if (!isModalOpen) {
         hasUpdateRef.current = false;
         registrationRef.current.waiting.postMessage({ type: 'SKIP_WAITING' });

@@ -138,7 +138,7 @@ func TestHouseAutoProvisionRealUser(t *testing.T) {
 	}
 
 	// 2. Test ClaimAccessToken: returns real User and sets user_id as JWT sub
-	claimRes, err := uc.ClaimAccessToken(ctx, "rt-05", createdHouse.AccessToken)
+	claimRes, err := uc.ClaimAccessToken(ctx, "rt-05", createdHouse.AccessToken, createdHouse.PinCode)
 	if err != nil {
 		t.Fatalf("ClaimAccessToken failed: %v", err)
 	}
@@ -172,12 +172,12 @@ func TestHouseAutoProvisionRealUser(t *testing.T) {
 
 	// 3. Test Edge Cases & Failure Modes in ClaimAccessToken
 	// 3a. Invalid tenant slug
-	if _, err := uc.ClaimAccessToken(ctx, "nonexistent-slug", createdHouse.AccessToken); err == nil {
+	if _, err := uc.ClaimAccessToken(ctx, "nonexistent-slug", createdHouse.AccessToken, createdHouse.PinCode); err == nil {
 		t.Fatal("expected error for invalid tenant slug")
 	}
 
 	// 3b. Invalid or expired house token
-	if _, err := uc.ClaimAccessToken(ctx, "rt-05", "invalid_token_12345"); err == nil {
+	if _, err := uc.ClaimAccessToken(ctx, "rt-05", "invalid_token_12345", createdHouse.PinCode); err == nil {
 		t.Fatal("expected error for invalid house access token")
 	}
 
@@ -209,12 +209,12 @@ func TestHouseAutoProvisionRealUser(t *testing.T) {
 	}
 
 	// Old token should fail
-	if _, err := uc.ClaimAccessToken(ctx, "rt-05", oldToken); err == nil {
+	if _, err := uc.ClaimAccessToken(ctx, "rt-05", oldToken, createdHouse.PinCode); err == nil {
 		t.Fatal("expected claim with revoked old token to fail")
 	}
 
 	// New token should succeed
-	newClaim, err := uc.ClaimAccessToken(ctx, "rt-05", newHouseData.AccessToken)
+	newClaim, err := uc.ClaimAccessToken(ctx, "rt-05", newHouseData.AccessToken, newHouseData.PinCode)
 	if err != nil {
 		t.Fatalf("claim with new token failed: %v", err)
 	}

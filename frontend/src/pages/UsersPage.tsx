@@ -55,6 +55,7 @@ export const UsersPage: React.FC = () => {
     phone?: string;
     role: RoleName;
     tenant_id?: string;
+    resident_id?: string;
   }) => {
     const tenantIdToSend = formData.role === 'superadmin' ? undefined : formData.tenant_id;
     if (selectedUser) {
@@ -67,6 +68,7 @@ export const UsersPage: React.FC = () => {
           role: formData.role,
           password: formData.password,
           tenant_id: tenantIdToSend,
+          resident_id: formData.resident_id,
         },
       });
     } else {
@@ -77,6 +79,7 @@ export const UsersPage: React.FC = () => {
         phone: formData.phone,
         role: formData.role,
         tenant_id: tenantIdToSend,
+        resident_id: formData.resident_id,
       });
     }
   };
@@ -100,6 +103,8 @@ export const UsersPage: React.FC = () => {
         return <Badge variant="destructive" className="bg-red-500/10 text-red-600 hover:bg-red-500/20">Super Admin</Badge>;
       case 'admin_rt':
         return <Badge variant="default" className="bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">Admin RT</Badge>;
+      case 'operator':
+        return <Badge variant="default" className="bg-emerald-50 text-emerald-800 border border-emerald-200">Operator RT</Badge>;
       default:
         return <Badge variant="secondary" className="bg-gray-50 text-[#707070] border border-[#d2d2d7]">Warga</Badge>;
     }
@@ -181,7 +186,14 @@ export const UsersPage: React.FC = () => {
                         {u.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div className="font-semibold text-slate-900">{u.name}</div>
+                        <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                          {u.name}
+                          {u.resident_id && (
+                            <span className="text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded-full">
+                              Tertaut Warga
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-slate-500 flex items-center gap-1">
                           <Mail className="h-3 w-3" /> {u.email}
                         </div>

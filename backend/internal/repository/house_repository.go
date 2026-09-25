@@ -273,7 +273,7 @@ func (r *houseRepository) ResetPin(ctx context.Context, tenantID, id uuid.UUID, 
 
 	query := fmt.Sprintf(`
 		UPDATE %s.houses
-		SET pin_code = $1, updated_at = $2
+		SET pin_code = $1, token_version = token_version + 1, updated_at = $2
 		WHERE id = $3 AND deleted_at IS NULL
 	`, schema)
 

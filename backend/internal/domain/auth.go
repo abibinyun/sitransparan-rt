@@ -13,6 +13,7 @@ type RoleName string
 const (
 	RoleSuperAdmin RoleName = "superadmin"
 	RoleAdminRT    RoleName = "admin_rt"
+	RoleOperator   RoleName = "operator"
 	RoleResident   RoleName = "resident"
 )
 
@@ -56,21 +57,24 @@ type Role struct {
 }
 
 type TenantUser struct {
-	ID        uuid.UUID `json:"id"`
-	TenantID  uuid.UUID `json:"tenant_id"`
-	UserID    uuid.UUID `json:"user_id"`
-	RoleID    uuid.UUID `json:"role_id"`
-	RoleName  RoleName  `json:"role_name,omitempty"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID         uuid.UUID  `json:"id"`
+	TenantID   uuid.UUID  `json:"tenant_id"`
+	UserID     uuid.UUID  `json:"user_id"`
+	RoleID     uuid.UUID  `json:"role_id"`
+	RoleName   RoleName   `json:"role_name,omitempty"`
+	ResidentID *uuid.UUID `json:"resident_id,omitempty"`
+	Status     string     `json:"status"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 }
 
 type JWTClaims struct {
-	UserID   uuid.UUID  `json:"user_id"`
-	TenantID uuid.UUID  `json:"tenant_id,omitempty"`
-	HouseID  *uuid.UUID `json:"house_id,omitempty"`
-	Role     RoleName   `json:"role,omitempty"`
+	UserID       uuid.UUID  `json:"user_id"`
+	TenantID     uuid.UUID  `json:"tenant_id,omitempty"`
+	HouseID      *uuid.UUID `json:"house_id,omitempty"`
+	ResidentID   *uuid.UUID `json:"resident_id,omitempty"`
+	TokenVersion int        `json:"token_version,omitempty"`
+	Role         RoleName   `json:"role,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -96,6 +100,7 @@ type UserWithRole struct {
 	RoleName   RoleName   `json:"role_name"`
 	TenantID   *uuid.UUID `json:"tenant_id,omitempty"`
 	TenantName string     `json:"tenant_name,omitempty"`
+	ResidentID *uuid.UUID `json:"resident_id,omitempty"`
 }
 
 type UserRepository interface {
@@ -112,6 +117,7 @@ type TenantUserRepository interface {
 	Create(ctx context.Context, tu *TenantUser) error
 	GetByTenantAndUser(ctx context.Context, tenantID, userID uuid.UUID) (*TenantUser, error)
 	UpdateRole(ctx context.Context, tenantID, userID, roleID uuid.UUID) error
+	UpdateResidentID(ctx context.Context, tenantID, userID uuid.UUID, residentID *uuid.UUID) error
 	Delete(ctx context.Context, tenantID, userID uuid.UUID) error
 	ListByUser(ctx context.Context, userID uuid.UUID) ([]*TenantUser, error)
 	ListTenantsByUserID(ctx context.Context, userID uuid.UUID) ([]*Tenant, error)

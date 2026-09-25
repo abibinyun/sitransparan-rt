@@ -31,10 +31,23 @@ api.interceptors.response.use(
       error.config?.url?.includes('/auth/login') ||
       error.config?.url?.includes('/auth/register') ||
       error.config?.url?.includes('/house-access/claim') ||
+      error.config?.url?.includes('/house-access/me') ||
       error.config?.url?.includes('/push/subscribe') ||
       error.config?.url?.includes('/push/config') ||
       error.config?.url?.includes('/social/badge');
-    if (error.response?.status === 401 && !isAuthRoute) {
+
+    // Cek apakah halaman saat ini adalah portal publik (tidak boleh diredirect paksa ke /login)
+    const currentPath = window.location.pathname;
+    const isPublicPage =
+      currentPath === '/' ||
+      currentPath.startsWith('/kabar') ||
+      currentPath.startsWith('/usulan') ||
+      currentPath.startsWith('/agenda') ||
+      currentPath.startsWith('/program') ||
+      currentPath.startsWith('/claim') ||
+      currentPath.startsWith('/t/claim');
+
+    if (error.response?.status === 401 && !isAuthRoute && !isPublicPage) {
       useAuthStore.getState().logout();
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';

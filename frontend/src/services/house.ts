@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
+import { useAuthStore } from '../store/useAuthStore';
 import { Resident } from '../types/resident';
 
 export interface House {
@@ -119,9 +120,9 @@ export function useResetHousePin() {
   });
 }
 
-export async function claimHouseToken(slug: string, token: string): Promise<ClaimHouseTokenResponse> {
+export async function claimHouseToken(slug: string, token: string, pin?: string): Promise<ClaimHouseTokenResponse> {
   const res = await api.get<ClaimHouseTokenResponse>('/house-access/claim', {
-    params: { slug, token },
+    params: { slug, token, pin: pin || undefined },
   });
   return res.data;
 }
@@ -135,15 +136,23 @@ export interface MyHouseResponse {
     phone?: string;
     status?: string;
   };
+  family_members?: Array<{
+    id: string;
+    full_name: string;
+    relation: string;
+    nik?: string;
+  }>;
 }
 
 export function useMyHouseQuery() {
+  const { user } = useAuthStore();
   return useQuery<MyHouseResponse, Error>({
     queryKey: ['my-house'],
     queryFn: async () => {
       const res = await api.get<MyHouseResponse>('/house-access/me');
       return res.data;
     },
+    enabled: Boolean(user),
     retry: false,
   });
 }

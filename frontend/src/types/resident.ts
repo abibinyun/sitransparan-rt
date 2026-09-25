@@ -22,6 +22,7 @@ export interface Resident {
   address: string;
   rt_rw: string;
   phone: string;
+  house_id?: string;
   is_head_of_family: boolean;
   status?: 'pending' | 'approved' | 'rejected' | 'moved' | 'deceased';
   ktp_url?: string;

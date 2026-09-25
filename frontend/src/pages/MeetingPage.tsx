@@ -27,6 +27,7 @@ import {
   useActionItemsQuery,
   useCreateActionItemMutation,
   useUpdateActionItemMutation,
+  useDeleteActionItemMutation,
   useAddDecisionMutation,
   useAddAttendeeMutation,
 } from '../services/meeting';
@@ -51,6 +52,7 @@ export const MeetingPage: React.FC = () => {
   const [isCreateMeetingOpen, setIsCreateMeetingOpen] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [isCreateActionOpen, setIsCreateActionOpen] = useState(false);
+  const [editingActionItem, setEditingActionItem] = useState<MeetingActionItem | null>(null);
   const [isAddDecisionOpen, setIsAddDecisionOpen] = useState(false);
   const [isAddAttendeeOpen, setIsAddAttendeeOpen] = useState(false);
 
@@ -96,6 +98,7 @@ export const MeetingPage: React.FC = () => {
   const deleteMeetingMutation = useDeleteMeetingMutation();
   const createActionItemMutation = useCreateActionItemMutation();
   const updateActionItemMutation = useUpdateActionItemMutation();
+  const deleteActionItemMutation = useDeleteActionItemMutation();
   const addDecisionMutation = useAddDecisionMutation();
   const addAttendeeMutation = useAddAttendeeMutation();
 
@@ -197,6 +200,32 @@ export const MeetingPage: React.FC = () => {
     }
   };
 
+  const handleOpenCreateActionItem = (meetingId?: string) => {
+    setEditingActionItem(null);
+    setActionForm({
+      meeting_id: meetingId || (meetings.length > 0 ? meetings[0].id : ''),
+      task: '',
+      assignee_name: '',
+      due_date: '',
+      status: 'pending',
+      notes: '',
+    });
+    setIsCreateActionOpen(true);
+  };
+
+  const handleOpenEditActionItem = (item: MeetingActionItem) => {
+    setEditingActionItem(item);
+    setActionForm({
+      meeting_id: item.meeting_id,
+      task: item.task,
+      assignee_name: item.assignee_name,
+      due_date: item.due_date ? item.due_date.slice(0, 10) : '',
+      status: item.status,
+      notes: item.notes || '',
+    });
+    setIsCreateActionOpen(true);
+  };
+
   const handleCreateActionItem = async (e: React.FormEvent) => {
     e.preventDefault();
     const targetMeetingId = actionForm.meeting_id || (meetings.length > 0 ? meetings[0].id : '');
@@ -213,8 +242,16 @@ export const MeetingPage: React.FC = () => {
       payload.notes = actionForm.notes.trim();
     }
     try {
-      await createActionItemMutation.mutateAsync(payload);
+      if (editingActionItem) {
+        await updateActionItemMutation.mutateAsync({
+          id: editingActionItem.id,
+          dto: payload,
+        });
+      } else {
+        await createActionItemMutation.mutateAsync(payload);
+      }
       setIsCreateActionOpen(false);
+      setEditingActionItem(null);
       setActionForm({
         meeting_id: '',
         task: '',
@@ -578,20 +615,21 @@ export const MeetingPage: React.FC = () => {
 
       {/* Tab: Action Items Tracking */}
       {activeTab === 'action_items' && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="bg-white border border-[#d2d2d7] rounded-xl shadow-xs overflow-hidden">
+          <div className="p-4 border-b border-[#d2d2d7] bg-[#f5f5f7] flex items-center justify-between">
             <div>
-              <h2 className="font-bold text-gray-900 text-base">Matriks Tindak Lanjut (*Action Items*)</h2>
-              <p className="text-xs text-gray-500">Tugas yang dibebankan kepada warga atau pengurus dari hasil rapat.</p>
+              <h2 className="font-semibold text-[#1d1d1f] text-sm">Matriks Tindak Lanjut (*Action Items*)</h2>
+              <p className="text-xs text-[#707070]">Tugas yang dibebankan kepada warga atau pengurus dari hasil rapat.</p>
             </div>
             {isAdmin && (
-              <button
-                onClick={() => setIsCreateActionOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition"
+              <Button
+                size="sm"
+                onClick={() => handleOpenCreateActionItem()}
+                className="text-xs h-8"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5 mr-1" />
                 Tambah Tugas
-              </button>
+              </Button>
             )}
           </div>
 
@@ -603,18 +641,19 @@ export const MeetingPage: React.FC = () => {
                 <TableHead>Penanggung Jawab (PIC)</TableHead>
                 <TableHead>Target Selesai</TableHead>
                 <TableHead>Catatan</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoadingActions ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center text-[#707070] text-sm">
+                  <TableCell colSpan={6} className="py-8 text-center text-[#707070] text-sm">
                     Memuat daftar tugas...
                   </TableCell>
                 </TableRow>
               ) : actionItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center text-[#707070] text-sm">
+                  <TableCell colSpan={6} className="py-8 text-center text-[#707070] text-sm">
                     Belum ada tugas tindak lanjut aktif.
                   </TableCell>
                 </TableRow>
@@ -652,6 +691,34 @@ export const MeetingPage: React.FC = () => {
                     </TableCell>
                     <TableCell className="text-[#707070] max-w-xs truncate">
                       {item.notes || '-'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {isAdmin && (
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-slate-500 hover:text-[#0071e3]"
+                            title="Edit Tugas"
+                            onClick={() => handleOpenEditActionItem(item)}
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                            title="Hapus Tugas"
+                            onClick={async () => {
+                              if (window.confirm(`Hapus tugas "${item.task}"?`)) {
+                                await deleteActionItemMutation.mutateAsync(item.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -773,11 +840,14 @@ export const MeetingPage: React.FC = () => {
         </form>
       </Dialog>
 
-      {/* Modal: Create Action Item */}
+      {/* Modal: Create / Edit Action Item */}
       <Dialog
         isOpen={isCreateActionOpen}
-        onClose={() => setIsCreateActionOpen(false)}
-        title="Tambah Tugas Tindak Lanjut"
+        onClose={() => {
+          setIsCreateActionOpen(false);
+          setEditingActionItem(null);
+        }}
+        title={editingActionItem ? 'Edit Tugas Tindak Lanjut' : 'Tambah Tugas Tindak Lanjut'}
         description="Tugaskan warga atau pengurus untuk menindaklanjuti hasil rapat"
       >
         <form onSubmit={handleCreateActionItem} className="space-y-4">
@@ -827,19 +897,49 @@ export const MeetingPage: React.FC = () => {
             />
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Status Pengerjaan</label>
+            <Select
+              value={actionForm.status}
+              onValueChange={(val) => setActionForm({ ...actionForm, status: val })}
+            >
+              <option value="pending">Tertunda (Pending)</option>
+              <option value="in_progress">Sedang Dikerjakan (In Progress)</option>
+              <option value="completed">Selesai (Completed)</option>
+              <option value="cancelled">Dibatalkan (Cancelled)</option>
+            </Select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Catatan Tambahan</label>
+            <Input
+              type="text"
+              placeholder="Keterangan tambahan..."
+              value={actionForm.notes}
+              onChange={(e) => setActionForm({ ...actionForm, notes: e.target.value })}
+            />
+          </div>
+
           <div className="flex justify-end gap-2 pt-3 border-t border-[#d2d2d7]">
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsCreateActionOpen(false)}
+              onClick={() => {
+                setIsCreateActionOpen(false);
+                setEditingActionItem(null);
+              }}
             >
               Batal
             </Button>
             <Button
               type="submit"
-              disabled={createActionItemMutation.isPending}
+              disabled={createActionItemMutation.isPending || updateActionItemMutation.isPending}
             >
-              {createActionItemMutation.isPending ? 'Menyimpan...' : 'Simpan Tugas'}
+              {createActionItemMutation.isPending || updateActionItemMutation.isPending
+                ? 'Menyimpan...'
+                : editingActionItem
+                ? 'Simpan Perubahan'
+                : 'Simpan Tugas'}
             </Button>
           </div>
         </form>

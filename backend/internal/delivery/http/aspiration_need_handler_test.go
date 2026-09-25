@@ -103,6 +103,17 @@ func (m *mockAspirationNeedUsecase) UpdateAspirationStatus(ctx context.Context, 
 	return asp, nil
 }
 
+func (m *mockAspirationNeedUsecase) DeleteAspiration(ctx context.Context, tenantID, id uuid.UUID) error {
+	var next []*domain.Aspiration
+	for _, a := range m.aspirations {
+		if !(a.ID == id && a.TenantID == tenantID) {
+			next = append(next, a)
+		}
+	}
+	m.aspirations = next
+	return nil
+}
+
 func (m *mockAspirationNeedUsecase) CreateCommunityNeed(ctx context.Context, tenantID uuid.UUID, need *domain.CommunityNeed) error {
 	need.ID = uuid.New()
 	need.TenantID = tenantID
@@ -135,6 +146,17 @@ func (m *mockAspirationNeedUsecase) UpdateCommunityNeed(ctx context.Context, ten
 		return err
 	}
 	n.Title = need.Title
+	return nil
+}
+
+func (m *mockAspirationNeedUsecase) DeleteCommunityNeed(ctx context.Context, tenantID, id uuid.UUID) error {
+	var next []*domain.CommunityNeed
+	for _, n := range m.needs {
+		if !(n.ID == id && n.TenantID == tenantID) {
+			next = append(next, n)
+		}
+	}
+	m.needs = next
 	return nil
 }
 

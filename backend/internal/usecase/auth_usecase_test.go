@@ -105,6 +105,9 @@ func (m *mockTenantUserRepo) GetByTenantAndUser(ctx context.Context, tenantID, u
 func (m *mockTenantUserRepo) UpdateRole(ctx context.Context, tenantID, userID, roleID uuid.UUID) error {
 	return nil
 }
+func (m *mockTenantUserRepo) UpdateResidentID(ctx context.Context, tenantID, userID uuid.UUID, residentID *uuid.UUID) error {
+	return nil
+}
 func (m *mockTenantUserRepo) Delete(ctx context.Context, tenantID, userID uuid.UUID) error {
 	return nil
 }

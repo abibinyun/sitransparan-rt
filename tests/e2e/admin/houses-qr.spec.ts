@@ -19,7 +19,7 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
     await page.getByRole('button', { name: 'Tambah Rumah' }).click();
     await expect(page.getByText('Daftarkan Rumah Baru')).toBeVisible();
 
-    await page.getByPlaceholder(/Contoh: .*Blok A1 No\. 05/).fill(blockNo);
+    await page.getByPlaceholder(/Contoh: .*Bpk\. Bambang Pamungkas/).fill(blockNo);
     await page.getByPlaceholder('Contoh: Jl. Melati Raya RT 05').fill('Jl. Mawar Indah');
     await page.getByRole('button', { name: 'Simpan & Buat QR' }).click();
 
@@ -51,6 +51,13 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
 
     // 7. Buka tautan claim warga (simulasi scan QR)
     await page.goto(`/claim?slug=sitransparan-rt&token=${targetHouse.access_token}`);
+
+    // Jika rumah memiliki PIN, sistem meminta verifikasi PIN 4 digit
+    if (targetHouse.pin_code) {
+      await expect(page.getByRole('heading', { name: 'Verifikasi PIN Rumah' })).toBeVisible({ timeout: 10000 });
+      await page.getByPlaceholder('••••').fill(targetHouse.pin_code);
+      await page.getByRole('button', { name: 'Verifikasi & Masuk' }).click();
+    }
 
     // 8. Verifikasi layar sukses auto-login warga
     await expect(page.getByText('Akses Berhasil Terverifikasi')).toBeVisible({ timeout: 10000 });
@@ -98,7 +105,8 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
 
     // 12. Regenerate Token (Reset QR)
     page.once('dialog', (dialog) => dialog.accept());
-    await houseRow.getByTitle('Generate Ulang Token (Reset QR)').click();
+    await page.locator('tr', { hasText: blockNo }).getByTitle('Generate Ulang Token (Reset QR)').click();
+    await page.waitForTimeout(1000);
 
     // Ambil token baru dari backend dan pastikan token lama tidak lagi sama
     const apiRes2 = await page.request.get('http://127.0.0.1:8081/api/v1/admin/houses', {
@@ -116,6 +124,11 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
 
     // Coba claim dengan token baru (harus sukses)
     await page.goto(`/claim?slug=sitransparan-rt&token=${updatedHouse.access_token}`);
+    if (updatedHouse.pin_code) {
+      await expect(page.getByRole('heading', { name: 'Verifikasi PIN Rumah' })).toBeVisible({ timeout: 10000 });
+      await page.getByPlaceholder('••••').fill(updatedHouse.pin_code);
+      await page.getByRole('button', { name: 'Verifikasi & Masuk' }).click();
+    }
     await expect(page.getByText('Akses Berhasil Terverifikasi')).toBeVisible({ timeout: 10000 });
 
     // 12. Test Musyawarah & Polling Warga via Sesi QR Rumah (1 Rumah = 1 Suara)
@@ -135,13 +148,13 @@ test.describe('House QR Sticker & Citizen Claim Access Workflow', () => {
 
     // Masuk ke halaman portal kabar warga (membawa widget polling)
     await page.goto('/kabar');
-    const pollCard = page.locator('div', { hasText: `Polling Musyawarah ${blockNo}` }).last();
+    const pollCard = page.locator('li, div.p-4, div.rounded-xl').filter({ has: page.getByText(`Polling Musyawarah ${blockNo}`) }).last();
     await expect(pollCard).toBeVisible({ timeout: 10000 });
 
     // Berikan suara via sesi QR rumah
-    await pollCard.getByRole('button', { name: /Setuju Paving Jalan/i }).click();
+    await pollCard.getByRole('button', { name: 'Setuju Paving Jalan' }).first().click();
     await expect(page.getByText('suara Anda tercatat').first()).toBeVisible({ timeout: 10000 });
-    await expect(pollCard.getByRole('button', { name: /Setuju Paving Jalan — pilihan Anda/i })).toBeVisible({ timeout: 10000 });
+    await expect(pollCard.getByRole('button', { name: /Setuju Paving Jalan.*pilihan Anda/i }).first()).toBeVisible({ timeout: 10000 });
 
     // 13. Login kembali sebagai Admin RT untuk Hapus data rumah
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);

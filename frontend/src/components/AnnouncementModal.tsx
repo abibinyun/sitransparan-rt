@@ -5,7 +5,7 @@ import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Select } from './ui/select';
+import { NativeSelect } from './ui/select';
 import { Checkbox } from './ui/checkbox';
 import { Textarea } from './ui/textarea';
 import { UploadCloud, Image as ImageIcon, FileText, Trash2, Plus } from 'lucide-react';
@@ -38,6 +38,16 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
   const [category, setCategory] = useState<string>(initialData?.category || 'pengumuman');
   const [target, setTarget] = useState<AnnouncementTarget>(initialData?.target || 'all');
   const [allowComments, setAllowComments] = useState<boolean>(initialData?.allow_comments ?? false);
+  const [createdAt, setCreatedAt] = useState<string>(() => {
+    if (initialData?.created_at) {
+      const d = new Date(initialData.created_at);
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    const d = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [customFileUrl, setCustomFileUrl] = useState('');
 
@@ -51,6 +61,15 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       setCategory(initialData?.category || 'pengumuman');
       setTarget(initialData?.target || 'all');
       setAllowComments(initialData?.allow_comments ?? false);
+      if (initialData?.created_at) {
+        const d = new Date(initialData.created_at);
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        setCreatedAt(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+      } else {
+        const d = new Date();
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        setCreatedAt(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+      }
       setCustomImageUrl('');
       setCustomFileUrl('');
     }
@@ -164,6 +183,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       category,
       target,
       allow_comments: allowComments,
+      created_at: createdAt ? new Date(createdAt).toISOString() : undefined,
     });
     onClose();
   };
@@ -192,21 +212,20 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="content" className="text-xs sm:text-sm font-semibold">Isi Pengumuman</Label>
+          <Label htmlFor="content" className="text-xs sm:text-sm font-semibold">Isi Pengumuman (Opsional)</Label>
           <Textarea
             id="content"
-            required
             rows={4}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Tulis detail pengumuman secara rinci..."
+            placeholder="Tulis detail pengumuman secara rinci (opsional bila hanya foto/lampiran)..."
           />
         </div>
 
         {/* Multi Foto / Banner */}
         <div className="space-y-2 pt-1 border-t border-slate-100">
           <div className="flex items-center justify-between">
-            <Label htmlFor="bannerInput" className="flex items-center gap-1.5 font-semibold text-slate-800">
+            <Label className="flex items-center gap-1.5 font-semibold text-slate-800">
               <ImageIcon className="w-4 h-4 text-emerald-600" /> Galeri Foto &amp; Banner
             </Label>
             <span className="text-[11px] text-slate-500">Bisa upload banyak foto</span>
@@ -294,6 +313,10 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
               className="hidden"
               disabled={uploadingImage}
               onChange={handleUploadImages}
+              onClick={(e) => {
+                // Cegah bubbling yang bisa mentrigger event form submit atau parent click
+                e.stopPropagation();
+              }}
             />
             <label
               htmlFor="bannerInput"
@@ -331,7 +354,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
         {/* Multi Berkas / Dokumen Lampiran */}
         <div className="space-y-2 pt-3 border-t border-slate-100">
           <div className="flex items-center justify-between">
-            <Label htmlFor="fileInput" className="flex items-center gap-1.5 font-semibold text-slate-800">
+            <Label className="flex items-center gap-1.5 font-semibold text-slate-800">
               <FileText className="w-4 h-4 text-indigo-600" /> Lampiran Berkas Dokumen (PDF, Surat, Undangan)
             </Label>
             <span className="text-[11px] text-slate-500">Multi berkas</span>
@@ -372,6 +395,9 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
               className="hidden"
               disabled={uploadingFile}
               onChange={handleUploadFiles}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
             />
             <label
               htmlFor="fileInput"
@@ -405,34 +431,44 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
           </div>
         </div>
 
-        {/* Kategori Konten Timeline & Visibilitas Penerima */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#d2d2d7]">
+        {/* Kategori Konten, Visibilitas, dan Waktu Publikasi */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-[#d2d2d7]">
           <div className="space-y-1.5">
             <Label htmlFor="category" className="text-xs sm:text-sm font-semibold">Kategori Konten</Label>
-            <Select
+            <NativeSelect
               id="category"
               value={category}
-              onValueChange={(val) => setCategory(val)}
               onChange={(e) => setCategory(e.target.value)}
             >
               <option value="pengumuman">📢 Pengumuman Resmi RT</option>
               <option value="kegiatan">🗓️ Kegiatan &amp; Gotong Royong</option>
               <option value="santai">☕ Kabar Santai / Nongkrong</option>
               <option value="info">ℹ️ Informasi / Tips Lingkungan</option>
-            </Select>
+            </NativeSelect>
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="target" className="text-xs sm:text-sm font-semibold">Visibilitas Akses</Label>
-            <Select
+            <NativeSelect
               id="target"
               value={target}
-              onValueChange={(val) => setTarget(val as AnnouncementTarget)}
               onChange={(e) => setTarget(e.target.value as AnnouncementTarget)}
             >
               <option value="all">🌐 Publik &amp; Warga (Semua Orang)</option>
               <option value="residents_only">🔒 Khusus Internal Warga RT</option>
-            </Select>
+            </NativeSelect>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="createdAt" className="text-xs sm:text-sm font-semibold">Waktu &amp; Tanggal Publikasi</Label>
+            <Input
+              id="createdAt"
+              type="datetime-local"
+              required
+              value={createdAt}
+              onChange={(e) => setCreatedAt(e.target.value)}
+              className="text-xs sm:text-sm h-10"
+            />
           </div>
         </div>
 

@@ -114,21 +114,23 @@ func (h *UserHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 type createUserReq struct {
-	TenantID *uuid.UUID      `json:"tenant_id,omitempty"`
-	Name     string          `json:"name"`
-	Email    string          `json:"email"`
-	Password string          `json:"password"`
-	Phone    *string         `json:"phone,omitempty"`
-	Role     domain.RoleName `json:"role"`
+	TenantID   *uuid.UUID      `json:"tenant_id,omitempty"`
+	Name       string          `json:"name"`
+	Email      string          `json:"email"`
+	Password   string          `json:"password"`
+	Phone      *string         `json:"phone,omitempty"`
+	Role       domain.RoleName `json:"role"`
+	ResidentID *uuid.UUID      `json:"resident_id,omitempty"`
 }
 
 type updateUserReq struct {
-	TenantID *uuid.UUID      `json:"tenant_id,omitempty"`
-	Name     string          `json:"name"`
-	Email    string          `json:"email"`
-	Phone    *string         `json:"phone,omitempty"`
-	Role     domain.RoleName `json:"role"`
-	Password *string         `json:"password,omitempty"`
+	TenantID   *uuid.UUID      `json:"tenant_id,omitempty"`
+	Name       string          `json:"name"`
+	Email      string          `json:"email"`
+	Phone      *string         `json:"phone,omitempty"`
+	Role       domain.RoleName `json:"role"`
+	Password   *string         `json:"password,omitempty"`
+	ResidentID *uuid.UUID      `json:"resident_id,omitempty"`
 }
 
 func (h *UserHandler) list(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
@@ -218,6 +220,7 @@ func (h *UserHandler) create(w http.ResponseWriter, r *http.Request, tenantID uu
 		Phone:      req.Phone,
 		Role:       req.Role,
 		CallerRole: callerRole,
+		ResidentID: req.ResidentID,
 	})
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -275,6 +278,7 @@ func (h *UserHandler) update(w http.ResponseWriter, r *http.Request, tenantID, i
 		Role:       req.Role,
 		Password:   req.Password,
 		CallerRole: callerRole,
+		ResidentID: req.ResidentID,
 	})
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")

@@ -401,7 +401,7 @@ func (h *FinancialHandler) recordDues(w http.ResponseWriter, r *http.Request, te
 		return
 	}
 
-	if role != domain.RoleSuperAdmin && role != domain.RoleAdminRT {
+	if role != domain.RoleSuperAdmin && role != domain.RoleAdminRT && role != domain.RoleOperator {
 		// Periksa apakah user adalah PIC dari fee_category ini
 		cat, err := h.usecase.GetFeeCategoryByID(r.Context(), tenantID, payment.FeeCategoryID)
 		if err != nil || cat == nil || cat.PICUserID == nil || *cat.PICUserID != userID {
@@ -430,7 +430,7 @@ func (h *FinancialHandler) verifyDues(w http.ResponseWriter, r *http.Request, te
 		return
 	}
 
-	if role != domain.RoleSuperAdmin && role != domain.RoleAdminRT {
+	if role != domain.RoleSuperAdmin && role != domain.RoleAdminRT && role != domain.RoleOperator {
 		// Periksa apakah user adalah PIC dari fee_category ini
 		cat, err := h.usecase.GetFeeCategoryByID(r.Context(), tenantID, payment.FeeCategoryID)
 		if err != nil || cat == nil || cat.PICUserID == nil || *cat.PICUserID != userID {
@@ -538,7 +538,7 @@ func (h *FinancialHandler) createTransaction(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if role != domain.RoleSuperAdmin && role != domain.RoleAdminRT {
+	if role != domain.RoleSuperAdmin && role != domain.RoleAdminRT && role != domain.RoleOperator {
 		// Validasi apakah user adalah PIC dari fund yang dituju atau PIC dari fee_category sumber
 		isAuthorized := false
 

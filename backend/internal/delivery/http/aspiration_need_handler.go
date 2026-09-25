@@ -272,6 +272,18 @@ func (h *AspirationNeedHandler) handlePrivateAspirations(w http.ResponseWriter, 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(updated)
+		case http.MethodDelete:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
+			if err := h.usecase.DeleteAspiration(r.Context(), tenant.ID, id); err != nil {
+				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "aspiration deleted"})
 		default:
 			http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
 		}
@@ -374,6 +386,18 @@ func (h *AspirationNeedHandler) handlePrivateNeeds(w http.ResponseWriter, r *htt
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(req)
+		case http.MethodDelete:
+			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
+				return
+			}
+			if err := h.usecase.DeleteCommunityNeed(r.Context(), tenant.ID, id); err != nil {
+				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "community need deleted"})
 		default:
 			http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
 		}

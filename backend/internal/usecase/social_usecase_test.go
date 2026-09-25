@@ -91,7 +91,7 @@ func (m *mockSocialRepo) CreatePoll(ctx context.Context, p *domain.Poll) error {
 	return nil
 }
 
-func (m *mockSocialRepo) GetPoll(ctx context.Context, id uuid.UUID, viewer, house *uuid.UUID, includeViewer bool) (*domain.Poll, error) {
+func (m *mockSocialRepo) GetPoll(ctx context.Context, id uuid.UUID, viewer, house, resident *uuid.UUID, includeViewer bool) (*domain.Poll, error) {
 	p, ok := m.polls[id]
 	if !ok {
 		return nil, errSocialNotFound
@@ -118,7 +118,7 @@ func (m *mockSocialRepo) attachResults(p *domain.Poll, viewer, house *uuid.UUID,
 	}
 }
 
-func (m *mockSocialRepo) ListOpenPolls(ctx context.Context, viewer, house *uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
+func (m *mockSocialRepo) ListOpenPolls(ctx context.Context, viewer, house, resident *uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
 	var out []*domain.Poll
 	for _, p := range m.polls {
 		if p.Status == "open" || p.Status == "closed" {
@@ -129,7 +129,7 @@ func (m *mockSocialRepo) ListOpenPolls(ctx context.Context, viewer, house *uuid.
 	return out, nil
 }
 
-func (m *mockSocialRepo) VotePoll(ctx context.Context, pollID uuid.UUID, user, house *uuid.UUID, idx int) error {
+func (m *mockSocialRepo) VotePoll(ctx context.Context, pollID uuid.UUID, user, house, resident *uuid.UUID, idx int) error {
 	p, ok := m.polls[pollID]
 	if !ok {
 		return errSocialNotFound
@@ -141,6 +141,9 @@ func (m *mockSocialRepo) VotePoll(ctx context.Context, pollID uuid.UUID, user, h
 		return errPollRange
 	}
 	aKey := actorKey(user, house)
+	if resident != nil {
+		aKey = "res:" + resident.String()
+	}
 	m.votes[pollID.String()+"|"+aKey] = idx
 	return nil
 }
@@ -230,19 +233,19 @@ func TestSocialUsecase_Polls(t *testing.T) {
 	}
 
 	// Vote valid
-	if err := uc.Vote(ctx, poll.ID, &voter, nil, 0); err != nil {
+	if err := uc.Vote(ctx, poll.ID, &voter, nil, nil, 0); err != nil {
 		t.Fatalf("Vote failed: %v", err)
 	}
 	// Change vote (1 orang 1 suara — upsert)
-	if err := uc.Vote(ctx, poll.ID, &voter, nil, 1); err != nil {
+	if err := uc.Vote(ctx, poll.ID, &voter, nil, nil, 1); err != nil {
 		t.Fatalf("Vote change failed: %v", err)
 	}
 	// Out of range rejected
-	if err := uc.Vote(ctx, poll.ID, &voter, nil, 5); err == nil {
+	if err := uc.Vote(ctx, poll.ID, &voter, nil, nil, 5); err == nil {
 		t.Fatal("expected out-of-range option to be rejected")
 	}
 
-	got, err := uc.Poll(ctx, poll.ID, &voter, nil, true)
+	got, err := uc.Poll(ctx, poll.ID, &voter, nil, nil, true)
 	if err != nil {
 		t.Fatalf("Poll failed: %v", err)
 	}
@@ -257,7 +260,7 @@ func TestSocialUsecase_Polls(t *testing.T) {
 	if err := uc.ClosePoll(ctx, poll.ID); err != nil {
 		t.Fatalf("ClosePoll failed: %v", err)
 	}
-	if err := uc.Vote(ctx, poll.ID, &admin, nil, 0); err == nil {
+	if err := uc.Vote(ctx, poll.ID, &admin, nil, nil, 0); err == nil {
 		t.Fatal("expected vote on closed poll to be rejected")
 	}
 
@@ -267,14 +270,14 @@ func TestSocialUsecase_Polls(t *testing.T) {
 		t.Fatalf("CreatePoll failed: %v", err)
 	}
 	houseA := uuid.New()
-	if err := uc.Vote(ctx, pollHouse.ID, nil, &houseA, 0); err != nil {
+	if err := uc.Vote(ctx, pollHouse.ID, nil, &houseA, nil, 0); err != nil {
 		t.Fatalf("House QR vote failed: %v", err)
 	}
 	// Suara rumah yang sama memperbarui opsi (upsert 1 rumah 1 suara)
-	if err := uc.Vote(ctx, pollHouse.ID, nil, &houseA, 1); err != nil {
+	if err := uc.Vote(ctx, pollHouse.ID, nil, &houseA, nil, 1); err != nil {
 		t.Fatalf("House QR vote change failed: %v", err)
 	}
-	gotHouse, err := uc.Poll(ctx, pollHouse.ID, nil, &houseA, true)
+	gotHouse, err := uc.Poll(ctx, pollHouse.ID, nil, &houseA, nil, true)
 	if err != nil {
 		t.Fatalf("Poll failed: %v", err)
 	}
@@ -283,6 +286,27 @@ func TestSocialUsecase_Polls(t *testing.T) {
 	}
 	if gotHouse.MyVote == nil || *gotHouse.MyVote != 1 {
 		t.Fatalf("expected my_vote=1 for house, got %v", gotHouse.MyVote)
+	}
+
+	// Test Warga Individual Voting via residentID (1 Orang = 1 Suara)
+	pollResident := &domain.Poll{Question: "Pemilihan Ketua Karang Taruna?", Options: []string{"Calon A", "Calon B"}, VoteScope: "resident", CreatedBy: &admin}
+	if err := uc.CreatePoll(ctx, pollResident); err != nil {
+		t.Fatalf("CreatePoll resident scope failed: %v", err)
+	}
+	res1 := uuid.New()
+	res2 := uuid.New()
+	if err := uc.Vote(ctx, pollResident.ID, nil, &houseA, &res1, 0); err != nil {
+		t.Fatalf("Resident 1 vote failed: %v", err)
+	}
+	if err := uc.Vote(ctx, pollResident.ID, nil, &houseA, &res2, 1); err != nil {
+		t.Fatalf("Resident 2 vote in same house failed: %v", err)
+	}
+	gotResident, err := uc.Poll(ctx, pollResident.ID, nil, &houseA, &res1, true)
+	if err != nil {
+		t.Fatalf("Poll resident scope failed: %v", err)
+	}
+	if gotResident.Total != 2 {
+		t.Fatalf("expected 2 votes from 2 residents in same house, got %d", gotResident.Total)
 	}
 }
 

@@ -89,7 +89,21 @@ Pemisahan tanggung jawab secara ketat (*Separation of Concerns*):
 
 ---
 
-### C. Warga (Resident)
+### C. Operator RT (Staf Operasional / Petugas Lapangan)
+- **Fokus**: Membantu operasional harian RT (input warga, pendataan rumah, pencatatan setoran bank sampah, input kegiatan/pengumuman) tanpa hak kelola akun dan konfigurasi sensitif.
+- **Kewenangan**:
+  - Input dan update data kependudukan (`residents`).
+  - Input dan update agenda kegiatan RT (`events`) serta notulen musyawarah (`meetings`).
+  - Mengelola pengumuman dan dokumen RT (`announcements`, `documents`).
+  - Menimbang dan mencatat transaksi setoran Bank Sampah warga (`waste_bank`).
+  - Mengelola data rumah dan cetak stiker QR rumah (`houses`).
+- **Batasan Ketat (Yang DILARANG)**:
+  - **TIDAK BISA** mengelola pengguna / staf (`/admin/users`) atau mengubah hak akses.
+  - **TIDAK BISA** mengakses pengaturan tenant atau fungsi mutasi saldo kas utama RT yang memerlukan approval Admin RT.
+
+---
+
+### D. Warga (Resident)
 - **Fokus**: Transparansi, partisipasi warga, dan pembayaran iuran.
 - **Kewenangan**:
   - Mengakses portal internal RT tempat ia terdaftar.
@@ -103,7 +117,7 @@ Pemisahan tanggung jawab secara ketat (*Separation of Concerns*):
 
 ---
 
-### D. Publik (Anonim / Tamu Tanpa Login)
+### E. Publik (Anonim / Tamu Tanpa Login)
 - **Fokus**: Keterbukaan informasi dasar lingkungan.
 - **Kewenangan**:
   - Melihat timeline pengumuman umum (`target = 'all'`) di subdomain RT.

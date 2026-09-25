@@ -222,13 +222,15 @@ func (r *karangTarunaRepository) AddMember(ctx context.Context, m *domain.Karang
 func (r *karangTarunaRepository) GetMemberByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.KarangTarunaMember, error) {
 	mTable := TenantTable(ctx, "karang_taruna_members")
 	rTable := TenantTable(ctx, "residents")
+	fmTable := TenantTable(ctx, "family_members")
 	query := fmt.Sprintf(`
 		SELECT m.id, m.period_id, m.resident_id, m.role, m.section, m.custom_title, m.phone_override, m.photo_url, m.status, m.joined_at, m.created_at, m.updated_at,
-		       r.full_name, COALESCE(r.nik, ''), r.phone
+		       COALESCE(r.full_name, fm.full_name, 'Warga'), COALESCE(r.nik, fm.nik, ''), COALESCE(r.phone, '')
 		FROM %s m
-		JOIN %s r ON r.id = m.resident_id
+		LEFT JOIN %s r ON r.id = m.resident_id
+		LEFT JOIN %s fm ON fm.id = m.resident_id
 		WHERE m.id = $1
-	`, mTable, rTable)
+	`, mTable, rTable, fmTable)
 	m := &domain.KarangTarunaMember{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&m.ID, &m.PeriodID, &m.ResidentID, &m.Role, &m.Section, &m.CustomTitle, &m.PhoneOverride, &m.PhotoURL, &m.Status, &m.JoinedAt, &m.CreatedAt, &m.UpdatedAt,
@@ -243,6 +245,7 @@ func (r *karangTarunaRepository) GetMemberByID(ctx context.Context, tenantID, id
 func (r *karangTarunaRepository) ListMembers(ctx context.Context, tenantID, periodID uuid.UUID, section, role, status string) ([]*domain.KarangTarunaMember, error) {
 	mTable := TenantTable(ctx, "karang_taruna_members")
 	rTable := TenantTable(ctx, "residents")
+	fmTable := TenantTable(ctx, "family_members")
 
 	whereClause := "WHERE m.period_id = $1"
 	args := []interface{}{periodID}
@@ -266,9 +269,10 @@ func (r *karangTarunaRepository) ListMembers(ctx context.Context, tenantID, peri
 
 	query := fmt.Sprintf(`
 		SELECT m.id, m.period_id, m.resident_id, m.role, m.section, m.custom_title, m.phone_override, m.photo_url, m.status, m.joined_at, m.created_at, m.updated_at,
-		       r.full_name, COALESCE(r.nik, ''), r.phone
+		       COALESCE(r.full_name, fm.full_name, 'Warga'), COALESCE(r.nik, fm.nik, ''), COALESCE(r.phone, '')
 		FROM %s m
-		JOIN %s r ON r.id = m.resident_id
+		LEFT JOIN %s r ON r.id = m.resident_id
+		LEFT JOIN %s fm ON fm.id = m.resident_id
 		%s
 		ORDER BY 
 			CASE m.role
@@ -280,7 +284,7 @@ func (r *karangTarunaRepository) ListMembers(ctx context.Context, tenantID, peri
 				ELSE 6
 			END,
 			m.created_at ASC
-	`, mTable, rTable, whereClause)
+	`, mTable, rTable, fmTable, whereClause)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {

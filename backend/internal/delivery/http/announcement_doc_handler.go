@@ -415,7 +415,7 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(resp)
 		case http.MethodPost:
-			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+			if !middleware.RequireOperatorOrAdmin(r) {
 				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
 				return
 			}
@@ -475,7 +475,7 @@ func (h *AnnouncementDocHandler) handlePrivateAnnouncements(w http.ResponseWrite
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(item)
 		case http.MethodPut:
-			if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+			if !middleware.RequireOperatorOrAdmin(r) {
 				http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
 				return
 			}

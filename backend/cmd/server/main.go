@@ -100,6 +100,11 @@ func main() {
 	ktUC := usecase.NewKarangTarunaUsecase(ktRepo)
 	ktHandler := delivery.NewKarangTarunaHandler(ktUC, tenantRepo, cfg.TenantBaseDomain)
 
+	// Struktur Kepengurusan RT/RW
+	rtStructureRepo := repository.NewRTStructureRepository(db)
+	rtStructureUC := usecase.NewRTStructureUsecase(rtStructureRepo)
+	rtStructureHandler := delivery.NewRTStructureHandler(rtStructureUC, tenantRepo, cfg.TenantBaseDomain)
+
 	// Audit Logging Komprehensif (Zero Missed Action)
 	auditRepo := repository.NewAuditLogRepository(db)
 	auditUC := usecase.NewAuditLogUsecase(auditRepo)
@@ -195,6 +200,9 @@ func main() {
 
 	// Karang Taruna & Pemuda RT
 	ktHandler.RegisterRoutes(mux, tenantMw, authMw)
+
+	// Struktur Kepengurusan RT/RW Resmi
+	rtStructureHandler.RegisterRoutes(mux, tenantMw, authMw)
 
 	// Bank Sampah RT (Program Karang Taruna & Warga)
 	wasteBankHandler.RegisterRoutes(mux, tenantMw, authMw)

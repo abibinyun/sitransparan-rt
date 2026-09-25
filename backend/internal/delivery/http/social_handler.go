@@ -161,7 +161,13 @@ func (h *SocialHandler) handlePolls(w http.ResponseWriter, r *http.Request) {
 		if userID != uuid.Nil {
 			viewer = &userID
 		}
-		polls, err := h.usecase.OpenPolls(r.Context(), viewer, houseID, includeViewer)
+		var residentIDPtr *uuid.UUID
+		if qResID := r.URL.Query().Get("resident_id"); qResID != "" {
+			if parsed, err := uuid.Parse(qResID); err == nil {
+				residentIDPtr = &parsed
+			}
+		}
+		polls, err := h.usecase.OpenPolls(r.Context(), viewer, houseID, residentIDPtr, includeViewer)
 		if err != nil {
 			writeSocialError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -177,14 +183,22 @@ func (h *SocialHandler) handlePolls(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var req struct {
-			Question string   `json:"question"`
-			Options  []string `json:"options"`
+			Question  string   `json:"question"`
+			Options   []string `json:"options"`
+			VoteScope string   `json:"vote_scope"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeSocialError(w, http.StatusBadRequest, "invalid request body")
 			return
 		}
-		poll := &domain.Poll{Question: req.Question, Options: req.Options}
+		if req.VoteScope == "" {
+			req.VoteScope = "house"
+		}
+		poll := &domain.Poll{
+			Question:  req.Question,
+			Options:   req.Options,
+			VoteScope: req.VoteScope,
+		}
 		if userID != uuid.Nil {
 			poll.CreatedBy = &userID
 		}
@@ -217,7 +231,13 @@ func (h *SocialHandler) handlePollByID(w http.ResponseWriter, r *http.Request) {
 		if userID != uuid.Nil {
 			viewer = &userID
 		}
-		poll, err := h.usecase.Poll(r.Context(), id, viewer, houseID, includeViewer)
+		var residentIDPtr *uuid.UUID
+		if qResID := r.URL.Query().Get("resident_id"); qResID != "" {
+			if parsed, err := uuid.Parse(qResID); err == nil {
+				residentIDPtr = &parsed
+			}
+		}
+		poll, err := h.usecase.Poll(r.Context(), id, viewer, houseID, residentIDPtr, includeViewer)
 		if err != nil {
 			writeSocialError(w, http.StatusNotFound, "poll not found")
 			return
@@ -240,7 +260,7 @@ func (h *SocialHandler) handlePollByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handleVote: POST satu suara — warga login, 1 orang 1 suara (unique constraint).
+// handleVote: POST satu suara — warga login atau sesi rumah.
 func (h *SocialHandler) handleVote(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
 	houseID := middleware.GetHouseIDFromContext(r.Context())
@@ -248,7 +268,7 @@ func (h *SocialHandler) handleVote(w http.ResponseWriter, r *http.Request) {
 		writeSocialError(w, http.StatusUnauthorized, "login diperlukan untuk memberi suara")
 		return
 	}
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT, domain.RoleResident) {
+	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT, domain.RoleOperator, domain.RoleResident) {
 		writeSocialError(w, http.StatusForbidden, "forbidden")
 		return
 	}
@@ -258,7 +278,8 @@ func (h *SocialHandler) handleVote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		OptionIndex *int `json:"option_index"`
+		OptionIndex *int       `json:"option_index"`
+		ResidentID  *uuid.UUID `json:"resident_id,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.OptionIndex == nil {
 		writeSocialError(w, http.StatusBadRequest, "option_index is required")
@@ -268,11 +289,11 @@ func (h *SocialHandler) handleVote(w http.ResponseWriter, r *http.Request) {
 	if userID != uuid.Nil {
 		uidPtr = &userID
 	}
-	if err := h.usecase.Vote(r.Context(), pollID, uidPtr, houseID, *req.OptionIndex); err != nil {
+	if err := h.usecase.Vote(r.Context(), pollID, uidPtr, houseID, req.ResidentID, *req.OptionIndex); err != nil {
 		writeSocialError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	poll, err := h.usecase.Poll(r.Context(), pollID, uidPtr, houseID, true)
+	poll, err := h.usecase.Poll(r.Context(), pollID, uidPtr, houseID, req.ResidentID, true)
 	if err != nil {
 		writeSocialJSON(w, http.StatusOK, map[string]string{"message": "vote saved"})
 		return
@@ -286,7 +307,13 @@ func (h *SocialHandler) handlePublicOpenPolls(w http.ResponseWriter, r *http.Req
 	if !ok {
 		return
 	}
-	polls, err := h.usecase.OpenPolls(r.Context(), nil, nil, false)
+	var residentIDPtr *uuid.UUID
+	if qResID := r.URL.Query().Get("resident_id"); qResID != "" {
+		if parsed, err := uuid.Parse(qResID); err == nil {
+			residentIDPtr = &parsed
+		}
+	}
+	polls, err := h.usecase.OpenPolls(r.Context(), nil, nil, residentIDPtr, false)
 	if err != nil {
 		writeSocialError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -308,7 +335,13 @@ func (h *SocialHandler) handlePublicPollResults(w http.ResponseWriter, r *http.R
 		writeSocialError(w, http.StatusBadRequest, "invalid poll id")
 		return
 	}
-	poll, err := h.usecase.Poll(r.Context(), id, nil, nil, false)
+	var residentIDPtr *uuid.UUID
+	if qResID := r.URL.Query().Get("resident_id"); qResID != "" {
+		if parsed, err := uuid.Parse(qResID); err == nil {
+			residentIDPtr = &parsed
+		}
+	}
+	poll, err := h.usecase.Poll(r.Context(), id, nil, nil, residentIDPtr, false)
 	if err != nil {
 		writeSocialError(w, http.StatusNotFound, "poll not found")
 		return

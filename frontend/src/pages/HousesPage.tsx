@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   useHouses, 
   useCreateHouse, 
@@ -60,6 +60,16 @@ export const HousesPage: React.FC = () => {
 
   const houses = data?.data || [];
   const residents = residentsData?.data || [];
+
+  const residentOptions = useMemo(() => {
+    return residents.map((r) => ({
+      id: r.id,
+      full_name: r.full_name || 'Tanpa Nama',
+      nik: r.nik || '',
+      phone: r.phone || '',
+      house_number: r.address || '',
+    }));
+  }, [residents]);
 
   const tenantSlug = activeTenant?.slug || 'sitransparan-rt';
 
@@ -414,7 +424,7 @@ export const HousesPage: React.FC = () => {
             </label>
             <Input
               required
-              placeholder="Contoh: Bpk. Bambang Pamungkas / Blok A1 No. 05"
+              placeholder="Contoh: Bpk. Bambang Pamungkas / No. 38"
               value={blockNumber}
               onChange={(e) => setBlockNumber(e.target.value)}
             />
@@ -425,7 +435,7 @@ export const HousesPage: React.FC = () => {
               Alamat / Keterangan Lokasi
             </label>
             <Input
-              placeholder="Contoh: Jl. Melati Raya RT 05"
+              placeholder="Contoh: Jl. Melati Raya RT 05 / Gg. Langgar"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
             />
@@ -438,7 +448,7 @@ export const HousesPage: React.FC = () => {
             <SearchableResidentSelect
               value={headResidentId}
               onChange={(val) => setHeadResidentId(val)}
-              residents={residents}
+              residents={residentOptions}
               placeholder="Cari warga untuk ditautkan sebagai kepala keluarga..."
             />
           </div>

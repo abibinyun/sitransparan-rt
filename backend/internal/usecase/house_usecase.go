@@ -101,6 +101,12 @@ func (u *houseUsecase) ensureHouseUser(ctx context.Context, tenant *domain.Tenan
 				existingUser.Name = userName
 				_ = u.userRepo.Update(ctx, existingUser)
 			}
+			// Pastikan mapping tenant_user dan tautan resident_id tersinkron
+			if tu, err := u.tenantUserRepo.GetByTenantAndUser(ctx, tenant.ID, existingUser.ID); err == nil && tu != nil {
+				if tu.ResidentID == nil && house.HeadResidentID != nil {
+					_ = u.tenantUserRepo.UpdateResidentID(ctx, tenant.ID, existingUser.ID, house.HeadResidentID)
+				}
+			}
 			return existingUser, nil
 		}
 	}
@@ -123,13 +129,17 @@ func (u *houseUsecase) ensureHouseUser(ctx context.Context, tenant *domain.Tenan
 			roleResident, _ := u.roleRepo.GetByName(ctx, domain.RoleResident)
 			if roleResident != nil {
 				_ = u.tenantUserRepo.Create(ctx, &domain.TenantUser{
-					ID:       uuid.New(),
-					TenantID: tenant.ID,
-					UserID:   existingUser.ID,
-					RoleID:   roleResident.ID,
-					Status:   "active",
+					ID:         uuid.New(),
+					TenantID:   tenant.ID,
+					UserID:     existingUser.ID,
+					RoleID:     roleResident.ID,
+					ResidentID: house.HeadResidentID,
+					Status:     "active",
 				})
 			}
+		} else if tu.ResidentID == nil && house.HeadResidentID != nil {
+			// Update tautan resident_id jika sebelumnya kosong
+			_ = u.tenantUserRepo.UpdateResidentID(ctx, tenant.ID, existingUser.ID, house.HeadResidentID)
 		}
 		return existingUser, nil
 	}
@@ -157,11 +167,12 @@ func (u *houseUsecase) ensureHouseUser(ctx context.Context, tenant *domain.Tenan
 	roleResident, err := u.roleRepo.GetByName(ctx, domain.RoleResident)
 	if err == nil && roleResident != nil {
 		_ = u.tenantUserRepo.Create(ctx, &domain.TenantUser{
-			ID:       uuid.New(),
-			TenantID: tenant.ID,
-			UserID:   newUser.ID,
-			RoleID:   roleResident.ID,
-			Status:   "active",
+			ID:         uuid.New(),
+			TenantID:   tenant.ID,
+			UserID:     newUser.ID,
+			RoleID:     roleResident.ID,
+			ResidentID: house.HeadResidentID,
+			Status:     "active",
 		})
 	}
 
@@ -169,7 +180,7 @@ func (u *houseUsecase) ensureHouseUser(ctx context.Context, tenant *domain.Tenan
 	return newUser, nil
 }
 
-func (u *houseUsecase) ClaimAccessToken(ctx context.Context, tenantSlug, token string) (*domain.HouseAccessClaimResponse, error) {
+func (u *houseUsecase) ClaimAccessToken(ctx context.Context, tenantSlug, token, pin string) (*domain.HouseAccessClaimResponse, error) {
 	tenant, err := u.tenantRepo.GetBySlug(ctx, tenantSlug)
 	if err != nil || tenant == nil {
 		return nil, errors.New("rt tidak ditemukan")
@@ -178,6 +189,16 @@ func (u *houseUsecase) ClaimAccessToken(ctx context.Context, tenantSlug, token s
 	house, err := u.houseRepo.GetByToken(ctx, tenant.ID, token)
 	if err != nil || house == nil {
 		return nil, errors.New("token akses rumah tidak valid atau sudah kadaluarsa")
+	}
+
+	// Validasi PIN 4 Digit Stiker Fisik Rumah
+	if house.PinCode != "" {
+		if strings.TrimSpace(pin) == "" {
+			return nil, errors.New("pin_required")
+		}
+		if strings.TrimSpace(pin) != house.PinCode {
+			return nil, errors.New("PIN 4 digit tidak cocok dengan stiker rumah")
+		}
 	}
 
 	var headResident *domain.Resident
@@ -199,15 +220,16 @@ func (u *houseUsecase) ClaimAccessToken(ctx context.Context, tenantSlug, token s
 		_ = u.houseRepo.Update(ctx, tenant.ID, house)
 	}
 
-	// Generate JWT dengan real User ID dan house_id
+	// Generate JWT dengan real User ID, house_id, dan token_version
 	claims := jwt.MapClaims{
-		"user_id":   realUser.ID.String(),
-		"tenant_id": tenant.ID.String(),
-		"house_id":  house.ID.String(),
-		"role":      "resident",
-		"sub":       realUser.ID.String(),
-		"exp":       time.Now().Add(u.jwtDuration).Unix(),
-		"iat":       time.Now().Unix(),
+		"user_id":       realUser.ID.String(),
+		"tenant_id":     tenant.ID.String(),
+		"house_id":      house.ID.String(),
+		"token_version": house.TokenVersion,
+		"role":          "resident",
+		"sub":           realUser.ID.String(),
+		"exp":           time.Now().Add(u.jwtDuration).Unix(),
+		"iat":           time.Now().Unix(),
 	}
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

@@ -1,16 +1,47 @@
-import React, { useState } from 'react';
-import { BarChart3, Check, History } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { BarChart3, Check, History, Users } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useOpenPolls, useVotePoll } from '../services/social';
+import { useMyHouseQuery } from '../services/house';
 import { Dialog } from './ui/dialog';
+import { Select } from './ui/select';
 
 /**
- * Polling 1-klik: 1 warga 1 suara (unique constraint di backend).
- * Hasil agregat terlihat semua; suara individual lain tidak pernah tampil.
+ * Polling Warga:
+ * - Mode 'house': 1 Rumah 1 Suara (dikunci per house_id)
+ * - Mode 'resident': 1 Warga 1 Suara (anggota keluarga bisa memilih namanya sendiri)
  */
 export const PollWidget: React.FC = () => {
   const { user } = useAuthStore();
-  const { data: polls, isLoading, isError, error, refetch } = useOpenPolls();
+  const { data: myHouseData } = useMyHouseQuery();
+  const [selectedResidentId, setSelectedResidentId] = useState<string>('');
+
+  // Daftar pemilih yang tersedia dari sesi rumah
+  const votersInHouse = useMemo(() => {
+    const list: Array<{ id: string; name: string; relation: string }> = [];
+    if (myHouseData?.head_resident?.id) {
+      list.push({
+        id: myHouseData.head_resident.id,
+        name: myHouseData.head_resident.full_name,
+        relation: 'Kepala Keluarga',
+      });
+    }
+    if (myHouseData?.family_members) {
+      myHouseData.family_members.forEach((fm) => {
+        list.push({
+          id: fm.id,
+          name: fm.full_name,
+          relation: fm.relation || 'Anggota Keluarga',
+        });
+      });
+    }
+    return list;
+  }, [myHouseData]);
+
+  // Default pemilih awal
+  const activeResidentId = selectedResidentId || (votersInHouse.length > 0 ? votersInHouse[0].id : undefined);
+
+  const { data: polls, isLoading, isError, error, refetch } = useOpenPolls(activeResidentId);
   const vote = useVotePoll();
   const [voteError, setVoteError] = useState('');
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
@@ -28,9 +59,10 @@ export const PollWidget: React.FC = () => {
   }
   if (!polls || polls.length === 0) return null;
 
-  // Tampilkan 1 polling aktif terbaru di beranda, sisanya masuk ke arsip riwayat
-  const activePoll = polls.find((p) => p.status === 'open') || polls[0];
-  const displayedPolls = [activePoll];
+  // Tampilkan SEMUA polling yang berstatus 'open' langsung di widget beranda warga
+  // Jika tidak ada yang open, tampilkan polling terakhir yang sudah ditutup
+  const openPolls = polls.filter((p) => p.status === 'open');
+  const displayedPolls = openPolls.length > 0 ? openPolls : [polls[0]];
 
   return (
     <>
@@ -40,16 +72,18 @@ export const PollWidget: React.FC = () => {
             <BarChart3 className="h-4 w-4 text-[#0071e3]" /> Jajak Pendapat / Polling Warga
           </h2>
           <div className="flex items-center gap-2">
-            <span className="apple-badge hidden sm:inline-block">
-              1 Warga 1 Suara
-            </span>
-            {polls.length > 1 && (
+            {openPolls.length > 1 && (
+              <span className="text-[11px] font-semibold text-[#0071e3] bg-[#f4f8fb] px-2 py-0.5 rounded-full border border-[#d2d2d7]">
+                {openPolls.length} Polling Aktif
+              </span>
+            )}
+            {polls.length > openPolls.length && (
               <button
                 type="button"
                 onClick={() => setIsArchiveModalOpen(true)}
                 className="text-[11px] text-[#0071e3] hover:underline font-semibold flex items-center gap-1"
               >
-                <History className="w-3 h-3" /> Riwayat ({polls.length})
+                <History className="w-3 h-3" /> Arsip Ditutup ({polls.length - openPolls.length})
               </button>
             )}
           </div>
@@ -59,15 +93,44 @@ export const PollWidget: React.FC = () => {
           const votes = poll.votes ?? [];
           const total = poll.total_votes ?? votes.reduce((a, b) => a + b, 0);
           return (
-            <div key={poll.id}>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-[#1d1d1f] leading-snug">{poll.question}</p>
-                {poll.status !== 'open' && (
-                  <span className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#707070] border border-[#d2d2d7]">
-                    Ditutup
-                  </span>
-                )}
+            <div key={poll.id} className="p-4 rounded-xl border border-[#d2d2d7] bg-[#fbfbfd] space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${poll.vote_scope === 'resident' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                      {poll.vote_scope === 'resident' ? '1 Warga 1 Suara' : '1 Rumah 1 Suara'}
+                    </span>
+                    {poll.status !== 'open' && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#707070] border border-[#d2d2d7]">
+                        Ditutup
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm font-semibold text-[#1d1d1f] leading-snug">{poll.question}</p>
+                </div>
               </div>
+
+              {/* Selector Anggota Keluarga jika Polling Mode 1 Warga 1 Suara */}
+              {poll.vote_scope === 'resident' && votersInHouse.length > 0 && poll.status === 'open' && (
+                <div className="p-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-lg space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-semibold text-[#1d1d1f] flex items-center gap-1">
+                      <Users className="w-3.5 h-3.5 text-[#0071e3]" /> Pilih Anggota Keluarga yang Memilih:
+                    </span>
+                  </div>
+                  <Select
+                    value={activeResidentId || ''}
+                    onValueChange={(val) => setSelectedResidentId(val)}
+                  >
+                    {votersInHouse.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name} ({v.relation})
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+
               <ul className="mt-2 space-y-1.5">
                 {poll.options.map((opt, i) => {
                   const n = votes[i] ?? 0;
@@ -84,7 +147,16 @@ export const PollWidget: React.FC = () => {
                             return;
                           }
                           setVoteError('');
-                          vote.mutate({ pollId: poll.id, optionIndex: i }, { onError: (e: any) => setVoteError(e?.response?.data?.error || e?.message || 'Gagal memberi suara') });
+                          vote.mutate(
+                            {
+                              pollId: poll.id,
+                              optionIndex: i,
+                              residentId: poll.vote_scope === 'resident' ? activeResidentId : undefined,
+                            },
+                            {
+                              onError: (e: any) => setVoteError(e?.response?.data?.error || e?.message || 'Gagal memberi suara'),
+                            }
+                          );
                         }}
                         disabled={vote.isPending || poll.status !== 'open'}
                         className={`w-full text-left rounded-lg border px-3 py-2 text-xs transition-colors ${
@@ -168,9 +240,16 @@ export const PollWidget: React.FC = () => {
               return (
                 <div key={poll.id} className="pt-5 first:pt-0 space-y-3">
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-sm font-semibold text-[#1d1d1f] leading-snug">
-                      {poll.question}
-                    </h3>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${poll.vote_scope === 'resident' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                          {poll.vote_scope === 'resident' ? '1 Warga 1 Suara' : '1 Rumah 1 Suara'}
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-semibold text-[#1d1d1f] leading-snug">
+                        {poll.question}
+                      </h3>
+                    </div>
                     <span
                       className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                         isOpen
@@ -182,6 +261,25 @@ export const PollWidget: React.FC = () => {
                     </span>
                   </div>
 
+                  {/* Selector Anggota Keluarga jika Polling Mode 1 Warga 1 Suara di modal */}
+                  {poll.vote_scope === 'resident' && votersInHouse.length > 0 && isOpen && (
+                    <div className="p-2.5 bg-[#f5f5f7] border border-[#d2d2d7] rounded-lg space-y-1">
+                      <span className="font-semibold text-[#1d1d1f] text-[11px] flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5 text-[#0071e3]" /> Pilih Anggota Keluarga yang Memilih:
+                      </span>
+                      <Select
+                        value={activeResidentId || ''}
+                        onValueChange={(val) => setSelectedResidentId(val)}
+                      >
+                        {votersInHouse.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.name} ({v.relation})
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  )}
+
                   <ul className="space-y-1.5">
                     {poll.options.map((opt, i) => {
                       const n = votes[i] ?? 0;
@@ -189,22 +287,52 @@ export const PollWidget: React.FC = () => {
                       const mine = poll.my_vote === i;
 
                       return (
-                        <li key={i} className="rounded-lg border border-[#d2d2d7] bg-[#f5f5f7] p-2.5 text-xs space-y-1">
-                          <div className="flex items-center justify-between font-medium">
-                            <span className="flex items-center gap-1.5 text-[#1d1d1f]">
-                              {mine && <Check className="w-3.5 h-3.5 text-[#0066cc]" />}
-                              <span>{opt}</span>
-                            </span>
-                            <span className="tabular-nums font-semibold text-[#1d1d1f]">
-                              {pct}% ({n} suara)
-                            </span>
-                          </div>
-                          <div className="h-1.5 rounded-full bg-[#e2e2e5] overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${isOpen ? 'bg-[#0071e3]' : 'bg-[#858585]'}`}
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
+                        <li key={i}>
+                          <button
+                            onClick={() => {
+                              if (!isOpen) return;
+                              if (!user) {
+                                const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                                window.location.href = `/login?returnTo=${returnUrl}`;
+                                return;
+                              }
+                              setVoteError('');
+                              vote.mutate(
+                                {
+                                  pollId: poll.id,
+                                  optionIndex: i,
+                                  residentId: poll.vote_scope === 'resident' ? activeResidentId : undefined,
+                                },
+                                {
+                                  onError: (e: any) => setVoteError(e?.response?.data?.error || e?.message || 'Gagal memberi suara'),
+                                }
+                              );
+                            }}
+                            disabled={vote.isPending || !isOpen}
+                            className={`w-full text-left rounded-lg border px-3 py-2 text-xs transition-colors ${
+                              mine
+                                ? 'border-[#0071e3] bg-[#f4f8fb] text-[#0066cc]'
+                                : !isOpen
+                                ? 'border-[#d2d2d7] bg-[#f5f5f7] text-[#707070] cursor-default'
+                                : 'border-[#d2d2d7] bg-white hover:border-[#0071e3] hover:bg-[#f5f5f7] text-[#1d1d1f]'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between font-medium">
+                              <span className="flex items-center gap-1.5 text-[#1d1d1f]">
+                                {mine && <Check className="w-3.5 h-3.5 text-[#0066cc]" />}
+                                <span>{opt}</span>
+                              </span>
+                              <span className="tabular-nums font-semibold text-[#1d1d1f]">
+                                {pct}% ({n} suara)
+                              </span>
+                            </div>
+                            <div className="mt-1.5 h-1.5 rounded-full bg-[#e2e2e5] overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${isOpen ? 'bg-[#0071e3]' : 'bg-[#858585]'}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </button>
                         </li>
                       );
                     })}

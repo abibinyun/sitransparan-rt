@@ -18,6 +18,7 @@ export const PollsPage: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState<string[]>(['', '']);
+  const [voteScope, setVoteScope] = useState<'house' | 'resident'>('house');
   const [formError, setFormError] = useState('');
 
   const addOption = () => {
@@ -43,11 +44,12 @@ export const PollsPage: React.FC = () => {
     if (trimmedOpts.length < 2) { setFormError('Minimal 2 opsi'); return; }
     if (trimmedOpts.length > 6) { setFormError('Maksimal 6 opsi'); return; }
     createPoll.mutate(
-      { question: trimmedQ, options: trimmedOpts },
+      { question: trimmedQ, options: trimmedOpts, vote_scope: voteScope },
       {
         onSuccess: () => {
           setQuestion('');
           setOptions(['', '']);
+          setVoteScope('house');
           setIsCreateOpen(false);
         },
         onError: (err: any) => {
@@ -101,6 +103,9 @@ export const PollsPage: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-slate-900 leading-snug">{poll.question}</p>
                     <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-1.5">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium text-[11px] border ${poll.vote_scope === 'resident' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                        {poll.vote_scope === 'resident' ? '1 Warga 1 Suara' : '1 Rumah 1 Suara'}
+                      </span>
                       {poll.status === 'open' ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-[11px]">
                           Sedang Berlangsung
@@ -171,6 +176,42 @@ export const PollsPage: React.FC = () => {
             <Label htmlFor="pollQ">Pertanyaan</Label>
             <Input id="pollQ" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Contoh: Kapan waktu kerja bakti?" required />
           </div>
+
+          <div className="space-y-1.5 p-3 bg-[#f5f5f7] border border-[#d2d2d7] rounded-xl">
+            <Label className="text-xs font-semibold text-[#1d1d1f]">Aturan Hak Suara (Lingkup Voting)</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              <label className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all ${voteScope === 'house' ? 'bg-white border-[#0071e3] shadow-xs' : 'border-transparent hover:bg-white/60'}`}>
+                <input
+                  type="radio"
+                  name="voteScope"
+                  value="house"
+                  checked={voteScope === 'house'}
+                  onChange={() => setVoteScope('house')}
+                  className="mt-0.5"
+                />
+                <div className="text-xs">
+                  <div className="font-semibold text-[#1d1d1f]">1 Rumah = 1 Suara</div>
+                  <div className="text-[11px] text-[#6e6e73]">Cocok untuk iuran, perbaikan fisik, dan aturan hunian.</div>
+                </div>
+              </label>
+
+              <label className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all ${voteScope === 'resident' ? 'bg-white border-[#0071e3] shadow-xs' : 'border-transparent hover:bg-white/60'}`}>
+                <input
+                  type="radio"
+                  name="voteScope"
+                  value="resident"
+                  checked={voteScope === 'resident'}
+                  onChange={() => setVoteScope('resident')}
+                  className="mt-0.5"
+                />
+                <div className="text-xs">
+                  <div className="font-semibold text-[#1d1d1f]">1 Warga = 1 Suara</div>
+                  <div className="text-[11px] text-[#6e6e73]">Cocok untuk pemilihan pengurus & aspirasi pemuda/warga.</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>Opsi ({options.length}/6)</Label>
             {options.map((opt, idx) => (

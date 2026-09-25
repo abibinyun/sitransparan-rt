@@ -117,23 +117,26 @@ func (r *socialRepository) CreatePoll(ctx context.Context, p *domain.Poll) error
 	if len(p.Options) < 2 || len(p.Options) > 6 {
 		return errors.New("poll requires 2..6 options")
 	}
+	if p.VoteScope == "" {
+		p.VoteScope = "house"
+	}
 	opts, err := json.Marshal(p.Options)
 	if err != nil {
 		return err
 	}
 	query := fmt.Sprintf(`
-		INSERT INTO %s (question, options, created_by)
-		VALUES ($1, $2, $3)
+		INSERT INTO %s (question, options, vote_scope, created_by)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id, created_at
 	`, TenantTable(ctx, "polls"))
-	return r.db.QueryRowContext(ctx, query, p.Question, opts, p.CreatedBy).Scan(&p.ID, &p.CreatedAt)
+	return r.db.QueryRowContext(ctx, query, p.Question, opts, p.VoteScope, p.CreatedBy).Scan(&p.ID, &p.CreatedAt)
 }
 
 func scanPollRow(scan func(dest ...interface{}) error) (*domain.Poll, error) {
 	var p domain.Poll
 	var optsRaw []byte
 	var closedAt sql.NullTime
-	if err := scan(&p.ID, &p.Question, &optsRaw, &p.Status, &p.CreatedBy, &p.CreatedAt, &closedAt); err != nil {
+	if err := scan(&p.ID, &p.Question, &optsRaw, &p.VoteScope, &p.Status, &p.CreatedBy, &p.CreatedAt, &closedAt); err != nil {
 		return nil, err
 	}
 	if closedAt.Valid {
@@ -146,7 +149,7 @@ func scanPollRow(scan func(dest ...interface{}) error) (*domain.Poll, error) {
 	return &p, nil
 }
 
-const pollCols = `id, question, options, status, created_by, created_at, closed_at`
+const pollCols = `id, question, options, COALESCE(vote_scope, 'house'), status, created_by, created_at, closed_at`
 
 func (r *socialRepository) getPollRow(ctx context.Context, id uuid.UUID) (*domain.Poll, error) {
 	query := fmt.Sprintf(`SELECT %s FROM %s WHERE id = $1`, pollCols, TenantTable(ctx, "polls"))
@@ -160,18 +163,18 @@ func (r *socialRepository) getPollRow(ctx context.Context, id uuid.UUID) (*domai
 	return poll, nil
 }
 
-func (r *socialRepository) GetPoll(ctx context.Context, id uuid.UUID, viewerID, houseID *uuid.UUID, includeViewer bool) (*domain.Poll, error) {
+func (r *socialRepository) GetPoll(ctx context.Context, id uuid.UUID, viewerID, houseID, residentID *uuid.UUID, includeViewer bool) (*domain.Poll, error) {
 	poll, err := r.getPollRow(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if err := r.attachResults(ctx, poll, viewerID, houseID, includeViewer); err != nil {
+	if err := r.attachResults(ctx, poll, viewerID, houseID, residentID, includeViewer); err != nil {
 		return nil, err
 	}
 	return poll, nil
 }
 
-func (r *socialRepository) ListOpenPolls(ctx context.Context, viewerID, houseID *uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
+func (r *socialRepository) ListOpenPolls(ctx context.Context, viewerID, houseID, residentID *uuid.UUID, includeViewer bool) ([]*domain.Poll, error) {
 	query := fmt.Sprintf(`SELECT %s FROM %s WHERE status IN ('open', 'closed') ORDER BY created_at DESC LIMIT 20`, pollCols, TenantTable(ctx, "polls"))
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
@@ -191,16 +194,15 @@ func (r *socialRepository) ListOpenPolls(ctx context.Context, viewerID, houseID 
 		return nil, err
 	}
 	for _, p := range polls {
-		if err := r.attachResults(ctx, p, viewerID, houseID, includeViewer); err != nil {
+		if err := r.attachResults(ctx, p, viewerID, houseID, residentID, includeViewer); err != nil {
 			return nil, err
 		}
 	}
 	return polls, nil
 }
 
-// attachResults mengisi hasil AGREGAT + suara viewer sendiri (tidak pernah
-// mengekspos identitas voter lain).
-func (r *socialRepository) attachResults(ctx context.Context, p *domain.Poll, viewerID, houseID *uuid.UUID, includeViewer bool) error {
+// attachResults mengisi hasil AGREGAT + suara viewer sendiri
+func (r *socialRepository) attachResults(ctx context.Context, p *domain.Poll, viewerID, houseID, residentID *uuid.UUID, includeViewer bool) error {
 	votesTable := TenantTable(ctx, "poll_votes")
 
 	countQuery := fmt.Sprintf(`SELECT option_index, COUNT(*) FROM %s WHERE poll_id = $1 GROUP BY option_index`, votesTable)
@@ -228,7 +230,17 @@ func (r *socialRepository) attachResults(ctx context.Context, p *domain.Poll, vi
 
 	if includeViewer {
 		var idx int
-		if houseID != nil {
+		if residentID != nil {
+			mineQuery := fmt.Sprintf(`SELECT option_index FROM %s WHERE poll_id = $1 AND resident_id = $2`, votesTable)
+			switch err := r.db.QueryRowContext(ctx, mineQuery, p.ID, residentID).Scan(&idx); {
+			case err == nil:
+				p.MyVote = &idx
+			case errors.Is(err, sql.ErrNoRows):
+				// belum memilih
+			default:
+				return err
+			}
+		} else if houseID != nil && p.VoteScope == "house" {
 			mineQuery := fmt.Sprintf(`SELECT option_index FROM %s WHERE poll_id = $1 AND house_id = $2`, votesTable)
 			switch err := r.db.QueryRowContext(ctx, mineQuery, p.ID, houseID).Scan(&idx); {
 			case err == nil:
@@ -253,7 +265,7 @@ func (r *socialRepository) attachResults(ctx context.Context, p *domain.Poll, vi
 	return nil
 }
 
-func (r *socialRepository) VotePoll(ctx context.Context, pollID uuid.UUID, userID, houseID *uuid.UUID, optionIndex int) error {
+func (r *socialRepository) VotePoll(ctx context.Context, pollID uuid.UUID, userID, houseID, residentID *uuid.UUID, optionIndex int) error {
 	poll, err := r.getPollRow(ctx, pollID)
 	if err != nil {
 		return err
@@ -265,21 +277,35 @@ func (r *socialRepository) VotePoll(ctx context.Context, pollID uuid.UUID, userI
 		return errors.New("option_index out of range")
 	}
 
-	if houseID != nil {
+	// 1. Jika ada resident_id (mode 1 Warga 1 Suara):
+	if residentID != nil {
+		query := fmt.Sprintf(`
+			INSERT INTO %s (poll_id, resident_id, option_index)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (poll_id, resident_id) WHERE resident_id IS NOT NULL
+			DO UPDATE SET option_index = EXCLUDED.option_index
+		`, TenantTable(ctx, "poll_votes"))
+		_, err = r.db.ExecContext(ctx, query, pollID, residentID, optionIndex)
+		return err
+	}
+
+	// 2. Jika polling adalah vote_scope "house" dan ada houseID (mode 1 Rumah 1 Suara):
+	if houseID != nil && poll.VoteScope == "house" {
 		query := fmt.Sprintf(`
 			INSERT INTO %s (poll_id, house_id, option_index)
 			VALUES ($1, $2, $3)
-			ON CONFLICT (poll_id, house_id) WHERE house_id IS NOT NULL
+			ON CONFLICT (poll_id, house_id) WHERE house_id IS NOT NULL AND resident_id IS NULL
 			DO UPDATE SET option_index = EXCLUDED.option_index
 		`, TenantTable(ctx, "poll_votes"))
 		_, err = r.db.ExecContext(ctx, query, pollID, houseID, optionIndex)
 		return err
 	}
 
+	// 3. Fallback ke user_id
 	query := fmt.Sprintf(`
 		INSERT INTO %s (poll_id, user_id, option_index)
 		VALUES ($1, $2, $3)
-		ON CONFLICT (poll_id, user_id) WHERE user_id IS NOT NULL
+		ON CONFLICT (poll_id, user_id) WHERE user_id IS NOT NULL AND resident_id IS NULL
 		DO UPDATE SET option_index = EXCLUDED.option_index
 	`, TenantTable(ctx, "poll_votes"))
 	_, err = r.db.ExecContext(ctx, query, pollID, userID, optionIndex)

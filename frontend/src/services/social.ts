@@ -15,6 +15,7 @@ export interface PublicPoll {
   id: string;
   question: string;
   options: string[];
+  vote_scope?: 'house' | 'resident';
   status: 'open' | 'closed';
   votes?: number[];
   total_votes?: number;
@@ -60,17 +61,19 @@ export function useReact(targetType: string, targetId: string) {
   });
 }
 
-export function useOpenPolls() {
+export function useOpenPolls(residentId?: string) {
   const slug = getTenantSlugOrFallback();
   const { user } = useAuthStore();
   return useQuery<PublicPoll[], Error>({
-    queryKey: ['polls', slug, Boolean(user)],
+    queryKey: ['polls', slug, Boolean(user), residentId],
     queryFn: async () => {
       try {
         // Jika user login: panggil /polls (membawa my_vote)
         // Jika user guest: panggil /t/{slug}/polls (hasil agregat publik)
         const endpoint = user ? '/polls' : `/t/${slug}/polls`;
-        const res = await api.get<{ data: PublicPoll[] }>(endpoint);
+        const res = await api.get<{ data: PublicPoll[] }>(endpoint, {
+          params: residentId ? { resident_id: residentId } : undefined,
+        });
         return res.data.data ?? [];
       } catch {
         return [];
@@ -83,8 +86,19 @@ export function useOpenPolls() {
 export function useVotePoll() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ pollId, optionIndex }: { pollId: string; optionIndex: number }) => {
-      const res = await api.post<PublicPoll>(`/polls/${pollId}/vote`, { option_index: optionIndex });
+    mutationFn: async ({
+      pollId,
+      optionIndex,
+      residentId,
+    }: {
+      pollId: string;
+      optionIndex: number;
+      residentId?: string;
+    }) => {
+      const res = await api.post<PublicPoll>(`/polls/${pollId}/vote`, {
+        option_index: optionIndex,
+        resident_id: residentId || undefined,
+      });
       return res.data;
     },
     onSuccess: () => {
@@ -96,7 +110,7 @@ export function useVotePoll() {
 export function useCreatePoll() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { question: string; options: string[] }) => {
+    mutationFn: async (payload: { question: string; options: string[]; vote_scope?: 'house' | 'resident' }) => {
       const res = await api.post<PublicPoll>('/polls', payload);
       return res.data;
     },

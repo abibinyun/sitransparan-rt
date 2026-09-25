@@ -29,14 +29,15 @@ type Poll struct {
 	ID        uuid.UUID  `json:"id"`
 	Question  string     `json:"question"`
 	Options   []string   `json:"options"`
-	Status    string     `json:"status"` // open | closed
+	VoteScope string     `json:"vote_scope"` // 'house' (1 rumah 1 suara) | 'resident' (1 warga 1 suara)
+	Status    string     `json:"status"`     // open | closed
 	CreatedBy *uuid.UUID `json:"created_by,omitempty"`
 	CreatedAt time.Time  `json:"created_at"`
 	ClosedAt  *time.Time `json:"closed_at,omitempty"`
 
 	// Hasil agregat (diisi pada Get/List):
-	Votes []int64  `json:"votes,omitempty"` // jumlah suara per opsi
-	Total int64    `json:"total_votes,omitempty"`
+	Votes  []int64 `json:"votes,omitempty"` // jumlah suara per opsi
+	Total  int64   `json:"total_votes,omitempty"`
 	MyVote *int    `json:"my_vote,omitempty"` // indeks opsi si-peminta
 }
 
@@ -48,9 +49,9 @@ type SocialRepository interface {
 
 	// Polls
 	CreatePoll(ctx context.Context, p *Poll) error
-	GetPoll(ctx context.Context, id uuid.UUID, viewerID, houseID *uuid.UUID, includeViewer bool) (*Poll, error)
-	ListOpenPolls(ctx context.Context, viewerID, houseID *uuid.UUID, includeViewer bool) ([]*Poll, error)
-	VotePoll(ctx context.Context, pollID uuid.UUID, userID, houseID *uuid.UUID, optionIndex int) error
+	GetPoll(ctx context.Context, id uuid.UUID, viewerID, houseID, residentID *uuid.UUID, includeViewer bool) (*Poll, error)
+	ListOpenPolls(ctx context.Context, viewerID, houseID, residentID *uuid.UUID, includeViewer bool) ([]*Poll, error)
+	VotePoll(ctx context.Context, pollID uuid.UUID, userID, houseID, residentID *uuid.UUID, optionIndex int) error
 	ClosePoll(ctx context.Context, id uuid.UUID) error
 
 	// KPI instrumentasi (konsep portal §4)
@@ -63,9 +64,9 @@ type SocialUsecase interface {
 	Summary(ctx context.Context, targetType string, targetID uuid.UUID, userID, houseID *uuid.UUID) (*ReactionSummary, error)
 
 	CreatePoll(ctx context.Context, p *Poll) error
-	Poll(ctx context.Context, id uuid.UUID, viewerID, houseID *uuid.UUID, includeViewer bool) (*Poll, error)
-	OpenPolls(ctx context.Context, viewerID, houseID *uuid.UUID, includeViewer bool) ([]*Poll, error)
-	Vote(ctx context.Context, pollID uuid.UUID, userID, houseID *uuid.UUID, optionIndex int) error
+	Poll(ctx context.Context, id uuid.UUID, viewerID, houseID, residentID *uuid.UUID, includeViewer bool) (*Poll, error)
+	OpenPolls(ctx context.Context, viewerID, houseID, residentID *uuid.UUID, includeViewer bool) ([]*Poll, error)
+	Vote(ctx context.Context, pollID uuid.UUID, userID, houseID, residentID *uuid.UUID, optionIndex int) error
 	ClosePoll(ctx context.Context, id uuid.UUID) error
 
 	// KPI instrumentasi (konsep portal §4): event ringan sisi server.

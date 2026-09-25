@@ -52,7 +52,7 @@ type HouseRepository interface {
 }
 
 type HouseUsecase interface {
-	ClaimAccessToken(ctx context.Context, tenantSlug, token string) (*HouseAccessClaimResponse, error)
+	ClaimAccessToken(ctx context.Context, tenantSlug, token, pin string) (*HouseAccessClaimResponse, error)
 	GetMyHouse(ctx context.Context, tenantID, userID uuid.UUID) (*House, *Resident, error)
 	ListHouses(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]House, int, error)
 	CreateHouse(ctx context.Context, tenantID uuid.UUID, house *House) (*House, error)

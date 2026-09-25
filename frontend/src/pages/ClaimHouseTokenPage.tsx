@@ -5,7 +5,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import { getTenantSlugFromHost } from '../utils/tenant';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { CheckCircle2, AlertCircle, Loader2, ArrowRight, Download } from 'lucide-react';
+import { Input } from '../components/ui/input';
+import { CheckCircle2, AlertCircle, Loader2, ArrowRight, Download, KeyRound } from 'lucide-react';
 import { usePublicTenantQuery } from '../services/public_tenant';
 import { TenantNotFoundPage } from '../components/TenantNotFoundPage';
 
@@ -17,7 +18,9 @@ export const ClaimHouseTokenPage: React.FC = () => {
   const hostTenantSlug = getTenantSlugFromHost();
   const { data: tenantInfo, isLoading: isTenantLoading, isError: isTenantError } = usePublicTenantQuery();
 
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'pin_required' | 'success' | 'error'>('loading');
+  const [inputPin, setInputPin] = useState('');
+  const [pinError, setPinError] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [houseInfo, setHouseInfo] = useState<{
     block_number: string;
@@ -55,7 +58,7 @@ export const ClaimHouseTokenPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
+  const executeClaim = (pinToSubmit?: string) => {
     const token = searchParams.get('token');
     const slug = searchParams.get('slug') || getTenantSlugFromHost() || 'sitransparan-rt';
 
@@ -65,9 +68,9 @@ export const ClaimHouseTokenPage: React.FC = () => {
       return;
     }
 
-    claimHouseToken(slug, token)
+    setPinError('');
+    claimHouseToken(slug, token, pinToSubmit)
       .then((res) => {
-        // Simpan sesi autentikasi warga dari QR dengan real user akun
         const userObj = res.user
           ? {
               id: res.user.id,
@@ -82,7 +85,7 @@ export const ClaimHouseTokenPage: React.FC = () => {
               role: 'resident',
             };
         const tenantObj = {
-          id: res.house.id, // placeholder id
+          id: res.house.id,
           name: res.tenant_name,
           slug: res.tenant_slug,
         };
@@ -99,12 +102,24 @@ export const ClaimHouseTokenPage: React.FC = () => {
         setStatus('success');
       })
       .catch((err) => {
+        if (err.response?.status === 428 || err.response?.data?.error === 'pin_required') {
+          setStatus('pin_required');
+          return;
+        }
+        if (status === 'pin_required') {
+          setPinError(err.response?.data?.error || 'PIN yang Anda masukkan salah.');
+          return;
+        }
         setStatus('error');
         setErrorMessage(
           err.response?.data?.error || 'Token QR tidak valid atau sudah diganti oleh pengurus RT.'
         );
       });
-  }, [searchParams, setAuth]);
+  };
+
+  useEffect(() => {
+    executeClaim();
+  }, [searchParams]);
 
   if (hostTenantSlug && !isTenantLoading && (isTenantError || tenantInfo === null)) {
     return <TenantNotFoundPage />;
@@ -125,6 +140,58 @@ export const ClaimHouseTokenPage: React.FC = () => {
                   Menghubungkan ke sistem transparansi RT Anda.
                 </p>
               </div>
+            </div>
+          )}
+
+          {status === 'pin_required' && (
+            <div className="py-6 space-y-4">
+              <div className="w-16 h-16 bg-blue-50 text-[#0071e3] rounded-full flex items-center justify-center mx-auto border border-blue-100">
+                <KeyRound className="w-8 h-8" />
+              </div>
+
+              <div>
+                <h1 className="text-lg font-bold text-slate-900">
+                  Verifikasi PIN Rumah
+                </h1>
+                <p className="text-xs text-slate-500 mt-1">
+                  Masukkan 4 digit PIN yang tertera pada stiker fisik pintu rumah atau diberikan oleh pengurus RT.
+                </p>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (inputPin.trim().length >= 4) {
+                    executeClaim(inputPin.trim());
+                  }
+                }}
+                className="space-y-3 pt-2"
+              >
+                {pinError && (
+                  <div className="p-2.5 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
+                    {pinError}
+                  </div>
+                )}
+                <div className="max-w-[200px] mx-auto">
+                  <Input
+                    type="password"
+                    maxLength={6}
+                    required
+                    autoFocus
+                    placeholder="••••"
+                    value={inputPin}
+                    onChange={(e) => setInputPin(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="text-center font-mono text-xl tracking-widest h-12 border-[#d2d2d7] focus:border-[#0071e3]"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={inputPin.length < 4}
+                  className="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white"
+                >
+                  Verifikasi & Masuk
+                </Button>
+              </form>
             </div>
           )}
 

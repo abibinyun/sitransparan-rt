@@ -127,8 +127,8 @@ func (h *ResidentHandler) handleResidents(w http.ResponseWriter, r *http.Request
 
 func (h *ResidentHandler) list(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
 	// Resident demographic data (incl. NIK) is admin-managed; residents do not
-	// get the tenant population list.
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+	// get the tenant population list. Operator, AdminRT, and SuperAdmin can read.
+	if !middleware.RequireOperatorOrAdmin(r) {
 		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
 		return
 	}
@@ -169,7 +169,7 @@ func (h *ResidentHandler) list(w http.ResponseWriter, r *http.Request, tenantID 
 }
 
 func (h *ResidentHandler) create(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID) {
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+	if !middleware.RequireOperatorOrAdmin(r) {
 		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
 		return
 	}
@@ -190,7 +190,7 @@ func (h *ResidentHandler) create(w http.ResponseWriter, r *http.Request, tenantI
 }
 
 func (h *ResidentHandler) getByID(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+	if !middleware.RequireOperatorOrAdmin(r) {
 		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
 		return
 	}
@@ -206,7 +206,7 @@ func (h *ResidentHandler) getByID(w http.ResponseWriter, r *http.Request, tenant
 }
 
 func (h *ResidentHandler) update(w http.ResponseWriter, r *http.Request, tenantID, id uuid.UUID) {
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+	if !middleware.RequireOperatorOrAdmin(r) {
 		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
 		return
 	}
@@ -243,7 +243,7 @@ func (h *ResidentHandler) delete(w http.ResponseWriter, r *http.Request, tenantI
 }
 
 func (h *ResidentHandler) addFamilyMember(w http.ResponseWriter, r *http.Request, tenantID, residentID uuid.UUID) {
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+	if !middleware.RequireOperatorOrAdmin(r) {
 		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
 		return
 	}
@@ -265,7 +265,7 @@ func (h *ResidentHandler) addFamilyMember(w http.ResponseWriter, r *http.Request
 }
 
 func (h *ResidentHandler) updateFamilyMember(w http.ResponseWriter, r *http.Request, tenantID, residentID, memberID uuid.UUID) {
-	if !middleware.RequireAnyRole(r, domain.RoleSuperAdmin, domain.RoleAdminRT) {
+	if !middleware.RequireOperatorOrAdmin(r) {
 		http.Error(w, `{"error":"forbidden: insufficient permissions"}`, http.StatusForbidden)
 		return
 	}
