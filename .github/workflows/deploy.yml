@@ -3,11 +3,12 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - refactor/enhancement # Staging triggers
-      - main                 # Production triggers
+      - staging  # Staging trigger
+      - main     # Production trigger
   pull_request:
     branches:
       - main
+      - staging
 
 jobs:
   lint-and-test:
@@ -43,9 +44,9 @@ jobs:
           npm run build
 
   deploy-staging:
-    name: Deploy to Staging (iscube.web.id)
+    name: Deploy to Staging (*.staging.iscube.web.id)
     needs: lint-and-test
-    if: github.ref == 'refs/heads/refactor/enhancement' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -61,16 +62,17 @@ jobs:
           port: ${{ secrets.STAGING_SSH_PORT || 22 }}
           script: |
             set -e
-            echo "Deploying to Staging (iscube.web.id)..."
-            cd /opt/sitransparan-staging || cd ~/sitransparan
-            git fetch origin refactor/enhancement
-            git reset --hard origin/refactor/enhancement
-            docker compose -f infrastructure/docker-compose.yml build --no-cache backend frontend
-            docker compose -f infrastructure/docker-compose.yml up -d
+            echo "Deploying to Staging (*.staging.iscube.web.id)..."
+            cd /opt/sitransparan-staging || cd ~/sitransparan-staging || cd ~/sitransparan
+            git fetch origin staging
+            git checkout staging
+            git reset --hard origin/staging
+            docker compose -f infrastructure/docker-compose.staging.yml build --no-cache backend frontend
+            docker compose -f infrastructure/docker-compose.staging.yml up -d
             echo "Staging deployment complete."
 
   deploy-production:
-    name: Deploy to Production
+    name: Deploy to Production (*.iscube.web.id)
     needs: lint-and-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -88,9 +90,10 @@ jobs:
           port: ${{ secrets.PROD_SSH_PORT || 22 }}
           script: |
             set -e
-            echo "Deploying to Production..."
-            cd /opt/sitransparan-prod || cd ~/sitransparan-prod
+            echo "Deploying to Production (*.iscube.web.id)..."
+            cd /opt/sitransparan-prod || cd ~/sitransparan-prod || cd ~/sitransparan
             git fetch origin main
+            git checkout main
             git reset --hard origin/main
             docker compose -f infrastructure/docker-compose.prod.yml build --no-cache backend frontend
             docker compose -f infrastructure/docker-compose.prod.yml up -d

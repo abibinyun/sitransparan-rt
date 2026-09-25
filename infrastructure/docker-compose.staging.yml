@@ -1,7 +1,7 @@
 services:
   traefik:
     image: traefik:3.6
-    container_name: transparansi_traefik_prod
+    container_name: transparansi_traefik_staging
     restart: always
     command:
       - "--api.insecure=false"
@@ -10,73 +10,69 @@ services:
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
       - "--entrypoints.web.address=:80"
     ports:
-      - "80:80"
+      - "8082:80"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/dynamic:/etc/traefik/dynamic:ro
     networks:
-      - rt_prod_network
+      - rt_staging_network
 
   postgres:
     image: postgres:16-alpine
-    container_name: transparansi_postgres_prod
+    container_name: transparansi_postgres_staging
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-transparansi_rt_prod}
+      POSTGRES_DB: ${POSTGRES_DB:-transparansi_rt_staging}
     volumes:
-      - postgres_prod_data:/var/lib/postgresql/data
+      - postgres_staging_data:/var/lib/postgresql/data
       - ../backend/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-transparansi_rt_prod}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-transparansi_rt_staging}"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
-      - rt_prod_network
+      - rt_staging_network
 
   minio:
     image: minio/minio:latest
-    container_name: transparansi_minio_prod
+    container_name: transparansi_minio_staging
     restart: always
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
-      - minio_prod_data:/data
+      - minio_staging_data:/data
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
-      - rt_prod_network
+      - rt_staging_network
 
   backend:
     build:
       context: ..
       dockerfile: infrastructure/Dockerfile.backend.prod
-    container_name: transparansi_backend_prod
+    container_name: transparansi_backend_staging
     restart: always
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      DB_NAME: ${POSTGRES_DB:-transparansi_rt_prod}
+      DB_NAME: ${POSTGRES_DB:-transparansi_rt_staging}
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_USE_SSL: "false"
       PORT: 8080
-      JWT_SECRET: ${JWT_SECRET:-production-super-secret-jwt-platform-rt-key}
-      TENANT_BASE_DOMAIN: iscube.web.id
+      JWT_SECRET: ${JWT_SECRET:-staging-secret-jwt-platform-rt-key}
+      TENANT_BASE_DOMAIN: staging.iscube.web.id
       TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-}
-      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
-      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
-      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@iscube.web.id}
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,36 +80,36 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=rt_prod_network"
-      - 'traefik.http.routers.backend_prod.rule=Host(`api.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+\.iscube\.web\.id$`)'
-      - "traefik.http.routers.backend_prod.entrypoints=web"
-      - "traefik.http.services.backend_prod.loadbalancer.server.port=8080"
+      - "traefik.docker.network=rt_staging_network"
+      - 'traefik.http.routers.backend_staging.rule=Host(`api.staging.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+\.staging\.iscube\.web\.id$`)'
+      - "traefik.http.routers.backend_staging.entrypoints=web"
+      - "traefik.http.services.backend_staging.loadbalancer.server.port=8080"
     networks:
-      - rt_prod_network
+      - rt_staging_network
 
   frontend:
     build:
       context: ..
       dockerfile: infrastructure/Dockerfile.frontend.prod
       args:
-        VITE_TENANT_BASE_DOMAIN: iscube.web.id
-    container_name: transparansi_frontend_prod
+        VITE_TENANT_BASE_DOMAIN: staging.iscube.web.id
+    container_name: transparansi_frontend_staging
     restart: always
     depends_on:
       - backend
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=rt_prod_network"
-      - 'traefik.http.routers.frontend_prod.rule=Host(`iscube.web.id`) || Host(`app.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`)'
-      - "traefik.http.routers.frontend_prod.entrypoints=web"
-      - "traefik.http.services.frontend_prod.loadbalancer.server.port=80"
+      - "traefik.docker.network=rt_staging_network"
+      - 'traefik.http.routers.frontend_staging.rule=Host(`staging.iscube.web.id`) || Host(`app.staging.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+\.staging\.iscube\.web\.id$`)'
+      - "traefik.http.routers.frontend_staging.entrypoints=web"
+      - "traefik.http.services.frontend_staging.loadbalancer.server.port=80"
     networks:
-      - rt_prod_network
+      - rt_staging_network
 
 volumes:
-  postgres_prod_data:
-  minio_prod_data:
+  postgres_staging_data:
+  minio_staging_data:
 
 networks:
-  rt_prod_network:
-    name: rt_prod_network
+  rt_staging_network:
+    name: rt_staging_network

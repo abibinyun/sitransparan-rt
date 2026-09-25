@@ -1,0 +1,14 @@
+FROM golang:1.24-alpine AS builder
+ENV GOTOOLCHAIN=auto
+WORKDIR /app
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+COPY backend/ .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o server ./cmd/server
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates tzdata curl
+WORKDIR /app
+COPY --from=builder /app/server .
+EXPOSE 8080
+CMD ["./server"]
