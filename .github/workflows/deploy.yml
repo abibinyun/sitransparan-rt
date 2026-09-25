@@ -1,10 +1,10 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline (PC Local Cloudflare Tunnel)
 
 on:
   push:
     branches:
-      - staging  # Staging trigger
-      - main     # Production trigger
+      - staging  # Staging trigger -> *.staging.iscube.web.id
+      - main     # Production trigger -> *.iscube.web.id
   pull_request:
     branches:
       - main
@@ -12,30 +12,17 @@ on:
 
 jobs:
   lint-and-test:
-    name: Lint, Test & Build Check
-    runs-on: ubuntu-latest
+    name: Lint, Test & Build Verification
+    runs-on: [self-hosted, pc-local]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24'
-          cache-dependency-path: backend/go.sum
-
       - name: Backend Vet & Test
         run: |
           cd backend
-          go vet ./...
-          go test -v ./...
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          /usr/local/go/bin/go vet ./...
+          /usr/local/go/bin/go test -v ./...
 
       - name: Frontend Typecheck & Build
         run: |
@@ -47,54 +34,32 @@ jobs:
     name: Deploy to Staging (*.staging.iscube.web.id)
     needs: lint-and-test
     if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment: staging
+    runs-on: [self-hosted, pc-local]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH to Staging Server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.STAGING_SSH_HOST }}
-          username: ${{ secrets.STAGING_SSH_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          port: ${{ secrets.STAGING_SSH_PORT || 22 }}
-          script: |
-            set -e
-            echo "Deploying to Staging (*.staging.iscube.web.id)..."
-            cd /opt/sitransparan-staging || cd ~/sitransparan-staging || cd ~/sitransparan
-            git fetch origin staging
-            git checkout staging
-            git reset --hard origin/staging
-            docker compose -f infrastructure/docker-compose.staging.yml build --no-cache backend frontend
-            docker compose -f infrastructure/docker-compose.staging.yml up -d
-            echo "Staging deployment complete."
+      - name: Build & Run Staging Containers
+        run: |
+          echo "Deploying Staging to *.staging.iscube.web.id..."
+          cd infrastructure
+          docker compose -f docker-compose.staging.yml build backend frontend
+          docker compose -f docker-compose.staging.yml up -d
+          echo "Staging deployment complete."
 
   deploy-production:
     name: Deploy to Production (*.iscube.web.id)
     needs: lint-and-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment: production
+    runs-on: [self-hosted, pc-local]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH to Production Server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.PROD_SSH_HOST }}
-          username: ${{ secrets.PROD_SSH_USER }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          port: ${{ secrets.PROD_SSH_PORT || 22 }}
-          script: |
-            set -e
-            echo "Deploying to Production (*.iscube.web.id)..."
-            cd /opt/sitransparan-prod || cd ~/sitransparan-prod || cd ~/sitransparan
-            git fetch origin main
-            git checkout main
-            git reset --hard origin/main
-            docker compose -f infrastructure/docker-compose.prod.yml build --no-cache backend frontend
-            docker compose -f infrastructure/docker-compose.prod.yml up -d
-            echo "Production deployment complete."
+      - name: Build & Run Production Containers
+        run: |
+          echo "Deploying Production to *.iscube.web.id..."
+          cd infrastructure
+          docker compose -f docker-compose.prod.yml build backend frontend
+          docker compose -f docker-compose.prod.yml up -d
+          echo "Production deployment complete."
