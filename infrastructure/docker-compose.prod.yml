@@ -15,7 +15,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
     networks:
-      - rt_prod_network
+      - infrastructure_default
 
   postgres:
     image: postgres:16-alpine
@@ -34,7 +34,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - rt_prod_network
+      - infrastructure_default
 
   minio:
     image: minio/minio:latest
@@ -52,7 +52,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - rt_prod_network
+      - infrastructure_default
 
   backend:
     build:
@@ -89,7 +89,7 @@ services:
       - "traefik.http.routers.backend_prod.entrypoints=web"
       - "traefik.http.services.backend_prod.loadbalancer.server.port=8080"
     networks:
-      - rt_prod_network
+      - infrastructure_default
 
   frontend:
     build:
@@ -108,12 +108,12 @@ services:
       - "traefik.http.routers.frontend_prod.entrypoints=web"
       - "traefik.http.services.frontend_prod.loadbalancer.server.port=80"
     networks:
-      - rt_prod_network
+      - infrastructure_default
 
 volumes:
   postgres_prod_data:
   minio_prod_data:
 
 networks:
-  rt_prod_network:
-    name: rt_prod_network
+  infrastructure_default:
+    external: true

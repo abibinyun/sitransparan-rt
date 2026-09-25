@@ -14,7 +14,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - rt_staging_network
+      - infrastructure_default
 
   postgres:
     image: postgres:16-alpine
@@ -33,7 +33,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - rt_staging_network
+      - infrastructure_default
 
   minio:
     image: minio/minio:latest
@@ -51,7 +51,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - rt_staging_network
+      - infrastructure_default
 
   backend:
     build:
@@ -85,7 +85,7 @@ services:
       - "traefik.http.routers.backend_staging.entrypoints=web"
       - "traefik.http.services.backend_staging.loadbalancer.server.port=8080"
     networks:
-      - rt_staging_network
+      - infrastructure_default
 
   frontend:
     build:
@@ -104,12 +104,12 @@ services:
       - "traefik.http.routers.frontend_staging.entrypoints=web"
       - "traefik.http.services.frontend_staging.loadbalancer.server.port=80"
     networks:
-      - rt_staging_network
+      - infrastructure_default
 
 volumes:
   postgres_staging_data:
   minio_staging_data:
 
 networks:
-  rt_staging_network:
-    name: rt_staging_network
+  infrastructure_default:
+    external: true
