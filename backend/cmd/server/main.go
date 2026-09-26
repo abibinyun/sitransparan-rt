@@ -31,6 +31,12 @@ func main() {
 		log.Fatalf("failed to ping database: %v", err)
 	}
 
+	// Database Connection Pool tuning (Rigid, scalable resource management)
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(15 * time.Minute)
+	db.SetConnMaxIdleTime(5 * time.Minute)
+
 	// Object storage (MinIO / S3-compatible). If the endpoint is unreachable the
 	// server still starts, but uploads fall back to metadata-only URLs.
 	storageClient, err := minio.New(
@@ -242,7 +248,14 @@ func main() {
 	handler = auditMw(handler)
 
 	log.Printf("Server starting on port %s", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, handler); err != nil {
+	srv := &http.Server{
+		Addr:         ":" + cfg.Port,
+		Handler:      handler,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
