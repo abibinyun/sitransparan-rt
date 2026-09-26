@@ -41,13 +41,14 @@ import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { KarangTarunaPeriod, KarangTarunaMember } from '../types/karang_taruna';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
-import { Flame, Recycle, ShieldCheck, UserCheck } from 'lucide-react';
+import { WasteAttendanceTab } from '../components/WasteAttendanceTab';
+import { Flame, Recycle, ShieldCheck, UserCheck, ClipboardCheck } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
 export const KarangTarunaPage: React.FC = () => {
   const { user } = useAuthStore();
   const isResident = String(user?.role || '').toLowerCase() === 'resident';
-  const [activeTab, setActiveTab] = useState<'rt_structure' | 'kt_structure'>('rt_structure');
+  const [activeTab, setActiveTab] = useState<'rt_structure' | 'kt_structure' | 'waste_attendance'>('rt_structure');
 
   // Queries
   const { data: activePeriod, isLoading: loadingActive } = useKTActivePeriod();
@@ -475,6 +476,16 @@ export const KarangTarunaPage: React.FC = () => {
           }`}
         >
           <Flame className="h-4 w-4 text-amber-600" /> 2. Karang Taruna ({members.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('waste_attendance')}
+          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
+            activeTab === 'waste_attendance'
+              ? 'bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]'
+              : 'text-[#707070] hover:bg-[#f5f5f7]'
+          }`}
+        >
+          <ClipboardCheck className="h-4 w-4 text-emerald-600" /> 3. Petugas & Absensi Sampah
         </button>
       </div>
 
@@ -1156,6 +1167,11 @@ export const KarangTarunaPage: React.FC = () => {
           </div>
         </form>
       </SimpleDialog>
+
+      {/* TAB 3: PETUGAS & ABSENSI PENARIKAN SAMPAH */}
+      {activeTab === 'waste_attendance' && (
+        <WasteAttendanceTab isResident={isResident} />
+      )}
 
       {/* Modal Anggota */}
       <SimpleDialog

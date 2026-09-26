@@ -121,6 +121,11 @@ func main() {
 	wasteBankUC := usecase.NewWasteBankUsecase(wasteBankRepo, auditRepo)
 	wasteBankHandler := delivery.NewWasteBankHandler(wasteBankUC, tenantRepo, cfg.TenantBaseDomain)
 
+	// Absensi Petugas Sampah (Internal Pemuda RT)
+	wasteAttendanceRepo := repository.NewWasteAttendanceRepository(db)
+	wasteAttendanceUC := usecase.NewWasteAttendanceUsecase(wasteAttendanceRepo)
+	wasteAttendanceHandler := delivery.NewWasteAttendanceHandler(wasteAttendanceUC)
+
 	// House QR Access (1 Rumah = 1 Token)
 	houseUC := usecase.NewHouseUsecase(houseRepo, tenantRepo, residentRepo, userRepo, tuRepo, roleRepo, jwtSecret, jwtDuration)
 	houseHandler := delivery.NewHouseHandler(houseUC)
@@ -212,6 +217,9 @@ func main() {
 
 	// Bank Sampah RT (Program Karang Taruna & Warga)
 	wasteBankHandler.RegisterRoutes(mux, tenantMw, authMw)
+
+	// Absensi & Honor Petugas Sampah RT (Internal)
+	wasteAttendanceHandler.RegisterRoutes(mux, tenantMw, authMw, adminMw)
 
 	// Audit Logs (Zero Missed Action)
 	auditHandler.RegisterRoutes(mux, tenantMw, authMw, adminMw)
