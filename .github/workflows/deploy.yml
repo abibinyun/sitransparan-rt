@@ -47,6 +47,10 @@ jobs:
           docker compose -p staging -f docker-compose.staging.yml up -d
           echo "Staging deployment complete."
 
+      - name: Run Database Migrations
+        run: |
+          make staging-migrate
+
   deploy-production:
     name: Deploy to Production (*.iscube.web.id)
     needs: lint-and-test
@@ -63,3 +67,7 @@ jobs:
           docker compose -p prod -f docker-compose.prod.yml build backend frontend
           docker compose -p prod -f docker-compose.prod.yml up -d
           echo "Production deployment complete."
+
+      - name: Run Database Migrations
+        run: |
+          make prod-migrate

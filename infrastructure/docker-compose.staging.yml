@@ -62,7 +62,7 @@ services:
   backend:
     build:
       context: ..
-      dockerfile: infrastructure/Dockerfile.backend.prod
+      dockerfile: infrastructure/Dockerfile.backend.staging
     container_name: transparansi_backend_staging
     restart: always
     environment:
@@ -97,7 +97,7 @@ services:
   frontend:
     build:
       context: ..
-      dockerfile: infrastructure/Dockerfile.frontend.prod
+      dockerfile: infrastructure/Dockerfile.frontend.staging
       args:
         VITE_TENANT_BASE_DOMAIN: iscube.web.id
     container_name: transparansi_frontend_staging
