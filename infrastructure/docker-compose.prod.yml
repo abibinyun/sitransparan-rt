@@ -15,7 +15,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
     networks:
-      - infrastructure_default
+      infrastructure_default:
+        aliases:
+          - traefik
+          - traefik-prod
 
   postgres:
     image: postgres:16-alpine
@@ -34,7 +37,9 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - infrastructure_default
+      infrastructure_default:
+        aliases:
+          - postgres-prod
 
   minio:
     image: minio/minio:latest
@@ -52,7 +57,9 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - infrastructure_default
+      infrastructure_default:
+        aliases:
+          - minio-prod
 
   backend:
     build:
@@ -61,12 +68,12 @@ services:
     container_name: transparansi_backend_prod
     restart: always
     environment:
-      DB_HOST: postgres
+      DB_HOST: postgres-prod
       DB_PORT: 5432
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       DB_NAME: ${POSTGRES_DB:-transparansi_rt_prod}
-      MINIO_ENDPOINT: minio:9000
+      MINIO_ENDPOINT: minio-prod:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_USE_SSL: "false"
@@ -84,12 +91,13 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=rt_prod_network"
       - 'traefik.http.routers.backend_prod.rule=Host(`api.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+\.iscube\.web\.id$`)'
       - "traefik.http.routers.backend_prod.entrypoints=web"
       - "traefik.http.services.backend_prod.loadbalancer.server.port=8080"
     networks:
-      - infrastructure_default
+      infrastructure_default:
+        aliases:
+          - backend-prod
 
   frontend:
     build:
@@ -98,12 +106,13 @@ services:
       args:
         VITE_TENANT_BASE_DOMAIN: iscube.web.id
     container_name: transparansi_frontend_prod
+    environment:
+      BACKEND_UPSTREAM: backend-prod
     restart: always
     depends_on:
       - backend
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=rt_prod_network"
       - 'traefik.http.routers.frontend_prod.rule=Host(`iscube.web.id`) || Host(`app.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`)'
       - "traefik.http.routers.frontend_prod.entrypoints=web"
       - "traefik.http.services.frontend_prod.loadbalancer.server.port=80"

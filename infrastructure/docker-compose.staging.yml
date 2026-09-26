@@ -14,7 +14,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - infrastructure_default
+      infrastructure_default:
+        aliases:
+          - traefik-staging
 
   postgres:
     image: postgres:16-alpine
@@ -23,17 +25,19 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-transparansi_rt_staging}
+      POSTGRES_DB: ${POSTGRES_DB:-transparansi_rt}
     volumes:
       - postgres_staging_data:/var/lib/postgresql/data
       - ../backend/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-transparansi_rt_staging}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-transparansi_rt}"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
-      - infrastructure_default
+      infrastructure_default:
+        aliases:
+          - postgres-staging
 
   minio:
     image: minio/minio:latest
@@ -51,7 +55,9 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - infrastructure_default
+      infrastructure_default:
+        aliases:
+          - minio-staging
 
   backend:
     build:
@@ -60,18 +66,18 @@ services:
     container_name: transparansi_backend_staging
     restart: always
     environment:
-      DB_HOST: postgres
+      DB_HOST: postgres-staging
       DB_PORT: 5432
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      DB_NAME: ${POSTGRES_DB:-transparansi_rt_staging}
-      MINIO_ENDPOINT: minio:9000
+      DB_NAME: ${POSTGRES_DB:-transparansi_rt}
+      MINIO_ENDPOINT: minio-staging:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_USE_SSL: "false"
       PORT: 8080
       JWT_SECRET: ${JWT_SECRET:-staging-secret-jwt-platform-rt-key}
-      TENANT_BASE_DOMAIN: staging.iscube.web.id
+      TENANT_BASE_DOMAIN: iscube.web.id
       TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-}
     depends_on:
       postgres:
@@ -80,27 +86,29 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=rt_staging_network"
-      - 'traefik.http.routers.backend_staging.rule=Host(`api.staging.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+\.staging\.iscube\.web\.id$`)'
+      - 'traefik.http.routers.backend_staging.rule=Host(`api-staging.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+-staging\.iscube\.web\.id$`) || HostRegexp(`^api-[a-z0-9-]+\.staging\.iscube\.web\.id$`)'
       - "traefik.http.routers.backend_staging.entrypoints=web"
       - "traefik.http.services.backend_staging.loadbalancer.server.port=8080"
     networks:
-      - infrastructure_default
+      infrastructure_default:
+        aliases:
+          - backend-staging
 
   frontend:
     build:
       context: ..
       dockerfile: infrastructure/Dockerfile.frontend.prod
       args:
-        VITE_TENANT_BASE_DOMAIN: staging.iscube.web.id
+        VITE_TENANT_BASE_DOMAIN: iscube.web.id
     container_name: transparansi_frontend_staging
+    environment:
+      BACKEND_UPSTREAM: backend-staging
     restart: always
     depends_on:
       - backend
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=rt_staging_network"
-      - 'traefik.http.routers.frontend_staging.rule=Host(`staging.iscube.web.id`) || Host(`app.staging.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+\.staging\.iscube\.web\.id$`)'
+      - 'traefik.http.routers.frontend_staging.rule=Host(`staging.iscube.web.id`) || Host(`app-staging.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+-staging\.iscube\.web\.id$`) || HostRegexp(`^[a-z0-9-]+\.staging\.iscube\.web\.id$`)'
       - "traefik.http.routers.frontend_staging.entrypoints=web"
       - "traefik.http.services.frontend_staging.loadbalancer.server.port=80"
     networks:
@@ -108,7 +116,11 @@ services:
 
 volumes:
   postgres_staging_data:
+    external: true
+    name: infrastructure_postgres_data
   minio_staging_data:
+    external: true
+    name: infrastructure_minio_data
 
 networks:
   infrastructure_default:

@@ -31,7 +31,7 @@ jobs:
           npm run build
 
   deploy-staging:
-    name: Deploy to Staging (*.staging.iscube.web.id)
+    name: Deploy to Staging (*-staging.iscube.web.id)
     needs: lint-and-test
     if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
     runs-on: [self-hosted, pc-local]
@@ -41,10 +41,10 @@ jobs:
 
       - name: Build & Run Staging Containers
         run: |
-          echo "Deploying Staging to *.staging.iscube.web.id..."
+          echo "Deploying Staging to *-staging.iscube.web.id..."
           cd infrastructure
-          docker compose -f docker-compose.staging.yml build backend frontend
-          docker compose -f docker-compose.staging.yml up -d
+          docker compose -p staging -f docker-compose.staging.yml build backend frontend
+          docker compose -p staging -f docker-compose.staging.yml up -d
           echo "Staging deployment complete."
 
   deploy-production:
@@ -60,6 +60,6 @@ jobs:
         run: |
           echo "Deploying Production to *.iscube.web.id..."
           cd infrastructure
-          docker compose -f docker-compose.prod.yml build backend frontend
-          docker compose -f docker-compose.prod.yml up -d
+          docker compose -p prod -f docker-compose.prod.yml build backend frontend
+          docker compose -p prod -f docker-compose.prod.yml up -d
           echo "Production deployment complete."

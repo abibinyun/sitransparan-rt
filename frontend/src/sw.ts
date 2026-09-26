@@ -18,14 +18,15 @@ precacheAndRoute(self.__WB_MANIFEST || []);
 // Navigasi HTML tidak di-cache oleh SW runtime untuk mencegah index.html usang
 // saat hard-refresh / pull-to-refresh. Navigasi langsung ke jaringan (NetworkOnly).
 
-// Cache static assets (images, fonts, styles, scripts)
+// Cache static assets (images, fonts, styles, scripts) ONLY from same origin
 registerRoute(
-  ({ request }) =>
-    request.destination === 'style' ||
-    request.destination === 'script' ||
-    request.destination === 'worker' ||
-    request.destination === 'image' ||
-    request.destination === 'font',
+  ({ request, url }) =>
+    url.origin === self.location.origin &&
+    (request.destination === 'style' ||
+      request.destination === 'script' ||
+      request.destination === 'worker' ||
+      request.destination === 'image' ||
+      request.destination === 'font'),
   new StaleWhileRevalidate({
     cacheName: 'static-resources',
     plugins: [

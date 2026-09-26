@@ -1,6 +1,6 @@
 const DEFAULT_BASE_DOMAIN = 'openrt.local';
 const DEFAULT_TENANT_SLUG = 'sitransparan-rt';
-const PLATFORM_SUBDOMAINS = new Set(['app', 'api', 'www', 'admin', 'auth', 'mail']);
+const PLATFORM_SUBDOMAINS = new Set(['app', 'api', 'www', 'admin', 'auth', 'mail', 'staging']);
 const SECOND_LEVEL_TLDS = new Set([
   'web.id', 'co.id', 'ac.id', 'or.id', 'go.id', 'sch.id', 'mil.id', 'biz.id', 'my.id',
   'co.uk', 'org.uk', 'me.uk', 'com.au', 'net.au', 'org.au', 'co.jp', 'ne.jp'
@@ -48,8 +48,10 @@ export function getTenantSlugFromHost(): string | null {
   if (host.endsWith(suffix)) {
     const sub = host.slice(0, -suffix.length);
     if (!sub || PLATFORM_SUBDOMAINS.has(sub)) return null;
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(sub)) return null;
-    return sub;
+    // Strip optional staging suffix (e.g. "rt-003-staging" -> "rt-003")
+    const cleanSub = sub.endsWith('-staging') ? sub.slice(0, -'-staging'.length) : sub;
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(cleanSub)) return null;
+    return cleanSub;
   }
   // Foreign host: check session cache
   return sessionStorage.getItem(`${CUSTOM_DOMAIN_CACHE_KEY}:${host}`) || null;
@@ -88,7 +90,10 @@ export function getTenantUrl(slug: string, path: string = '/'): string {
   const protocol = window.location.protocol;
   const port = window.location.port ? `:${window.location.port}` : '';
   const baseDomain = getTenantBaseDomain();
-  return `${protocol}//${slug}.${baseDomain}${port}${path.startsWith('/') ? path : '/' + path}`;
+  const host = window.location.hostname.toLowerCase();
+  const isStaging = host.includes('staging') || host.includes('-staging');
+  const targetSubdomain = isStaging ? `${slug}-staging` : slug;
+  return `${protocol}//${targetSubdomain}.${baseDomain}${port}${path.startsWith('/') ? path : '/' + path}`;
 }
 
 export function getPlatformUrl(path: string = '/'): string {
@@ -96,7 +101,10 @@ export function getPlatformUrl(path: string = '/'): string {
   const protocol = window.location.protocol;
   const port = window.location.port ? `:${window.location.port}` : '';
   const baseDomain = getTenantBaseDomain();
-  return `${protocol}//${baseDomain}${port}${path.startsWith('/') ? path : '/' + path}`;
+  const host = window.location.hostname.toLowerCase();
+  const isStaging = host.includes('staging') || host.includes('-staging');
+  const platformHost = isStaging ? `staging.${baseDomain}` : baseDomain;
+  return `${protocol}//${platformHost}${port}${path.startsWith('/') ? path : '/' + path}`;
 }
 
 export function getTenantSlugOrFallback(): string {

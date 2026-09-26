@@ -3,9 +3,16 @@ import type { AuthState, Tenant, User } from '../types/auth';
 import { queryClient } from '../lib/queryClient';
 import { getTenantBaseDomain } from '../utils/tenant';
 
-const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'auth_user';
-const TENANT_KEY = 'active_tenant';
+// Derive environment key prefix so staging and production sessions/cookies are completely isolated
+const isStagingEnv = typeof window !== 'undefined' && (
+  window.location.hostname.includes('staging') ||
+  window.location.hostname.includes('-staging')
+);
+const ENV_PREFIX = isStagingEnv ? 'staging_' : '';
+
+const TOKEN_KEY = `${ENV_PREFIX}auth_token`;
+const USER_KEY = `${ENV_PREFIX}auth_user`;
+const TENANT_KEY = `${ENV_PREFIX}active_tenant`;
 
 const getCookie = (name: string): string | null => {
   const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));

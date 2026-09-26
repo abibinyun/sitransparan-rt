@@ -8,12 +8,13 @@ import (
 // Platform subdomains that belong to the application itself and must never be
 // interpreted as a tenant slug.
 var reservedSubdomains = map[string]bool{
-	"app":   true,
-	"api":   true,
-	"www":   true,
-	"admin": true,
-	"auth":  true,
-	"mail":  true,
+	"app":     true,
+	"api":     true,
+	"www":     true,
+	"admin":   true,
+	"auth":    true,
+	"mail":    true,
+	"staging": true,
 }
 
 // NormalizeHost normalizes a Host header value for tenant resolution: lowercases,
@@ -114,8 +115,10 @@ func HostnameSlug(host, baseDomain string) (string, bool) {
 			if sub == "" || reservedSubdomains[sub] {
 				return "", false
 			}
-			if isValidTenantSlug(sub) {
-				return sub, true
+			// Strip optional staging suffix (e.g. "rt-003-staging" -> "rt-003")
+			slug := strings.TrimSuffix(sub, "-staging")
+			if isValidTenantSlug(slug) {
+				return slug, true
 			}
 			return "", false
 		}
