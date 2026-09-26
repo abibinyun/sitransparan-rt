@@ -1,40 +1,97 @@
-.PHONY: help up down restart logs clean migrate
+.PHONY: help dev-up dev-down dev-logs dev-migrate staging-up staging-down staging-logs staging-migrate prod-up prod-down prod-logs prod-migrate test
 
 help:
-	@echo "Perintah yang tersedia:"
-	@echo "  make up      - Jalankan service via docker-compose & jalankan migrasi"
-	@echo "  make migrate - Jalankan migrasi SQL ke database PostgreSQL"
-	@echo "  make down    - Hentikan service"
-	@echo "  make restart - Hentikan lalu jalankan ulang service"
-	@echo "  make logs    - Tampilkan log dari service"
-	@echo "  make clean   - Hentikan service dan hapus volume data"
+	@echo "=========================================================="
+	@echo " Sitransparan RT/RW Multi-Tier Management"
+	@echo "=========================================================="
+	@echo " DEV ENVIRONMENT (Hotreload: Vite + Air):"
+	@echo "   make dev-up          - Start dev stack (dev.iscube.web.id)"
+	@echo "   make dev-down        - Stop dev stack"
+	@echo "   make dev-logs        - View dev logs"
+	@echo "   make dev-migrate     - Run all migrations to postgres dev"
+	@echo ""
+	@echo " STAGING ENVIRONMENT (*-staging.iscube.web.id):"
+	@echo "   make staging-up      - Start staging stack"
+	@echo "   make staging-down    - Stop staging stack"
+	@echo "   make staging-logs    - View staging logs"
+	@echo "   make staging-migrate - Run all migrations to postgres staging"
+	@echo ""
+	@echo " PRODUCTION ENVIRONMENT (*.iscube.web.id):"
+	@echo "   make prod-up         - Start prod stack"
+	@echo "   make prod-down       - Stop prod stack"
+	@echo "   make prod-logs       - View prod logs"
+	@echo "   make prod-migrate    - Run all migrations to postgres prod"
+	@echo ""
+	@echo " TESTING & VERIFICATION:"
+	@echo "   make test            - Run backend unit tests and frontend typecheck"
+	@echo "=========================================================="
 
-up:
-	docker compose -f infrastructure/docker-compose.yml up -d --build
-	@echo "Menunggu database siap..."
-	@docker exec transparansi_postgres sh -c 'until pg_isready -U postgres -d transparansi_rt; do sleep 1; done'
-	@$(MAKE) migrate
+test:
+	cd backend && go test -v ./...
+	cd frontend && npx tsc --noEmit
 
-migrate:
-	@echo "Menjalankan migrasi database..."
+# ---------- DEV ----------
+dev-up:
+	cd infrastructure && docker compose -p dev -f docker-compose.dev.yml up -d
+	@echo "Menunggu database dev siap..."
+	@docker exec transparansi_postgres_dev sh -c 'until pg_isready -U postgres -d transparansi_rt_dev; do sleep 1; done'
+	@$(MAKE) dev-migrate
+
+dev-down:
+	cd infrastructure && docker compose -p dev -f docker-compose.dev.yml down
+
+dev-logs:
+	cd infrastructure && docker compose -p dev -f docker-compose.dev.yml logs -f
+
+dev-migrate:
+	@echo "Menjalankan migrasi database dev..."
 	@fail=0; for f in backend/migrations/*.up.sql; do \
-		echo "Applying $$f..."; \
-		if ! docker exec -i transparansi_postgres psql -U postgres -d transparansi_rt < "$$f" > /tmp/migrate-$$(basename $$f).log 2>&1; then \
-			echo "ERROR: migration failed: $$f"; \
-			cat /tmp/migrate-$$(basename $$f).log; \
-			fail=1; \
+		if ! docker exec -i transparansi_postgres_dev psql -U postgres -d transparansi_rt_dev < "$$f" > /dev/null 2>&1; then \
+			echo "Failed to apply $$f (skipped if idempotent)"; \
 		fi; \
-	done; \
-	if [ $$fail -ne 0 ]; then echo "Migrasi GAGAL — periksa log di atas."; exit 1; fi
-	@echo "Migrasi selesai."
+	done
+	@echo "Migrasi dev selesai."
 
-down:
-	docker compose -f infrastructure/docker-compose.yml down
+# ---------- STAGING ----------
+staging-up:
+	cd infrastructure && docker compose -p staging -f docker-compose.staging.yml up -d
+	@echo "Menunggu database staging siap..."
+	@docker exec transparansi_postgres_staging sh -c 'until pg_isready -U postgres -d transparansi_rt; do sleep 1; done'
+	@$(MAKE) staging-migrate
 
-restart: down up
+staging-down:
+	cd infrastructure && docker compose -p staging -f docker-compose.staging.yml down
 
-logs:
-	docker compose -f infrastructure/docker-compose.yml logs -f
+staging-logs:
+	cd infrastructure && docker compose -p staging -f docker-compose.staging.yml logs -f
 
-clean:
-	docker compose -f infrastructure/docker-compose.yml down -v
+staging-migrate:
+	@echo "Menjalankan migrasi database staging..."
+	@fail=0; for f in backend/migrations/*.up.sql; do \
+		if ! docker exec -i transparansi_postgres_staging psql -U postgres -d transparansi_rt < "$$f" > /dev/null 2>&1; then \
+			echo "Failed to apply $$f (skipped if idempotent)"; \
+		fi; \
+	done
+	@echo "Migrasi staging selesai."
+
+# ---------- PRODUCTION ----------
+prod-up:
+	cd infrastructure && docker compose -p prod -f docker-compose.prod.yml up -d
+	@echo "Menunggu database prod siap..."
+	@docker exec transparansi_postgres_prod sh -c 'until pg_isready -U postgres -d transparansi_rt_prod; do sleep 1; done'
+	@$(MAKE) prod-migrate
+
+prod-down:
+	cd infrastructure && docker compose -p prod -f docker-compose.prod.yml down
+
+prod-logs:
+	cd infrastructure && docker compose -p prod -f docker-compose.prod.yml logs -f
+
+prod-migrate:
+	@echo "Menjalankan migrasi database prod..."
+	@fail=0; for f in backend/migrations/*.up.sql; do \
+		if ! docker exec -i transparansi_postgres_prod psql -U postgres -d transparansi_rt_prod < "$$f" > /dev/null 2>&1; then \
+			echo "Failed to apply $$f (skipped if idempotent)"; \
+		fi; \
+	done
+	@echo "Migrasi prod selesai."

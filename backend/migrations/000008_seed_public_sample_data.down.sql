@@ -1,5 +1,2 @@
--- Migration 000008 down: Delete public sample data
-DELETE FROM community_needs WHERE id IN ('cn111111-1111-1111-1111-111111111111');
-DELETE FROM aspirations WHERE id IN ('asp11111-1111-1111-1111-111111111111', 'asp22222-2222-2222-2222-222222222222');
-DELETE FROM announcement_docs WHERE id IN ('d1111111-1111-1111-1111-111111111111', 'd2222222-2222-2222-2222-222222222222');
-DELETE FROM announcements WHERE id IN ('a1111111-1111-1111-1111-111111111111', 'a2222222-2222-2222-2222-222222222222');
+-- Migration 000008 down: Clean placeholder (no dummy public sample data for production)
+SELECT 1;
