@@ -3,12 +3,16 @@ import type { AuthState, Tenant, User } from '../types/auth';
 import { queryClient } from '../lib/queryClient';
 import { getTenantBaseDomain } from '../utils/tenant';
 
-// Derive environment key prefix so staging and production sessions/cookies are completely isolated
+// Derive environment key prefix so dev, staging, and production sessions/cookies are completely isolated
+const isDevEnv = typeof window !== 'undefined' && (
+  window.location.hostname.includes('dev') ||
+  window.location.hostname.includes('-dev')
+);
 const isStagingEnv = typeof window !== 'undefined' && (
   window.location.hostname.includes('staging') ||
   window.location.hostname.includes('-staging')
 );
-const ENV_PREFIX = isStagingEnv ? 'staging_' : '';
+const ENV_PREFIX = isDevEnv ? 'dev_' : isStagingEnv ? 'staging_' : '';
 
 const TOKEN_KEY = `${ENV_PREFIX}auth_token`;
 const USER_KEY = `${ENV_PREFIX}auth_user`;

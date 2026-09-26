@@ -15,6 +15,7 @@ var reservedSubdomains = map[string]bool{
 	"auth":    true,
 	"mail":    true,
 	"staging": true,
+	"dev":     true,
 }
 
 // NormalizeHost normalizes a Host header value for tenant resolution: lowercases,
@@ -115,8 +116,8 @@ func HostnameSlug(host, baseDomain string) (string, bool) {
 			if sub == "" || reservedSubdomains[sub] {
 				return "", false
 			}
-			// Strip optional staging suffix (e.g. "rt-003-staging" -> "rt-003")
-			slug := strings.TrimSuffix(sub, "-staging")
+			// Strip optional staging or dev suffix (e.g. "rt-003-staging" -> "rt-003", "rt-003-dev" -> "rt-003")
+			slug := strings.TrimSuffix(strings.TrimSuffix(sub, "-staging"), "-dev")
 			if isValidTenantSlug(slug) {
 				return slug, true
 			}

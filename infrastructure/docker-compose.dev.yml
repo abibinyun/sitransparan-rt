@@ -1,0 +1,124 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: transparansi_postgres_dev
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-transparansi_rt_dev}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ../backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-transparansi_rt_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      infrastructure_default:
+        aliases:
+          - postgres-dev
+
+  minio:
+    image: minio/minio:latest
+    container_name: transparansi_minio_dev
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "127.0.0.1:${MINIO_PORT:-9004}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9005}:9001"
+    volumes:
+      - minio_dev_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      infrastructure_default:
+        aliases:
+          - minio-dev
+
+  backend:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile.backend.dev
+    container_name: transparansi_backend_dev
+    restart: always
+    environment:
+      DB_HOST: postgres-dev
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_NAME: ${POSTGRES_DB:-transparansi_rt_dev}
+      MINIO_ENDPOINT: minio-dev:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_USE_SSL: "false"
+      PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:-dev-super-secret-jwt-platform-rt-key}
+      TENANT_BASE_DOMAIN: iscube.web.id
+      TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@iscube.web.id}
+    volumes:
+      - ../backend:/app
+      - go_pkg_mod_dev:/go/pkg/mod
+    ports:
+      - "127.0.0.1:8083:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - 'traefik.http.routers.backend_dev.rule=Host(`api-dev.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+-dev\.iscube\.web\.id$`) || HostRegexp(`^api-[a-z0-9-]+\.dev\.iscube\.web\.id$`)'
+      - "traefik.http.routers.backend_dev.entrypoints=web"
+      - "traefik.http.services.backend_dev.loadbalancer.server.port=8080"
+    networks:
+      infrastructure_default:
+        aliases:
+          - backend-dev
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile.frontend.dev
+    container_name: transparansi_frontend_dev
+    restart: always
+    environment:
+      - VITE_TENANT_BASE_DOMAIN=iscube.web.id
+      - VITE_BACKEND_PROXY_URL=http://backend-dev:8080
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    ports:
+      - "127.0.0.1:3002:3000"
+    depends_on:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - 'traefik.http.routers.frontend_dev.rule=Host(`dev.iscube.web.id`) || Host(`app-dev.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+-dev\.iscube\.web\.id$`) || HostRegexp(`^[a-z0-9-]+\.dev\.iscube\.web\.id$`)'
+      - "traefik.http.routers.frontend_dev.entrypoints=web"
+      - "traefik.http.services.frontend_dev.loadbalancer.server.port=3000"
+    networks:
+      infrastructure_default:
+        aliases:
+          - frontend-dev
+
+volumes:
+  postgres_dev_data:
+  minio_dev_data:
+  go_pkg_mod_dev:
+
+networks:
+  infrastructure_default:
+    external: true
