@@ -1,6 +1,6 @@
 # Database — Sitransparan RT/RW
 
-Dokumen ini berdasarkan migrasi SQL aktual di `backend/migrations/` (000001–000027) dan DDL provisi schema tenant di `backend/internal/repository/postgres_repos.go`.
+Dokumen ini berdasarkan migrasi SQL aktual di `backend/migrations/` (000001–000049) dan DDL provisi schema tenant di `backend/internal/repository/postgres_repos.go`.
 
 Database: PostgreSQL 16, nama default `transparansi_rt`.
 
@@ -9,7 +9,7 @@ Database: PostgreSQL 16, nama default `transparansi_rt`.
 - **Schema `public`** — data global/platform: `tenants`, `users`, `roles`, `tenant_users`, `audit_logs`, `portal_events`, `push_subscriptions`.
 - **Schema `tenant_<slug>`** — data operasional per tenant (slug `-` diganti `_`, misal `tenant_sitransparan_rt`). Dibuat otomatis saat tenant dibuat (`CreateTenantSchema`). Saat tenant dihapus, sistem menerapkan **soft-delete** (`deleted_at = NOW()`, `status = 'inactive'`) sehingga data dan schema tetap utuh dan dapat direstore sewaktu-waktu.
 - Semua query runtime tenant menggunakan nama tabel schema-qualified `tenant_<slug>.<table>` (helper `TenantTable`).
-- Migrasi 000002–000009 mendefinisikan DDL tabel di schema default (public) — tabel ini juga menjadi **sumber seed** yang disalin ke schema tenant oleh `000012_backfill_tenant_schemas` (idempotent). `000016–000027` menambah funds/meetings/reactions/polls/media/push/houses/waste_bank.
+- Migrasi 000002–000009 mendefinisikan DDL tabel di schema default (public) — tabel ini juga menjadi **sumber seed** yang disalin ke schema tenant oleh `000012_backfill_tenant_schemas` (idempotent). `000016–000049` menambah funds, meetings, reactions, polls, media, push, houses, waste_bank, soft delete, rt_structure, operator_role, dan waste_attendance.
 
 ## 2. Schema Public
 

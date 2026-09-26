@@ -259,7 +259,23 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 
 ---
 
-## 14. Konvensi Error
+## 14. Absensi & Petugas Sampah RT (`/api/v1/waste-collectors` & `/api/v1/waste-attendance`) — ADMIN / OPERATOR
+
+Data operasional internal untuk mencatat penarikan sampah dan honorarium pemuda RT (tidak dipublikasikan ke portal publik):
+
+| Metode | Path | Akses | Keterangan |
+|---|---|---|---|
+| GET | `/api/v1/waste-collectors` | ADMIN/OPERATOR | Daftar master petugas sampah (query: `active=true`) |
+| POST | `/api/v1/waste-collectors` | ADMIN/OPERATOR | Tambah petugas pemuda baru. Body: `{name, phone?, resident_id?}` |
+| PUT | `/api/v1/waste-collectors/{id}` | ADMIN/OPERATOR | Update petugas pemuda. Body: `{name, phone?, is_active, resident_id?}` |
+| DELETE | `/api/v1/waste-collectors/{id}` | ADMIN/OPERATOR | Hapus (soft delete) petugas sampah |
+| GET | `/api/v1/waste-attendance` | ADMIN/OPERATOR | Rekap riwayat absensi & total honor (query: `limit`, `offset`) |
+| POST | `/api/v1/waste-attendance` | ADMIN/OPERATOR | Catat absensi tugas penarikan sampah. Body: `{date, collector_ids, wage_per_person, notes?}` |
+| DELETE | `/api/v1/waste-attendance/{id}` | ADMIN/OPERATOR | Hapus catatan absensi tugas |
+
+---
+
+## 15. Konvensi Error
 
 - `401` — token hilang/rusak/kadaluwarsa.
 - `403` — role tidak diizinkan / tenant mismatch / escalation.
@@ -269,7 +285,7 @@ Daftar endpoint **aktual** dari registrasi route di `backend/cmd/server/main.go`
 - `429` — rate limit per-IP, header `Retry-After: 1`. `/health` & `/swagger/` exempt; auth 20/5 per IP.
 - Body: `{"error": "<pesan>"}`.
 
-## 15. Upload File
+## 16. Upload File
 
 > MinIO terintegrasi (local dev): endpoint upload menyimpan file nyata ke bucket `sitransparan-files` dengan key `<tenant-slug>/<kategori>/<uuid><ext>` dan URL `MINIO_PUBLIC_URL/<bucket>/<key>` (default `http://localhost:9000/...`). Bucket auto-create + public-download policy. Jika storage nil → URL metadata `/uploads/...`. Guard: max 5 MB, hanya JPG/PNG/WebP/PDF → 400. Konfig: `MINIO_ENDPOINT`, `MINIO_PUBLIC_URL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_USE_SSL`, `MINIO_BUCKET`. Produksi: pertimbangkan presigned URL.
 

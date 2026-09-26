@@ -19,13 +19,16 @@ Platform SaaS PWA multi-tenant untuk transparansi tata kelola lingkungan RT/RW: 
 
 ## Tech Stack
 
-Go 1.25 (`net/http` ServeMux, Clean Architecture) · PostgreSQL 16 (40 migrations 000001–000040, 27+ tenant tables) · MinIO (bucket `sitransparan-files`, prefix per-tenant `tenant_<slug>/<category>/`, fallback `/uploads`) · React 18 + TypeScript + Vite + Tailwind + TanStack Query + Zustand + React Router v6 · PWA Workbox + IndexedDB · Docker Compose + Traefik 3.6 / Nginx.
+Go 1.25 (`net/http` ServeMux, Clean Architecture) · PostgreSQL 16 (49 migrations 000001–000049, 29+ tenant tables) · MinIO (bucket `sitransparan-files`, prefix per-tenant `tenant_<slug>/<category>/`, fallback `/uploads`) · React 18 + TypeScript + Vite + Tailwind + TanStack Query + Zustand + React Router v6 · PWA Workbox + IndexedDB · Docker Compose + Traefik 3.6 / Nginx.
 
 ## Quick Start
 
 ```bash
-make up        # Docker stack + migrasi
-# Frontend: http://localhost:3000 · Backend: http://localhost:8081/api/v1 · Swagger: http://localhost:8081/swagger/
+make dev-up     # Jalankan stack dev live reload (Vite + Air)
+make staging-up # Jalankan stack staging
+make prod-up    # Jalankan stack production
+# Dev: http://dev.iscube.web.id atau http://localhost:3000
+# Backend Dev: http://localhost:8083/api/v1 · Swagger: http://localhost:8083/swagger/
 ```
 
 Akun default (seed, verifikasi bcrypt di migrasi):
@@ -50,10 +53,10 @@ npx playwright test --config=playwright.headless.config.ts   # E2E 64/64 (butuh 
 
 | Dokumen | Isi |
 |---|---|
-| [docs/architecture.md](docs/architecture.md) | Arsitektur aktual, tech stack, multi-tenancy |
+| [docs/architecture.md](docs/architecture.md) | Arsitektur aktual, tech stack, 3-tier multi-tenancy |
 | [docs/setup.md](docs/setup.md) | Setup, environment, command, akun default |
 | [docs/authentication-authorization.md](docs/authentication-authorization.md) | Auth, JWT, RBAC matrix, isolasi tenant, host guard |
 | [docs/api.md](docs/api.md) | Referensi endpoint API (sinkron openapi.yaml) |
-| [docs/database.md](docs/database.md) | Skema database & migrasi 000001–000020 |
+| [docs/database.md](docs/database.md) | Skema database & migrasi 000001–000049 |
 | [docs/testing.md](docs/testing.md) | Test suite & command (104+7, E2E 64) |
-| [docs/deployment.md](docs/deployment.md) | Deployment Docker/Traefik tanpa Redis |
+| [docs/deployment.md](docs/deployment.md) | Deployment Docker/Traefik 3-tier |

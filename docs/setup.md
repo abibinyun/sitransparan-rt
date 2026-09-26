@@ -51,21 +51,39 @@ Variabel frontend (build-time, Vite `VITE_*`):
 |---|---|---|
 | `VITE_TENANT_BASE_DOMAIN` | `openrt.local` | `frontend/src/utils/tenant.ts` untuk slug dari hostname. **Harus sama** dengan `TENANT_BASE_DOMAIN` backend. Via build arg `Dockerfile.frontend` |
 
-## 3. Menjalankan dengan Docker (disarankan)
+## 3. Menjalankan dengan Docker Multi-Tier (Disarankan)
+
+Gunakan perintah Makefile resmi untuk mengelola 3 environment:
 
 ```bash
-> **PENTING**: `JWT_SECRET` wajib diset di `infrastructure/.env` (gitignore) atau env: `openssl rand -base64 48` → `JWT_SECRET=...`. Compose gagal dengan pesan jelas jika tidak ada.
+# DEV ENVIRONMENT (Live Hot-Reload: Vite + Air):
+make dev-up          # Start dev stack (dev.iscube.web.id / localhost:3000)
+make dev-down        # Stop dev stack
+make dev-logs        # Stream log dev
+make dev-migrate     # Jalankan migrasi SQL ke database dev
 
-```bash
-make up        # Build + jalankan semua service, tunggu DB siap, lalu migrasi
-make migrate   # Jalankan migrasi SQL (backend/migrations/*.up.sql) 000001–000020
-make logs      # Stream log
-make restart   # down + up
-make down      # Hentikan
-make clean     # Hentikan & hapus volume (reset total)
+# STAGING ENVIRONMENT (Pre-release Verification):
+make staging-up      # Start staging stack (*-staging.iscube.web.id)
+make staging-down    # Stop staging stack
+make staging-logs    # Stream log staging
+make staging-migrate # Jalankan migrasi SQL ke database staging
+
+# PRODUCTION ENVIRONMENT (Live Deployment):
+make prod-up         # Start prod stack (*.iscube.web.id)
+make prod-down       # Stop prod stack
+make prod-logs       # Stream log prod
+make prod-migrate    # Jalankan migrasi SQL ke database prod
+
+# BACKUP & TESTING:
+make backup-staging  # Snapshot dump database staging
+make backup-prod     # Snapshot dump database prod
+make test            # Backend tests + Frontend typecheck
 ```
 
-Stack development (`infrastructure/docker-compose.yml`):
+Stack infrastruktur per tier:
+- Dev: `infrastructure/docker-compose.dev.yml`
+- Staging: `infrastructure/docker-compose.staging.yml`
+- Prod: `infrastructure/docker-compose.prod.yml`
 
 | Service | Port host | Keterangan |
 |---|---|---|
