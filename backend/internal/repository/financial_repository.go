@@ -125,7 +125,7 @@ func (r *financialRepository) ListFunds(ctx context.Context, tenantID uuid.UUID)
 		SELECT f.id, f.tenant_id, f.name, f.type, f.description, f.is_default, f.pic_user_id, u.name, u.email, f.created_at, f.updated_at
 		FROM %s f
 		LEFT JOIN public.users u ON u.id = f.pic_user_id
-		WHERE f.tenant_id = $1
+		WHERE f.tenant_id = $1 AND f.deleted_at IS NULL
 		ORDER BY f.is_default DESC, f.created_at ASC
 	`, fundsTable)
 	rows, err := r.db.QueryContext(ctx, query, tenantID)
@@ -249,7 +249,7 @@ func (r *financialRepository) DeleteFeeCategory(ctx context.Context, tenantID, i
 func (r *financialRepository) ListFeeCategories(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]*domain.FeeCategory, int64, error) {
 	catsTable := TenantTable(ctx, "fee_categories")
 	var count int64
-	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1`, catsTable)
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE tenant_id = $1 AND deleted_at IS NULL`, catsTable)
 	if err := r.db.QueryRowContext(ctx, countQuery, tenantID).Scan(&count); err != nil {
 		return nil, 0, err
 	}
@@ -258,7 +258,7 @@ func (r *financialRepository) ListFeeCategories(ctx context.Context, tenantID uu
 		SELECT fc.id, fc.tenant_id, fc.name, fc.amount, fc.period, fc.description, fc.pic_user_id, u.name, u.email, fc.created_at, fc.updated_at
 		FROM %s fc
 		LEFT JOIN public.users u ON u.id = fc.pic_user_id
-		WHERE fc.tenant_id = $1
+		WHERE fc.tenant_id = $1 AND fc.deleted_at IS NULL
 		ORDER BY fc.created_at DESC LIMIT $2 OFFSET $3
 	`, catsTable)
 	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
