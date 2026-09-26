@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 
 test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
   test.beforeEach(() => {
-    execSync(`docker compose -f infrastructure/docker-compose.yml exec -T postgres psql -U postgres -d transparansi_rt -c "
+    execSync(`docker compose -p dev -f infrastructure/docker-compose.dev.yml exec -T postgres psql -U postgres -d transparansi_rt_dev -c "
       DELETE FROM tenant_rt_003.dues_payments;
       DELETE FROM tenant_rt_003.financial_transactions;
     "`);

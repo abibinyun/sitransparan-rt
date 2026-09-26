@@ -1,4 +1,6 @@
-.PHONY: help dev-up dev-down dev-logs dev-migrate staging-up staging-down staging-logs staging-migrate prod-up prod-down prod-logs prod-migrate test
+.PHONY: help up dev-up dev-down dev-logs dev-migrate staging-up staging-down staging-logs staging-migrate prod-up prod-down prod-logs prod-migrate test
+
+up: dev-up
 
 help:
 	@echo "=========================================================="
