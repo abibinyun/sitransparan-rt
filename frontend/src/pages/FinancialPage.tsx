@@ -585,7 +585,13 @@ export const FinancialPage: React.FC = () => {
               </Button> */}
             </>
           )}
-          {!isResident && (
+          {/* Tombol Reset hanya muncul di lingkungan dev/staging dan bukan warga, dilarang keras di production */}
+          {(() => {
+            if (isResident || typeof window === 'undefined') return false;
+            const h = window.location.hostname.toLowerCase();
+            const isProd = h === 'iscube.web.id' || (/^[a-z0-9-]+\.iscube\.web\.id$/.test(h) && !h.includes('-dev') && !h.includes('-staging'));
+            return !isProd;
+          })() ? (
             <Button
               onClick={async () => {
                 if (window.confirm('Apakah Anda yakin ingin mengosongkan seluruh data iuran dan transaksi kas untuk testing? Tindakan ini tidak dapat dibatalkan.')) {
@@ -604,7 +610,7 @@ export const FinancialPage: React.FC = () => {
             >
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
 

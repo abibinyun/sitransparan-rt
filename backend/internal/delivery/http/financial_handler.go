@@ -630,6 +630,13 @@ func (h *FinancialHandler) handleResetFinancialData(w http.ResponseWriter, r *ht
 		return
 	}
 
+	// Safety check: Blokir total pemanggilan reset data jika request berasal dari domain production
+	host := middleware.NormalizeHost(r.Host)
+	if host == "iscube.web.id" || (strings.HasSuffix(host, ".iscube.web.id") && !strings.Contains(host, "dev") && !strings.Contains(host, "staging")) {
+		http.Error(w, `{"error":"forbidden: reset data is strictly disabled in production environment"}`, http.StatusForbidden)
+		return
+	}
+
 	tenant := middleware.GetTenantFromContext(r.Context())
 	if tenant == nil {
 		http.Error(w, `{"error":"tenant context missing"}`, http.StatusBadRequest)

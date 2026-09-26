@@ -15,17 +15,32 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '.
 import { Button } from '../components/ui/button';
 import { Announcement, CreateAnnouncementPayload, Document, CreateDocumentPayload } from '../types/announcement_doc';
 import { PageHeaderTabs } from '../components/ui/PageHeaderTabs';
-import { FileText, MessageSquareHeart, Vote } from 'lucide-react';
+import { FileText, MessageSquareHeart, Vote, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { getFileUrl } from '../utils/file';
 import { useAuthStore } from '../store/useAuthStore';
+import { Input } from '../components/ui/input';
 
 export const AnnouncementsPage: React.FC = () => {
   const { user } = useAuthStore();
   const isResident = String(user?.role || '').toLowerCase() === 'resident';
   const [activeTab, setActiveTab] = useState<'announcements' | 'documents'>('announcements');
 
+  // Announcements pagination & filter
+  const [annPage, setAnnPage] = useState(1);
+  const annLimit = 8;
+  const [annCategoryFilter, setAnnCategoryFilter] = useState<string>('all');
+  const [annSearch, setAnnSearch] = useState<string>('');
+
+  // Documents pagination & filter
+  const [docPage, setDocPage] = useState(1);
+  const docLimit = 10;
+  const [docSearch, setDocSearch] = useState<string>('');
+
   // Announcement state & hooks
-  const { data: announcementsData, isLoading: loadingAnnouncements } = useAnnouncements();
+  const { data: announcementsData, isLoading: loadingAnnouncements } = useAnnouncements({
+    limit: annLimit,
+    offset: (annPage - 1) * annLimit,
+  });
   const createAnnouncementMutation = useCreateAnnouncement();
   const updateAnnouncementMutation = useUpdateAnnouncement();
   const deleteAnnouncementMutation = useDeleteAnnouncement();
@@ -34,13 +49,39 @@ export const AnnouncementsPage: React.FC = () => {
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
 
   // Document state & hooks
-  const { data: documentsData, isLoading: loadingDocuments } = useDocuments();
+  const { data: documentsData, isLoading: loadingDocuments } = useDocuments({
+    limit: docLimit,
+    offset: (docPage - 1) * docLimit,
+  });
   const createDocumentMutation = useCreateDocument();
   const updateDocumentMutation = useUpdateDocument();
   const deleteDocumentMutation = useDeleteDocument();
 
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
+
+  const rawAnnouncements = announcementsData?.data || [];
+  const totalAnnouncements = announcementsData?.total || 0;
+  const totalAnnPages = Math.ceil(totalAnnouncements / annLimit) || 1;
+
+  // Filter pengumuman di client untuk search & category
+  const filteredAnnouncements = rawAnnouncements.filter((item) => {
+    const matchesCat = annCategoryFilter === 'all' || item.category === annCategoryFilter;
+    const matchesSearch = !annSearch.trim() ||
+      item.title.toLowerCase().includes(annSearch.toLowerCase()) ||
+      item.content.toLowerCase().includes(annSearch.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
+
+  const rawDocuments = documentsData?.data || [];
+  const totalDocuments = documentsData?.total || 0;
+  const totalDocPages = Math.ceil(totalDocuments / docLimit) || 1;
+
+  const filteredDocuments = rawDocuments.filter((doc) => {
+    return !docSearch.trim() ||
+      doc.title.toLowerCase().includes(docSearch.toLowerCase()) ||
+      doc.category?.toLowerCase().includes(docSearch.toLowerCase());
+  });
 
   // Handlers for Announcement
   const handleOpenCreateAnnouncement = () => {
@@ -160,12 +201,54 @@ export const AnnouncementsPage: React.FC = () => {
 
       {/* Tab Content: Announcements */}
       {activeTab === 'announcements' && (
-        <div>
+        <div className="space-y-4">
+          {/* Filter Bar Kategori & Pencarian */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#d2d2d7]">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+              {[
+                { id: 'all', label: 'Semua Kategori' },
+                { id: 'pengumuman', label: 'Pengumuman' },
+                { id: 'kegiatan', label: 'Kegiatan' },
+                { id: 'info', label: 'Info Warga' },
+                { id: 'santai', label: 'Santai' },
+              ].map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    setAnnCategoryFilter(cat.id);
+                    setAnnPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+                    annCategoryFilter === cat.id
+                      ? 'bg-[#1d1d1f] text-white shadow-xs'
+                      : 'bg-[#f5f5f7] text-[#707070] hover:bg-[#e5e5ea] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative sm:w-64">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#858585]" />
+              <Input
+                placeholder="Cari pengumuman..."
+                value={annSearch}
+                onChange={(e) => {
+                  setAnnSearch(e.target.value);
+                  setAnnPage(1);
+                }}
+                className="pl-8 h-8 text-xs bg-[#f5f5f7] border-transparent focus:border-[#0071e3] focus:bg-white"
+              />
+            </div>
+          </div>
+
           {loadingAnnouncements ? (
-            <p className="text-sm text-gray-500">Memuat pengumuman...</p>
-          ) : announcementsData?.data?.length ? (
+            <p className="text-sm text-gray-500 py-6 text-center">Memuat pengumuman...</p>
+          ) : filteredAnnouncements.length ? (
             <div className="space-y-4">
-              {announcementsData.data.map((item) => (
+              {filteredAnnouncements.map((item) => (
                 <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -267,68 +350,149 @@ export const AnnouncementsPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+              {/* Announcements Pagination Bar */}
+              {totalAnnPages > 1 && (
+                <div className="flex items-center justify-between border-t border-[#d2d2d7] pt-4 px-2 text-xs">
+                  <span className="text-[#707070]">
+                    Halaman <span className="font-semibold text-[#1d1d1f]">{annPage}</span> dari{' '}
+                    <span className="font-semibold text-[#1d1d1f]">{totalAnnPages}</span> ({totalAnnouncements} total)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAnnPage((p) => Math.max(1, p - 1))}
+                      disabled={annPage <= 1}
+                      className="h-8 gap-1 text-xs border-[#d2d2d7]"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" /> Sebelumnya
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAnnPage((p) => Math.min(totalAnnPages, p + 1))}
+                      disabled={annPage >= totalAnnPages}
+                      className="h-8 gap-1 text-xs border-[#d2d2d7]"
+                    >
+                      Selanjutnya <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">Belum ada pengumuman.</p>
+            <div className="p-8 text-center text-sm text-gray-500 bg-white rounded-xl border border-dashed border-[#d2d2d7]">
+              Tidak ada pengumuman yang sesuai filter atau pencarian.
+            </div>
           )}
         </div>
       )}
 
       {/* Tab Content: Documents */}
       {activeTab === 'documents' && (
-        <div>
+        <div className="space-y-4">
+          {/* Search Bar Dokumen */}
+          <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#d2d2d7]">
+            <div className="relative flex-1 sm:max-w-xs">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#858585]" />
+              <Input
+                placeholder="Cari berkas dokumen..."
+                value={docSearch}
+                onChange={(e) => {
+                  setDocSearch(e.target.value);
+                  setDocPage(1);
+                }}
+                className="pl-8 h-8 text-xs bg-[#f5f5f7] border-transparent focus:border-[#0071e3] focus:bg-white"
+              />
+            </div>
+          </div>
+
           {loadingDocuments ? (
-            <p className="text-sm text-gray-500">Memuat dokumen...</p>
-          ) : documentsData?.data?.length ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Judul</TableHead>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {documentsData.data.map((doc) => (
-                  <TableRow key={doc.id}>
-                    <TableCell className="font-semibold text-[#1d1d1f]">{doc.title}</TableCell>
-                    <TableCell className="text-[#707070]">{doc.category}</TableCell>
-                    <TableCell className="text-[#707070]">
-                      {new Date(doc.created_at).toLocaleDateString('id-ID')}
-                    </TableCell>
-                    <TableCell className="text-right space-x-3">
-                      <a
-                        href={getFileUrl(doc.file_url)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-medium text-[#0066cc] hover:underline"
-                      >
-                        Buka File
-                      </a>
-                      {!isResident && (
-                        <>
-                          <button
-                            onClick={() => handleOpenEditDocument(doc)}
-                            className="font-medium text-[#707070] hover:text-[#1d1d1f]"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteDocument(doc.id)}
-                            className="font-medium text-rose-600 hover:underline"
-                          >
-                            Hapus
-                          </button>
-                        </>
-                      )}
-                    </TableCell>
+            <p className="text-sm text-gray-500 py-6 text-center">Memuat dokumen...</p>
+          ) : filteredDocuments.length ? (
+            <div className="bg-white rounded-xl border border-[#d2d2d7] overflow-hidden shadow-xs">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Judul Dokumen</TableHead>
+                    <TableHead>Kategori</TableHead>
+                    <TableHead>Tanggal Unggah</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredDocuments.map((doc) => (
+                    <TableRow key={doc.id}>
+                      <TableCell className="font-semibold text-[#1d1d1f]">{doc.title}</TableCell>
+                      <TableCell className="text-[#707070]">{doc.category}</TableCell>
+                      <TableCell className="text-[#707070]">
+                        {new Date(doc.created_at).toLocaleDateString('id-ID')}
+                      </TableCell>
+                      <TableCell className="text-right space-x-3">
+                        <a
+                          href={getFileUrl(doc.file_url)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium text-[#0066cc] hover:underline"
+                        >
+                          Buka File
+                        </a>
+                        {!isResident && (
+                          <>
+                            <button
+                              onClick={() => handleOpenEditDocument(doc)}
+                              className="font-medium text-[#707070] hover:text-[#1d1d1f]"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              className="font-medium text-rose-600 hover:underline"
+                            >
+                              Hapus
+                            </button>
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Documents Pagination Bar */}
+              {totalDocPages > 1 && (
+                <div className="flex items-center justify-between border-t border-[#d2d2d7] p-3 text-xs">
+                  <span className="text-[#707070]">
+                    Halaman <span className="font-semibold text-[#1d1d1f]">{docPage}</span> dari{' '}
+                    <span className="font-semibold text-[#1d1d1f]">{totalDocPages}</span> ({totalDocuments} total)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDocPage((p) => Math.max(1, p - 1))}
+                      disabled={docPage <= 1}
+                      className="h-8 gap-1 text-xs border-[#d2d2d7]"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" /> Sebelumnya
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDocPage((p) => Math.min(totalDocPages, p + 1))}
+                      disabled={docPage >= totalDocPages}
+                      className="h-8 gap-1 text-xs border-[#d2d2d7]"
+                    >
+                      Selanjutnya <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
-            <p className="text-sm text-gray-500">Belum ada dokumen.</p>
+            <div className="p-8 text-center text-sm text-gray-500 bg-white rounded-xl border border-dashed border-[#d2d2d7]">
+              Belum ada berkas dokumen yang sesuai.
+            </div>
           )}
         </div>
       )}
