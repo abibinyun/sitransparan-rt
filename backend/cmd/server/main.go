@@ -140,7 +140,7 @@ func main() {
 	tenantMw := middleware.TenantMiddleware(tenantRepo, cfg.TenantBaseDomain)
 	authMw := middleware.AuthMiddleware(jwtSecret)
 	optionalAuthMw := middleware.OptionalAuthMiddleware(jwtSecret)
-	adminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin, domain.RoleAdminRT)
+	adminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin, domain.RoleAdminRT, domain.RoleOperator)
 	superAdminMw := middleware.RBACMiddleware(domain.RoleSuperAdmin)
 	secHeadersMw := middleware.SecurityHeadersMiddleware()
 	auditMw := middleware.AuditMiddleware(auditUC)

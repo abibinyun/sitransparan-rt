@@ -74,7 +74,8 @@ func CreateTenantSchema(ctx context.Context, db *sql.DB, slug string) error {
 			ktp_url TEXT,
 			kk_url TEXT,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			deleted_at TIMESTAMPTZ NULL
 		);`,
 		`CREATE TABLE IF NOT EXISTS ` + pq.QuoteIdentifier(schemaName) + `.family_members (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
