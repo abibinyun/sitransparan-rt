@@ -1,5 +1,13 @@
+x-logging: &default-logging
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
   postgres:
+    <<: *default-logging
     image: postgres:16-alpine
     container_name: transparansi_postgres_dev
     restart: always
@@ -23,6 +31,7 @@ services:
           - postgres-dev
 
   minio:
+    <<: *default-logging
     image: minio/minio:latest
     container_name: transparansi_minio_dev
     restart: always
@@ -46,6 +55,7 @@ services:
           - minio-dev
 
   backend:
+    <<: *default-logging
     build:
       context: ..
       dockerfile: infrastructure/Dockerfile.backend.dev
@@ -64,7 +74,7 @@ services:
       PORT: 8080
       JWT_SECRET: ${JWT_SECRET:-dev-super-secret-jwt-platform-rt-key}
       TENANT_BASE_DOMAIN: iscube.web.id
-      TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-}
+      TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-192.168.64.0/20,127.0.0.1}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@iscube.web.id}
@@ -89,6 +99,7 @@ services:
           - backend-dev
 
   frontend:
+    <<: *default-logging
     build:
       context: ..
       dockerfile: infrastructure/Dockerfile.frontend.dev

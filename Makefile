@@ -1,4 +1,4 @@
-.PHONY: help up dev-up dev-down dev-logs dev-migrate staging-up staging-down staging-logs staging-migrate prod-up prod-down prod-logs prod-migrate test
+.PHONY: help up dev-up dev-down dev-logs dev-migrate staging-up staging-down staging-logs staging-migrate prod-up prod-down prod-logs prod-migrate backup-staging backup-prod test
 
 up: dev-up
 
@@ -23,6 +23,10 @@ help:
 	@echo "   make prod-down       - Stop prod stack"
 	@echo "   make prod-logs       - View prod logs"
 	@echo "   make prod-migrate    - Run all migrations to postgres prod"
+	@echo ""
+	@echo " BACKUP DATABASE:"
+	@echo "   make backup-staging  - Dump database staging ke infrastructure/backups/"
+	@echo "   make backup-prod     - Dump database prod ke infrastructure/backups/"
 	@echo ""
 	@echo " TESTING & VERIFICATION:"
 	@echo "   make test            - Run backend unit tests and frontend typecheck"
@@ -97,3 +101,16 @@ prod-migrate:
 		fi; \
 	done
 	@echo "Migrasi prod selesai."
+
+# ---------- BACKUP ----------
+backup-staging:
+	@mkdir -p infrastructure/backups
+	@echo "Membuat backup staging..."
+	@docker exec transparansi_postgres_staging pg_dump -U postgres transparansi_rt | gzip > infrastructure/backups/staging_$$(date +%Y%m%d_%H%M%S).sql.gz
+	@echo "Backup staging tersimpan di infrastructure/backups/"
+
+backup-prod:
+	@mkdir -p infrastructure/backups
+	@echo "Membuat backup production..."
+	@docker exec transparansi_postgres_prod pg_dump -U postgres transparansi_rt_prod | gzip > infrastructure/backups/prod_$$(date +%Y%m%d_%H%M%S).sql.gz
+	@echo "Backup prod tersimpan di infrastructure/backups/"

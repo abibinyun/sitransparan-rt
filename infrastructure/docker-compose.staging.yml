@@ -1,5 +1,13 @@
+x-logging: &default-logging
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
   traefik:
+    <<: *default-logging
     image: traefik:3.6
     container_name: transparansi_traefik_staging
     restart: always
@@ -19,6 +27,7 @@ services:
           - traefik-staging
 
   postgres:
+    <<: *default-logging
     image: postgres:16-alpine
     container_name: transparansi_postgres_staging
     restart: always
@@ -40,6 +49,7 @@ services:
           - postgres-staging
 
   minio:
+    <<: *default-logging
     image: minio/minio:latest
     container_name: transparansi_minio_staging
     restart: always
@@ -60,6 +70,7 @@ services:
           - minio-staging
 
   backend:
+    <<: *default-logging
     build:
       context: ..
       dockerfile: infrastructure/Dockerfile.backend.staging
@@ -78,7 +89,7 @@ services:
       PORT: 8080
       JWT_SECRET: ${JWT_SECRET:-staging-secret-jwt-platform-rt-key}
       TENANT_BASE_DOMAIN: iscube.web.id
-      TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-}
+      TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-192.168.64.0/20,127.0.0.1}
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,6 +106,7 @@ services:
           - backend-staging
 
   frontend:
+    <<: *default-logging
     build:
       context: ..
       dockerfile: infrastructure/Dockerfile.frontend.staging

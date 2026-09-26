@@ -3,12 +3,14 @@ name: CI/CD Pipeline (PC Local Cloudflare Tunnel)
 on:
   push:
     branches:
-      - staging  # Staging trigger -> *.staging.iscube.web.id
+      - dev      # Dev verification trigger
+      - staging  # Staging trigger -> *-staging.iscube.web.id
       - main     # Production trigger -> *.iscube.web.id
   pull_request:
     branches:
-      - main
+      - dev
       - staging
+      - main
 
 jobs:
   lint-and-test:

@@ -25,4 +25,5 @@ backend/tmp/
 test-results/
 test_report.pdf
 playwright-report/
+infrastructure/backups/
 
