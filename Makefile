@@ -60,7 +60,7 @@ dev-migrate:
 
 # ---------- STAGING ----------
 staging-up:
-	cd infrastructure && docker compose -p staging -f docker-compose.staging.yml up -d
+	cd infrastructure && docker compose -p staging -f docker-compose.staging.yml up -d --build
 	@echo "Menunggu database staging siap..."
 	@docker exec transparansi_postgres_staging sh -c 'until pg_isready -U postgres -d transparansi_rt; do sleep 1; done'
 	@$(MAKE) staging-migrate
@@ -82,7 +82,7 @@ staging-migrate:
 
 # ---------- PRODUCTION ----------
 prod-up:
-	cd infrastructure && docker compose -p prod -f docker-compose.prod.yml up -d
+	cd infrastructure && docker compose -p prod -f docker-compose.prod.yml up -d --build
 	@echo "Menunggu database prod siap..."
 	@docker exec transparansi_postgres_prod sh -c 'until pg_isready -U postgres -d transparansi_rt_prod; do sleep 1; done'
 	@$(MAKE) prod-migrate
