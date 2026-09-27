@@ -1,11 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import { Dialog } from './ui/dialog';
 import { Download, MessageCircle } from 'lucide-react';
+import { getFileUrl } from '../utils/file';
 
 export interface ShareableAnnouncement {
+  id?: string;
   title: string;
   content: string;
   created_at: string;
+  image_url?: string;
 }
 
 interface ShareCardModalProps {
@@ -55,8 +58,13 @@ function truncate(text: string, max: number): string {
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
 }
 
-/** Renders the notice-board card onto the canvas at 1080x1350. */
-function renderCard(canvas: HTMLCanvasElement, announcement: ShareableAnnouncement, tenantName: string) {
+/** Renders the notice-board card onto the canvas at 1080x1350 with optional cover image. */
+function renderCard(
+  canvas: HTMLCanvasElement,
+  announcement: ShareableAnnouncement,
+  tenantName: string,
+  coverImg?: HTMLImageElement | null
+) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
@@ -126,17 +134,74 @@ function renderCard(canvas: HTMLCanvasElement, announcement: ShareableAnnounceme
   ctx.font = `600 30px ${font}`;
   ctx.fillText(truncate(tenantName.toUpperCase(), 40), padX, sheetY + 244);
 
+  let curY = sheetY + 310;
+
+  // Draw Cover Image if present and loaded
+  if (coverImg && coverImg.complete && coverImg.naturalWidth > 0) {
+    const imgH = 380;
+    const imgW = contentW;
+    const imgX = padX;
+    const imgY = curY;
+
+    // Rounded clip for cover image
+    ctx.save();
+    ctx.beginPath();
+    const r = 16;
+    ctx.moveTo(imgX + r, imgY);
+    ctx.lineTo(imgX + imgW - r, imgY);
+    ctx.quadraticCurveTo(imgX + imgW, imgY, imgX + imgW, imgY + r);
+    ctx.lineTo(imgX + imgW, imgY + imgH - r);
+    ctx.quadraticCurveTo(imgX + imgW, imgY + imgH, imgX + imgW - r, imgY + imgH);
+    ctx.lineTo(imgX + r, imgY + imgH);
+    ctx.quadraticCurveTo(imgX, imgY + imgH, imgX, imgY + imgH - r);
+    ctx.lineTo(imgX, imgY + r);
+    ctx.quadraticCurveTo(imgX, imgY, imgX + r, imgY);
+    ctx.closePath();
+    ctx.clip();
+
+    // Center crop fill image
+    const imgAspect = coverImg.naturalWidth / coverImg.naturalHeight;
+    const boxAspect = imgW / imgH;
+    let sW = coverImg.naturalWidth;
+    let sH = coverImg.naturalHeight;
+    let sX = 0;
+    let sY = 0;
+
+    if (imgAspect > boxAspect) {
+      sW = sH * boxAspect;
+      sX = (coverImg.naturalWidth - sW) / 2;
+    } else {
+      sH = sW / boxAspect;
+      sY = (coverImg.naturalHeight - sH) / 2;
+    }
+
+    ctx.drawImage(coverImg, sX, sY, sW, sH, imgX, imgY, imgW, imgH);
+    ctx.restore();
+
+    // Border around image
+    ctx.strokeStyle = hairline;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(imgX, imgY, imgW, imgH);
+
+    curY += imgH + 45;
+  }
+
   // Title
   ctx.fillStyle = ink;
-  ctx.font = `800 62px ${font}`;
-  let y = sheetY + 360;
-  y += drawWrapped(ctx, announcement.title, padX, y, contentW, 74, 4) * 74;
+  const hasCover = Boolean(coverImg && coverImg.complete && coverImg.naturalWidth > 0);
+  ctx.font = hasCover ? `800 48px ${font}` : `800 62px ${font}`;
+  const titleLineHeight = hasCover ? 60 : 74;
+  const maxTitleLines = hasCover ? 2 : 4;
+  curY += drawWrapped(ctx, announcement.title, padX, curY, contentW, titleLineHeight, maxTitleLines) * titleLineHeight;
 
   // Excerpt
   ctx.fillStyle = '#334155';
-  ctx.font = `400 33px ${font}`;
-  y += 44;
-  drawWrapped(ctx, truncate(announcement.content, 320), padX, y, contentW, 50, 9);
+  ctx.font = hasCover ? `400 28px ${font}` : `400 33px ${font}`;
+  curY += 34;
+  const maxExcerptChars = hasCover ? 220 : 320;
+  const maxExcerptLines = hasCover ? 5 : 9;
+  const excerptLineHeight = hasCover ? 42 : 50;
+  drawWrapped(ctx, truncate(announcement.content, maxExcerptChars), padX, curY, contentW, excerptLineHeight, maxExcerptLines);
 
   // Footer accent + attribution
   const footY = sheetY + sheetH - 120;
@@ -149,12 +214,31 @@ function renderCard(canvas: HTMLCanvasElement, announcement: ShareableAnnounceme
 
 export const ShareCardModal: React.FC<ShareCardModalProps> = ({ isOpen, onClose, announcement, tenantName }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [coverImage, setCoverImage] = React.useState<HTMLImageElement | null>(null);
+
+  // Load cover image if image_url exists
+  useEffect(() => {
+    if (!announcement?.image_url) {
+      setCoverImage(null);
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = getFileUrl(announcement.image_url);
+    img.onload = () => {
+      setCoverImage(img);
+    };
+    img.onerror = () => {
+      setCoverImage(null);
+    };
+  }, [announcement?.image_url]);
 
   const draw = React.useCallback(() => {
     if (canvasRef.current && announcement) {
-      renderCard(canvasRef.current, announcement, tenantName);
+      renderCard(canvasRef.current, announcement, tenantName, coverImage);
     }
-  }, [announcement, tenantName]);
+  }, [announcement, tenantName, coverImage]);
 
   useEffect(() => {
     draw();
@@ -169,22 +253,51 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ isOpen, onClose,
 
   if (!announcement) return null;
 
-  const downloadPng = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `pengumuman-${Date.now()}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }, 'image/png');
+  const getCanvasBlob = (): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return resolve(null);
+      canvas.toBlob((blob) => resolve(blob), 'image/png');
+    });
   };
 
-  const shareWhatsApp = () => {
-    const summary = `*${announcement.title}*\n\n${truncate(announcement.content, 200)}\n\n- ${tenantName}`;
+  const downloadPng = async () => {
+    const blob = await getCanvasBlob();
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pengumuman-${Date.now()}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const shareWhatsApp = async () => {
+    const postUrl = announcement.id
+      ? `${window.location.origin}/kabar?id=${announcement.id}`
+      : `${window.location.origin}/kabar`;
+    const summary = `*${announcement.title}*\n\n${truncate(announcement.content, 220)}\n\nBaca selengkapnya di: ${postUrl}\n\n- ${tenantName}`;
+
+    // Cek apakah browser HP mendukung Web Share API file transfer (bisa kirim gambar PNG langsung)
+    const blob = await getCanvasBlob();
+    if (blob && navigator.canShare && window.File) {
+      try {
+        const file = new File([blob], `pengumuman-${Date.now()}.png`, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: announcement.title,
+            text: summary,
+            files: [file],
+          });
+          return;
+        }
+      } catch (err: any) {
+        // User membatalkan dialog share atau browser menolak file share
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    // Fallback direct WhatsApp Web / App link
     window.open(`https://wa.me/?text=${encodeURIComponent(summary)}`, '_blank', 'noopener');
   };
 

@@ -337,7 +337,18 @@ export const PublicAnnouncementsPage: React.FC = () => {
                         </h3>
                       </div>
                       <button
-                        onClick={() => openShare(item)}
+                        onClick={() => {
+                          const coverImage = (item.media_urls && item.media_urls.length > 0)
+                            ? item.media_urls[0]
+                            : item.attachment_url;
+                          openShare({
+                            id: item.id,
+                            title: item.title,
+                            content: item.content,
+                            created_at: item.created_at,
+                            image_url: coverImage,
+                          });
+                        }}
                         className="p-2 rounded-full text-[#707070] hover:text-[#0071e3] hover:bg-[#f5f5f7] transition-colors shrink-0"
                         aria-label="Bagikan ke WhatsApp"
                         title="Buat Kartu Share WhatsApp"
@@ -553,10 +564,15 @@ export const PublicAnnouncementsPage: React.FC = () => {
           announcement={detailAnnouncement}
           onShare={(item) => {
             setDetailAnnouncement(null);
+            const coverImage = (item.media_urls && item.media_urls.length > 0)
+              ? item.media_urls[0]
+              : item.attachment_url;
             setShareTarget({
+              id: item.id,
               title: item.title,
               content: item.content,
               created_at: item.created_at,
+              image_url: coverImage,
             });
           }}
         />
