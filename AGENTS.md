@@ -1604,3 +1604,21 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
 
 When creating or updating documentation during an audit, keep these canonical files as the
 single source per topic; do not create parallel documents that duplicate them.
+
+## 46.11 Aturan Perubahan Kode & Alur Promosi Lingkungan (Strict Workflow)
+
+Semua agen dan developer **WAJIB** mengikuti alur promosi kode berikut:
+
+1. **Seluruh perubahan kode HARUS dimulai dari branch `dev`**:
+   - Dilarang keras melakukan commit atau edit kode langsung di branch `staging` atau `main` (production).
+   - Fitur baru, bugfix, refactoring, atau pengujian harus dibuat dan diuji pertama kali di branch `dev`.
+2. **Promosi ke Staging**:
+   - Setelah branch `dev` teruji dan stabil, perubahan di-merge ke branch `staging` melalui PR/MR atau git merge terverifikasi.
+   - Branch `staging` berfungsi untuk integrasi dan verifikasi fungsionalitas di lingkungan staging (*-staging.iscube.web.id).
+3. **Promosi ke Production (`main`)**:
+   - Setelah verifikasi di `staging` lulus tanpa regresi, perubahan dari `staging` di-merge ke branch `main` melalui PR/MR.
+   - Branch `main` otomatis memicu pipeline CI/CD produksi (*.iscube.web.id).
+4. **Strategi Integritas Data**:
+   - Kebijakan data: data produksi adalah kebenaran operasional utama di masa mendatang.
+   - Lingkungan `dev` dan `staging` berfungsi sebagai data tester/pengujian.
+
