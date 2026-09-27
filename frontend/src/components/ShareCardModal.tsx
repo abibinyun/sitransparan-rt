@@ -110,8 +110,19 @@ interface ShareCardModalProps {
   tenantName: string;
 }
 
-const W = 1080;
-const H = 1350;
+export const CARD_WIDTH = 1080;
+export const CARD_HEIGHT = 1350;
+
+// Bounding box area kertas putih kartu di dalam canvas
+export const CARD_SHEET = {
+  x: 60,
+  y: 96,
+  width: CARD_WIDTH - 120, // 960
+  height: CARD_HEIGHT - 192, // 1158
+};
+
+const W = CARD_WIDTH;
+const H = CARD_HEIGHT;
 
 function drawWrapped(
   ctx: CanvasRenderingContext2D,
@@ -365,16 +376,45 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ isOpen, onClose,
 
   if (!announcement) return null;
 
-  const getCanvasBlob = (): Promise<Blob | null> => {
+  const getCanvasBlob = (cropCleanSheet = false): Promise<Blob | null> => {
     return new Promise((resolve) => {
       const canvas = canvasRef.current;
       if (!canvas) return resolve(null);
+
+      // Jika cropCleanSheet = true, potong kartu putih tanpa outer frame backdrop
+      if (cropCleanSheet) {
+        const offscreen = document.createElement('canvas');
+        offscreen.width = CARD_SHEET.width;
+        offscreen.height = CARD_SHEET.height;
+        const oCtx = offscreen.getContext('2d');
+        if (!oCtx) {
+          canvas.toBlob((blob) => resolve(blob), 'image/png');
+          return;
+        }
+
+        // Ambil area persis kertas kartu putih dari canvas pratinjau
+        oCtx.drawImage(
+          canvas,
+          CARD_SHEET.x,
+          CARD_SHEET.y,
+          CARD_SHEET.width,
+          CARD_SHEET.height,
+          0,
+          0,
+          CARD_SHEET.width,
+          CARD_SHEET.height
+        );
+        offscreen.toBlob((blob) => resolve(blob), 'image/png');
+        return;
+      }
+
       canvas.toBlob((blob) => resolve(blob), 'image/png');
     });
   };
 
   const downloadPng = async () => {
-    const blob = await getCanvasBlob();
+    // Unduh versi bersih (tanpa outer frame biru/abu-abu)
+    const blob = await getCanvasBlob(true);
     if (!blob) return;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -390,8 +430,8 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ isOpen, onClose,
       : `${window.location.origin}/kabar`;
     const summary = `*${announcement.title}*\n\n${truncate(announcement.content, 220)}\n\nBaca selengkapnya di: ${postUrl}\n\n- ${tenantName}`;
 
-    // Cek apakah browser HP mendukung Web Share API file transfer (bisa kirim gambar PNG langsung)
-    const blob = await getCanvasBlob();
+    // Cek apakah browser HP mendukung Web Share API file transfer (bisa kirim gambar PNG bersih langsung)
+    const blob = await getCanvasBlob(true);
     if (blob && navigator.canShare && window.File) {
       try {
         const file = new File([blob], `pengumuman-${Date.now()}.png`, { type: 'image/png' });
