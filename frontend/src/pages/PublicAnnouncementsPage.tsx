@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useInfinitePublicAnnouncements, usePublicDocuments } from '../services/announcement_doc';
+import { useSearchParams } from 'react-router-dom';
+import {
+  useInfinitePublicAnnouncements,
+  usePublicDocuments,
+  usePublicAnnouncementDetail,
+} from '../services/announcement_doc';
 import { usePublicTenantQuery } from '../services/public_tenant';
 import { ShareCardModal, ShareableAnnouncement } from '../components/ShareCardModal';
 import { AnnouncementDetailModal } from '../components/AnnouncementDetailModal';
@@ -40,6 +45,9 @@ const CATEGORY_TABS = [
 ];
 
 export const PublicAnnouncementsPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlAnnouncementId = searchParams.get('id');
+
   const [selectedTimelineCategory, setSelectedTimelineCategory] = useState<string>('all');
   const {
     data: infiniteData,
@@ -56,6 +64,36 @@ export const PublicAnnouncementsPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [shareTarget, setShareTarget] = useState<ShareableAnnouncement | null>(null);
   const [detailAnnouncement, setDetailAnnouncement] = useState<any | null>(null);
+
+  // Query detail otomatis jika URL membawa ?id=<announcement_id>
+  const { data: urlDetailData } = usePublicAnnouncementDetail(urlAnnouncementId);
+
+  // Jika URL membawa ?id=... dan data detail tersedia, buka modal detail
+  useEffect(() => {
+    if (urlDetailData) {
+      setDetailAnnouncement(urlDetailData);
+    }
+  }, [urlDetailData]);
+
+  // Handler buka detail & update URL query param
+  const handleOpenDetail = (item: any) => {
+    setDetailAnnouncement(item);
+    if (item?.id) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('id', item.id);
+      setSearchParams(nextParams, { replace: true });
+    }
+  };
+
+  // Handler tutup detail & bersihkan URL query param
+  const handleCloseDetail = () => {
+    setDetailAnnouncement(null);
+    if (searchParams.has('id')) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('id');
+      setSearchParams(nextParams, { replace: true });
+    }
+  };
   const [pushStatus, setPushStatus] = useState<'idle' | 'loading' | 'enabled' | 'error'>(() => {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       return 'enabled';
@@ -311,7 +349,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
                     <div className="flex items-start justify-between gap-3">
                       <div
                         className="space-y-1.5 cursor-pointer flex-1 group"
-                        onClick={() => setDetailAnnouncement(item)}
+                        onClick={() => handleOpenDetail(item)}
                       >
                         <div className="flex items-center gap-2 flex-wrap">
                           {/* Badge Kategori Konten Nyata */}
@@ -347,6 +385,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
                             content: item.content,
                             created_at: item.created_at,
                             image_url: coverImage,
+                            image_urls: item.media_urls,
                           });
                         }}
                         className="p-2 rounded-full text-[#707070] hover:text-[#0071e3] hover:bg-[#f5f5f7] transition-colors shrink-0"
@@ -360,7 +399,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
                     {/* Konten teks */}
                     <div
                       className="text-xs sm:text-sm text-[#333333] leading-relaxed whitespace-pre-line cursor-pointer"
-                      onClick={() => setDetailAnnouncement(item)}
+                      onClick={() => handleOpenDetail(item)}
                     >
                       {item.content.length > 280 ? `${item.content.slice(0, 280)}... ` : item.content}
                       {item.content.length > 280 && (
@@ -397,7 +436,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
                       return (
                         <div className="space-y-2">
                           {allPhotos.length > 0 && (
-                            <div className="pt-2 cursor-pointer" onClick={() => setDetailAnnouncement(item)}>
+                            <div className="pt-2 cursor-pointer" onClick={() => handleOpenDetail(item)}>
                               <MediaCarousel urls={allPhotos} alt={item.title} />
                             </div>
                           )}
@@ -430,7 +469,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
                         {item.allow_comments && (
                           <button
                             type="button"
-                            onClick={() => setDetailAnnouncement(item)}
+                            onClick={() => handleOpenDetail(item)}
                             className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-full border border-[#d2d2d7] bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e2e2e5] transition-all"
                             title="Buka komentar pengumuman"
                           >
@@ -560,10 +599,10 @@ export const PublicAnnouncementsPage: React.FC = () => {
       {detailAnnouncement && (
         <AnnouncementDetailModal
           isOpen={Boolean(detailAnnouncement)}
-          onClose={() => setDetailAnnouncement(null)}
+          onClose={handleCloseDetail}
           announcement={detailAnnouncement}
           onShare={(item) => {
-            setDetailAnnouncement(null);
+            handleCloseDetail();
             const coverImage = (item.media_urls && item.media_urls.length > 0)
               ? item.media_urls[0]
               : item.attachment_url;
@@ -573,6 +612,7 @@ export const PublicAnnouncementsPage: React.FC = () => {
               content: item.content,
               created_at: item.created_at,
               image_url: coverImage,
+              image_urls: item.media_urls,
             });
           }}
         />

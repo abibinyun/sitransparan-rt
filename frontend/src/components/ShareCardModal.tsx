@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Dialog } from './ui/dialog';
-import { Download, MessageCircle } from 'lucide-react';
+import { Download, MessageCircle, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import { getFileUrl } from '../utils/file';
 
 export interface ShareableAnnouncement {
@@ -9,6 +9,7 @@ export interface ShareableAnnouncement {
   content: string;
   created_at: string;
   image_url?: string;
+  image_urls?: string[];
 }
 
 interface ShareCardModalProps {
@@ -214,25 +215,44 @@ function renderCard(
 
 export const ShareCardModal: React.FC<ShareCardModalProps> = ({ isOpen, onClose, announcement, tenantName }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [coverImage, setCoverImage] = React.useState<HTMLImageElement | null>(null);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+  const [coverImage, setCoverImage] = useState<HTMLImageElement | null>(null);
 
-  // Load cover image if image_url exists
+  // Kumpulkan semua foto kandidat cover (dari image_urls atau image_url tunggal)
+  const availablePhotos = useMemo(() => {
+    if (!announcement) return [];
+    if (announcement.image_urls && announcement.image_urls.length > 0) {
+      return announcement.image_urls;
+    }
+    if (announcement.image_url) {
+      return [announcement.image_url];
+    }
+    return [];
+  }, [announcement]);
+
+  // Reset index saat announcement berganti
   useEffect(() => {
-    if (!announcement?.image_url) {
+    setSelectedPhotoIndex(0);
+  }, [announcement?.id]);
+
+  // Load cover image yang sedang dipilih pengguna
+  useEffect(() => {
+    const activeUrl = availablePhotos[selectedPhotoIndex];
+    if (!activeUrl) {
       setCoverImage(null);
       return;
     }
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.src = getFileUrl(announcement.image_url);
+    img.src = getFileUrl(activeUrl);
     img.onload = () => {
       setCoverImage(img);
     };
     img.onerror = () => {
       setCoverImage(null);
     };
-  }, [announcement?.image_url]);
+  }, [availablePhotos, selectedPhotoIndex]);
 
   const draw = React.useCallback(() => {
     if (canvasRef.current && announcement) {
@@ -310,6 +330,71 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ isOpen, onClose,
       className="w-[96vw] sm:w-[92vw] max-w-2xl"
     >
       <div className="space-y-4">
+        {/* Photo Selector Slider jika postingan memiliki lebih dari 1 foto */}
+        {availablePhotos.length > 1 && (
+          <div className="p-3 bg-[#f5f5f7] border border-[#d2d2d7] rounded-xl space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-[#0071e3]" />
+                Pilih Foto Sampul Kartu:
+              </span>
+              <span className="text-[11px] font-medium text-[#707070]">
+                Foto {selectedPhotoIndex + 1} dari {availablePhotos.length}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedPhotoIndex(
+                    (prev) => (prev - 1 + availablePhotos.length) % availablePhotos.length
+                  )
+                }
+                className="p-1.5 rounded-lg border border-[#d2d2d7] bg-white text-[#707070] hover:text-[#1d1d1f] hover:bg-slate-50 transition shrink-0"
+                title="Foto Sebelumnya"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 flex-1">
+                {availablePhotos.map((photoUrl, idx) => {
+                  const isSelected = idx === selectedPhotoIndex;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedPhotoIndex(idx)}
+                      className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 transition shrink-0 ${
+                        isSelected
+                          ? 'border-[#0071e3] ring-2 ring-[#0071e3]/20 scale-105'
+                          : 'border-[#d2d2d7] opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <img
+                        src={getFileUrl(photoUrl)}
+                        alt={`Pilihan foto ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedPhotoIndex((prev) => (prev + 1) % availablePhotos.length)
+                }
+                className="p-1.5 rounded-lg border border-[#d2d2d7] bg-white text-[#707070] hover:text-[#1d1d1f] hover:bg-slate-50 transition shrink-0"
+                title="Foto Selanjutnya"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <canvas
           ref={attachCanvas}
           width={W}

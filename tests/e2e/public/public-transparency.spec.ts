@@ -104,4 +104,19 @@ test.describe('Public transparency API — anonymous access', () => {
     await expect(page.getByRole('button', { name: /Unduh PNG/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /Buka WhatsApp/ })).toBeVisible();
   });
+
+  test('opening /kabar with ?id=<announcement_id> automatically opens detail modal', async ({ page, request }) => {
+    // 1. Ambil 1 ID pengumuman publik yang tersedia
+    const res = await request.get('http://127.0.0.1:8083/api/v1/t/sitransparan-rt/announcements?limit=1');
+    expect(res.status()).toBe(200);
+    const json = await res.json();
+    const ann = json.data?.[0];
+    if (!ann) return;
+
+    // 2. Akses halaman /kabar dengan deep link ?id=...
+    await page.goto(`/kabar?id=${ann.id}`);
+
+    // 3. Modal detail pengumuman harus otomatis terbuka
+    await expect(page.getByRole('heading', { name: ann.title })).toBeVisible({ timeout: 10000 });
+  });
 });
