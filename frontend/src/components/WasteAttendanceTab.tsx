@@ -222,12 +222,12 @@ export const WasteAttendanceTab: React.FC<{ isResident: boolean }> = ({ isReside
       </div>
 
       {/* Sub Tabs Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-3 rounded-xl border border-[#d2d2d7]">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#d2d2d7]">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1 sm:pb-0 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setSubTab('attendance')}
-            className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition ${
+            className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition shrink-0 whitespace-nowrap ${
               subTab === 'attendance'
                 ? 'bg-[#1d1d1f] text-white shadow-xs'
                 : 'text-[#707070] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
@@ -238,7 +238,7 @@ export const WasteAttendanceTab: React.FC<{ isResident: boolean }> = ({ isReside
           <button
             type="button"
             onClick={() => setSubTab('collectors')}
-            className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition ${
+            className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition shrink-0 whitespace-nowrap ${
               subTab === 'collectors'
                 ? 'bg-[#1d1d1f] text-white shadow-xs'
                 : 'text-[#707070] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]'
@@ -249,13 +249,13 @@ export const WasteAttendanceTab: React.FC<{ isResident: boolean }> = ({ isReside
         </div>
 
         {!isResident && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
             {subTab === 'attendance' ? (
-              <Button onClick={handleOpenAttendanceModal} className="gap-2 apple-btn-primary">
+              <Button onClick={handleOpenAttendanceModal} className="w-full sm:w-auto gap-2 apple-btn-primary">
                 <Plus className="h-4 w-4" /> Catat Absensi Tugas
               </Button>
             ) : (
-              <Button onClick={handleOpenAddCollector} className="gap-2 apple-btn-primary">
+              <Button onClick={handleOpenAddCollector} className="w-full sm:w-auto gap-2 apple-btn-primary">
                 <Plus className="h-4 w-4" /> Tambah Petugas
               </Button>
             )}
@@ -284,78 +284,157 @@ export const WasteAttendanceTab: React.FC<{ isResident: boolean }> = ({ isReside
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-[#d2d2d7] overflow-hidden shadow-xs">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#f5f5f7] border-b border-[#d2d2d7] text-[#707070] font-semibold">
-                    <tr>
-                      <th className="py-3 px-4">Tanggal Tugas</th>
-                      <th className="py-3 px-4">Petugas yang Bertugas</th>
-                      <th className="py-3 px-4">Honor per Orang</th>
-                      <th className="py-3 px-4">Total Pembayaran</th>
-                      <th className="py-3 px-4">Catatan</th>
-                      {!isResident && <th className="py-3 px-4 text-right">Aksi</th>}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#e5e5ea]">
-                    {attendances.map((att) => (
-                      <tr key={att.id} className="hover:bg-[#fbfbfd] transition-colors">
-                        <td className="py-3.5 px-4 font-semibold text-[#1d1d1f] whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-3.5 w-3.5 text-[#0071e3]" />
-                            {new Date(att.date).toLocaleDateString('id-ID', {
-                              weekday: 'short',
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <div className="flex flex-wrap gap-1.5 max-w-md">
-                            {att.members && att.members.length > 0 ? (
-                              att.members.map((m) => (
-                                <Badge
-                                  key={m.id}
-                                  variant="secondary"
-                                  className="text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200"
-                                >
-                                  {m.collector_name || 'Petugas'}
-                                </Badge>
-                              ))
-                            ) : (
-                              <span className="text-[#858585] italic">-</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4 whitespace-nowrap text-[#707070]">
-                          Rp {att.wage_per_person.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-3.5 px-4 whitespace-nowrap font-bold text-emerald-700">
-                          Rp {att.total_wage.toLocaleString('id-ID')}
-                          <span className="text-[10px] text-[#707070] font-normal block">
-                            ({att.members?.length || 0} orang)
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-[#707070] max-w-xs truncate">
-                          {att.notes || '-'}
-                        </td>
-                        {!isResident && (
-                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteAttendance(att.id, att.date)}
-                              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                              title="Hapus Catatan Absensi"
+            <div className="space-y-3">
+              {/* Mobile Card View (Muncul di layar kecil < 640px) */}
+              <div className="space-y-3 block sm:hidden">
+                {attendances.map((att) => (
+                  <Card key={att.id} className="p-4 bg-white border border-[#d2d2d7] shadow-xs space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-[#f0f0f2]">
+                      <div className="flex items-center gap-2 font-semibold text-xs text-[#1d1d1f]">
+                        <Calendar className="h-4 w-4 text-[#0071e3]" />
+                        <span>
+                          {new Date(att.date).toLocaleDateString('id-ID', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </div>
+                      {!isResident && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAttendance(att.id, att.date)}
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          title="Hapus Catatan Absensi"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#707070] block mb-1">
+                        Petugas yang Bertugas:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {att.members && att.members.length > 0 ? (
+                          att.members.map((m) => (
+                            <Badge
+                              key={m.id}
+                              variant="secondary"
+                              className="text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200"
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </td>
+                              {m.collector_name || 'Petugas'}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-[#858585] italic">-</span>
                         )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#f0f0f2] text-xs">
+                      <div>
+                        <span className="text-[10px] text-[#707070] block">Honor / Orang</span>
+                        <span className="font-medium text-[#1d1d1f]">
+                          Rp {att.wage_per_person.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-[#707070] block">Total Dibayar</span>
+                        <span className="font-bold text-emerald-700">
+                          Rp {att.total_wage.toLocaleString('id-ID')}
+                        </span>
+                        <span className="text-[10px] text-[#707070] block">
+                          ({att.members?.length || 0} orang)
+                        </span>
+                      </div>
+                    </div>
+
+                    {att.notes && (
+                      <div className="text-[11px] text-[#707070] bg-[#f9f9fb] p-2 rounded-lg border border-[#e5e5ea]">
+                        Catatan: {att.notes}
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+
+              {/* Desktop Table View (Muncul di layar >= 640px) */}
+              <div className="hidden sm:block bg-white rounded-xl border border-[#d2d2d7] overflow-hidden shadow-xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#f5f5f7] border-b border-[#d2d2d7] text-[#707070] font-semibold">
+                      <tr>
+                        <th className="py-3 px-4">Tanggal Tugas</th>
+                        <th className="py-3 px-4">Petugas yang Bertugas</th>
+                        <th className="py-3 px-4">Honor per Orang</th>
+                        <th className="py-3 px-4">Total Pembayaran</th>
+                        <th className="py-3 px-4">Catatan</th>
+                        {!isResident && <th className="py-3 px-4 text-right">Aksi</th>}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-[#e5e5ea]">
+                      {attendances.map((att) => (
+                        <tr key={att.id} className="hover:bg-[#fbfbfd] transition-colors">
+                          <td className="py-3.5 px-4 font-semibold text-[#1d1d1f] whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-3.5 w-3.5 text-[#0071e3]" />
+                              {new Date(att.date).toLocaleDateString('id-ID', {
+                                weekday: 'short',
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="flex flex-wrap gap-1.5 max-w-md">
+                              {att.members && att.members.length > 0 ? (
+                                att.members.map((m) => (
+                                  <Badge
+                                    key={m.id}
+                                    variant="secondary"
+                                    className="text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200"
+                                  >
+                                    {m.collector_name || 'Petugas'}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span className="text-[#858585] italic">-</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 whitespace-nowrap text-[#707070]">
+                            Rp {att.wage_per_person.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-3.5 px-4 whitespace-nowrap font-bold text-emerald-700">
+                            Rp {att.total_wage.toLocaleString('id-ID')}
+                            <span className="text-[10px] text-[#707070] font-normal block">
+                              ({att.members?.length || 0} orang)
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-[#707070] max-w-xs truncate">
+                            {att.notes || '-'}
+                          </td>
+                          {!isResident && (
+                            <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteAttendance(att.id, att.date)}
+                                className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                title="Hapus Catatan Absensi"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

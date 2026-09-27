@@ -455,38 +455,40 @@ export const KarangTarunaPage: React.FC = () => {
         }
       />
 
-      {/* Navigation Tabs (Hanya 2 Tab Utama) */}
-      <div className="flex items-center gap-2 border-b border-[#d2d2d7] pb-2">
-        <button
-          onClick={() => setActiveTab('rt_structure')}
-          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
-            activeTab === 'rt_structure'
-              ? 'bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]'
-              : 'text-[#707070] hover:bg-[#f5f5f7]'
-          }`}
-        >
-          <ShieldCheck className="h-4 w-4 text-[#0071e3]" /> 1. Pengurus RT/RW ({rtMembers.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('kt_structure')}
-          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
-            activeTab === 'kt_structure'
-              ? 'bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]'
-              : 'text-[#707070] hover:bg-[#f5f5f7]'
-          }`}
-        >
-          <Flame className="h-4 w-4 text-amber-600" /> 2. Karang Taruna ({members.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('waste_attendance')}
-          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
-            activeTab === 'waste_attendance'
-              ? 'bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]'
-              : 'text-[#707070] hover:bg-[#f5f5f7]'
-          }`}
-        >
-          <ClipboardCheck className="h-4 w-4 text-emerald-600" /> 3. Petugas & Absensi Sampah
-        </button>
+      {/* Navigation Tabs (3 Tab Terpadu) */}
+      <div className="border-b border-[#d2d2d7]">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-2 -mb-px">
+          <button
+            onClick={() => setActiveTab('rt_structure')}
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition shrink-0 whitespace-nowrap ${
+              activeTab === 'rt_structure'
+                ? 'bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]'
+                : 'text-[#707070] hover:bg-[#f5f5f7]'
+            }`}
+          >
+            <ShieldCheck className="h-4 w-4 text-[#0071e3]" /> 1. Pengurus RT/RW ({rtMembers.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('kt_structure')}
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition shrink-0 whitespace-nowrap ${
+              activeTab === 'kt_structure'
+                ? 'bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]'
+                : 'text-[#707070] hover:bg-[#f5f5f7]'
+            }`}
+          >
+            <Flame className="h-4 w-4 text-amber-600" /> 2. Karang Taruna ({members.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('waste_attendance')}
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition shrink-0 whitespace-nowrap ${
+              activeTab === 'waste_attendance'
+                ? 'bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]'
+                : 'text-[#707070] hover:bg-[#f5f5f7]'
+            }`}
+          >
+            <ClipboardCheck className="h-4 w-4 text-emerald-600" /> 3. Petugas &amp; Absensi Sampah
+          </button>
+        </div>
       </div>
 
       {/* TAB 1: STRUKTUR PENGURUS RT/RW RESMI */}

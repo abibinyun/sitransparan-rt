@@ -44,4 +44,32 @@ test.describe('Karang Taruna Management Flow', () => {
     await page.getByRole('button', { name: /Terbitkan Periode/i }).click();
     await expect(page.getByRole('heading', { name: /Buat Masa Bakti Baru/i })).not.toBeVisible();
   });
+
+  test('Tab 3 Petugas & Absensi Sampah is mobile friendly without layout overflow', async ({ page }) => {
+    // Set mobile viewport (iPhone 12 / standard mobile width 375px)
+    await page.setViewportSize({ width: 375, height: 667 });
+
+    // Click Tab 3
+    const tab3 = page.getByRole('button', { name: /Petugas & Absensi Sampah/i });
+    await expect(tab3).toBeVisible();
+    await tab3.click();
+
+    // Verify subtabs are visible and responsive
+    await expect(page.getByRole('button', { name: /Rekap Absensi & Honor/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Daftar Petugas Sampah/i })).toBeVisible();
+
+    // Verify action button is visible and full width/proper on mobile
+    const addBtn = page.getByRole('button', { name: /Catat Absensi Tugas/i });
+    await expect(addBtn).toBeVisible();
+
+    // Verify metrics cards exist
+    await expect(page.getByText('Total Petugas Pemuda')).toBeVisible();
+
+    // Verify document width does not cause horizontal page blowout (scrollWidth <= clientWidth + 5px buffer)
+    const isOverflowing = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > window.innerWidth;
+    });
+    expect(isOverflowing).toBeFalsy();
+  });
 });
+
