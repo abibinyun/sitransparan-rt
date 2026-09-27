@@ -20,9 +20,15 @@ async function readIncome(page: Page): Promise<number> {
 async function createResident(page: Page, name: string, nik: string) {
   await page.goto('/residents');
   await page.getByRole('button', { name: 'Tambah Warga' }).click();
+  await expect(page.getByRole('heading', { name: 'Tambah Data Warga' })).toBeVisible();
   await page.fill('#nik', nik);
   await page.fill('#kk_number', nik);
   await page.fill('#full_name', name);
+  await page.fill('#birth_place', 'Jakarta');
+  await page.fill('#birth_date', '1990-01-15');
+  await page.fill('#address', 'Jl. Merdeka No. 1');
+  await page.fill('#rt_rw', '001/002');
+  await page.fill('#phone', '081234567890');
   await page.check('#is_head_of_family');
   await page.getByRole('button', { name: 'Simpan Data' }).click();
   await expect(page.locator('table')).toContainText(name);
