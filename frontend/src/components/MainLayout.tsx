@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { prefetchRoute } from '../utils/routePrefetch';
 import {
   Bell,
+  BookOpen,
   Building2,
   CalendarDays,
   ChevronRight,
@@ -78,6 +79,13 @@ const baseNavItems: NavItem[] = [
     label: 'Inventaris & Aset RT', 
     icon: Package,
     matchPrefixes: ['/admin/inventory']
+  },
+  {
+    to: '/admin/panduan',
+    label: 'Buku Panduan RT',
+    icon: BookOpen,
+    adminOnly: true,
+    matchPrefixes: ['/admin/panduan']
   },
   { 
     to: '/admin/users', 
