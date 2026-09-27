@@ -17,10 +17,14 @@ export function useResidents(params?: ResidentFilter) {
     queryFn: async () => {
       const cacheKey = `residents_${JSON.stringify(params || {})}`;
       try {
-        // The backend searches by the `q` query parameter.
-        const { search, ...rest } = params || {};
+        // The backend searches by `q`, `limit`, and `offset`.
+        const { search, page, limit, ...rest } = params || {};
+        const safeLimit = limit && limit > 0 ? limit : 10;
+        const safePage = page && page > 0 ? page : 1;
+        const offset = (safePage - 1) * safeLimit;
+
         const res = await api.get<ResidentListResponse | Resident[]>('/residents', {
-          params: { ...rest, q: search || undefined },
+          params: { ...rest, q: search || undefined, limit: safeLimit, offset },
         });
         let resultData: ResidentListResponse;
         if (Array.isArray(res.data)) {

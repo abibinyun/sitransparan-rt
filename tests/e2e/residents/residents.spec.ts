@@ -461,4 +461,33 @@ test.describe('Resident Management — business workflow', () => {
     await page.getByRole('button', { name: 'Simpan Data' }).click();
     await expect(page.getByRole('heading', { name: 'Tambah Data Warga' })).toBeVisible();
   });
+
+  test('residents table pagination controls and state work properly', async ({ page }) => {
+    await page.goto('/admin/residents');
+    await expect(page.locator('table').first()).toBeVisible();
+
+    // Check pagination display presence
+    const paginationText = page.locator('text=/Menampilkan \\d+ - \\d+ dari \\d+ data warga/');
+    await expect(paginationText).toBeVisible();
+
+    // Verify page indicator
+    await expect(page.getByText(/Halaman \d+ dari \d+/i)).toBeVisible();
+
+    // Check previous button is disabled on page 1
+    const prevBtn = page.getByRole('button', { name: 'Sebelumnya' });
+    await expect(prevBtn).toBeDisabled();
+  });
+
+  test('houses table (stiker QR) pagination controls and state work properly', async ({ page }) => {
+    await page.goto('/admin/houses');
+    await expect(page.locator('table')).toBeVisible();
+
+    // Check pagination display presence if records exist
+    const totalCount = await page.locator('text=/Total Terdaftar:/').textContent();
+    expect(totalCount).toContain('Rumah');
+
+    const prevBtn = page.getByRole('button', { name: 'Sebelumnya' });
+    await expect(prevBtn).toBeVisible();
+    await expect(prevBtn).toBeDisabled();
+  });
 });

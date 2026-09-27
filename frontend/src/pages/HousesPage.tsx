@@ -50,7 +50,13 @@ export const HousesPage: React.FC = () => {
   const [address, setAddress] = useState('');
   const [headResidentId, setHeadResidentId] = useState('');
 
-  const { data, isLoading } = useHouses({ limit: 100 });
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const offset = (page - 1) * limit;
+
+  const { data, isLoading } = useHouses({ limit, offset });
+  // Load full houses list specifically when print modal is opened
+  const { data: allHousesData } = useHouses({ limit: 500, offset: 0 });
   const { data: residentsData } = useResidents({ limit: 100 });
   const createMutation = useCreateHouse();
   const updateMutation = useUpdateHouse();
@@ -59,6 +65,9 @@ export const HousesPage: React.FC = () => {
   const resetPinMutation = useResetHousePin();
 
   const houses = data?.data || [];
+  const allHouses = allHousesData?.data || [];
+  const total = data?.total || 0;
+  const totalPages = Math.ceil(total / limit) || 1;
   const residents = residentsData?.data || [];
 
   const residentOptions = useMemo(() => {
@@ -229,12 +238,15 @@ export const HousesPage: React.FC = () => {
           <Input
             placeholder="Cari Blok / Alamat / Kepala Keluarga..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9 bg-white"
           />
         </div>
         <div className="text-xs text-slate-500 font-medium">
-          Total Terdaftar: <strong className="text-slate-800">{houses.length}</strong> Rumah
+          Total Terdaftar: <strong className="text-slate-800">{total}</strong> Rumah
         </div>
       </div>
 
@@ -404,6 +416,38 @@ export const HousesPage: React.FC = () => {
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination Footer Apple Standard */}
+          {total > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-[#d2d2d7] bg-[#fbfbfd] gap-3 text-xs sm:text-sm">
+              <span className="text-slate-500 font-medium">
+                Menampilkan {offset + 1} - {Math.min(offset + limit, total)} dari {total} rumah
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="h-8 px-3 text-xs border-[#d2d2d7]"
+                >
+                  Sebelumnya
+                </Button>
+                <div className="px-3 py-1 font-semibold text-slate-700 text-xs bg-white border border-[#d2d2d7] rounded-lg">
+                  Halaman {page} dari {totalPages || 1}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="h-8 px-3 text-xs border-[#d2d2d7]"
+                >
+                  Selanjutnya
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -510,9 +554,9 @@ export const HousesPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Print Grid Stiker */}
+            {/* Print Grid Stiker (Mencetak seluruh rumah terdaftar) */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 print:grid-cols-3 print:gap-4">
-              {filteredHouses.map((h) => {
+              {allHouses.map((h) => {
                 const qrUrl = getQRImageUrl(h.access_token);
                 return (
                   <div
