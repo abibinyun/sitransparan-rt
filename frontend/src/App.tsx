@@ -33,6 +33,7 @@ const PublicProgramsPage = lazy(() => import('./pages/PublicProgramsPage').then(
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
 const HousesPage = lazy(() => import('./pages/HousesPage').then(m => ({ default: m.HousesPage })));
 const ClaimHouseTokenPage = lazy(() => import('./pages/ClaimHouseTokenPage').then(m => ({ default: m.ClaimHouseTokenPage })));
+const AdminDocsPage = lazy(() => import('./pages/AdminDocsPage').then(m => ({ default: m.AdminDocsPage })));
 
 import { getTenantSlugFromHost } from './utils/tenant';
 
@@ -105,6 +106,8 @@ function AppRoutes() {
             <Route path="/admin/waste-bank" element={<WasteBankPage />} />
             <Route path="/admin/inventory" element={<InventoryPage />} />
             <Route path="/admin/houses" element={<HousesPage />} />
+            <Route path="/admin/panduan" element={<AdminDocsPage />} />
+            <Route path="/admin/panduan/:slug" element={<AdminDocsPage />} />
             <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RT_ADMIN']} />}>
               <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
               <Route path="/admin/users" element={<UsersPage />} />
