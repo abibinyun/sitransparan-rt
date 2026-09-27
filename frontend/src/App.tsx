@@ -38,8 +38,11 @@ const AdminDocsPage = lazy(() => import('./pages/AdminDocsPage').then(m => ({ de
 import { getTenantSlugFromHost } from './utils/tenant';
 
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[50vh] w-full">
-    <div className="h-8 w-8 rounded-full border-2 border-indigo-600/20 border-t-indigo-600 animate-spin" />
+  <div className="relative w-full min-h-[40vh] flex flex-col items-center justify-center">
+    <div className="fixed top-0 left-0 right-0 h-[2.5px] bg-[#f0f4f8] overflow-hidden z-50">
+      <div className="h-full bg-gradient-to-r from-[#0071e3] to-[#2997ff] top-loading-bar rounded-r-full shadow-xs" />
+    </div>
+    <div className="h-6 w-6 rounded-full border-2 border-[#d2d2d7] border-t-[#0071e3] animate-spin opacity-80" />
   </div>
 );
 

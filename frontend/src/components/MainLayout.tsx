@@ -313,6 +313,7 @@ export const MainLayout: React.FC = () => {
             end={end}
             onMouseEnter={() => prefetchRoute(to)}
             onFocus={() => prefetchRoute(to)}
+            onTouchStart={() => prefetchRoute(to)}
             onClick={() => setSidebarOpen(false)}
             className={
               [
@@ -492,7 +493,9 @@ export const MainLayout: React.FC = () => {
               </div>
             }
           >
-            <Outlet />
+            <div key={location.pathname} className="page-fluid-enter">
+              <Outlet />
+            </div>
           </Suspense>
         </main>
       </div>

@@ -11,6 +11,7 @@ const routeLoaders: Record<string, () => Promise<any>> = {
   '/admin/karang-taruna': () => import('../pages/KarangTarunaPage'),
   '/admin/waste-bank': () => import('../pages/WasteBankPage'),
   '/admin/inventory': () => import('../pages/InventoryPage'),
+  '/admin/panduan': () => import('../pages/AdminDocsPage'),
   '/admin/houses': () => import('../pages/HousesPage'),
   '/admin/audit-logs': () => import('../pages/AuditLogsPage'),
   '/admin/users': () => import('../pages/UsersPage'),

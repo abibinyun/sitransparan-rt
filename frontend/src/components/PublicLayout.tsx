@@ -98,6 +98,7 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
                   end={end}
                   onMouseEnter={() => prefetchRoute(to)}
                   onFocus={() => prefetchRoute(to)}
+                  onTouchStart={() => prefetchRoute(to)}
                   className={({ isActive }) =>
                     `flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all ${
                       isActive
@@ -145,7 +146,9 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ childre
             </div>
           }
         >
-          {children || <Outlet />}
+          <div key={location.pathname} className="page-fluid-enter">
+            {children || <Outlet />}
+          </div>
         </Suspense>
       </main>
 
