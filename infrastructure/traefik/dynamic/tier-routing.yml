@@ -1,0 +1,26 @@
+http:
+  routers:
+    staging-router:
+      rule: "Host(`staging.iscube.web.id`) || Host(`app-staging.iscube.web.id`) || Host(`api-staging.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+-staging\\.iscube\\.web\\.id$`) || HostRegexp(`^api\\.[a-z0-9-]+-staging\\.iscube\\.web\\.id$`) || HostRegexp(`^api-[a-z0-9-]+\\.staging\\.iscube\\.web\\.id$`) || HostRegexp(`^[a-z0-9-]+\\.staging\\.iscube\\.web\\.id$`)"
+      priority: 1000
+      entryPoints:
+        - web
+      service: staging-traefik-service
+
+    dev-router:
+      rule: "Host(`dev.iscube.web.id`) || Host(`app-dev.iscube.web.id`) || Host(`api-dev.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+-dev\\.iscube\\.web\\.id$`) || HostRegexp(`^api\\.[a-z0-9-]+-dev\\.iscube\\.web\\.id$`) || HostRegexp(`^api-[a-z0-9-]+\\.dev\\.iscube\\.web\\.id$`) || HostRegexp(`^[a-z0-9-]+\\.dev\\.iscube\\.web\\.id$`)"
+      priority: 1000
+      entryPoints:
+        - web
+      service: dev-service
+
+  services:
+    staging-traefik-service:
+      loadBalancer:
+        servers:
+          - url: "http://traefik-staging:80"
+
+    dev-service:
+      loadBalancer:
+        servers:
+          - url: "http://frontend-dev:3000"

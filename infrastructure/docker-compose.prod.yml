@@ -6,7 +6,7 @@ x-logging: &default-logging
       max-file: "3"
 
 services:
-  traefik:
+  traefik_prod:
     <<: *default-logging
     image: traefik:3.6
     container_name: transparansi_traefik_prod
@@ -17,6 +17,8 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
       - "--providers.docker.constraints=Label(`traefik.tier`, `prod`)"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
@@ -104,7 +106,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.tier=prod"
-      - 'traefik.http.routers.backend_prod.rule=Host(`api.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+\.iscube\.web\.id$`)'
+      - 'traefik.http.routers.backend_prod.rule=Host(`api.iscube.web.id`) || (HostRegexp(`^api\.[a-z0-9-]+\.iscube\.web\.id$`) && !HostRegexp(`^api\.[a-z0-9-]+-(dev|staging)\.iscube\.web\.id$`) && !Host(`api-staging.iscube.web.id`) && !Host(`api-dev.iscube.web.id`))'
       - "traefik.http.routers.backend_prod.entrypoints=web"
       - "traefik.http.services.backend_prod.loadbalancer.server.port=8080"
     networks:
@@ -128,7 +130,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.tier=prod"
-      - 'traefik.http.routers.frontend_prod.rule=Host(`iscube.web.id`) || Host(`app.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`)'
+      - 'traefik.http.routers.frontend_prod.rule=Host(`iscube.web.id`) || Host(`app.iscube.web.id`) || (HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`) && !HostRegexp(`^[a-z0-9-]+-(dev|staging)\.iscube\.web\.id$`) && !Host(`staging.iscube.web.id`) && !Host(`dev.iscube.web.id`) && !Host(`app-staging.iscube.web.id`) && !Host(`app-dev.iscube.web.id`) && !Host(`api-staging.iscube.web.id`) && !Host(`api-dev.iscube.web.id`))'
       - "traefik.http.routers.frontend_prod.entrypoints=web"
       - "traefik.http.services.frontend_prod.loadbalancer.server.port=80"
     networks:

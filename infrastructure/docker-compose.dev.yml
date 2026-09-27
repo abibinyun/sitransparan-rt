@@ -90,6 +90,7 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
+      - "traefik.tier=dev"
       - 'traefik.http.routers.backend_dev.rule=Host(`api-dev.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+-dev\.iscube\.web\.id$`) || HostRegexp(`^api-[a-z0-9-]+\.dev\.iscube\.web\.id$`)'
       - "traefik.http.routers.backend_dev.entrypoints=web"
       - "traefik.http.services.backend_dev.loadbalancer.server.port=8080"
@@ -117,6 +118,7 @@ services:
       - backend
     labels:
       - "traefik.enable=true"
+      - "traefik.tier=dev"
       - 'traefik.http.routers.frontend_dev.rule=Host(`dev.iscube.web.id`) || Host(`app-dev.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+-dev\.iscube\.web\.id$`) || HostRegexp(`^[a-z0-9-]+\.dev\.iscube\.web\.id$`)'
       - "traefik.http.routers.frontend_dev.entrypoints=web"
       - "traefik.http.services.frontend_dev.loadbalancer.server.port=3000"

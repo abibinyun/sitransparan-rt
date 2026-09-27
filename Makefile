@@ -38,7 +38,7 @@ test:
 
 # ---------- DEV ----------
 dev-up:
-	cd infrastructure && docker compose -p dev -f docker-compose.dev.yml up -d
+	cd infrastructure && docker compose -p dev -f docker-compose.dev.yml up -d --remove-orphans
 	@echo "Menunggu database dev siap..."
 	@docker exec transparansi_postgres_dev sh -c 'until pg_isready -U postgres -d transparansi_rt_dev; do sleep 1; done'
 	@$(MAKE) dev-migrate
