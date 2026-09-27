@@ -139,18 +139,23 @@ export const adminDocCategories: DocCategory[] = [
     articles: [
       {
         slug: 'manajemen-warga-dan-kk',
-        title: 'Pendaftaran Warga & Anggota Keluarga (KK)',
+        title: 'Pendaftaran Warga, Rumah & Akun Otomatis',
         category: 'Kependudukan & Rumah QR',
         badge: 'Operasional',
         readTime: '4 menit',
-        excerpt: 'Cara menambah data warga baru, melampirkan foto KTP/KK terenkripsi, dan menetapkan Kepala Keluarga.',
+        excerpt: 'Alur fleksibel pendaftaran warga, pembuatan rumah langsung, dan akun portal yang otomatis terbuat.',
         sections: [
           {
-            heading: 'Pengelolaan Data Penduduk',
+            heading: 'Alur Fleksibel Kependudukan & Rumah',
             content: [
               'Data kependudukan di Sitransparan diamankan menggunakan enkripsi AES-256-GCM pada NIK dan penyimpanan dokumen identitas terisolasi per-tenant.',
-              'Setiap keluarga dikelompokkan berdasarkan nomor Kartu Keluarga (KK) dengan satu orang Kepala Keluarga (Kepala Rumah Tangga).',
+              'Setiap pendaftaran rumah tangga otomatis menerbitkan akun portal warga (email rumah & default PIN 1234) tanpa menimpa atau merusak data KK yang sudah ada.',
             ],
+            callout: {
+              type: 'tip',
+              title: '3 Opsi Alur Pendaftaran',
+              message: 'Pengurus bebas memilih: (1) Buat warga dahulu lalu klik "+ Buat Rumah Baru" langsung dari formulir warga, (2) Buat master rumah dahulu lalu pilih rumah saat input warga, atau (3) Buat warga lalu atur Kepala Keluarga dari menu Rumah.',
+            },
             steps: [
               {
                 step: 1,
@@ -160,13 +165,13 @@ export const adminDocCategories: DocCategory[] = [
               },
               {
                 step: 2,
-                title: 'Isi Identitas & Hubungan Keluarga',
-                description: 'Lengkapi Nama Lengkap, NIK 16 digit, No KK, status tempat tinggal (Tetap/Kontrak), dan nomor telepon WhatsApp aktif.',
+                title: 'Isi Identitas & Tautkan / Buat Rumah Baru',
+                description: 'Lengkapi Nama Lengkap, NIK, No KK. Di pilihan rumah, Anda bisa memilih rumah yang ada atau klik "+ Buat Rumah Baru" secara instan.',
               },
               {
                 step: 3,
-                title: 'Tautkan dengan Rumah',
-                description: 'Pilih nomor blok rumah tempat warga bermukim untuk menghubungkan buku iuran keluarga secara otomatis.',
+                title: 'Akun Portal Otomatis Terhubung',
+                description: 'Jika warga ditandai sebagai Kepala Keluarga, sistem otomatis menyinkronkan kepala keluarga ke rumah dan akun portal langsung aktif.',
               },
             ],
           },
@@ -178,13 +183,13 @@ export const adminDocCategories: DocCategory[] = [
         category: 'Kependudukan & Rumah QR',
         badge: 'Fitur Utama',
         readTime: '3 menit',
-        excerpt: 'Membuat token QR rumah untuk stempel pengambilan sampah, voting, dan cara mereset PIN warga.',
+        excerpt: 'Membuat token QR rumah untuk klaim mandiri warga, login portal rumah tangga, dan cara mereset PIN.',
         sections: [
           {
             heading: 'Fungsi Stiker QR Rumah Tangga',
             content: [
               'Setiap rumah di lingkungan RT memiliki kode QR unik yang dapat dicetak dan ditempel di depan pintu/pagar rumah.',
-              'Petugas sampah memindai stiker ini untuk mencatat setoran bank sampah, dan warga memindai stiker ini untuk klaim akses rumah tangga.',
+              'Kode QR ini berfungsi khusus bagi warga untuk klaim akses rumah tangga secara mandiri di HP tanpa perlu login rumit. Petugas bank sampah mencatat setoran langsung melalui daftar nama warga/rumah di modul Bank Sampah.',
             ],
             callout: {
               type: 'warning',

@@ -23,4 +23,26 @@ describe('Admin Docs Data Structure', () => {
     const notFound = getArticleBySlug('non-existent-slug-xyz');
     expect(notFound).toBeUndefined();
   });
+
+  it('accurately describes QR code purpose as citizen claim, not waste scanner', () => {
+    const qrArticle = getArticleBySlug('stiker-qr-dan-reset-pin-rumah');
+    expect(qrArticle).toBeDefined();
+    const allContent = qrArticle!.sections.flatMap((s) => s.content).join(' ');
+    // Harus menjelaskan klaim akun warga dan tidak mengklaim petugas sampah memindai QR
+    expect(allContent).toContain('klaim akses rumah');
+    expect(allContent).not.toContain('Petugas sampah memindai stiker');
+  });
+
+  it('accurately documents flexible resident and house creation workflows with auto account generation', () => {
+    const residentArticle = getArticleBySlug('manajemen-warga-dan-kk');
+    expect(residentArticle).toBeDefined();
+    const allContent = residentArticle!.sections.flatMap((s) => [
+      ...s.content,
+      s.callout?.message || '',
+      ...(s.steps?.map((st) => `${st.title} ${st.description}`) || []),
+    ]).join(' ');
+    // Harus menyebutkan pembuatan rumah inline dan akun portal otomatis
+    expect(allContent).toContain('akun');
+    expect(allContent).toContain('Rumah Baru');
+  });
 });
