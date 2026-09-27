@@ -114,7 +114,7 @@ export const AdminDocsPage: React.FC = () => {
                 Buku Panduan &amp; SOP Pengurus RT
               </h1>
               <Badge variant="outline" className="text-[10px] bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7] shrink-0">
-                Laravel Style Docs
+                Resmi Pengurus
               </Badge>
             </div>
             <p className="text-xs text-[#707070] mt-0.5 line-clamp-2">
