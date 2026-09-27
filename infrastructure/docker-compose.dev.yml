@@ -72,7 +72,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_USE_SSL: "false"
       PORT: 8080
-      JWT_SECRET: ${JWT_SECRET:-dev-super-secret-jwt-platform-rt-key}
+      JWT_SECRET: ${JWT_SECRET_DEV:-dev-super-secret-jwt-platform-rt-key}
       TENANT_BASE_DOMAIN: iscube.web.id
       TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-192.168.64.0/20,127.0.0.1}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}

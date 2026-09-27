@@ -46,7 +46,7 @@ jobs:
           echo "Deploying Staging to *-staging.iscube.web.id..."
           cd infrastructure
           docker compose -p staging -f docker-compose.staging.yml build backend frontend
-          docker compose -p staging -f docker-compose.staging.yml up -d
+          docker compose -p staging -f docker-compose.staging.yml up -d --remove-orphans
           echo "Staging deployment complete."
 
       - name: Run Database Migrations
@@ -67,7 +67,7 @@ jobs:
           echo "Deploying Production to *.iscube.web.id..."
           cd infrastructure
           docker compose -p prod -f docker-compose.prod.yml build backend frontend
-          docker compose -p prod -f docker-compose.prod.yml up -d
+          docker compose -p prod -f docker-compose.prod.yml up -d --remove-orphans
           echo "Production deployment complete."
 
       - name: Run Database Migrations

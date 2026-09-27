@@ -16,6 +16,7 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.constraints=Label(`traefik.tier`, `prod`)"
       - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
@@ -89,7 +90,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_USE_SSL: "false"
       PORT: 8080
-      JWT_SECRET: ${JWT_SECRET:-production-super-secret-jwt-platform-rt-key}
+      JWT_SECRET: ${JWT_SECRET_PROD:-production-super-secret-jwt-platform-rt-key}
       TENANT_BASE_DOMAIN: iscube.web.id
       TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-192.168.64.0/20,127.0.0.1}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
@@ -102,6 +103,7 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
+      - "traefik.tier=prod"
       - 'traefik.http.routers.backend_prod.rule=Host(`api.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+\.iscube\.web\.id$`)'
       - "traefik.http.routers.backend_prod.entrypoints=web"
       - "traefik.http.services.backend_prod.loadbalancer.server.port=8080"
@@ -125,6 +127,7 @@ services:
       - backend
     labels:
       - "traefik.enable=true"
+      - "traefik.tier=prod"
       - 'traefik.http.routers.frontend_prod.rule=Host(`iscube.web.id`) || Host(`app.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`)'
       - "traefik.http.routers.frontend_prod.entrypoints=web"
       - "traefik.http.services.frontend_prod.loadbalancer.server.port=80"

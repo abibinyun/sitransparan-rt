@@ -16,6 +16,7 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.constraints=Label(`traefik.tier`, `staging`)"
       - "--entrypoints.web.address=:80"
     ports:
       - "8082:80"
@@ -87,7 +88,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_USE_SSL: "false"
       PORT: 8080
-      JWT_SECRET: ${JWT_SECRET:-staging-secret-jwt-platform-rt-key}
+      JWT_SECRET: ${JWT_SECRET_STAGING:-staging-secret-jwt-platform-rt-key}
       TENANT_BASE_DOMAIN: iscube.web.id
       TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-192.168.64.0/20,127.0.0.1}
     depends_on:
@@ -97,6 +98,7 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
+      - "traefik.tier=staging"
       - 'traefik.http.routers.backend_staging.rule=Host(`api-staging.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+-staging\.iscube\.web\.id$`) || HostRegexp(`^api-[a-z0-9-]+\.staging\.iscube\.web\.id$`)'
       - "traefik.http.routers.backend_staging.entrypoints=web"
       - "traefik.http.services.backend_staging.loadbalancer.server.port=8080"
@@ -120,6 +122,7 @@ services:
       - backend
     labels:
       - "traefik.enable=true"
+      - "traefik.tier=staging"
       - 'traefik.http.routers.frontend_staging.rule=Host(`staging.iscube.web.id`) || Host(`app-staging.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+-staging\.iscube\.web\.id$`) || HostRegexp(`^[a-z0-9-]+\.staging\.iscube\.web\.id$`)'
       - "traefik.http.routers.frontend_staging.entrypoints=web"
       - "traefik.http.services.frontend_staging.loadbalancer.server.port=80"
