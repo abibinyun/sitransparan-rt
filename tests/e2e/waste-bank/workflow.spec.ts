@@ -4,25 +4,25 @@ import { login, ADMIN_EMAIL, ADMIN_PASSWORD } from '../helpers';
 test.describe('Bank Sampah & Karang Taruna Workflow', () => {
   test('Public portal displays Karang Taruna and Bank Sampah tabs', async ({ page }) => {
     // 1. Visit public root on default tenant
-    await page.goto('http://localhost:3000/');
+    await page.goto('/');
 
     // 2. Navigate to /karang-taruna
-    await page.goto('http://localhost:3000/karang-taruna');
+    await page.goto('/karang-taruna');
     await expect(page).toHaveURL(/.*karang-taruna/);
 
     // 3. Navigate to /bank-sampah
-    await page.goto('http://localhost:3000/bank-sampah');
+    await page.goto('/bank-sampah');
     await expect(page).toHaveURL(/.*bank-sampah/);
     await expect(page.getByText('Bank Sampah Warga & Pemuda')).toBeVisible();
-    await expect(page.getByText('Gerakan Ekonomi Sirkular & Lingkungan')).toBeVisible();
+    await expect(page.getByText(/Setorkan sampah anorganik rumah tangga Anda/i)).toBeVisible();
   });
 
   test('Admin RT can access Bank Sampah dashboard, view categories, and see tabs', async ({ page }) => {
     // 1. Login as Admin RT
-    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD, 'http://localhost:3000');
+    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     // 2. Navigate to /admin/waste-bank
-    await page.goto('http://localhost:3000/admin/waste-bank');
+    await page.goto('/admin/waste-bank');
     await expect(page).toHaveURL(/.*admin\/waste-bank/);
 
     // 3. Verify header & KPI cards
