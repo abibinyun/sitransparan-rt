@@ -6,7 +6,7 @@ import {
   usePublicAnnouncementDetail,
 } from '../services/announcement_doc';
 import { usePublicTenantQuery } from '../services/public_tenant';
-import { ShareCardModal, ShareableAnnouncement } from '../components/ShareCardModal';
+import { ShareCardModal, ShareableAnnouncement, extractAllPhotos } from '../components/ShareCardModal';
 import { AnnouncementDetailModal } from '../components/AnnouncementDetailModal';
 import { KasSummaryWidget } from '../components/KasSummaryWidget';
 import { MeetingDecisionsWidget } from '../components/MeetingDecisionsWidget';
@@ -376,16 +376,16 @@ export const PublicAnnouncementsPage: React.FC = () => {
                       </div>
                       <button
                         onClick={() => {
-                          const coverImage = (item.media_urls && item.media_urls.length > 0)
-                            ? item.media_urls[0]
-                            : item.attachment_url;
+                          const allItemPhotos = extractAllPhotos(item);
                           openShare({
                             id: item.id,
                             title: item.title,
                             content: item.content,
                             created_at: item.created_at,
-                            image_url: coverImage,
-                            image_urls: item.media_urls,
+                            image_url: allItemPhotos[0],
+                            image_urls: allItemPhotos,
+                            attachment_url: item.attachment_url,
+                            media_urls: item.media_urls,
                           });
                         }}
                         className="p-2 rounded-full text-[#707070] hover:text-[#0071e3] hover:bg-[#f5f5f7] transition-colors shrink-0"
@@ -603,16 +603,16 @@ export const PublicAnnouncementsPage: React.FC = () => {
           announcement={detailAnnouncement}
           onShare={(item) => {
             handleCloseDetail();
-            const coverImage = (item.media_urls && item.media_urls.length > 0)
-              ? item.media_urls[0]
-              : item.attachment_url;
+            const allItemPhotos = extractAllPhotos(item);
             setShareTarget({
               id: item.id,
               title: item.title,
               content: item.content,
               created_at: item.created_at,
-              image_url: coverImage,
-              image_urls: item.media_urls,
+              image_url: allItemPhotos[0],
+              image_urls: allItemPhotos,
+              attachment_url: item.attachment_url,
+              media_urls: item.media_urls,
             });
           }}
         />

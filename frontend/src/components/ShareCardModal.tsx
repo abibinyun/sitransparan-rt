@@ -10,6 +10,54 @@ export interface ShareableAnnouncement {
   created_at: string;
   image_url?: string;
   image_urls?: string[];
+  attachment_url?: string;
+  media_urls?: string[];
+}
+
+export function isImageFile(url?: string | null): boolean {
+  if (!url) return false;
+  return /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(url) || url.includes('/proofs/') || url.includes('/files/');
+}
+
+/** Mengumpulkan seluruh foto pengumuman (gabungan attachment_url gambar + seluruh media_urls) tanpa duplikasi */
+export function extractAllPhotos(item?: {
+  attachment_url?: string;
+  media_urls?: string[];
+  image_url?: string;
+  image_urls?: string[];
+}): string[] {
+  if (!item) return [];
+  const list: string[] = [];
+
+  // 1. attachment_url jika berupa gambar
+  if (item.attachment_url && isImageFile(item.attachment_url)) {
+    list.push(item.attachment_url);
+  }
+
+  // 2. media_urls
+  if (item.media_urls && Array.isArray(item.media_urls)) {
+    for (const u of item.media_urls) {
+      if (u && !list.includes(u)) {
+        list.push(u);
+      }
+    }
+  }
+
+  // 3. image_urls legacy/direct
+  if (item.image_urls && Array.isArray(item.image_urls)) {
+    for (const u of item.image_urls) {
+      if (u && !list.includes(u)) {
+        list.push(u);
+      }
+    }
+  }
+
+  // 4. image_url single
+  if (item.image_url && !list.includes(item.image_url)) {
+    list.push(item.image_url);
+  }
+
+  return list;
 }
 
 interface ShareCardModalProps {
@@ -218,16 +266,9 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ isOpen, onClose,
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [coverImage, setCoverImage] = useState<HTMLImageElement | null>(null);
 
-  // Kumpulkan semua foto kandidat cover (dari image_urls atau image_url tunggal)
+  // Kumpulkan semua foto kandidat cover (dari attachment_url, media_urls, atau image_urls)
   const availablePhotos = useMemo(() => {
-    if (!announcement) return [];
-    if (announcement.image_urls && announcement.image_urls.length > 0) {
-      return announcement.image_urls;
-    }
-    if (announcement.image_url) {
-      return [announcement.image_url];
-    }
-    return [];
+    return extractAllPhotos(announcement || undefined);
   }, [announcement]);
 
   // Reset index saat announcement berganti
