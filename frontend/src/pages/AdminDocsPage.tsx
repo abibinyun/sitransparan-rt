@@ -103,21 +103,21 @@ export const AdminDocsPage: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Header Bar Modul Dokumentasi */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white border border-[#d2d2d7] rounded-xl shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-50 text-[#0071e3] rounded-xl border border-blue-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white border border-[#d2d2d7] rounded-xl shadow-xs overflow-hidden">
+        <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+          <div className="p-2.5 bg-blue-50 text-[#0071e3] rounded-xl border border-blue-100 shrink-0">
             <BookOpen className="h-5 w-5" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#1d1d1f]">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-base sm:text-xl font-bold tracking-tight text-[#1d1d1f] break-words">
                 Buku Panduan &amp; SOP Pengurus RT
               </h1>
-              <Badge variant="outline" className="text-[10px] bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7]">
+              <Badge variant="outline" className="text-[10px] bg-[#f4f8fb] text-[#0066cc] border-[#d2d2d7] shrink-0">
                 Laravel Style Docs
               </Badge>
             </div>
-            <p className="text-xs text-[#707070] mt-0.5">
+            <p className="text-xs text-[#707070] mt-0.5 line-clamp-2">
               Pedoman operasional transparansi kependudukan, iuran, multi-fund, dan bank sampah.
             </p>
           </div>
@@ -149,13 +149,13 @@ export const AdminDocsPage: React.FC = () => {
         <Button
           variant="outline"
           onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
-          className="w-full justify-between border-[#d2d2d7] bg-white text-xs font-semibold text-[#1d1d1f]"
+          className="w-full justify-between border-[#d2d2d7] bg-white text-xs font-semibold text-[#1d1d1f] gap-2 overflow-hidden"
         >
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-2 shrink-0">
             <Menu className="h-4 w-4 text-[#0071e3]" /> Daftar Topik Panduan
           </span>
-          <span className="text-[11px] text-[#707070]">
-            {activeArticle.category} &rarr; {activeArticle.title}
+          <span className="text-[11px] text-[#707070] truncate max-w-[160px] text-right">
+            {activeArticle.title}
           </span>
         </Button>
       </div>
@@ -321,12 +321,12 @@ export const AdminDocsPage: React.FC = () => {
                     <div className="space-y-2.5">
                       {sec.steps.map((st) => (
                         <Card key={st.step} className="p-3.5 bg-[#fbfbfd] border border-[#d2d2d7] shadow-2xs space-y-2">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-2.5">
+                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div className="flex items-start gap-2.5 min-w-0">
                               <span className="h-5 w-5 rounded-full bg-[#1d1d1f] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
                                 {st.step}
                               </span>
-                              <div>
+                              <div className="min-w-0">
                                 <h5 className="font-bold text-xs sm:text-sm text-[#1d1d1f]">
                                   {st.title}
                                 </h5>
@@ -339,7 +339,7 @@ export const AdminDocsPage: React.FC = () => {
                             {st.actionLink && (
                               <NavLink
                                 to={st.actionLink.to}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-[#d2d2d7] text-[#0066cc] hover:bg-[#f4f8fb] transition shrink-0 shadow-2xs"
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-[#d2d2d7] text-[#0066cc] hover:bg-[#f4f8fb] transition shrink-0 shadow-2xs self-start sm:self-auto"
                               >
                                 <span>{st.actionLink.label}</span>
                                 <ArrowRight className="h-3 w-3" />
