@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import {
   useMeetingsQuery,
+  useMeetingQuery,
   useActionItemsQuery,
   useCreateMeetingMutation,
   useUpdateMeetingMutation,
@@ -270,7 +271,9 @@ export const MeetingPage: React.FC = () => {
     setIsAddAttendeeOpen(false);
   };
 
-  const selectedMeeting = meetings.find((m: Meeting) => m.id === selectedMeetingId) || (meetings.length > 0 ? meetings[0] : null);
+  const activeMeetingId = selectedMeetingId || (meetings.length > 0 ? meetings[0].id : '');
+  const { data: meetingDetail } = useMeetingQuery(activeMeetingId);
+  const selectedMeeting = meetingDetail || meetings.find((m: Meeting) => m.id === activeMeetingId) || null;
 
   const eventTabs = [
     { to: '/admin/events', label: 'Agenda Kegiatan & RAB', icon: CalendarDays },

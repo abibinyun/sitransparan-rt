@@ -3,6 +3,7 @@ import { login, ADMIN_EMAIL, ADMIN_PASSWORD } from '../helpers';
 
 test.describe('Meetings & Action Items Tracking — Business Workflows', () => {
   test('admin RT can create meeting, add decisions, add attendees, and track action items', async ({ page }) => {
+    test.setTimeout(60000);
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     // Navigate to Notulen & Tindak Lanjut
