@@ -19,6 +19,49 @@ export function isImageFile(url?: string | null): boolean {
   return /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(url) || url.includes('/proofs/') || url.includes('/files/');
 }
 
+export interface ImageFitBox {
+  destX: number;
+  destY: number;
+  destW: number;
+  destH: number;
+  isPortrait: boolean;
+}
+
+/** Menghitung ukuran dan posisi fit (contain) di tengah container tanpa memotong rasio asli gambar */
+export function calculateImageFitBox(
+  srcW: number,
+  srcH: number,
+  boxW: number,
+  boxH: number
+): ImageFitBox {
+  const imgAspect = srcW / srcH;
+  const boxAspect = boxW / boxH;
+
+  let destW = boxW;
+  let destH = boxH;
+
+  if (imgAspect < boxAspect) {
+    // Gambar lebih portrait dibanding container: fit berdasarkan tinggi container
+    destH = boxH;
+    destW = Math.round(boxH * imgAspect);
+  } else {
+    // Gambar lebih landscape dibanding container: fit berdasarkan lebar container
+    destW = boxW;
+    destH = Math.round(boxW / imgAspect);
+  }
+
+  const destX = Math.round((boxW - destW) / 2);
+  const destY = Math.round((boxH - destH) / 2);
+
+  return {
+    destX,
+    destY,
+    destW,
+    destH,
+    isPortrait: imgAspect < 1.0,
+  };
+}
+
 /** Mengumpulkan seluruh foto pengumuman (gabungan attachment_url gambar + seluruh media_urls) tanpa duplikasi */
 export function extractAllPhotos(item?: {
   attachment_url?: string;
@@ -185,14 +228,14 @@ function renderCard(
 
   let curY = sheetY + 310;
 
-  // Draw Cover Image if present and loaded
+  // Draw Cover Image if present and loaded with contain/fit + blurred backdrop
   if (coverImg && coverImg.complete && coverImg.naturalWidth > 0) {
     const imgH = 380;
     const imgW = contentW;
     const imgX = padX;
     const imgY = curY;
 
-    // Rounded clip for cover image
+    // Rounded clip for entire cover container box
     ctx.save();
     ctx.beginPath();
     const r = 16;
@@ -208,26 +251,34 @@ function renderCard(
     ctx.closePath();
     ctx.clip();
 
-    // Center crop fill image
-    const imgAspect = coverImg.naturalWidth / coverImg.naturalHeight;
-    const boxAspect = imgW / imgH;
-    let sW = coverImg.naturalWidth;
-    let sH = coverImg.naturalHeight;
-    let sX = 0;
-    let sY = 0;
-
-    if (imgAspect > boxAspect) {
-      sW = sH * boxAspect;
-      sX = (coverImg.naturalWidth - sW) / 2;
-    } else {
-      sH = sW / boxAspect;
-      sY = (coverImg.naturalHeight - sH) / 2;
-    }
-
-    ctx.drawImage(coverImg, sX, sY, sW, sH, imgX, imgY, imgW, imgH);
+    // 1. Background Fill: Gambar di-zoom mengisi box + blur lembut
+    ctx.save();
+    try {
+      (ctx as any).filter = 'blur(16px)';
+    } catch {}
+    ctx.drawImage(coverImg, imgX - 10, imgY - 10, imgW + 20, imgH + 20);
+    // Darkening overlay di atas blur agar kontras foto tengah menonjol
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+    ctx.fillRect(imgX, imgY, imgW, imgH);
     ctx.restore();
 
-    // Border around image
+    // 2. Foreground Fit: Gambar asli di-render utuh di tengah tanpa terpotong
+    const fitBox = calculateImageFitBox(coverImg.naturalWidth, coverImg.naturalHeight, imgW, imgH);
+    ctx.drawImage(
+      coverImg,
+      0,
+      0,
+      coverImg.naturalWidth,
+      coverImg.naturalHeight,
+      imgX + fitBox.destX,
+      imgY + fitBox.destY,
+      fitBox.destW,
+      fitBox.destH
+    );
+
+    ctx.restore();
+
+    // Border container
     ctx.strokeStyle = hairline;
     ctx.lineWidth = 2;
     ctx.strokeRect(imgX, imgY, imgW, imgH);
