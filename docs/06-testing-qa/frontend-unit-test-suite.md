@@ -34,6 +34,8 @@ npm run test:watch
 | Berkas Pengujian | Modul Target | Aspek yang Diverifikasi |
 |---|---|---|
 | `src/store/__tests__/useAuthStore.test.ts` | `useAuthStore` | Penyimpanan token, refresh token, role, isolasi prefix lingkungan (`dev_`, `staging_`), dan pembersihan total saat logout |
+| `src/services/__tests__/api.test.ts` | `services/api.ts` | Injeksi Authorization Bearer token dan mekanisme antrean silent refresh token saat menerima HTTP 401 |
+| `src/utils/__tests__/formatRupiah.test.ts` | `formatRupiah` | Pemformatan nominal mata uang Rupiah Indonesia (Rp), angka nol, dan nominal besar jutaan |
 | `src/utils/__tests__/date.test.ts` | `utils/date.ts` | Formatter tanggal bahasa Indonesia (WIB), jam & menit, fallback aman string invalid |
 | `src/utils/__tests__/tenant.test.ts` | `utils/tenant.ts` | Resolusi subdomain tenant, filter hostname platform, pembangunan URL platform |
 | `src/data/adminDocsData.test.ts` | `data/adminDocsData.ts` | Integritas data buku panduan admin RT |
