@@ -143,6 +143,11 @@ func main() {
 	socialHandler := delivery.NewSocialHandler(socialUC, tenantRepo, cfg.TenantBaseDomain)
 	pushHandler := delivery.NewPushHandler(pushUC, tenantRepo)
 
+	// Notification Center (In-App Inbox + Dual Dispatch)
+	notificationRepo := repository.NewNotificationRepository(db)
+	notificationUC := usecase.NewNotificationUsecase(notificationRepo, pushUC)
+	notificationHandler := delivery.NewNotificationHandler(notificationUC)
+
 	tenantMw := middleware.TenantMiddleware(tenantRepo, cfg.TenantBaseDomain)
 	authMw := middleware.AuthMiddleware(jwtSecret)
 	optionalAuthMw := middleware.OptionalAuthMiddleware(jwtSecret)
@@ -241,6 +246,9 @@ func main() {
 
 	// Web Push & badge partisipasi (Fase 4)
 	pushHandler.RegisterRoutes(mux, authMw, optionalAuthMw, tenantMw)
+
+	// In-App Notification Center
+	notificationHandler.RegisterRoutes(mux, tenantMw, authMw)
 
 	// SuperAdmin routes
 	superAdminMux := http.NewServeMux()
