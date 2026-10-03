@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { TenantSwitcher } from '../components/TenantSwitcher';
+import { NotificationBell } from '../components/notifications/NotificationBell';
 import { OfflineBanner } from './OfflineBanner';
 import { useTenantsQuery } from '../services/tenant';
 import { usePublicTenantQuery } from '../services/public_tenant';
@@ -457,7 +458,8 @@ export const MainLayout: React.FC = () => {
                 <h2 className="text-base sm:text-lg font-semibold tracking-tight text-[#1d1d1f]">SiTransparan RT/RW</h2>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <NotificationBell />
               <div className="hidden sm:block">
                 <TenantSwitcher />
               </div>
