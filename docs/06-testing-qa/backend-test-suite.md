@@ -34,7 +34,23 @@ go test -v ./internal/delivery/http -run TestSecurity_
 
 ## 2. Cakupan Pengujian Kritis
 
-### A. Pengujian Keamanan Lintas Tenant (`security_integration_test.go`)
+### A. Pengujian Usecase Bisnis (100% Core Domains)
+Setiap modul usecase memiliki berkas pengujian terisolasi (`backend/internal/usecase/*_test.go`):
+- `auth_usecase_test.go`: Registrasi, otentikasi login, isolasi role DB mapping, rotasi access/refresh token, dan pencabutan sesi (reuse detection).
+- `financial_usecase_test.go`: Mutasi kas besar, transfer antar-kantong kas (`funds`), dan kalkulasi saldo.
+- `waste_bank_usecase_test.go`: Pembagian bagi hasil sampah (80% hak tabungan warga vs 20% kas pemuda).
+- `waste_attendance_usecase_test.go`: Perhitungan agregasi presensi piket pemuda dan uang lelah / honor per giat.
+- `meeting_usecase_test.go`: Penegakan hak akses kerahasiaan musyawarah (`confidential` ditolak untuk warga).
+- `event_usecase_test.go`: Pengelolaan anggaran RAPB kegiatan (estimasi vs realisasi).
+- `rt_structure_usecase_test.go`: Transisi status masa bakti kepengurusan RT (`active` -> `archived`).
+- `inventory_usecase_test.go`: Siklus peminjaman, pengurangan kuantitas stok otomatis, dan pengembalian barang.
+- `resident_usecase_test.go`: Alur approval pendaftaran warga baru dan enkripsi NIK.
+- `announcement_doc_usecase_test.go`: Publikasi kabar multimedia dan repositori berkas dokumen resmi.
+- `aspiration_need_usecase_test.go`: Pelaporan aspirasi anonim dan pengadaan sarana lingkungan.
+- `push_usecase_test.go`: Siklus langganan Web Push VAPID browser.
+- `health_usecase_test.go`: Healthcheck ketersediaan aplikasi.
+
+### B. Pengujian Keamanan Lintas Tenant (`security_integration_test.go`)
 - **Cross-Tenant Read/Write Isolation**: Memverifikasi bahwa token dari `tenant_a` ditolak mentah-mentah saat mencoba membaca atau mengubah data pada `tenant_b`.
 - **Role Escalation Protection**: Memverifikasi bahwa user dengan peran `admin_rt` atau `resident` tidak dapat menaikkan perannya menjadi `superadmin`.
 - **RBAC Enforcement**: Memverifikasi seluruh endpoint terlindungi dengan kode status HTTP 401 (Unauthenticated) atau HTTP 403 (Unauthorized).
