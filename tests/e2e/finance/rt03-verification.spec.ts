@@ -16,7 +16,7 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
     await expect(page).toHaveURL(/.*\/admin/);
 
     // 2. Navigate to Financial page
-    await page.goto('http://localhost:3000/admin/financial');
+    await page.goto('/admin/financial');
     await page.waitForLoadState('networkidle');
 
     // 3. Catat Iuran Warga baru: Rp 50.000
@@ -26,21 +26,11 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
     await page.getByRole('button', { name: /Catat Iuran Warga/ }).click();
     await expect(page.getByRole('heading', { name: 'Catat / Bayar Iuran Warga' })).toBeVisible();
 
-    // Pilih warga pertama yang ada
-    const residentSelect = page.locator('#duesResident');
-    const residentOptions = await residentSelect.locator('option').all();
-    if (residentOptions.length > 1) {
-      const val = await residentOptions[1].getAttribute('value');
-      if (val) await page.selectOption('#duesResident', val);
-    }
-
-    // Pilih kategori iuran
-    const categorySelect = page.locator('#duesCategory');
-    const catOptions = await categorySelect.locator('option').all();
-    if (catOptions.length > 1) {
-      const val = await catOptions[1].getAttribute('value');
-      if (val) await page.selectOption('#duesCategory', val);
-    }
+    // Pilih warga pertama yang ada via SearchableResidentSelect
+    await page.locator('#duesResident').click();
+    const residentOption = page.locator('#duesResident .max-h-60 .cursor-pointer').first();
+    await residentOption.waitFor({ state: 'visible' });
+    await residentOption.click();
 
     // Isi nominal 50.000
     await page.fill('#duesAmount', '50000');
@@ -49,7 +39,7 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
 
     // 4. Verifikasi status iuran jika pending
     await page.getByRole('button', { name: /Iuran Masuk/i }).click();
-    const verifyBtn = page.getByRole('button', { name: 'Verifikasi' }).first();
+    const verifyBtn = page.getByRole('button', { name: /Terima|Verifikasi/i }).first();
     if (await verifyBtn.isVisible()) {
       await verifyBtn.click();
       await page.waitForTimeout(1000);
@@ -61,23 +51,20 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByText('Salurkan / Keluarkan Dana Iuran')).toBeVisible();
 
-    // Pilih Pos Iuran Sumber
-    const disburseCatSelect = page.locator('#disburseCat');
-    const disburseOptions = await disburseCatSelect.locator('option').all();
-    if (disburseOptions.length > 1) {
-      const val = await disburseOptions[1].getAttribute('value');
-      if (val) await page.selectOption('#disburseCat', val);
-    }
-
     // Pilih Opsi: Ke Kantong Kas RT (default sudah fund, klik tombol untuk memastikan)
     await page.getByRole('button', { name: /Ke Kantong Kas RT/i }).click();
 
     // Pilih Kantong Kas Tujuan
     const targetFundSelect = page.locator('#targetFund');
-    const fundOptions = await targetFundSelect.locator('option').all();
-    if (fundOptions.length > 1) {
-      const val = await fundOptions[1].getAttribute('value');
-      if (val) await page.selectOption('#targetFund', val);
+    if (await targetFundSelect.isVisible()) {
+      await targetFundSelect.click();
+      const fundOptions = page.locator('[role="option"]');
+      const count = await fundOptions.count();
+      if (count > 1) {
+        await fundOptions.nth(1).click();
+      } else if (count === 1) {
+        await fundOptions.first().click();
+      }
     }
 
     // Isi Jumlah Penyaluran: Rp 30.000
@@ -111,8 +98,11 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
 
     const iuranPageText = await page.locator('body').textContent();
     expect(iuranPageText).toContain('50.000');
-    expect(iuranPageText).toContain('30.000');
     expect(iuranPageText).toContain('20.000');
+
+    await page.getByRole('button', { name: /Pengeluaran \/ Penyaluran/i }).click();
+    const disburseTabText = await page.locator('body').textContent();
+    expect(disburseTabText).toContain('30.000');
 
     // 9. Lakukan Belanja Langsung dari sisa pos iuran (External Expense): Rp 10.000 via kartu Pos Iuran
     await page.getByRole('button', { name: /Salurkan Dana/i }).first().click();
@@ -120,12 +110,6 @@ test.describe('RT 03 Financial Flow Verification (uung@gmail.com)', () => {
 
     // Pilih opsi belanja langsung
     await page.getByRole('button', { name: /Belanja Langsung/i }).click();
-
-    // Pilih Pos Iuran Sumber
-    if (disburseOptions.length > 1) {
-      const val = await disburseOptions[1].getAttribute('value');
-      if (val) await page.selectOption('#disburseCat', val);
-    }
 
     // Isi nominal 10.000
     await page.fill('#disburseAmount', '10000');

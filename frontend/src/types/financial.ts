@@ -43,6 +43,7 @@ export interface DuesPayment {
   amount: number;
   period_month: number;
   period_year: number;
+  payment_date?: string;
   status: PaymentStatus;
   proof_url?: string;
   verified_at?: string;
@@ -57,6 +58,7 @@ export interface CreateDuesPaymentPayload {
   amount: number;
   period_month: number;
   period_year: number;
+  payment_date?: string;
   proof_url?: string;
 }
 

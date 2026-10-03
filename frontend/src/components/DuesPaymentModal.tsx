@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFeeCategories, useCreateDuesPayment, useUploadProof } from '../services/financial';
 import { useResidents } from '../services/resident';
 import { Dialog } from './ui/dialog';
@@ -21,11 +21,16 @@ export const DuesPaymentModal: React.FC<DuesPaymentModalProps> = ({ isOpen, onCl
   const createPayment = useCreateDuesPayment();
   const uploadProof = useUploadProof();
 
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const localDefaultDateTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
   const [residentId, setResidentId] = useState('');
   const [feeCategoryId, setFeeCategoryId] = useState('');
   const [amount, setAmount] = useState<number>(0);
-  const [periodMonth, setPeriodMonth] = useState<number>(new Date().getMonth() + 1);
-  const [periodYear, setPeriodYear] = useState<number>(new Date().getFullYear());
+  const [paymentDate, setPaymentDate] = useState<string>(localDefaultDateTime);
+  const [periodMonth, setPeriodMonth] = useState<number>(now.getMonth() + 1);
+  const [periodYear, setPeriodYear] = useState<number>(now.getFullYear());
   const [proofUrl, setProofUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -37,6 +42,12 @@ export const DuesPaymentModal: React.FC<DuesPaymentModalProps> = ({ isOpen, onCl
       setAmount(cat.amount);
     }
   };
+
+  useEffect(() => {
+    if (!feeCategoryId && categories.length > 0) {
+      handleCategoryChange(categories[0].id);
+    }
+  }, [categories, feeCategoryId]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,6 +79,7 @@ export const DuesPaymentModal: React.FC<DuesPaymentModalProps> = ({ isOpen, onCl
         amount: Number(amount),
         period_month: Number(periodMonth),
         period_year: Number(periodYear),
+        payment_date: paymentDate ? new Date(paymentDate).toISOString() : new Date().toISOString(),
         proof_url: proofUrl || undefined,
       });
       onClose();
@@ -145,14 +157,35 @@ export const DuesPaymentModal: React.FC<DuesPaymentModalProps> = ({ isOpen, onCl
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="duesAmount">Nominal (Rp) *</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="duesAmount">Nominal Pembayaran (Rp) *</Label>
+            <span className="text-[11px] text-[#707070] italic">
+              Bebas disesuaikan bila bayar lebih / ruko
+            </span>
+          </div>
           <Input
             id="duesAmount"
             type="number"
-            value={amount}
+            min="1"
+            value={amount || ''}
             onChange={(e) => setAmount(Number(e.target.value))}
+            placeholder="Ketik nominal iuran"
             required
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="duesPaymentDate">Tanggal &amp; Waktu Pembayaran *</Label>
+          <Input
+            id="duesPaymentDate"
+            type="datetime-local"
+            value={paymentDate}
+            onChange={(e) => setPaymentDate(e.target.value)}
+            required
+          />
+          <p className="text-[11px] text-[#707070]">
+            Default tanggal &amp; jam saat ini. Dapat diganti jika mencatat setoran yang sudah lewat.
+          </p>
         </div>
 
         <div className="space-y-2">

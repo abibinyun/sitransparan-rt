@@ -204,11 +204,13 @@ export const ResidentDuesHistoryModal: React.FC<ResidentDuesHistoryModalProps> =
                         </a>
                       )}
                       <span className="text-[10px] text-slate-400">
-                        {new Date(item.created_at).toLocaleDateString('id-ID', {
+                        {new Date(item.payment_date || item.created_at).toLocaleString('id-ID', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
-                        })}
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })} WIB
                       </span>
                     </div>
                   </div>

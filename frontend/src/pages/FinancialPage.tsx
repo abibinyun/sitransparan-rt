@@ -161,8 +161,17 @@ export const FinancialPage: React.FC = () => {
     });
 
     txList.forEach((tx) => {
-      if (tx.disbursed_from_category_id && balances[tx.disbursed_from_category_id]) {
-        balances[tx.disbursed_from_category_id].spent += Number(tx.amount);
+      if (tx.category) {
+        catList.forEach((cat) => {
+          const keluarPrefix = `IURAN_KELUAR: ${cat.name}`;
+          const transferPrefix = `IURAN_PINDAH_KAS: ${cat.name}`;
+          if (
+            (tx.type === 'expense' && (tx.category === keluarPrefix || tx.category === cat.name || tx.category === `IURAN: ${cat.name}`)) ||
+            (tx.type === 'income' && tx.category === transferPrefix)
+          ) {
+            balances[cat.id].spent += Number(tx.amount) || 0;
+          }
+        });
       }
     });
 
@@ -269,8 +278,12 @@ export const FinancialPage: React.FC = () => {
   }, [filteredDues, duesPage, duesLimit]);
 
   const duesDisbursementList = React.useMemo(() => {
-    return txList.filter((tx) => Boolean(tx.disbursed_from_category_id));
-  }, [txList]);
+    return txList.filter((tx) => {
+      const isDirectExpense = tx.type === 'expense' && catList.some((c) => tx.category === `IURAN_KELUAR: ${c.name}` || tx.category === c.name || tx.category === `IURAN: ${c.name}`);
+      const isFundTransfer = tx.type === 'income' && catList.some((c) => tx.category === `IURAN_PINDAH_KAS: ${c.name}`);
+      return isDirectExpense || isFundTransfer;
+    });
+  }, [txList, catList]);
 
   // Filter transactions
   const filteredTx = React.useMemo(() => {

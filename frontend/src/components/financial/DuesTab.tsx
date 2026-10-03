@@ -302,7 +302,16 @@ export const DuesTab: React.FC<DuesTabProps> = ({
                 {paginatedDues.map((dues) => (
                   <TableRow key={dues.id}>
                     <TableCell className="font-semibold text-[#1d1d1f]">
-                      {dues.resident_name || '-'}
+                      <div>{dues.resident_name || '-'}</div>
+                      <div className="text-[11px] text-[#707070] font-mono font-normal mt-0.5">
+                        {new Date(dues.payment_date || dues.created_at).toLocaleString('id-ID', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })} WIB
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[#f4f8fb] text-[#0066cc] border border-[#d2d2d7]">

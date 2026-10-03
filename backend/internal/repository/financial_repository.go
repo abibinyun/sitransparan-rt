@@ -292,10 +292,14 @@ func (r *financialRepository) ListFeeCategories(ctx context.Context, tenantID uu
 
 // DuesPayment methods
 func (r *financialRepository) CreateDuesPayment(ctx context.Context, payment *domain.DuesPayment) error {
+	paymentDate := time.Now()
+	if payment.PaymentDate != nil && !payment.PaymentDate.IsZero() {
+		paymentDate = *payment.PaymentDate
+	}
 	query := fmt.Sprintf(`
-		INSERT INTO %s (id, tenant_id, resident_id, fee_category_id, amount, period_month, period_year, status, proof_url, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-		RETURNING created_at, updated_at
+		INSERT INTO %s (id, tenant_id, resident_id, fee_category_id, amount, period_month, period_year, payment_date, status, proof_url, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+		RETURNING created_at, updated_at, payment_date
 	`, TenantTable(ctx, "dues_payments"))
 	if payment.ID == uuid.Nil {
 		payment.ID = uuid.New()
@@ -303,7 +307,8 @@ func (r *financialRepository) CreateDuesPayment(ctx context.Context, payment *do
 	if payment.Status == "" {
 		payment.Status = "pending"
 	}
-	return r.db.QueryRowContext(ctx, query,
+	var resPaymentDate time.Time
+	err := r.db.QueryRowContext(ctx, query,
 		payment.ID,
 		payment.TenantID,
 		payment.ResidentID,
@@ -311,14 +316,19 @@ func (r *financialRepository) CreateDuesPayment(ctx context.Context, payment *do
 		payment.Amount,
 		payment.PeriodMonth,
 		payment.PeriodYear,
+		paymentDate,
 		payment.Status,
 		payment.ProofURL,
-	).Scan(&payment.CreatedAt, &payment.UpdatedAt)
+	).Scan(&payment.CreatedAt, &payment.UpdatedAt, &resPaymentDate)
+	if err == nil {
+		payment.PaymentDate = &resPaymentDate
+	}
+	return err
 }
 
 func (r *financialRepository) GetDuesPaymentByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.DuesPayment, error) {
 	query := fmt.Sprintf(`
-		SELECT id, tenant_id, resident_id, fee_category_id, amount, period_month, period_year, status, proof_url, verified_at, verified_by, created_at, updated_at
+		SELECT id, tenant_id, resident_id, fee_category_id, amount, period_month, period_year, payment_date, status, proof_url, verified_at, verified_by, created_at, updated_at
 		FROM %s
 		WHERE tenant_id = $1 AND id = $2
 	`, TenantTable(ctx, "dues_payments"))
@@ -331,6 +341,7 @@ func (r *financialRepository) GetDuesPaymentByID(ctx context.Context, tenantID, 
 		&p.Amount,
 		&p.PeriodMonth,
 		&p.PeriodYear,
+		&p.PaymentDate,
 		&p.Status,
 		&p.ProofURL,
 		&p.VerifiedAt,
@@ -372,7 +383,7 @@ func (r *financialRepository) ListDuesPayments(ctx context.Context, tenantID uui
 	duesTable := TenantTable(ctx, "dues_payments")
 	residentsTable := TenantTable(ctx, "residents")
 	feeCatsTable := TenantTable(ctx, "fee_categories")
-	selectCols := "d.id, d.tenant_id, d.resident_id, d.fee_category_id, d.amount, d.period_month, d.period_year, d.status, d.proof_url, d.verified_at, d.verified_by, d.created_at, d.updated_at, r.full_name, fc.name"
+	selectCols := "d.id, d.tenant_id, d.resident_id, d.fee_category_id, d.amount, d.period_month, d.period_year, d.payment_date, d.status, d.proof_url, d.verified_at, d.verified_by, d.created_at, d.updated_at, r.full_name, fc.name"
 	fromClause := fmt.Sprintf(`FROM %s d
 			LEFT JOIN %s r ON r.id = d.resident_id
 			LEFT JOIN %s fc ON fc.id = d.fee_category_id`, duesTable, residentsTable, feeCatsTable)
@@ -461,6 +472,7 @@ func (r *financialRepository) ListDuesPayments(ctx context.Context, tenantID uui
 			&p.Amount,
 			&p.PeriodMonth,
 			&p.PeriodYear,
+			&p.PaymentDate,
 			&p.Status,
 			&p.ProofURL,
 			&p.VerifiedAt,

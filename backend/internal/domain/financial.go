@@ -45,6 +45,7 @@ type DuesPayment struct {
 	Amount          float64    `json:"amount"`
 	PeriodMonth     int        `json:"period_month"`
 	PeriodYear      int        `json:"period_year"`
+	PaymentDate     *time.Time `json:"payment_date,omitempty"`
 	Status          string     `json:"status"` // 'pending', 'verified', 'rejected'
 	ProofURL        *string    `json:"proof_url,omitempty"`
 	VerifiedAt      *time.Time `json:"verified_at,omitempty"`
