@@ -148,6 +148,11 @@ func main() {
 	notificationUC := usecase.NewNotificationUsecase(notificationRepo, pushUC)
 	notificationHandler := delivery.NewNotificationHandler(notificationUC)
 
+	// Safety Center (Panic Button & Confidential House Vacancies)
+	safetyRepo := repository.NewSafetyRepository(db)
+	safetyUC := usecase.NewSafetyUsecase(safetyRepo, notificationUC)
+	safetyHandler := delivery.NewSafetyHandler(safetyUC)
+
 	tenantMw := middleware.TenantMiddleware(tenantRepo, cfg.TenantBaseDomain)
 	authMw := middleware.AuthMiddleware(jwtSecret)
 	optionalAuthMw := middleware.OptionalAuthMiddleware(jwtSecret)
@@ -249,6 +254,9 @@ func main() {
 
 	// In-App Notification Center
 	notificationHandler.RegisterRoutes(mux, tenantMw, authMw)
+
+	// Safety Center (Panic & Vacancies)
+	safetyHandler.RegisterRoutes(mux, tenantMw, authMw, adminMw)
 
 	// SuperAdmin routes
 	superAdminMux := http.NewServeMux()
