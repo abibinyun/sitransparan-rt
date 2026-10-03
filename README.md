@@ -44,9 +44,10 @@ Tenant subdomain lokal: `*.openrt.local` via `/etc/hosts` (mis. `rt-003.openrt.l
 ## Testing
 
 ```bash
-cd backend && go test ./...          # unit + integration + security (104 + 7 security)
+cd backend && go test ./...          # unit + integration + security (Go test suite)
+cd frontend && npm test              # frontend unit test (Vitest)
 cd frontend && npm run build         # tsc + vite build
-npx playwright test --config=playwright.headless.config.ts   # E2E 64/64 (butuh stack docker di localhost:3000)
+npx playwright test --config=playwright.headless.config.ts   # E2E (butuh stack docker di localhost:3000)
 ```
 
 ### Menjalankan Obsidian Documentation Vault

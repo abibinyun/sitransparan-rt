@@ -124,16 +124,56 @@ func (m *mockRoleRepo) GetByName(ctx context.Context, name domain.RoleName) (*do
 	return &domain.Role{ID: uuid.New(), Name: name}, nil
 }
 
-func newAuthUsecase(tuRepo *mockTenantUserRepo) (usecase.AuthUsecase, *mockUserRepo, *mockTenantRepo) {
+type mockRefreshTokenRepo struct {
+	tokens map[string]*domain.RefreshToken
+}
+
+func newMockRefreshTokenRepo() *mockRefreshTokenRepo {
+	return &mockRefreshTokenRepo{tokens: make(map[string]*domain.RefreshToken)}
+}
+
+func (m *mockRefreshTokenRepo) Store(ctx context.Context, rt *domain.RefreshToken) error {
+	m.tokens[rt.TokenHash] = rt
+	return nil
+}
+
+func (m *mockRefreshTokenRepo) GetByHash(ctx context.Context, tokenHash string) (*domain.RefreshToken, error) {
+	return m.tokens[tokenHash], nil
+}
+
+func (m *mockRefreshTokenRepo) Revoke(ctx context.Context, tokenHash string) error {
+	if rt, ok := m.tokens[tokenHash]; ok {
+		now := time.Now()
+		rt.RevokedAt = &now
+	}
+	return nil
+}
+
+func (m *mockRefreshTokenRepo) RevokeAllByUserID(ctx context.Context, userID uuid.UUID) error {
+	now := time.Now()
+	for _, rt := range m.tokens {
+		if rt.UserID == userID {
+			rt.RevokedAt = &now
+		}
+	}
+	return nil
+}
+
+func (m *mockRefreshTokenRepo) DeleteExpired(ctx context.Context) error {
+	return nil
+}
+
+func newAuthUsecase(tuRepo *mockTenantUserRepo) (usecase.AuthUsecase, *mockUserRepo, *mockTenantRepo, *mockRefreshTokenRepo) {
 	userRepo := &mockUserRepo{users: make(map[string]*domain.User)}
 	tenantRepo := &mockTenantRepo{tenants: make(map[string]*domain.Tenant)}
 	roleRepo := &mockRoleRepo{}
-	return usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, nil, "secret-key", 0, "openrt.local"), userRepo, tenantRepo
+	rfRepo := newMockRefreshTokenRepo()
+	return usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, rfRepo, "secret-key", 0, "openrt.local"), userRepo, tenantRepo, rfRepo
 }
 
 func TestAuthUsecase_RegisterAndLogin(t *testing.T) {
 	tuRepo := newMockTenantUserRepo()
-	uc, _, _ := newAuthUsecase(tuRepo)
+	uc, _, _, _ := newAuthUsecase(tuRepo)
 
 	// Register User
 	user, err := uc.Register(context.Background(), "Jane Doe", "jane@example.com", "password123", nil)
@@ -169,7 +209,7 @@ func TestAuthUsecase_RegisterAndLogin(t *testing.T) {
 
 func TestAuthUsecase_RoleComesFromDatabaseMapping(t *testing.T) {
 	tuRepo := newMockTenantUserRepo()
-	uc, userRepo, _ := newAuthUsecase(tuRepo)
+	uc, userRepo, _, _ := newAuthUsecase(tuRepo)
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.MinCost)
 
@@ -206,7 +246,7 @@ func TestAuthUsecase_RoleComesFromDatabaseMapping(t *testing.T) {
 
 func TestAuthUsecase_SwitchTenantAuthorization(t *testing.T) {
 	tuRepo := newMockTenantUserRepo()
-	uc, userRepo, tenantRepo := newAuthUsecase(tuRepo)
+	uc, userRepo, tenantRepo, _ := newAuthUsecase(tuRepo)
 
 	tenantA := &domain.Tenant{ID: uuid.New(), Slug: "tenant-a"}
 	tenantB := &domain.Tenant{ID: uuid.New(), Slug: "tenant-b"}
@@ -246,7 +286,7 @@ func TestAuthUsecase_SwitchTenantAuthorization(t *testing.T) {
 
 func TestAuthUsecase_TenantCRUD(t *testing.T) {
 	tuRepo := newMockTenantUserRepo()
-	uc, _, _ := newAuthUsecase(tuRepo)
+	uc, _, _, _ := newAuthUsecase(tuRepo)
 
 	// Create Tenant
 	tenant, err := uc.CreateTenant(context.Background(), "RT 05", "rt-05", nil, nil)
@@ -272,9 +312,69 @@ func TestAuthUsecase_TenantCRUD(t *testing.T) {
 
 func TestAuthUsecase_UpdateProfile(t *testing.T) {
 	tuRepo := newMockTenantUserRepo()
-	uc, _, _ := newAuthUsecase(tuRepo)
+	uc, _, _, _ := newAuthUsecase(tuRepo)
 
 	ctx := context.Background()
+	user, err := uc.Register(ctx, "Budi Santoso", "budi@warga.local", "pass123", nil)
+	if err != nil {
+		t.Fatalf("Register failed: %v", err)
+	}
+
+	newName := "Budi Santoso Edit"
+	updated, err := uc.UpdateProfile(ctx, user.ID, newName, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("UpdateProfile failed: %v", err)
+	}
+	if updated.Name != newName {
+		t.Errorf("expected updated name %s, got %s", newName, updated.Name)
+	}
+}
+
+func TestAuthUsecase_RefreshAndRevocation(t *testing.T) {
+	tuRepo := newMockTenantUserRepo()
+	uc, userRepo, _, _ := newAuthUsecase(tuRepo)
+	ctx := context.Background()
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.MinCost)
+	user := &domain.User{ID: uuid.New(), Email: "refresh@test.local", Name: "Refresher", PasswordHash: string(hash)}
+	userRepo.users[user.Email] = user
+
+	// 1. LoginWithRefresh menghasilkan access token dan refresh token
+	accessToken, rfToken, loggedUser, _, err := uc.LoginWithRefresh(ctx, user.Email, "password123", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("LoginWithRefresh failed: %v", err)
+	}
+	if accessToken == "" || rfToken == "" || loggedUser == nil {
+		t.Fatal("expected non-empty tokens and user")
+	}
+
+	// 2. RefreshToken berhasil melakukan rotasi
+	newAccess, newRf, _, _, err := uc.RefreshToken(ctx, rfToken, nil, nil)
+	if err != nil {
+		t.Fatalf("RefreshToken failed: %v", err)
+	}
+	if newAccess == "" || newRf == "" || newRf == rfToken {
+		t.Fatal("expected new rotated tokens")
+	}
+
+	// 3. Reuse Detection: Mencoba memakai kembali rfToken lama harus gagal & mencabut sesi
+	_, _, _, _, err = uc.RefreshToken(ctx, rfToken, nil, nil)
+	if err == nil {
+		t.Fatal("expected error on reused refresh token")
+	}
+
+	// 4. Setelah reuse detection, token baru pun otomatis gugur
+	_, _, _, _, err = uc.RefreshToken(ctx, newRf, nil, nil)
+	if err == nil {
+		t.Fatal("expected newRf to be revoked after reuse detection")
+	}
+}
+
+func TestAuthUsecase_UpdateProfile_Scenarios(t *testing.T) {
+	tuRepo := newMockTenantUserRepo()
+	uc, _, _, _ := newAuthUsecase(tuRepo)
+	ctx := context.Background()
+
 	user, err := uc.Register(ctx, "Budi Santoso", "budi@warga.local", "pass123", nil)
 	if err != nil {
 		t.Fatalf("Register failed: %v", err)
@@ -314,7 +414,7 @@ func TestAuthUsecase_UpdateProfile(t *testing.T) {
 
 func TestAuthUsecase_GetMe(t *testing.T) {
 	tuRepo := newMockTenantUserRepo()
-	uc, userRepo, _ := newAuthUsecase(tuRepo)
+	uc, userRepo, _, _ := newAuthUsecase(tuRepo)
 	ctx := context.Background()
 
 	// 1. Unauthorized when nil UUID

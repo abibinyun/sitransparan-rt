@@ -77,6 +77,7 @@ graph TD
 - [[05-operations-devops/release-checklist|Checklist Rilis Produksi]] — Prosedur verifikasi pra-rilis.
 
 ### 🧪 [[06-testing-qa/e2e-playwright-suite|06. Pengujian & Jaminan Mutu]]
+- [[06-testing-qa/frontend-unit-test-suite|Suite Pengujian Unit Frontend (Vitest)]] — Uji store, utilitas, dan interceptor React murni.
 - [[06-testing-qa/e2e-playwright-suite|E2E Playwright Suite]] — 65+ automated scenarios, multi-tenant browser assertions.
 - [[06-testing-qa/backend-test-suite|Backend Security & Integration Tests]] — Go unit & cross-tenant security suites.
 - [[06-testing-qa/audit-reports-archive|Arsip Laporan Audit & Bugfix]] — Rekam jejak resolusi bug dan temuan audit.
