@@ -23,6 +23,18 @@ type mockAuthUsecase struct {
 func (m *mockAuthUsecase) Login(ctx context.Context, email, password string, tenantID *uuid.UUID) (string, *domain.User, domain.RoleName, error) {
 	return m.token, m.user, domain.RoleResident, nil
 }
+func (m *mockAuthUsecase) LoginWithRefresh(ctx context.Context, email, password string, tenantID *uuid.UUID, ipAddress, userAgent *string) (string, string, *domain.User, domain.RoleName, error) {
+	return m.token, "mock-refresh-token", m.user, domain.RoleResident, nil
+}
+func (m *mockAuthUsecase) RefreshToken(ctx context.Context, rawRefreshToken string, ipAddress, userAgent *string) (string, string, *domain.User, domain.RoleName, error) {
+	return "mock-new-token", "mock-new-refresh-token", m.user, domain.RoleResident, nil
+}
+func (m *mockAuthUsecase) Logout(ctx context.Context, rawRefreshToken string) error {
+	return nil
+}
+func (m *mockAuthUsecase) RevokeUserSessions(ctx context.Context, targetUserID uuid.UUID) error {
+	return nil
+}
 func (m *mockAuthUsecase) SwitchTenant(ctx context.Context, userID, tenantID uuid.UUID) (string, *domain.User, domain.RoleName, error) {
 	return m.token, m.user, domain.RoleAdminRT, nil
 }

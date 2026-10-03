@@ -30,8 +30,13 @@ type loginRequest struct {
 }
 
 type loginResponse struct {
-	Token string   `json:"token"`
-	User  *userDTO `json:"user"`
+	Token        string   `json:"token"`
+	RefreshToken string   `json:"refresh_token,omitempty"`
+	User         *userDTO `json:"user"`
+}
+
+type refreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
 }
 
 type userDTO struct {
@@ -182,18 +187,18 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, user, role, err := h.authUsecase.Login(r.Context(), req.Email, req.Password, req.TenantID)
+	ip := r.RemoteAddr
+	ua := r.UserAgent()
+	token, refreshToken, user, role, err := h.authUsecase.LoginWithRefresh(r.Context(), req.Email, req.Password, req.TenantID, &ip, &ua)
 	if err != nil {
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusUnauthorized)
 		return
 	}
 
-	// The role returned in the response is the role that was actually placed
-	// inside the signed JWT (derived from the database mapping). It is never
-	// recomputed from the email address.
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(loginResponse{
-		Token: token,
+		Token:        token,
+		RefreshToken: refreshToken,
 		User: &userDTO{
 			ID:        user.ID,
 			Email:     user.Email,
@@ -204,6 +209,81 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt: user.UpdatedAt,
 		},
 	})
+}
+
+func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req refreshTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.RefreshToken) == "" {
+		http.Error(w, `{"error":"refresh_token is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	ip := r.RemoteAddr
+	ua := r.UserAgent()
+	accessToken, newRefreshToken, user, role, err := h.authUsecase.RefreshToken(r.Context(), req.RefreshToken, &ip, &ua)
+	if err != nil {
+		http.Error(w, `{"error":"invalid or expired refresh token"}`, http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(loginResponse{
+		Token:        accessToken,
+		RefreshToken: newRefreshToken,
+		User: &userDTO{
+			ID:        user.ID,
+			Email:     user.Email,
+			Name:      user.Name,
+			Phone:     user.Phone,
+			Role:      string(role),
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		},
+	})
+}
+
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req refreshTokenRequest
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	if req.RefreshToken != "" {
+		_ = h.authUsecase.Logout(r.Context(), req.RefreshToken)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "logged out successfully"})
+}
+
+func (h *AuthHandler) RevokeUserSessions(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/admin/users/")
+	path = strings.TrimSuffix(path, "/revoke-sessions")
+	targetID, err := uuid.Parse(path)
+	if err != nil {
+		http.Error(w, `{"error":"invalid user id"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.authUsecase.RevokeUserSessions(r.Context(), targetID); err != nil {
+		http.Error(w, `{"error":"failed to revoke user sessions"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "user sessions revoked successfully"})
 }
 
 // SwitchTenant re-issues a JWT scoped to a tenant the authenticated user is

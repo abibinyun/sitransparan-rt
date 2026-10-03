@@ -2,6 +2,9 @@ package usecase
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -25,6 +28,10 @@ var (
 
 type AuthUsecase interface {
 	Login(ctx context.Context, email, password string, tenantID *uuid.UUID) (string, *domain.User, domain.RoleName, error)
+	LoginWithRefresh(ctx context.Context, email, password string, tenantID *uuid.UUID, ipAddress, userAgent *string) (string, string, *domain.User, domain.RoleName, error)
+	RefreshToken(ctx context.Context, rawRefreshToken string, ipAddress, userAgent *string) (string, string, *domain.User, domain.RoleName, error)
+	Logout(ctx context.Context, rawRefreshToken string) error
+	RevokeUserSessions(ctx context.Context, targetUserID uuid.UUID) error
 	Register(ctx context.Context, name, email, password string, phone *string) (*domain.User, error)
 	GetMe(ctx context.Context, userID uuid.UUID) (*domain.User, domain.RoleName, uuid.UUID, error)
 	UpdateProfile(ctx context.Context, userID uuid.UUID, name string, phone *string, oldPassword, newPassword *string) (*domain.User, error)
@@ -45,12 +52,13 @@ type AuthUsecase interface {
 }
 
 type authUsecase struct {
-	tenantRepo     domain.TenantRepository
-	userRepo       domain.UserRepository
-	tenantUserRepo domain.TenantUserRepository
-	roleRepo       domain.RoleRepository
-	jwtSecret      []byte
-	jwtDuration    time.Duration
+	tenantRepo       domain.TenantRepository
+	userRepo         domain.UserRepository
+	tenantUserRepo   domain.TenantUserRepository
+	roleRepo         domain.RoleRepository
+	refreshTokenRepo domain.RefreshTokenRepository
+	jwtSecret        []byte
+	jwtDuration      time.Duration
 	// baseDomain is the configurable parent domain used to build the default
 	// tenant domain (<slug>.<baseDomain>). Never hardcode a production domain.
 	baseDomain string
@@ -61,24 +69,26 @@ func NewAuthUsecase(
 	userRepo domain.UserRepository,
 	tenantUserRepo domain.TenantUserRepository,
 	roleRepo domain.RoleRepository,
+	refreshTokenRepo domain.RefreshTokenRepository,
 	jwtSecret string,
 	jwtDuration time.Duration,
 	baseDomain string,
 ) AuthUsecase {
 	if jwtDuration == 0 {
-		jwtDuration = 24 * time.Hour
+		jwtDuration = 15 * time.Minute // Access token: 15 menit
 	}
 	if baseDomain == "" {
 		baseDomain = "openrt.local"
 	}
 	return &authUsecase{
-		tenantRepo:     tenantRepo,
-		userRepo:       userRepo,
-		tenantUserRepo: tenantUserRepo,
-		roleRepo:       roleRepo,
-		jwtSecret:      []byte(jwtSecret),
-		jwtDuration:    jwtDuration,
-		baseDomain:     baseDomain,
+		tenantRepo:       tenantRepo,
+		userRepo:         userRepo,
+		tenantUserRepo:   tenantUserRepo,
+		roleRepo:         roleRepo,
+		refreshTokenRepo: refreshTokenRepo,
+		jwtSecret:        []byte(jwtSecret),
+		jwtDuration:      jwtDuration,
+		baseDomain:       baseDomain,
 	}
 }
 
@@ -208,6 +218,147 @@ func (u *authUsecase) Login(ctx context.Context, email, password string, tenantI
 	}
 
 	return tokenString, user, role, nil
+}
+
+func (u *authUsecase) generateRefreshToken(ctx context.Context, userID uuid.UUID, ipAddress, userAgent *string) (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", fmt.Errorf("failed to generate random bytes: %w", err)
+	}
+	rawToken := hex.EncodeToString(bytes)
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	rt := &domain.RefreshToken{
+		ID:        uuid.New(),
+		UserID:    userID,
+		TokenHash: tokenHash,
+		ExpiresAt: time.Now().Add(14 * 24 * time.Hour), // 14 hari
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+		CreatedAt: time.Now(),
+	}
+
+	if u.refreshTokenRepo != nil {
+		if err := u.refreshTokenRepo.Store(ctx, rt); err != nil {
+			return "", err
+		}
+	}
+	return rawToken, nil
+}
+
+func (u *authUsecase) LoginWithRefresh(ctx context.Context, email, password string, tenantID *uuid.UUID, ipAddress, userAgent *string) (string, string, *domain.User, domain.RoleName, error) {
+	tokenString, user, role, err := u.Login(ctx, email, password, tenantID)
+	if err != nil {
+		return "", "", nil, "", err
+	}
+
+	refreshToken, err := u.generateRefreshToken(ctx, user.ID, ipAddress, userAgent)
+	if err != nil {
+		return "", "", nil, "", err
+	}
+
+	return tokenString, refreshToken, user, role, nil
+}
+
+func (u *authUsecase) RefreshToken(ctx context.Context, rawRefreshToken string, ipAddress, userAgent *string) (string, string, *domain.User, domain.RoleName, error) {
+	if u.refreshTokenRepo == nil || rawRefreshToken == "" {
+		return "", "", nil, "", ErrUnauthorized
+	}
+
+	hash := sha256.Sum256([]byte(rawRefreshToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	rt, err := u.refreshTokenRepo.GetByHash(ctx, tokenHash)
+	if err != nil || rt == nil {
+		return "", "", nil, "", ErrUnauthorized
+	}
+
+	// Reuse detection: jika token sudah di-revoke, artinya token bocor / dicuri!
+	// Cabut seluruh sesi user ini untuk keamanan mutlak!
+	if rt.RevokedAt != nil {
+		_ = u.refreshTokenRepo.RevokeAllByUserID(ctx, rt.UserID)
+		return "", "", nil, "", ErrUnauthorized
+	}
+
+	if time.Now().After(rt.ExpiresAt) {
+		return "", "", nil, "", ErrUnauthorized
+	}
+
+	// Revoke token lama (rotasi token)
+	if err := u.refreshTokenRepo.Revoke(ctx, tokenHash); err != nil {
+		return "", "", nil, "", err
+	}
+
+	user, err := u.userRepo.GetByID(ctx, rt.UserID)
+	if err != nil || user == nil {
+		return "", "", nil, "", ErrUnauthorized
+	}
+
+	// Tentukan role dan tenant aktif
+	var role domain.RoleName
+	var tid uuid.UUID
+	var resID *uuid.UUID
+
+	tus, err := u.tenantUserRepo.ListByUser(ctx, user.ID)
+	if err == nil && len(tus) > 0 {
+		selected := selectLoginTenantUser(activeTenantUsers(tus), nil)
+		if selected != nil {
+			role = selected.RoleName
+			tid = selected.TenantID
+			resID = selected.ResidentID
+		}
+	}
+
+	if role == "" {
+		if isSuperAdminRole(user.GlobalRoleName) {
+			role = domain.RoleSuperAdmin
+		} else {
+			role = domain.RoleResident
+		}
+	}
+
+	claims := domain.JWTClaims{
+		UserID:     user.ID,
+		TenantID:   tid,
+		ResidentID: resID,
+		Role:       role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(u.jwtDuration)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Subject:   user.ID.String(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	accessToken, err := token.SignedString(u.jwtSecret)
+	if err != nil {
+		return "", "", nil, "", err
+	}
+
+	// Terbitkan refresh token baru hasil rotasi
+	newRefreshToken, err := u.generateRefreshToken(ctx, user.ID, ipAddress, userAgent)
+	if err != nil {
+		return "", "", nil, "", err
+	}
+
+	return accessToken, newRefreshToken, user, role, nil
+}
+
+func (u *authUsecase) Logout(ctx context.Context, rawRefreshToken string) error {
+	if u.refreshTokenRepo == nil || rawRefreshToken == "" {
+		return nil
+	}
+	hash := sha256.Sum256([]byte(rawRefreshToken))
+	tokenHash := hex.EncodeToString(hash[:])
+	return u.refreshTokenRepo.Revoke(ctx, tokenHash)
+}
+
+func (u *authUsecase) RevokeUserSessions(ctx context.Context, targetUserID uuid.UUID) error {
+	if u.refreshTokenRepo == nil {
+		return nil
+	}
+	return u.refreshTokenRepo.RevokeAllByUserID(ctx, targetUserID)
 }
 
 func (u *authUsecase) SwitchTenant(ctx context.Context, userID, tenantID uuid.UUID) (string, *domain.User, domain.RoleName, error) {

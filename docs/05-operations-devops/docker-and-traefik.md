@@ -36,14 +36,22 @@ Tersedia file konfigurasi per lingkungan di direktori `infrastructure/`:
 
 ---
 
-## 3. Aturan Krusial Traefik v3.6
-
+## 3. Aturan Krusial Traefik v3.6 & Native Rate Limiter
 - Traefik versi 3.6+ wajib digunakan karena image Traefik versi lama mematok Docker client API v1.24 yang ditolak oleh Docker Engine modern (`client version 1.24 is too old`).
 - Gunakan aturan routing berbasis `HostRegexp`:
   ```yaml
   labels:
     - "traefik.enable=true"
     - "traefik.http.routers.frontend.rule=HostRegexp(`^[a-z0-9-]+\\.${TENANT_BASE_DOMAIN}$`)"
+  ```
+- **Native Edge Rate Limiter (Defense-in-Depth)**:
+  - Traefik v3 menyaring banjir traffic di tepi jaringan sebelum request menyentuh container backend Go:
+  ```yaml
+  labels:
+    - "traefik.http.routers.backend_dev.middlewares=backend_dev_ratelimit"
+    - "traefik.http.middlewares.backend_dev_ratelimit.ratelimit.average=100"
+    - "traefik.http.middlewares.backend_dev_ratelimit.ratelimit.burst=50"
+    - "traefik.http.middlewares.backend_dev_ratelimit.ratelimit.period=1s"
   ```
 
 ---

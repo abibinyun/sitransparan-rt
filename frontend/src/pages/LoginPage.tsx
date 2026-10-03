@@ -112,7 +112,7 @@ export const LoginPage: React.FC = () => {
       }
 
       const initialTenant = hostTenant || tenants[0] || null;
-      setAuth(data.token, userWithRole, initialTenant);
+      setAuth(data.token, userWithRole, initialTenant, data.refresh_token);
 
       // Only cross-origin redirect if host is truly different and not running on generic localhost
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';

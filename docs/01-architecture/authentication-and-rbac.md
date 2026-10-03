@@ -16,13 +16,25 @@ SiTransparan RT/RW menerapkan prinsip keamanan ketat: otorisasi diturunkan langs
 
 ## 1. Mekanisme Autentikasi
 
-### A. Login (`POST /api/v1/auth/login`)
+### A. Login & Rotasi Token (`POST /api/v1/auth/login`)
 - Menerima payload JSON: `{ "email": "...", "password": "..." }`.
 - Verifikasi kata sandi menggunakan algoritma **bcrypt**.
 - Mengambil tenant dan role aktif dari tabel `public.tenant_users`.
-- Menghasilkan token **JWT (HS256)** dengan masa berlaku **24 jam**.
+- Menghasilkan dua jenis token:
+  1. **Access Token (JWT HS256)**: Masa berlaku **15 menit** untuk otorisasi cepat request API.
+  2. **Refresh Token**: String 32-byte acak kriptografis (`crypto/rand`) dengan masa berlaku **14 hari**. Hash SHA-256 disimpan di tabel `public.refresh_tokens`.
 
-### B. Struktur Klaim JWT
+### B. Rotasi Refresh Token Otomatis (`POST /api/v1/auth/refresh`)
+- Frontend Axios response interceptor mendeteksi HTTP 401, menahan queue request sementara, dan memanggil endpoint ini.
+- Server memverifikasi token hash di `public.refresh_tokens`.
+- **Reuse Detection**: Jika token yang sudah di-revoke dicoba pakai ulang, seluruh sesi user tersebut dicabut seketika (indikasi pencurian token).
+- Jika valid, token lama di-revoke (`revoked_at = NOW()`) dan diganti refresh token baru (Token Rotation).
+
+### C. Logout & Sesi Revocation Server-Side
+- `POST /api/v1/auth/logout`: Mencabut refresh token aktif dari database sehingga tidak bisa diperpanjang lagi.
+- `POST /api/v1/admin/users/{id}/revoke-sessions`: Admin RT atau Superadmin dapat memutus paksa seluruh sesi login user tertentu jika akun dicurigai disusupi.
+
+### D. Struktur Klaim JWT (Access Token)
 ```json
 {
   "sub": "user-uuid",

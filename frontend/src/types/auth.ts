@@ -22,9 +22,11 @@ export interface User {
 
 export interface AuthState {
   token: string | null;
+  refreshToken: string | null;
   user: User | null;
   activeTenant: Tenant | null;
-  setAuth: (token: string, user: User, activeTenant?: Tenant | null) => void;
+  setAuth: (token: string, user: User, activeTenant?: Tenant | null, refreshToken?: string | null) => void;
+  setTokens: (token: string, refreshToken?: string | null) => void;
   setActiveTenant: (tenant: Tenant | null) => void;
   updateUser: (partialUser: Partial<User>) => void;
   logout: () => void;

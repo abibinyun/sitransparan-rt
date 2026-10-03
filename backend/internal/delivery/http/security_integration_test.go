@@ -65,7 +65,7 @@ func buildSecurityMux(db *sql.DB) http.Handler {
 	announcementDocRepo := repository.NewAnnouncementDocRepository(db, nil)
 	dashboardRepo := repository.NewDashboardRepository(db)
 
-	authUC := usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, testJWTSecret, 0, "openrt.local")
+	authUC := usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, nil, testJWTSecret, 0, "openrt.local")
 	authHandler := delivery.NewAuthHandler(authUC, "openrt.local")
 
 	residentUC := usecase.NewResidentUsecase(residentRepo)

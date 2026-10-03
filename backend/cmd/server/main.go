@@ -63,11 +63,12 @@ func main() {
 	dashboardRepo := repository.NewDashboardRepository(db)
 	meetingRepo := repository.NewMeetingRepository(db)
 	houseRepo := repository.NewHouseRepository(db)
+	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
 
 	jwtSecret := cfg.JWTSecret
-	jwtDuration := 24 * time.Hour
+	jwtDuration := 15 * time.Minute // Access token: 15 menit
 
-	authUC := usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, jwtSecret, jwtDuration, cfg.TenantBaseDomain)
+	authUC := usecase.NewAuthUsecase(tenantRepo, userRepo, tuRepo, roleRepo, refreshTokenRepo, jwtSecret, jwtDuration, cfg.TenantBaseDomain)
 	authHandler := delivery.NewAuthHandler(authUC, cfg.TenantBaseDomain)
 
 	healthUC := usecase.NewHealthUsecase()
@@ -177,6 +178,8 @@ func main() {
 	// per-IP auth budget here (the general limiter below still applies too).
 	mux.Handle("POST /api/v1/auth/login", authRateLimitMw(http.HandlerFunc(authHandler.Login)))
 	mux.Handle("POST /api/v1/auth/register", authRateLimitMw(http.HandlerFunc(authHandler.Register)))
+	mux.Handle("POST /api/v1/auth/refresh", authRateLimitMw(http.HandlerFunc(authHandler.Refresh)))
+	mux.Handle("POST /api/v1/auth/logout", http.HandlerFunc(authHandler.Logout))
 
 	// Authenticated routes
 	authMux := http.NewServeMux()
@@ -184,6 +187,9 @@ func main() {
 	authMux.HandleFunc("PUT /api/v1/auth/me", authHandler.Me)
 	authMux.HandleFunc("GET /api/v1/auth/tenants", authHandler.UserTenants)
 	authMux.HandleFunc("POST /api/v1/auth/switch-tenant", authHandler.SwitchTenant)
+
+	// Admin revoke user sessions
+	mux.Handle("POST /api/v1/admin/users/", authMw(adminMw(tenantMw(http.HandlerFunc(authHandler.RevokeUserSessions)))))
 
 	// User Management routes
 	userHandler.RegisterRoutes(mux, tenantMw, authMw, adminMw)

@@ -101,6 +101,10 @@ services:
       - "traefik.tier=staging"
       - 'traefik.http.routers.backend_staging.rule=Host(`api-staging.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+-staging\.iscube\.web\.id$`) || HostRegexp(`^api-[a-z0-9-]+\.staging\.iscube\.web\.id$`)'
       - "traefik.http.routers.backend_staging.entrypoints=web"
+      - "traefik.http.routers.backend_staging.middlewares=backend_staging_ratelimit"
+      - "traefik.http.middlewares.backend_staging_ratelimit.ratelimit.average=100"
+      - "traefik.http.middlewares.backend_staging_ratelimit.ratelimit.burst=50"
+      - "traefik.http.middlewares.backend_staging_ratelimit.ratelimit.period=1s"
       - "traefik.http.services.backend_staging.loadbalancer.server.port=8080"
     networks:
       infrastructure_default:

@@ -15,6 +15,7 @@ const isStagingEnv = typeof window !== 'undefined' && (
 const ENV_PREFIX = isDevEnv ? 'dev_' : isStagingEnv ? 'staging_' : '';
 
 const TOKEN_KEY = `${ENV_PREFIX}auth_token`;
+const REFRESH_TOKEN_KEY = `${ENV_PREFIX}refresh_token`;
 const USER_KEY = `${ENV_PREFIX}auth_user`;
 const TENANT_KEY = `${ENV_PREFIX}active_tenant`;
 
@@ -99,6 +100,17 @@ const getInitialToken = (): string | null => {
   if (ck) return ck;
   return null;
 };
+const getInitialRefreshToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  const ck = getCookie(REFRESH_TOKEN_KEY);
+  const ls = localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (ck && ck !== ls) {
+    try { localStorage.setItem(REFRESH_TOKEN_KEY, ck); } catch {}
+    return ck;
+  }
+  return ls || ck || null;
+};
+
 const getInitialUser = (): User | null => {
   const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null;
   if (urlToken) {
@@ -172,16 +184,21 @@ if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
 
 export const useAuthStore = create<AuthState>((set) => ({
   token: getInitialToken(),
+  refreshToken: getInitialRefreshToken(),
   user: getInitialUser(),
   activeTenant: getInitialTenant(),
 
-  setAuth: (token: string, user: User, activeTenant: Tenant | null = null) => {
+  setAuth: (token: string, user: User, activeTenant: Tenant | null = null, refreshToken: string | null = null) => {
     queryClient.clear();
     clearServiceWorkerCaches();
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     setCookie(TOKEN_KEY, token);
     setCookie(USER_KEY, JSON.stringify(user));
+    if (refreshToken) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      setCookie(REFRESH_TOKEN_KEY, refreshToken, 14);
+    }
     const selectedTenant = activeTenant || (user.tenants && user.tenants.length > 0 ? user.tenants[0] : null);
     if (selectedTenant) {
       localStorage.setItem(TENANT_KEY, JSON.stringify(selectedTenant));
@@ -190,7 +207,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.removeItem(TENANT_KEY);
       deleteCookie(TENANT_KEY);
     }
-    set({ token, user, activeTenant: selectedTenant });
+    set({ token, refreshToken, user, activeTenant: selectedTenant });
+  },
+
+  setTokens: (token: string, refreshToken?: string | null) => {
+    localStorage.setItem(TOKEN_KEY, token);
+    setCookie(TOKEN_KEY, token);
+    if (refreshToken) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      setCookie(REFRESH_TOKEN_KEY, refreshToken, 14);
+      set({ token, refreshToken });
+    } else {
+      set({ token });
+    }
   },
 
   setActiveTenant: (activeTenant: Tenant | null) => {
@@ -217,13 +246,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    const rfToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (rfToken) {
+      // Fire and forget server revocation
+      fetch('/api/v1/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: rfToken }),
+      }).catch(() => {});
+    }
+
     queryClient.clear();
     clearServiceWorkerCaches();
     broadcastLogout();
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(TENANT_KEY);
     deleteCookie(TOKEN_KEY);
+    deleteCookie(REFRESH_TOKEN_KEY);
     deleteCookie(USER_KEY);
     deleteCookie(TENANT_KEY);
     // Clean token from URL if present
@@ -232,6 +273,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       url.searchParams.delete('token');
       window.history.replaceState({}, '', url.toString());
     } catch {}
-    set({ token: null, user: null, activeTenant: null });
+    set({ token: null, refreshToken: null, user: null, activeTenant: null });
   },
 }));

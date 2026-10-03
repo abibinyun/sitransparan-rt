@@ -66,6 +66,7 @@ Berikut adalah rekam jejak lengkap 50 migrasi hingga status terkini:
 | `000048` | `add_operator_role` | Penambahan role `operator` pada tabel `public.roles` (`00000000-0000-0000-0000-000000000004`) untuk staf operasional RT tanpa hak kelola user. |
 | `000049` | `create_waste_attendance` | Manajemen presensi piket pemilah/pengangkut sampah (`waste_attendance`, `waste_attendance_members`) dan alokasi uang lelah/honor per giat. |
 | `000050` | `add_payment_date_to_dues_payments` | Penambahan kolom `payment_date TIMESTAMPTZ DEFAULT NOW()` pada `tenant_<slug>.dues_payments` untuk mendukung input tanggal bayar historis/fleksibel dari UI. |
+| `000051` | `create_refresh_tokens` | Pembuatan tabel `public.refresh_tokens` untuk autentikasi jangka panjang dengan rotasi token atomik dan pencabutan sesi server-side (revocation). |
 
 ---
 

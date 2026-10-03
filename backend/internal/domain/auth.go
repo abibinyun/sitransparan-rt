@@ -126,3 +126,22 @@ type TenantUserRepository interface {
 type RoleRepository interface {
 	GetByName(ctx context.Context, name RoleName) (*Role, error)
 }
+
+type RefreshToken struct {
+	ID        uuid.UUID  `json:"id"`
+	UserID    uuid.UUID  `json:"user_id"`
+	TokenHash string     `json:"-"`
+	ExpiresAt time.Time  `json:"expires_at"`
+	RevokedAt *time.Time `json:"revoked_at,omitempty"`
+	IPAddress *string    `json:"ip_address,omitempty"`
+	UserAgent *string    `json:"user_agent,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+}
+
+type RefreshTokenRepository interface {
+	Store(ctx context.Context, rt *RefreshToken) error
+	GetByHash(ctx context.Context, tokenHash string) (*RefreshToken, error)
+	Revoke(ctx context.Context, tokenHash string) error
+	RevokeAllByUserID(ctx context.Context, userID uuid.UUID) error
+	DeleteExpired(ctx context.Context) error
+}

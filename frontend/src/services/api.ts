@@ -24,20 +24,40 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token!);
+    }
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const isAuthRoute =
-      error.config?.url?.includes('/auth/login') ||
-      error.config?.url?.includes('/auth/register') ||
-      error.config?.url?.includes('/house-access/claim') ||
-      error.config?.url?.includes('/house-access/me') ||
-      error.config?.url?.includes('/push/subscribe') ||
-      error.config?.url?.includes('/push/config') ||
-      error.config?.url?.includes('/social/badge');
+  async (error) => {
+    const originalRequest = error.config;
 
-    // Cek apakah halaman saat ini adalah portal publik (tidak boleh diredirect paksa ke /login)
-    const currentPath = window.location.pathname;
+    const isAuthRoute =
+      originalRequest?.url?.includes('/auth/login') ||
+      originalRequest?.url?.includes('/auth/register') ||
+      originalRequest?.url?.includes('/auth/refresh') ||
+      originalRequest?.url?.includes('/auth/logout') ||
+      originalRequest?.url?.includes('/house-access/claim') ||
+      originalRequest?.url?.includes('/house-access/me') ||
+      originalRequest?.url?.includes('/push/subscribe') ||
+      originalRequest?.url?.includes('/push/config') ||
+      originalRequest?.url?.includes('/social/badge');
+
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
     const isPublicPage =
       currentPath === '/' ||
       currentPath.startsWith('/kabar') ||
@@ -47,12 +67,60 @@ api.interceptors.response.use(
       currentPath.startsWith('/claim') ||
       currentPath.startsWith('/t/claim');
 
-    if (error.response?.status === 401 && !isAuthRoute && !isPublicPage) {
-      useAuthStore.getState().logout();
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+    // Jika 401 dan bukan rute auth/public serta belum di-retry
+    if (error.response?.status === 401 && !isAuthRoute && !originalRequest._retry) {
+      const { refreshToken, setTokens, logout } = useAuthStore.getState();
+
+      if (!refreshToken) {
+        if (!isPublicPage) {
+          logout();
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+        }
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const res = await axios.post<{ token: string; refresh_token?: string }>(
+          `${import.meta.env.VITE_API_URL || DEFAULT_API_BASE_URL}/auth/refresh`,
+          { refresh_token: refreshToken }
+        );
+
+        const newAccessToken = res.data.token;
+        const newRefreshToken = res.data.refresh_token;
+
+        setTokens(newAccessToken, newRefreshToken);
+        processQueue(null, newAccessToken);
+
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
+        logout();
+        if (!isPublicPage && window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
       }
     }
+
     if (error.response?.status === 403 && String(error.response?.data?.error || '').includes('tenant')) {
       queryClient.clear();
     }

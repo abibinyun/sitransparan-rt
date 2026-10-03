@@ -19,8 +19,10 @@ Seluruh endpoint API berada di bawah base path `/api/v1`. Endpoint dibagi menjad
 | Method | Endpoint | Hak Akses | Deskripsi |
 |---|---|:---:|---|
 | `GET` | `/health` | Publik | Healthcheck status server |
-| `POST` | `/auth/login` | Publik | Otentikasi user via email & password |
+| `POST` | `/auth/login` | Publik | Otentikasi user via email & password (mengembalikan access_token 15m & refresh_token 14d) |
 | `POST` | `/auth/register` | Publik | Registrasi akun baru (tanpa tenant) |
+| `POST` | `/auth/refresh` | Publik | Rotasi token: tukar refresh_token dengan access_token baru |
+| `POST` | `/auth/logout` | Publik | Pencabutan refresh token server-side (revocation) |
 | `GET` | `/public/tenants` | Publik | Daftar tenant aktif untuk landing page platform |
 | `GET` | `/t/{slug}/info` | Publik | Profil lengkap RT & kontak narahubung |
 | `GET` | `/t/{slug}/announcements` | Publik | Feed kabar publik (kategori filter & pagination) |
@@ -102,6 +104,7 @@ Memerlukan role: `superadmin`.
 - `GET, POST /superadmin/tenants`: Ambil dan daftarkan rukun tetangga baru (auto-provision schema).
 - `DELETE /superadmin/tenants/{id}`: Soft-delete/non-aktifkan tenant.
 - `GET, POST, PUT /users`: Manajemen akun user global dan penugasan peran.
+- `POST /admin/users/{id}/revoke-sessions`: Pencabutan paksa seluruh sesi login user tertentu (Super Admin / Admin RT).
 
 ---
 

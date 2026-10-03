@@ -89,6 +89,7 @@ graph TD
 ### 🚀 [[08-roadmaps/community-features-roadmap|08. Rencana Masa Depan]]
 - [[08-roadmaps/community-features-roadmap|Roadmap Fitur Komunitas]] — Koperasi RT, panic button, integrasi CCTV lingkungan.
 - [[08-roadmaps/auto-payment-integration|Integrasi Pembayaran Otomatis]] — Payment gateway QRIS / VA untuk iuran warga.
+- [[08-roadmaps/distributed-caching-and-scaling|Distributed Caching & Rate Limiting (Redis / Valkey)]] — Rencana transisi scaling multi-instance backend.
 
 ---
 

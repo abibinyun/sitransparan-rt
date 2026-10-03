@@ -23,6 +23,7 @@ Skema `public` menyimpan identitas global, pemetaan tenant, akun user, dan catat
 | `users` | Akun pengguna global: email, hash kata sandi (bcrypt), nomor telepon terverifikasi, status aktif |
 | `roles` | Kamus peran: `superadmin`, `admin_rt`, `resident` |
 | `tenant_users` | Relasi many-to-many user ke tenant beserta role aktif (`user_id`, `tenant_id`, `role_id`, `status`) |
+| `refresh_tokens` | Catatan sesi refresh token aktif (token_hash, user_id, expires_at, revoked_at) untuk rotasi dan pencabutan sesi |
 | `audit_logs` | Buku audit log global mencatat seluruh mutasi data sensitif di seluruh tenant |
 | `push_subscriptions` | Token endpoint push notification per browser/device pengguna |
 | `portal_events` | Metrik analitik keterlibatan warga di portal transparansi publik (`feed_view`, `share_opened`) |
