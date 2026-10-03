@@ -49,14 +49,25 @@ cd frontend && npm run build         # tsc + vite build
 npx playwright test --config=playwright.headless.config.ts   # E2E 64/64 (butuh stack docker di localhost:3000)
 ```
 
-## Dokumentasi
+### Menjalankan Obsidian Documentation Vault
 
-| Dokumen | Isi |
+```bash
+# Buka Obsidian Vault langsung ke direktori docs/
+./open-docs.sh
+```
+
+## Dokumentasi (Obsidian Knowledge Vault)
+
+Seluruh dokumentasi sistem telah distrukturkan ke dalam **Obsidian Documentation Vault** di direktori `docs/` dengan peta konten terpusat di `docs/00-MOC.md`:
+
+| Dokumen / Pilar | Isi |
 |---|---|
-| [docs/architecture.md](docs/architecture.md) | Arsitektur aktual, tech stack, 3-tier multi-tenancy |
-| [docs/setup.md](docs/setup.md) | Setup, environment, command, akun default |
-| [docs/authentication-authorization.md](docs/authentication-authorization.md) | Auth, JWT, RBAC matrix, isolasi tenant, host guard |
-| [docs/api.md](docs/api.md) | Referensi endpoint API (sinkron openapi.yaml) |
-| [docs/database.md](docs/database.md) | Skema database & migrasi 000001–000049 |
-| [docs/testing.md](docs/testing.md) | Test suite & command (104+7, E2E 64) |
-| [docs/deployment.md](docs/deployment.md) | Deployment Docker/Traefik 3-tier |
+| [docs/00-MOC.md](docs/00-MOC.md) | **Master Map of Content (MOC Hub)** |
+| [docs/01-architecture/](docs/01-architecture/) | Arsitektur Clean Backend Go, Multi-Tenancy PostgreSQL, RBAC, Subdomain |
+| [docs/02-modules/](docs/02-modules/) | 11 Modul Bisnis: Kependudukan, Keuangan, Bank Sampah, Karang Taruna, dll |
+| [docs/03-database/](docs/03-database/) | Katalog Skema Database, Histori Migrasi 000001–000050, Integritas Data |
+| [docs/04-api-contracts/](docs/04-api-contracts/) | Inventaris Endpoint API Terverifikasi & OpenAPI 3.0 (Swagger) |
+| [docs/05-operations-devops/](docs/05-operations-devops/) | Setup Lingkungan, Docker, Traefik v3.6, SDLC Promotion Rules |
+| [docs/06-testing-qa/](docs/06-testing-qa/) | Playwright E2E Test Suite, Go Backend Test Suites, Audit Archive |
+| [docs/07-frontend-design/](docs/07-frontend-design/) | Apple Design Tokens, Aturan Anti-AI-Slop, Bundle Splitting & PWA |
+| [docs/08-roadmaps/](docs/08-roadmaps/) | Roadmap Fitur Komunitas & Integrasi Pembayaran QRIS Otomatis |

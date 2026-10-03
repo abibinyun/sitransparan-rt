@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { ScrollText, MapPin, Calendar, CheckCircle2, ListTodo, ExternalLink } from 'lucide-react';
 import { Dialog } from './ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import { usePublicMeetings, PublicMeeting } from '../services/public_transparency';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -318,53 +325,53 @@ export const MeetingDecisionsWidget: React.FC = () => {
 
                   {/* Dropdown Filter Group: Jenis Rapat, Bulan, & Tahun */}
                   <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
-                    <select
-                      value={filterType}
-                      onChange={(e) => setFilterType(e.target.value)}
-                      aria-label="Filter Jenis Musyawarah"
-                      className="text-xs px-3 py-2 rounded-full bg-white border border-[#d2d2d7] text-[#1d1d1f] focus:outline-none focus:border-[#0071e3]"
-                    >
-                      <option value="ALL">Semua Jenis Rapat</option>
-                      <option value="regular">Rapat Rutin</option>
-                      <option value="emergency">Darurat / Luar Biasa</option>
-                      <option value="karang_taruna">Kepemudaan</option>
-                      <option value="rtrw_pleno">Pleno RT/RW</option>
-                    </select>
+                    <Select value={filterType} onValueChange={setFilterType}>
+                      <SelectTrigger className="text-xs h-9 px-3 rounded-full bg-white border border-[#d2d2d7] text-[#1d1d1f] w-[160px]">
+                        <SelectValue placeholder="Semua Jenis Rapat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">Semua Jenis Rapat</SelectItem>
+                        <SelectItem value="regular">Rapat Rutin</SelectItem>
+                        <SelectItem value="emergency">Darurat / Luar Biasa</SelectItem>
+                        <SelectItem value="karang_taruna">Kepemudaan</SelectItem>
+                        <SelectItem value="rtrw_pleno">Pleno RT/RW</SelectItem>
+                      </SelectContent>
+                    </Select>
 
-                    <select
-                      value={filterMonth}
-                      onChange={(e) => setFilterMonth(e.target.value)}
-                      aria-label="Filter Bulan"
-                      className="text-xs px-3 py-2 rounded-full bg-white border border-[#d2d2d7] text-[#1d1d1f] focus:outline-none focus:border-[#0071e3]"
-                    >
-                      <option value="ALL">Semua Bulan</option>
-                      <option value="1">Januari</option>
-                      <option value="2">Februari</option>
-                      <option value="3">Maret</option>
-                      <option value="4">April</option>
-                      <option value="5">Mei</option>
-                      <option value="6">Juni</option>
-                      <option value="7">Juli</option>
-                      <option value="8">Agustus</option>
-                      <option value="9">September</option>
-                      <option value="10">Oktober</option>
-                      <option value="11">November</option>
-                      <option value="12">Desember</option>
-                    </select>
+                    <Select value={filterMonth} onValueChange={setFilterMonth}>
+                      <SelectTrigger className="text-xs h-9 px-3 rounded-full bg-white border border-[#d2d2d7] text-[#1d1d1f] w-[130px]">
+                        <SelectValue placeholder="Semua Bulan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">Semua Bulan</SelectItem>
+                        <SelectItem value="1">Januari</SelectItem>
+                        <SelectItem value="2">Februari</SelectItem>
+                        <SelectItem value="3">Maret</SelectItem>
+                        <SelectItem value="4">April</SelectItem>
+                        <SelectItem value="5">Mei</SelectItem>
+                        <SelectItem value="6">Juni</SelectItem>
+                        <SelectItem value="7">Juli</SelectItem>
+                        <SelectItem value="8">Agustus</SelectItem>
+                        <SelectItem value="9">September</SelectItem>
+                        <SelectItem value="10">Oktober</SelectItem>
+                        <SelectItem value="11">November</SelectItem>
+                        <SelectItem value="12">Desember</SelectItem>
+                      </SelectContent>
+                    </Select>
 
-                    <select
-                      value={filterYear}
-                      onChange={(e) => setFilterYear(e.target.value)}
-                      aria-label="Filter Tahun"
-                      className="text-xs px-3 py-2 rounded-full bg-white border border-[#d2d2d7] text-[#1d1d1f] focus:outline-none focus:border-[#0071e3]"
-                    >
-                      <option value="ALL">Semua Tahun</option>
-                      {availableYears.map((yr) => (
-                        <option key={yr} value={yr}>
-                          {yr}
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={filterYear} onValueChange={setFilterYear}>
+                      <SelectTrigger className="text-xs h-9 px-3 rounded-full bg-white border border-[#d2d2d7] text-[#1d1d1f] w-[130px]">
+                        <SelectValue placeholder="Semua Tahun" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">Semua Tahun</SelectItem>
+                        {availableYears.map((yr) => (
+                          <SelectItem key={yr} value={String(yr)}>
+                            {yr}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
                     {(searchQuery || filterType !== 'ALL' || filterMonth !== 'ALL' || filterYear !== 'ALL') && (
                       <button

@@ -131,20 +131,22 @@ Browser
 Network requests
 ```
 
-In this repository, the following canonical sources are available and should be used as
-entry points before deep code inspection:
+In this repository, the canonical documentation is organized as an Obsidian Knowledge Vault
+with `docs/00-MOC.md` as the master navigation hub:
 
 ```text
-README.md                          - project summary, quick start, credential table
-docs/architecture.md               - current architecture & multi-tenancy model
-docs/api.md                        - verified endpoint inventory (methods, roles)
-docs/authentication-authorization.md - auth, JWT, RBAC matrix, tenant isolation
-docs/database.md                   - schema & migrations (000001-000040)
-docs/setup.md                      - environment, commands, credentials
-docs/testing.md                    - test suites & commands
-docs/deployment.md                 - Docker/Traefik deployment
+README.md                                   - project summary, quick start, credential table
+docs/00-MOC.md                              - Master Map of Content (Obsidian Vault Hub)
+docs/01-architecture/                       - Clean architecture, multi-tenancy, RBAC, routing
+docs/02-modules/                            - Detailed business module specs (11 core areas)
+docs/03-database/                           - Schema inventory, migrations 000001-000050, rules
+docs/04-api-contracts/                      - Verified endpoint inventory & OpenAPI 3.0 spec
+docs/05-operations-devops/                  - Docker, Traefik v3.6, setup, SDLC workflow rules
+docs/06-testing-qa/                         - Playwright E2E suite, backend tests, audit history
+docs/07-frontend-design/                    - Apple-style tokens, anti-ai-slop, bundle performance
+docs/08-roadmaps/                           - Community features roadmap, auto-payment QRIS
 backend/internal/delivery/http/openapi.yaml - OpenAPI spec served at /swagger/openapi.yaml
-AGENTS.md §46                      - project-specific context for this repository
+AGENTS.md §46                               - project-specific context for this repository
 ```
 
 Do not rely on only one source.
@@ -1410,7 +1412,8 @@ tests/e2e/                      Playwright regression suite
   Claims: `user_id`, `tenant_id`, `role`, `exp`, `iat`, `sub`.
 - **Role & tenant scope come exclusively from the database** (`tenant_users JOIN roles`,
   mapping `status='active'`). Never derived from email or client input.
-- **Roles (only three)**: `superadmin` (platform/global), `admin_rt` (tenant admin),
+- **Roles (four roles)**: `superadmin` (platform/global), `admin_rt` (tenant admin),
+  `operator` (operational staff, added via migration 000048, operational write/input without `/admin/users`),
   `resident` (read-only + participation).
 - **Register** (`POST /api/v1/auth/register`) creates a user **without** tenant mapping;
   an admin must assign the user to a tenant via `/users`.
@@ -1591,16 +1594,22 @@ npx playwright test --config=playwright.headless.config.ts # headless (CI)
 
 ## 46.10 Documentation Map (canonical)
 
-| Topic | Document |
+The documentation is organized as an Obsidian Vault linked via `docs/00-MOC.md`:
+
+| Topic | Primary Obsidian Document |
 |---|---|
-| Entry point / quick start | `README.md` |
-| Architecture & multi-tenancy | `docs/architecture.md` |
-| Setup & development | `docs/setup.md` |
-| Auth, RBAC, isolation | `docs/authentication-authorization.md` |
-| API reference | `docs/api.md` + `/swagger/openapi.yaml` |
-| Database & migrations | `docs/database.md` |
-| Testing | `docs/testing.md` |
-| Deployment | `docs/deployment.md` |
+| Master Hub / MOC | `docs/00-MOC.md` |
+| System Overview & Clean Architecture | `docs/01-architecture/system-overview.md` |
+| Multi-Tenancy & Schema Isolation | `docs/01-architecture/multi-tenancy.md` |
+| Auth, RBAC & NIK Encryption | `docs/01-architecture/authentication-and-rbac.md` |
+| Subdomain & Host Routing | `docs/01-architecture/subdomain-and-routing.md` |
+| Business Modules Specs (11 modules) | `docs/02-modules/*.md` |
+| Database Catalog & Migrations 000001–000050 | `docs/03-database/schema-inventory.md`, `migrations-history.md` |
+| API Contracts & OpenAPI 3.0 | `docs/04-api-contracts/api-inventory.md`, `openapi-spec.md` |
+| Operations, Docker, Traefik & SDLC | `docs/05-operations-devops/*.md` |
+| Playwright E2E & Backend Testing | `docs/06-testing-qa/*.md` |
+| Frontend Apple Design & Bundle Performance | `docs/07-frontend-design/*.md` |
+| Community Features & Payment Roadmaps | `docs/08-roadmaps/*.md` |
 
 When creating or updating documentation during an audit, keep these canonical files as the
 single source per topic; do not create parallel documents that duplicate them.
@@ -1621,4 +1630,34 @@ Semua agen dan developer **WAJIB** mengikuti alur promosi kode berikut:
 4. **Strategi Integritas Data**:
    - Kebijakan data: data produksi adalah kebenaran operasional utama di masa mendatang.
    - Lingkungan `dev` dan `staging` berfungsi sebagai data tester/pengujian.
+
+## 46.12 Mandat Pemeliharaan Dokumentasi Hidup (Living Documentation Governance)
+
+Setiap agen AI dan pengembang yang bekerja pada repositori ini **WAJIB** menjaga sinkronisasi dokumentasi Obsidian Vault di `docs/`:
+
+1. **Aturan Sinkronisasi Berkesinambungan (Continuous Sync Rule)**:
+   - Dilarang keras menambah endpoint API, migration SQL baru, domain entity baru, atau komponen halaman frontend modular tanpa memperbarui catatan modul terkait di `docs/02-modules/`, `docs/03-database/`, atau `docs/04-api-contracts/`.
+   - Perubahan arsitektur, peran, atau mekanisme keamanan wajib segera dicatat di `docs/01-architecture/`.
+2. **Integritas Wikilink & Canvas**:
+   - Setiap dokumen baru **wajib** memiliki frontmatter YAML (`title`, `description`, `tags`).
+   - Setiap dokumen baru **wajib** ditautkan dari `docs/00-MOC.md` dan dihubungkan pada `docs/Architecture-Map.canvas`.
+   - Dilarang meninggalkan broken wikilink (`[[...]]` yang tidak mengarah ke file nyata).
+3. **Pilar Tunggal Terpercaya (Single Source of Truth)**:
+   - Dilarang membuat file markdown acak di root repository atau root `docs/`. Seluruh catatan teknis baru harus ditempatkan pada salah satu dari 8 pilar yang tepat.
+   - Jika modul bisnis baru lahir, buat berkas spesifikasi barunya di `docs/02-modules/<nama-fitur>.md` dan sinkronkan dengan handler backend, migration DB, dan UI frontend.
+4. **Verifikasi Sebelum Merge / Promosi**:
+   - Bagian dari Checklist Rilis (`docs/05-operations-devops/release-checklist.md`) adalah konfirmasi bahwa vault dokumentasi telah mencerminkan kondisi kode aktual pada branch yang bersangkutan.
+
+## 46.13 Aturan Pustaka Komponen UI (Strict UI Component Library Adoption)
+
+Dilarang keras menggunakan tag HTML primitif mentah jika komponen UI padanannya telah disediakan di `@/components/ui/`:
+
+1. **Dropdown & Selection**: Dilarang menggunakan `<select>` dan `<option>` native. Wajib menggunakan `Select`, `SelectTrigger`, `SelectValue`, `SelectContent`, `SelectItem` dari `@/components/ui/select`, atau `SearchableResidentSelect` untuk data warga.
+2. **Form Controls**: Wajib menggunakan `<Button>`, `<Input>`, `<Textarea>`, `<Label>`, `<Checkbox>` dari `@/components/ui/`.
+3. **Overlays & Data**: Wajib menggunakan `<Dialog>` (bukan dialog/alert JS native) dan `<Table>` untuk data tabular.
+4. **Badges & Feedback**: Wajib menggunakan `<Badge>` untuk status pills dan komponen visual token yang seragam.
+5. **Kebijakan Pemasangan Komponen Baru (Radix UI / Shadcn First)**:
+   - Jika membutuhkan komponen interaktif yang belum tersedia di `@/components/ui/` (misalnya: `Tooltip`, `Popover`, `Accordion`, `DropdownMenu`, `Switch`, `Slider`):
+     - **WAJIB** terlebih dahulu memasang paket resmi dari Radix UI (`@radix-ui/react-*`) dan membungkusnya menjadi komponen bergaya Shadcn di `@/components/ui/<nama>.tsx`.
+     - **DILARANG** langsung jatuh menggunakan tag native HTML atau membuat komponen kustom mentah sebelum mengecek ketersediaan primitif di Radix UI. Tag native hanya boleh digunakan sebagai upaya darurat mutlak jika ekosistem Radix UI terbukti tidak memiliki padanannya.
 

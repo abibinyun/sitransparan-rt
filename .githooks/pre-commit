@@ -1,0 +1,13 @@
+#!/bin/sh
+# Git pre-commit hook to ensure Obsidian Documentation Vault integrity
+
+echo "🔍 Validating Obsidian Documentation Vault..."
+./scripts/validate-docs.py
+RESULT=$?
+
+if [ $RESULT -ne 0 ]; then
+    echo "❌ Commit rejected due to vault validation failure."
+    exit 1
+fi
+
+exit 0
