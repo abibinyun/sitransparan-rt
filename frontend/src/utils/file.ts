@@ -18,3 +18,25 @@ export function getFileUrl(url?: string | null): string {
 
   return url;
 }
+
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  const mb = bytes / (1024 * 1024);
+  return `${Number.isInteger(mb) ? mb : mb.toFixed(1)} MB`;
+}
+
+export function getFileExtension(filename: string): string {
+  const parts = filename.split('.');
+  if (parts.length <= 1) return '';
+  return parts.pop()?.toLowerCase() || '';
+}
+
+export function isAllowedFileType(filename: string, allowedExtensions: string[]): boolean {
+  const ext = getFileExtension(filename);
+  return allowedExtensions.map((e) => e.toLowerCase()).includes(ext);
+}
+
+export function sanitizeFilename(filename: string): string {
+  return filename.replace(/\.\.+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '_');
+}

@@ -33,10 +33,14 @@ npm run test:watch
 
 | Berkas Pengujian | Modul Target | Aspek yang Diverifikasi |
 |---|---|---|
-| `src/store/__tests__/useAuthStore.test.ts` | `useAuthStore` | Penyimpanan token, refresh token, role, isolasi prefix lingkungan (`dev_`, `staging_`), dan pembersihan total saat logout |
 | `src/services/__tests__/api.test.ts` | `services/api.ts` | Injeksi Authorization Bearer token dan mekanisme antrean silent refresh token saat menerima HTTP 401 |
+| `src/store/__tests__/useAuthStore.test.ts` | `useAuthStore` | Penyimpanan token, refresh token, role, isolasi prefix lingkungan (`dev_`, `staging_`), dan pembersihan total saat logout |
+| `src/components/ui/__tests__/primitives.test.tsx` | `components/ui/` | Render dan event handling primitif Radix/Shadcn UI (`Button`, `Input`, `Badge`) |
 | `src/utils/__tests__/formatRupiah.test.ts` | `formatRupiah` | Pemformatan nominal mata uang Rupiah Indonesia (Rp), angka nol, dan nominal besar jutaan |
 | `src/utils/__tests__/date.test.ts` | `utils/date.ts` | Formatter tanggal bahasa Indonesia (WIB), jam & menit, fallback aman string invalid |
+| `src/utils/__tests__/file.test.ts` | `utils/file.ts` | Format ukuran file (B, KB, MB), ekstensi file, validasi tipe, dan sanitasi path traversal |
+| `src/utils/__tests__/imageCompressor.test.ts` | `imageCompressor.ts` | Bypass file non-gambar (PDF) dan gambar vektor (SVG) tanpa kompresi |
+| `src/utils/__tests__/routePrefetch.test.ts` | `routePrefetch.ts` | Prefetching dinamis modul rute saat hover navigasi |
 | `src/utils/__tests__/tenant.test.ts` | `utils/tenant.ts` | Resolusi subdomain tenant, filter hostname platform, pembangunan URL platform |
 | `src/data/adminDocsData.test.ts` | `data/adminDocsData.ts` | Integritas data buku panduan admin RT |
 | `src/components/ShareCardModal.test.ts`| `ShareCardModal` | Format teks share WhatsApp dan media sosial untuk transparansi kas RT |
