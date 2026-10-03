@@ -153,6 +153,11 @@ func main() {
 	safetyUC := usecase.NewSafetyUsecase(safetyRepo, notificationUC)
 	safetyHandler := delivery.NewSafetyHandler(safetyUC)
 
+	// Community Social & Marketplace Feed
+	communityRepo := repository.NewCommunityRepository(db)
+	communityUC := usecase.NewCommunityUsecase(communityRepo, notificationUC)
+	communityHandler := delivery.NewCommunityHandler(communityUC)
+
 	tenantMw := middleware.TenantMiddleware(tenantRepo, cfg.TenantBaseDomain)
 	authMw := middleware.AuthMiddleware(jwtSecret)
 	optionalAuthMw := middleware.OptionalAuthMiddleware(jwtSecret)
@@ -257,6 +262,9 @@ func main() {
 
 	// Safety Center (Panic & Vacancies)
 	safetyHandler.RegisterRoutes(mux, tenantMw, authMw, adminMw)
+
+	// Community Social & Marketplace
+	communityHandler.RegisterRoutes(mux, tenantMw, authMw)
 
 	// SuperAdmin routes
 	superAdminMux := http.NewServeMux()
