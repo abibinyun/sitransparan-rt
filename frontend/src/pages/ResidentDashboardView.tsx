@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useMyHouseQuery } from '../services/house';
+import { PanicButtonWidget } from '../components/safety/PanicButtonWidget';
+import { HouseVacancyModal } from '../components/safety/HouseVacancyModal';
 import { useDuesPayments } from '../services/financial';
 import { useAspirations } from '../services/aspiration_need';
 import { useHouseholdAccumulationsQuery } from '../services/wasteBank';
@@ -29,6 +31,7 @@ const formatRupiah = (val: number) =>
 export const ResidentDashboardView: React.FC = () => {
   const { user, activeTenant } = useAuthStore();
   const { data: houseData } = useMyHouseQuery();
+  const [isVacancyOpen, setIsVacancyOpen] = useState(false);
   const { data: duesData } = useDuesPayments({ limit: 50 });
   const { data: aspirationsData } = useAspirations({ limit: 50 });
   const { data: wasteData } = useHouseholdAccumulationsQuery(1, 100);
@@ -87,6 +90,9 @@ export const ResidentDashboardView: React.FC = () => {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      {/* Tombol Darurat Lingkungan & Alarm */}
+      <PanicButtonWidget />
+
       {/* Welcome Hero Banner */}
       <section className="apple-card p-5 sm:p-7 border-[#d2d2d7] bg-white">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
@@ -114,9 +120,27 @@ export const ResidentDashboardView: React.FC = () => {
               <Send className="h-3.5 w-3.5 text-white" />
               Kirim Usulan
             </NavLink>
+            {house?.id && (
+              <button
+                type="button"
+                onClick={() => setIsVacancyOpen(true)}
+                className="apple-btn-secondary text-xs px-4 py-2 flex items-center gap-1.5 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100"
+              >
+                <Home className="h-3.5 w-3.5 text-blue-600" />
+                Lapor Rumah Mudik
+              </button>
+            )}
           </div>
         </div>
       </section>
+
+      {house?.id && isVacancyOpen && (
+        <HouseVacancyModal
+          isOpen={isVacancyOpen}
+          onClose={() => setIsVacancyOpen(false)}
+          houseId={house.id}
+        />
+      )}
 
       {/* Ringkasan Kartu Data Rumah & Keluarga */}
       <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
