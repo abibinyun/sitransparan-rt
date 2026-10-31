@@ -93,6 +93,8 @@ services:
       MINIO_USE_SSL: "false"
       PORT: 8080
       JWT_SECRET: ${JWT_SECRET_PROD:-production-super-secret-jwt-platform-rt-key}
+      NIK_ENCRYPTION_KEY: ${NIK_ENCRYPTION_KEY:-sitransparan-nik-encrypt-key-32b}
+      NIK_HMAC_SECRET: ${NIK_HMAC_SECRET:-sitransparan-nik-hmac-secret-key}
       TENANT_BASE_DOMAIN: iscube.web.id
       TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-192.168.64.0/20,127.0.0.1}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
@@ -140,10 +142,24 @@ services:
     networks:
       - infrastructure_default
 
+  cloudflared:
+    <<: *default-logging
+    image: cloudflare/cloudflared:latest
+    container_name: transparansi_cloudflared_prod
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["if [ -z \"$$TUNNEL_TOKEN\" ]; then echo 'No CLOUDFLARE_TUNNEL_TOKEN provided. Cloudflared idle.'; sleep infinity; else exec cloudflared tunnel --no-autoupdate run; fi"]
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-}
+    networks:
+      - infrastructure_default
+    depends_on:
+      - traefik_prod
+
 volumes:
   postgres_prod_data:
   minio_prod_data:
 
 networks:
   infrastructure_default:
-    external: true
+    name: infrastructure_default

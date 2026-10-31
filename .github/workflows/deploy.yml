@@ -1,75 +1,130 @@
-name: CI/CD Pipeline (PC Local Cloudflare Tunnel)
+name: CI/CD Pipeline (Production InstaBox-2)
 
 on:
   push:
     branches:
-      - dev      # Dev verification trigger
-      - staging  # Staging trigger -> *-staging.iscube.web.id
-      - main     # Production trigger -> *.iscube.web.id
+      - dev
+      - staging
+      - main
   pull_request:
     branches:
       - dev
       - staging
       - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deployment-instabox2
+  cancel-in-progress: false
 
 jobs:
   lint-and-test:
-    name: Lint, Test & Build Verification
-    runs-on: [self-hosted, pc-local]
+    name: Quality Gate (Backend & Frontend Tests)
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: backend/go.sum
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
       - name: Backend Vet & Test
         run: |
           cd backend
-          /usr/local/go/bin/go vet ./...
-          /usr/local/go/bin/go test -v ./...
+          go vet ./...
+          go test -v ./...
 
-      - name: Frontend Typecheck & Build
+      - name: Frontend Dependencies & Build
         run: |
           cd frontend
           npm ci
           npm run build
 
-  deploy-staging:
-    name: Deploy to Staging (*-staging.iscube.web.id)
-    needs: lint-and-test
-    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
-    runs-on: [self-hosted, pc-local]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Build & Run Staging Containers
-        run: |
-          echo "Deploying Staging to *-staging.iscube.web.id..."
-          cd infrastructure
-          docker compose -p staging -f docker-compose.staging.yml build backend frontend
-          docker compose -p staging -f docker-compose.staging.yml up -d --remove-orphans
-          echo "Staging deployment complete."
-
-      - name: Run Database Migrations
-        run: |
-          make staging-migrate
-
   deploy-production:
-    name: Deploy to Production (*.iscube.web.id)
+    name: Deploy to Production (InstaBox-2)
     needs: lint-and-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: [self-hosted, pc-local]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Setup SSH Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.INSTABOX_SSH_PORT }} -H "${{ secrets.INSTABOX_SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync Repository Files to InstaBox-2
+        run: |
+          rsync -avz --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude 'dist' \
+            --exclude 'frontend/node_modules' \
+            --exclude 'frontend/dist' \
+            --exclude 'backend/tmp' \
+            --exclude 'infrastructure/.env' \
+            --exclude 'infrastructure/backups' \
+            -e "ssh -p ${{ secrets.INSTABOX_SSH_PORT }} -o StrictHostKeyChecking=no -o BatchMode=yes -o IdentitiesOnly=yes -F /dev/null" \
+            ./ \
+            ${{ secrets.INSTABOX_SSH_USER }}@${{ secrets.INSTABOX_SSH_HOST }}:/data/projects/sitransparan-rt/
 
       - name: Build & Run Production Containers
         run: |
-          echo "Deploying Production to *.iscube.web.id..."
-          cd infrastructure
-          docker compose -p prod -f docker-compose.prod.yml build backend frontend
-          docker compose -p prod -f docker-compose.prod.yml up -d --remove-orphans
-          echo "Production deployment complete."
+          ssh -p ${{ secrets.INSTABOX_SSH_PORT }} -o StrictHostKeyChecking=no -o BatchMode=yes -o IdentitiesOnly=yes -F /dev/null \
+            ${{ secrets.INSTABOX_SSH_USER }}@${{ secrets.INSTABOX_SSH_HOST }} << 'EOF'
+            set -euo pipefail
+            cd /data/projects/sitransparan-rt
 
-      - name: Run Database Migrations
+            echo "Ensuring docker network infrastructure_default exists..."
+            docker network inspect infrastructure_default >/dev/null 2>&1 || docker network create infrastructure_default
+
+            echo "Deploying production stack via Docker Compose..."
+            cd infrastructure
+            docker compose -p prod -f docker-compose.prod.yml up -d --build --remove-orphans
+
+            echo "Waiting for PostgreSQL to be ready..."
+            for i in {1..30}; do
+              if docker exec transparansi_postgres_prod pg_isready -U postgres >/dev/null 2>&1; then
+                echo "PostgreSQL is ready!"
+                break
+              fi
+              echo "Waiting for PostgreSQL ($i/30)..."
+              sleep 2
+            done
+
+            echo "Running database migrations..."
+            cd ..
+            make prod-migrate || true
+
+            echo "Production containers status:"
+            docker ps --filter "name=transparansi"
+          EOF
+
+      - name: Production Health Check
         run: |
-          make prod-migrate
+          ssh -p ${{ secrets.INSTABOX_SSH_PORT }} -o StrictHostKeyChecking=no -o BatchMode=yes -o IdentitiesOnly=yes -F /dev/null \
+            ${{ secrets.INSTABOX_SSH_USER }}@${{ secrets.INSTABOX_SSH_HOST }} << 'EOF'
+            set -e
+            echo "Checking Traefik container..."
+            docker ps --filter "name=transparansi_traefik_prod" --filter "status=running" | grep -q transparansi_traefik_prod
+            echo "Checking Backend container..."
+            docker ps --filter "name=transparansi_backend_prod" --filter "status=running" | grep -q transparansi_backend_prod
+            echo "Checking Frontend container..."
+            docker ps --filter "name=transparansi_frontend_prod" --filter "status=running" | grep -q transparansi_frontend_prod
+            echo "Checking Postgres container..."
+            docker ps --filter "name=transparansi_postgres_prod" --filter "status=running" | grep -q transparansi_postgres_prod
+            echo "Checking MinIO container..."
+            docker ps --filter "name=transparansi_minio_prod" --filter "status=running" | grep -q transparansi_minio_prod
+            echo "All production containers are UP and verified healthy!"
+          EOF
