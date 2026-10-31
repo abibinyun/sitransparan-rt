@@ -33,6 +33,7 @@ func (h *CommunityHandler) handleCommunity(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	userID := middleware.GetUserIDFromContext(r.Context())
+	userRole := middleware.GetRoleFromContext(r.Context())
 
 	path := strings.TrimPrefix(r.URL.Path, "/api/v1/community/posts")
 	path = strings.TrimPrefix(path, "/")
@@ -127,6 +128,22 @@ func (h *CommunityHandler) handleCommunity(w http.ResponseWriter, r *http.Reques
 			json.NewEncoder(w).Encode(c)
 			return
 		}
+
+		// DELETE comment: /community/posts/{id}/comments/{commentId}
+		if r.Method == http.MethodDelete && len(parts) >= 3 {
+			commentID, err := uuid.Parse(parts[2])
+			if err != nil {
+				http.Error(w, `{"error":"invalid comment id"}`, http.StatusBadRequest)
+				return
+			}
+			if err := h.usecase.DeleteComment(r.Context(), tenant.ID, commentID, userID, userRole); err != nil {
+				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusForbidden)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{"message": "comment deleted"})
+			return
+		}
 	}
 
 	// 4. Reactions: POST /community/posts/{id}/reactions
@@ -175,20 +192,41 @@ func (h *CommunityHandler) handleCommunity(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// 6. Delete Post: DELETE /community/posts/{id}
-	if path != "" && r.Method == http.MethodDelete {
+	// 6. Update & Delete Post: /community/posts/{id}
+	if path != "" && !strings.Contains(path, "/") {
 		postID, err := uuid.Parse(path)
 		if err != nil {
 			http.Error(w, `{"error":"invalid post id"}`, http.StatusBadRequest)
 			return
 		}
-		if err := h.usecase.DeletePost(r.Context(), tenant.ID, postID, userID); err != nil {
-			http.Error(w, `{"error":"failed to delete post"}`, http.StatusInternalServerError)
+
+		// PUT: Update post
+		if r.Method == http.MethodPut {
+			var p domain.CommunityPost
+			if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+				http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+				return
+			}
+			updated, err := h.usecase.UpdatePost(r.Context(), tenant.ID, postID, userID, userRole, &p)
+			if err != nil {
+				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(updated)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"message": "post deleted"})
-		return
+
+		// DELETE: Delete post
+		if r.Method == http.MethodDelete {
+			if err := h.usecase.DeletePost(r.Context(), tenant.ID, postID, userID, userRole); err != nil {
+				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusForbidden)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{"message": "post deleted"})
+			return
+		}
 	}
 
 	http.Error(w, `{"error":"not found"}`, http.StatusNotFound)

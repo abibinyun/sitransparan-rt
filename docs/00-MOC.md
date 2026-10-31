@@ -60,6 +60,9 @@ graph TD
 - [[02-modules/portal-transparansi-publik|Portal Transparansi Publik]] — Feed `/kabar`, `/usulan`, `/agenda`, `/karang-taruna`, `/bank-sampah`.
 - [[02-modules/social-and-polls|Interaksi Sosial & Polling]] — Reaksi warga, voting jajak pendapat (2–6 opsi), gamifikasi lencana.
 - [[02-modules/notifikasi-webpush|Notifikasi & Web Push]] — Standar VAPID web push, pengumuman broadcast per tenant.
+- [[02-modules/pusat-notifikasi-inbox|Pusat Notifikasi Inbox]] — Kotak masuk in-app dual-dispatch (DB + Push), badge lonceng, mark all read.
+- [[02-modules/pusat-keamanan-warga|Pusat Keamanan Warga]] — Tombol darurat (Panic button), broadcast alarm sirine, laporan rumah kosong rahasia.
+- [[02-modules/ruang-warga-and-marketplace|Ruang Warga & Lapak UMKM]] — Forum diskusi warga, tanya tetangga (solved marker), etalase lapak UMKM WhatsApp.
 
 ### 🗄️ [[03-database/schema-inventory|03. Basis Data & Migrasi]]
 - [[03-database/schema-inventory|Katalog Skema & Tabel]] — Skema `public` vs 27+ tabel dalam `tenant_<slug>`.

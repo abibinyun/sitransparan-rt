@@ -52,6 +52,25 @@ Header wajib: `Authorization: Bearer <jwt_token>`
 | `POST` | `/reactions` | Mengirimkan reaksi suka/dukungan pada kabar |
 | `GET` | `/house-access/claim` | Verifikasi token QR rumah warga dan terbitkan sesi JWT resident |
 | `GET` | `/house-access/me` | Profil data rumah warga yang terikat sesi QR |
+| `GET` | `/notifications` | Daftar notifikasi in-app pengguna |
+| `GET` | `/notifications/unread-count` | Jumlah notifikasi belum dibaca untuk badge lonceng |
+| `POST` | `/notifications/read-all` | Menandai seluruh notifikasi pengguna sebagai terbaca |
+| `PATCH` | `/notifications/{id}/read` | Menandai satu notifikasi tertentu sebagai terbaca |
+| `GET` | `/community/posts` | Feed obrolan, lapak UMKM, dan tanya warga (filter type & category) |
+| `POST` | `/community/posts` | Membuat postingan warga baru (mendukung mode anonim & jualan) |
+| `GET` | `/community/posts/{id}` | Detail postingan warga |
+| `PUT` | `/community/posts/{id}` | Mengubah isi postingan warga (khusus pemilik) |
+| `PATCH` | `/community/posts/{id}/solved`| Menandai pertanyaan warga sudah terpecahkan (solved) |
+| `DELETE` | `/community/posts/{id}` | Menghapus kiriman (pemilik postingan atau pengurus RT) |
+| `GET` | `/community/posts/{id}/comments`| Daftar komentar dan balasan diskusi bertingkat |
+| `POST` | `/community/posts/{id}/comments`| Mengirim komentar atau membalas komentar tetangga |
+| `DELETE` | `/community/posts/{id}/comments/{commentId}` | Menghapus komentar (pembuat, pemilik post, atau admin) |
+| `POST` | `/community/reactions` | Toggle reaksi emoji (`pray`, `applause`, `like`) pada postingan |
+| `POST` | `/safety/panic` | Memancarkan alarm tombol darurat siskamling lingkungan |
+| `GET` | `/safety/emergencies` | Daftar status darurat aktif di lingkungan |
+| `POST` | `/safety/emergencies/{id}/resolve` | Menyelesaikan penanganan keadaan darurat (Admin/Operator) |
+| `POST` | `/safety/house-vacancies` | Lapor rumah kosong/mudik rahasia (Confidential) |
+| `GET` | `/safety/house-vacancies` | Rekap jadwal rumah kosong lingkungan (Khusus Admin/Operator, warga biasa tolak 403) |
 
 ---
 

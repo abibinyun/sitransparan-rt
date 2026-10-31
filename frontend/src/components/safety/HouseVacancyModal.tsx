@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
-import { Home, Calendar, Phone, FileText } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../ui/dialog';
+import { Dialog } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { useReportHouseVacancyMutation } from '../../services/safety';
-import { validateVacancyPayload } from './__tests__/safety.test';
+import { validateVacancyPayload } from '../../utils/safetyValidation';
 
 interface HouseVacancyModalProps {
   isOpen: boolean;
@@ -56,84 +50,76 @@ export const HouseVacancyModal: React.FC<HouseVacancyModalProps> = ({ isOpen, on
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[420px] rounded-2xl bg-white p-6">
-        <DialogHeader>
-          <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <Home className="w-5 h-5 text-blue-600" /> Lapor Rumah Mudik / Kosong
-          </DialogTitle>
-        </DialogHeader>
+    <Dialog isOpen={isOpen} onClose={onClose} title="Lapor Rumah Mudik / Kosong" className="sm:max-w-[420px]">
+      <p className="text-xs text-slate-500 mb-3">
+        Data jadwal rumah kosong dijaga <strong>sangat rahasia (confidential)</strong> dan hanya dapat diakses oleh petugas ronda siskamling serta pengurus RT untuk prioritas patroli lingkungan.
+      </p>
 
-        <p className="text-xs text-slate-500 mt-1">
-          Data jadwal rumah kosong dijaga <strong>sangat rahasia (confidential)</strong> dan hanya dapat diakses oleh petugas ronda siskamling serta pengurus RT untuk prioritas patroli lingkungan.
-        </p>
+      {formError && (
+        <div className="p-3 text-xs bg-rose-50 text-rose-700 rounded-lg border border-rose-200 mb-3">
+          {formError}
+        </div>
+      )}
 
-        {formError && (
-          <div className="p-3 text-xs bg-rose-50 text-rose-700 rounded-lg border border-rose-200 mt-2">
-            {formError}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4 mt-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs font-semibold text-slate-700">Tanggal Mulai</Label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="mt-1 text-xs"
-                required
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-semibold text-slate-700">Tanggal Pulang</Label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="mt-1 text-xs"
-                required
-              />
-            </div>
-          </div>
-
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs font-semibold text-slate-700">Nomor Kontak Darurat (WhatsApp)</Label>
+            <Label className="text-xs font-semibold text-slate-700">Tanggal Mulai</Label>
             <Input
-              placeholder="081234567890"
-              value={contact}
-              onChange={(e) => setContact(e.target.value)}
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
               className="mt-1 text-xs"
               required
             />
           </div>
-
           <div>
-            <Label className="text-xs font-semibold text-slate-700">Catatan Khusus Keamanan</Label>
-            <Textarea
-              placeholder="Contoh: Lampu teras otomatis menyala, kunci dititipkan ke rumah Pak RT..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="mt-1 text-xs resize-none"
-              rows={3}
+            <Label className="text-xs font-semibold text-slate-700">Tanggal Pulang</Label>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="mt-1 text-xs"
+              required
             />
           </div>
+        </div>
 
-          <div className="pt-2 flex gap-2 justify-end">
-            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-              Batal
-            </Button>
-            <Button
-              type="submit"
-              disabled={reportMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
-            >
-              {reportMutation.isPending ? 'Menyimpan...' : 'Kirim Laporan Rahasia'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
+        <div>
+          <Label className="text-xs font-semibold text-slate-700">Nomor Kontak Darurat (WhatsApp)</Label>
+          <Input
+            placeholder="081234567890"
+            value={contact}
+            onChange={(e) => setContact(e.target.value)}
+            className="mt-1 text-xs"
+            required
+          />
+        </div>
+
+        <div>
+          <Label className="text-xs font-semibold text-slate-700">Catatan Khusus Keamanan</Label>
+          <Textarea
+            placeholder="Contoh: Lampu teras otomatis menyala, kunci dititipkan ke rumah Pak RT..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="mt-1 text-xs resize-none"
+            rows={3}
+          />
+        </div>
+
+        <div className="pt-2 flex gap-2 justify-end">
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+            Batal
+          </Button>
+          <Button
+            type="submit"
+            disabled={reportMutation.isPending}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+          >
+            {reportMutation.isPending ? 'Menyimpan...' : 'Kirim Laporan Rahasia'}
+          </Button>
+        </div>
+      </form>
     </Dialog>
   );
 };

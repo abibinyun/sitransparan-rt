@@ -12,7 +12,7 @@ export function useSeamlessUpdate() {
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !import.meta.env.PROD) return;
 
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -22,7 +22,7 @@ export function useSeamlessUpdate() {
           document.querySelector('[role="dialog"]') !== null ||
           document.querySelector('[data-state="open"]') !== null ||
           document.querySelector('form') !== null;
-        if (isModalOpen) {
+        if (isModalOpen || document.visibilityState === 'hidden') {
           hasUpdateRef.current = true;
           return;
         }

@@ -122,7 +122,22 @@ func (r *postgresCommunityRepository) MarkPostSolved(ctx context.Context, postID
 	return err
 }
 
-func (r *postgresCommunityRepository) DeletePost(ctx context.Context, id, userID uuid.UUID) error {
+func (r *postgresCommunityRepository) UpdatePost(ctx context.Context, p *domain.CommunityPost) error {
+	table := TenantTable(ctx, "community_posts")
+	query := fmt.Sprintf(`
+		UPDATE %s SET 
+			title = $2, content = $3, price = $4, contact_phone = $5, 
+			category = $6, media_urls = $7, is_anonymous = $8, updated_at = NOW()
+		WHERE id = $1 AND deleted_at IS NULL
+	`, table)
+	_, err := r.db.ExecContext(ctx, query,
+		p.ID, p.Title, p.Content, p.Price, p.ContactPhone,
+		p.Category, pq.Array(p.MediaURLs), p.IsAnonymous,
+	)
+	return err
+}
+
+func (r *postgresCommunityRepository) DeletePost(ctx context.Context, id uuid.UUID) error {
 	table := TenantTable(ctx, "community_posts")
 	query := fmt.Sprintf("UPDATE %s SET deleted_at = NOW() WHERE id = $1", table)
 	_, err := r.db.ExecContext(ctx, query, id)
@@ -139,6 +154,26 @@ func (r *postgresCommunityRepository) CreateComment(ctx context.Context, c *doma
 		c.ID, c.PostID, c.ParentCommentID, c.UserID, c.AuthorName, c.Content, c.CreatedAt,
 	)
 	return err
+}
+
+func (r *postgresCommunityRepository) GetCommentByID(ctx context.Context, id uuid.UUID) (*domain.CommunityComment, error) {
+	table := TenantTable(ctx, "community_comments")
+	query := fmt.Sprintf(`
+		SELECT id, post_id, parent_comment_id, user_id, author_name, content, created_at, deleted_at
+		FROM %s WHERE id = $1 AND deleted_at IS NULL
+	`, table)
+
+	var c domain.CommunityComment
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&c.ID, &c.PostID, &c.ParentCommentID, &c.UserID, &c.AuthorName, &c.Content, &c.CreatedAt, &c.DeletedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &c, nil
 }
 
 func (r *postgresCommunityRepository) ListCommentsByPost(ctx context.Context, postID uuid.UUID) ([]*domain.CommunityComment, error) {
@@ -167,7 +202,7 @@ func (r *postgresCommunityRepository) ListCommentsByPost(ctx context.Context, po
 	return list, nil
 }
 
-func (r *postgresCommunityRepository) DeleteComment(ctx context.Context, id, userID uuid.UUID) error {
+func (r *postgresCommunityRepository) DeleteComment(ctx context.Context, id uuid.UUID) error {
 	table := TenantTable(ctx, "community_comments")
 	query := fmt.Sprintf("UPDATE %s SET deleted_at = NOW() WHERE id = $1", table)
 	_, err := r.db.ExecContext(ctx, query, id)

@@ -7,6 +7,7 @@ import {
   MessageSquareHeart,
   CalendarDays,
   Recycle,
+  ShoppingBag,
   LogIn,
   ShieldCheck,
   Landmark,
@@ -22,6 +23,7 @@ import { getFileUrl } from '../utils/file';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Kabar & Dokumen', icon: FileText, end: true },
+  { to: '/community', label: 'Ruang Warga & Lapak', icon: ShoppingBag },
   { to: '/usulan', label: 'Aspirasi & Kebutuhan', icon: MessageSquareHeart },
   { to: '/agenda', label: 'Agenda Warga', icon: CalendarDays },
   { to: '/program', label: 'Program & Lingkungan', icon: Recycle },

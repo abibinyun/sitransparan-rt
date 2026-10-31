@@ -18,7 +18,10 @@
 		{"id":"ops-sdlc","type":"file","file":"05-operations-devops/sdlc-and-promotion-workflow.md","x":450,"y":700,"width":300,"height":180,"color":"6"},
 		{"id":"qa-e2e","type":"file","file":"06-testing-qa/e2e-playwright-suite.md","x":100,"y":700,"width":300,"height":180,"color":"4"},
 		{"id":"ui-tokens","type":"file","file":"07-frontend-design/apple-design-system.md","x":-250,"y":700,"width":300,"height":180,"color":"5"},
-		{"id":"roadmap-auto-pay","type":"file","file":"08-roadmaps/auto-payment-integration.md","x":-600,"y":700,"width":300,"height":180,"color":"6"}
+		{"id":"roadmap-auto-pay","type":"file","file":"08-roadmaps/auto-payment-integration.md","x":-600,"y":700,"width":300,"height":180,"color":"6"},
+		{"id":"mod-community","type":"file","file":"02-modules/ruang-warga-and-marketplace.md","x":-430,"y":220,"width":280,"height":180,"color":"3"},
+		{"id":"mod-safety","type":"file","file":"02-modules/pusat-keamanan-warga.md","x":-110,"y":220,"width":280,"height":180,"color":"3"},
+		{"id":"mod-notifications","type":"file","file":"02-modules/pusat-notifikasi-inbox.md","x":210,"y":220,"width":280,"height":180,"color":"3"}
 	],
 	"edges":[
 		{"id":"e-moc-arch","fromNode":"moc","fromSide":"top","toNode":"arch-overview","toSide":"bottom"},
@@ -27,6 +30,9 @@
 		{"id":"e-moc-subdomain","fromNode":"moc","fromSide":"top","toNode":"arch-subdomain","toSide":"bottom"},
 		{"id":"e-moc-kependudukan","fromNode":"moc","fromSide":"left","toNode":"mod-kependudukan","toSide":"right"},
 		{"id":"e-moc-keuangan","fromNode":"moc","fromSide":"left","toNode":"mod-keuangan","toSide":"right"},
+		{"id":"e-moc-community","fromNode":"moc","fromSide":"left","toNode":"mod-community","toSide":"right"},
+		{"id":"e-moc-safety","fromNode":"moc","fromSide":"bottom","toNode":"mod-safety","toSide":"top"},
+		{"id":"e-moc-notifications","fromNode":"moc","fromSide":"bottom","toNode":"mod-notifications","toSide":"top"},
 		{"id":"e-keuangan-events","fromNode":"mod-keuangan","fromSide":"bottom","toNode":"mod-events","toSide":"top"},
 		{"id":"e-moc-waste","fromNode":"moc","fromSide":"bottom","toNode":"mod-waste","toSide":"top"},
 		{"id":"e-moc-kt","fromNode":"moc","fromSide":"bottom","toNode":"mod-kt","toSide":"top"},

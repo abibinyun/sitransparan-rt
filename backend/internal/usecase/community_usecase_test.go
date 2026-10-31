@@ -48,7 +48,11 @@ func (m *mockCommunityRepo) MarkPostSolved(ctx context.Context, postID, helperUs
 	}
 	return nil
 }
-func (m *mockCommunityRepo) DeletePost(ctx context.Context, id, userID uuid.UUID) error {
+func (m *mockCommunityRepo) UpdatePost(ctx context.Context, p *domain.CommunityPost) error {
+	m.posts[p.ID] = p
+	return nil
+}
+func (m *mockCommunityRepo) DeletePost(ctx context.Context, id uuid.UUID) error {
 	delete(m.posts, id)
 	return nil
 }
@@ -56,10 +60,29 @@ func (m *mockCommunityRepo) CreateComment(ctx context.Context, c *domain.Communi
 	m.comments[c.PostID] = append(m.comments[c.PostID], c)
 	return nil
 }
+func (m *mockCommunityRepo) GetCommentByID(ctx context.Context, id uuid.UUID) (*domain.CommunityComment, error) {
+	for _, comments := range m.comments {
+		for _, c := range comments {
+			if c.ID == id {
+				return c, nil
+			}
+		}
+	}
+	return nil, nil
+}
 func (m *mockCommunityRepo) ListCommentsByPost(ctx context.Context, postID uuid.UUID) ([]*domain.CommunityComment, error) {
 	return m.comments[postID], nil
 }
-func (m *mockCommunityRepo) DeleteComment(ctx context.Context, id, userID uuid.UUID) error {
+func (m *mockCommunityRepo) DeleteComment(ctx context.Context, id uuid.UUID) error {
+	for postID, comments := range m.comments {
+		var filtered []*domain.CommunityComment
+		for _, c := range comments {
+			if c.ID != id {
+				filtered = append(filtered, c)
+			}
+		}
+		m.comments[postID] = filtered
+	}
 	return nil
 }
 func (m *mockCommunityRepo) ToggleReaction(ctx context.Context, postID, userID uuid.UUID, reactionType string) error {
@@ -124,5 +147,54 @@ func TestCommunityUsecase_PostAndCommentWorkflow(t *testing.T) {
 	savedPost, _ := uc.GetPostByID(ctx, tenantID, post.ID)
 	if !savedPost.IsSolved || *savedPost.SolvedByUserID != commenterID {
 		t.Errorf("expected post to be marked solved by commenter")
+	}
+
+	// 5. Update Postingan (Edit)
+	strangerID := uuid.New()
+	updatePayload := &domain.CommunityPost{
+		Title:   "Judul Diubah",
+		Content: "Isi Diubah",
+	}
+	// Gagal jika bukan pemilik
+	_, err = uc.UpdatePost(ctx, tenantID, post.ID, strangerID, domain.RoleResident, updatePayload)
+	if err == nil {
+		t.Errorf("expected error when stranger edits post, got nil")
+	}
+	// Berhasil jika pemilik
+	updated, err := uc.UpdatePost(ctx, tenantID, post.ID, authorID, domain.RoleResident, updatePayload)
+	if err != nil {
+		t.Fatalf("UpdatePost failed: %v", err)
+	}
+	if updated.Title != "Judul Diubah" {
+		t.Errorf("expected updated title, got %s", updated.Title)
+	}
+
+	// 6. Delete Comment
+	// Stranger gagal hapus komentar orang lain
+	err = uc.DeleteComment(ctx, tenantID, comment.ID, strangerID, domain.RoleResident)
+	if err == nil {
+		t.Errorf("expected error when stranger deletes comment, got nil")
+	}
+	// Pemilik post berhasil hapus komentar di postingannya (moderasi)
+	err = uc.DeleteComment(ctx, tenantID, comment.ID, authorID, domain.RoleResident)
+	if err != nil {
+		t.Fatalf("post owner DeleteComment failed: %v", err)
+	}
+
+	// 7. Delete Post
+	// Stranger gagal hapus post
+	err = uc.DeletePost(ctx, tenantID, post.ID, strangerID, domain.RoleResident)
+	if err == nil {
+		t.Errorf("expected error when stranger deletes post, got nil")
+	}
+	// Admin RT berhasil hapus post (moderasi admin)
+	adminID := uuid.New()
+	err = uc.DeletePost(ctx, tenantID, post.ID, adminID, domain.RoleAdminRT)
+	if err != nil {
+		t.Fatalf("admin DeletePost failed: %v", err)
+	}
+	deletedPost, _ := uc.GetPostByID(ctx, tenantID, post.ID)
+	if deletedPost != nil {
+		t.Errorf("expected post to be deleted")
 	}
 }

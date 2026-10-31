@@ -2,9 +2,9 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Newspaper,
+  ShoppingBag,
   MessageSquareHeart,
   CalendarDays,
-  Sparkles,
   UserRound
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
@@ -12,9 +12,9 @@ import { prefetchRoute } from '../utils/routePrefetch';
 
 const items = [
   { to: '/', label: 'Kabar', icon: Newspaper, end: true },
+  { to: '/community', label: 'Warga', icon: ShoppingBag },
   { to: '/usulan', label: 'Aspirasi', icon: MessageSquareHeart },
   { to: '/agenda', label: 'Agenda', icon: CalendarDays },
-  { to: '/program', label: 'Program', icon: Sparkles },
 ];
 
 /**

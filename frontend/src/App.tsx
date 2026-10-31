@@ -28,6 +28,7 @@ const KarangTarunaPage = lazy(() => import('./pages/KarangTarunaPage').then(m =>
 const PublicKarangTarunaPage = lazy(() => import('./pages/PublicKarangTarunaPage').then(m => ({ default: m.PublicKarangTarunaPage })));
 const WasteBankPage = lazy(() => import('./pages/WasteBankPage').then(m => ({ default: m.WasteBankPage })));
 const InventoryPage = lazy(() => import('./pages/InventoryPage').then(m => ({ default: m.InventoryPage })));
+const CommunityPage = lazy(() => import('./pages/CommunityPage').then(m => ({ default: m.CommunityPage })));
 const PublicWasteBankPage = lazy(() => import('./pages/PublicWasteBankPage').then(m => ({ default: m.PublicWasteBankPage })));
 const PublicProgramsPage = lazy(() => import('./pages/PublicProgramsPage').then(m => ({ default: m.PublicProgramsPage })));
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
@@ -75,6 +76,7 @@ function AppRoutes() {
         {/* Public Portal Routes with PublicLayout for Tenant Subdomain */}
         <Route element={<PublicLayout />}>
           <Route path="/kabar" element={<PublicAnnouncementsPage />} />
+          <Route path="/community" element={<CommunityPage />} />
           <Route path="/usulan" element={<PublicAspirationsPage />} />
           <Route path="/agenda" element={<PublicEventsPage />} />
           <Route path="/program" element={<PublicProgramsPage />} />
@@ -108,6 +110,7 @@ function AppRoutes() {
             <Route path="/admin/programs" element={<Navigate to="/admin/karang-taruna" replace />} />
             <Route path="/admin/waste-bank" element={<WasteBankPage />} />
             <Route path="/admin/inventory" element={<InventoryPage />} />
+            <Route path="/admin/community" element={<Navigate to="/community" replace />} />
             <Route path="/admin/houses" element={<HousesPage />} />
             <Route path="/admin/panduan" element={<AdminDocsPage />} />
             <Route path="/admin/panduan/:slug" element={<AdminDocsPage />} />

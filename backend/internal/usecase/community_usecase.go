@@ -15,12 +15,13 @@ type CommunityUsecase interface {
 	CreatePost(ctx context.Context, tenantID, userID uuid.UUID, p *domain.CommunityPost) (*domain.CommunityPost, error)
 	GetPostByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.CommunityPost, error)
 	ListPosts(ctx context.Context, tenantID uuid.UUID, postType, category string, limit, offset int) ([]*domain.CommunityPost, int64, error)
+	UpdatePost(ctx context.Context, tenantID, id, userID uuid.UUID, role domain.RoleName, p *domain.CommunityPost) (*domain.CommunityPost, error)
 	MarkPostSolved(ctx context.Context, tenantID, postID, ownerUserID, helperUserID uuid.UUID) error
-	DeletePost(ctx context.Context, tenantID, id, userID uuid.UUID) error
+	DeletePost(ctx context.Context, tenantID, id, userID uuid.UUID, role domain.RoleName) error
 
 	AddComment(ctx context.Context, tenantID, postID, userID uuid.UUID, authorName string, parentCommentID *uuid.UUID, content string) (*domain.CommunityComment, error)
 	ListComments(ctx context.Context, tenantID, postID uuid.UUID) ([]*domain.CommunityComment, error)
-	DeleteComment(ctx context.Context, tenantID, id, userID uuid.UUID) error
+	DeleteComment(ctx context.Context, tenantID, id, userID uuid.UUID, role domain.RoleName) error
 
 	ToggleReaction(ctx context.Context, tenantID, postID, userID uuid.UUID, reactionType string) error
 }
@@ -117,8 +118,52 @@ func (u *communityUsecase) MarkPostSolved(ctx context.Context, tenantID, postID,
 	return nil
 }
 
-func (u *communityUsecase) DeletePost(ctx context.Context, tenantID, id, userID uuid.UUID) error {
-	return u.repo.DeletePost(ctx, id, userID)
+func (u *communityUsecase) UpdatePost(ctx context.Context, tenantID, id, userID uuid.UUID, role domain.RoleName, p *domain.CommunityPost) (*domain.CommunityPost, error) {
+	if strings.TrimSpace(p.Title) == "" {
+		return nil, errors.New("judul postingan wajib diisi")
+	}
+	if strings.TrimSpace(p.Content) == "" {
+		return nil, errors.New("isi postingan wajib diisi")
+	}
+
+	existing, err := u.repo.GetPostByID(ctx, id)
+	if err != nil || existing == nil {
+		return nil, errors.New("postingan tidak ditemukan")
+	}
+
+	// Hanya pemilik postingan yang boleh mengedit isi kiriman
+	if existing.UserID != userID {
+		return nil, errors.New("hanya pemilik postingan yang dapat mengubah kiriman")
+	}
+
+	existing.Title = p.Title
+	existing.Content = p.Content
+	existing.Price = p.Price
+	existing.ContactPhone = p.ContactPhone
+	existing.Category = p.Category
+	existing.MediaURLs = p.MediaURLs
+	existing.IsAnonymous = p.IsAnonymous
+	existing.UpdatedAt = time.Now()
+
+	if err := u.repo.UpdatePost(ctx, existing); err != nil {
+		return nil, err
+	}
+
+	return existing, nil
+}
+
+func (u *communityUsecase) DeletePost(ctx context.Context, tenantID, id, userID uuid.UUID, role domain.RoleName) error {
+	post, err := u.repo.GetPostByID(ctx, id)
+	if err != nil || post == nil {
+		return errors.New("postingan tidak ditemukan")
+	}
+
+	isAdmin := role == domain.RoleSuperAdmin || role == domain.RoleAdminRT || role == domain.RoleOperator
+	if post.UserID != userID && !isAdmin {
+		return errors.New("tidak memiliki izin untuk menghapus postingan ini")
+	}
+
+	return u.repo.DeletePost(ctx, id)
 }
 
 func (u *communityUsecase) AddComment(ctx context.Context, tenantID, postID, userID uuid.UUID, authorName string, parentCommentID *uuid.UUID, content string) (*domain.CommunityComment, error) {
@@ -161,8 +206,27 @@ func (u *communityUsecase) ListComments(ctx context.Context, tenantID, postID uu
 	return u.repo.ListCommentsByPost(ctx, postID)
 }
 
-func (u *communityUsecase) DeleteComment(ctx context.Context, tenantID, id, userID uuid.UUID) error {
-	return u.repo.DeleteComment(ctx, id, userID)
+func (u *communityUsecase) DeleteComment(ctx context.Context, tenantID, id, userID uuid.UUID, role domain.RoleName) error {
+	comment, err := u.repo.GetCommentByID(ctx, id)
+	if err != nil || comment == nil {
+		return errors.New("komentar tidak ditemukan")
+	}
+
+	isAdmin := role == domain.RoleSuperAdmin || role == domain.RoleAdminRT || role == domain.RoleOperator
+	isCommentOwner := comment.UserID == userID
+
+	// Cek apakah user adalah pemilik postingan di mana komentar berada
+	var isPostOwner bool
+	post, _ := u.repo.GetPostByID(ctx, comment.PostID)
+	if post != nil && post.UserID == userID {
+		isPostOwner = true
+	}
+
+	if !isCommentOwner && !isAdmin && !isPostOwner {
+		return errors.New("tidak memiliki izin untuk menghapus komentar ini")
+	}
+
+	return u.repo.DeleteComment(ctx, id)
 }
 
 func (u *communityUsecase) ToggleReaction(ctx context.Context, tenantID, postID, userID uuid.UUID, reactionType string) error {

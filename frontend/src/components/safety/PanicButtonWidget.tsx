@@ -1,18 +1,13 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Siren, X, Check } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../ui/dialog';
+import { AlertTriangle, Siren, Check } from 'lucide-react';
+import { Dialog } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTriggerPanicMutation, useActiveEmergenciesQuery, useResolveEmergencyMutation } from '../../services/safety';
-import { validatePanicPayload } from './__tests__/safety.test';
+import { validatePanicPayload } from '../../utils/safetyValidation';
 
 export const PanicButtonWidget: React.FC = () => {
   const { user } = useAuthStore();
@@ -27,7 +22,8 @@ export const PanicButtonWidget: React.FC = () => {
   const resolveMutation = useResolveEmergencyMutation();
 
   const activeList = emergencies?.data || [];
-  const isAdmin = user?.role === 'admin_rt' || user?.role === 'superadmin' || user?.role === 'operator';
+  const userRole = String(user?.role || '').toLowerCase();
+  const isAdmin = userRole === 'admin_rt' || userRole === 'superadmin' || userRole === 'operator';
 
   const handleTrigger = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,82 +98,74 @@ export const PanicButtonWidget: React.FC = () => {
       </div>
 
       {/* Modal Dialog Form Darurat */}
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[420px] rounded-2xl bg-white p-6">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2 text-rose-600">
-              <Siren className="w-5 h-5" /> Picu Bantuan Darurat
-            </DialogTitle>
-          </DialogHeader>
+      <Dialog isOpen={isOpen} onClose={() => setIsOpen(false)} title="Picu Bantuan Darurat" className="sm:max-w-[420px]">
+        {formError && (
+          <div className="p-3 text-xs bg-rose-50 text-rose-700 rounded-lg border border-rose-200 mb-3">
+            {formError}
+          </div>
+        )}
 
-          {formError && (
-            <div className="p-3 text-xs bg-rose-50 text-rose-700 rounded-lg border border-rose-200">
-              {formError}
+        <form onSubmit={handleTrigger} className="space-y-4">
+          <div>
+            <Label className="text-xs font-semibold text-slate-700">Jenis Keadaan Darurat</Label>
+            <div className="grid grid-cols-2 gap-2 mt-1.5">
+              {[
+                { id: 'medical', label: '🚑 Medis / Ambulans' },
+                { id: 'fire', label: '🔥 Kebakaran' },
+                { id: 'crime', label: '🚨 Kejahatan / Maling' },
+                { id: 'other', label: '⚠️ Bencana / Lainnya' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setAlertType(item.id as any)}
+                  className={`py-2 px-3 text-xs font-medium rounded-xl border text-left transition-all ${
+                    alertType === item.id
+                      ? 'border-rose-600 bg-rose-50 text-rose-900 font-bold'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
 
-          <form onSubmit={handleTrigger} className="space-y-4 mt-2">
-            <div>
-              <Label className="text-xs font-semibold text-slate-700">Jenis Keadaan Darurat</Label>
-              <div className="grid grid-cols-2 gap-2 mt-1.5">
-                {[
-                  { id: 'medical', label: '🚑 Medis / Ambulans' },
-                  { id: 'fire', label: '🔥 Kebakaran' },
-                  { id: 'crime', label: '🚨 Kejahatan / Maling' },
-                  { id: 'other', label: '⚠️ Bencana / Lainnya' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setAlertType(item.id as any)}
-                    className={`py-2 px-3 text-xs font-medium rounded-xl border text-left transition-all ${
-                      alertType === item.id
-                        ? 'border-rose-600 bg-rose-50 text-rose-900 font-bold'
-                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+          <div>
+            <Label className="text-xs font-semibold text-slate-700">Nomor / Blok Rumah</Label>
+            <Input
+              placeholder="Contoh: Blok B-04"
+              value={houseNumber}
+              onChange={(e) => setHouseNumber(e.target.value)}
+              className="mt-1 text-xs"
+            />
+          </div>
 
-            <div>
-              <Label className="text-xs font-semibold text-slate-700">Nomor / Blok Rumah</Label>
-              <Input
-                placeholder="Contoh: Blok B-04"
-                value={houseNumber}
-                onChange={(e) => setHouseNumber(e.target.value)}
-                className="mt-1 text-xs"
-              />
-            </div>
+          <div>
+            <Label className="text-xs font-semibold text-slate-700">Keterangan Bantuan yang Dibutuhkan</Label>
+            <Textarea
+              placeholder="Jelaskan kondisi singkat..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="mt-1 text-xs resize-none"
+              rows={3}
+              required
+            />
+          </div>
 
-            <div>
-              <Label className="text-xs font-semibold text-slate-700">Keterangan Bantuan yang Dibutuhkan</Label>
-              <Textarea
-                placeholder="Jelaskan kondisi singkat..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="mt-1 text-xs resize-none"
-                rows={3}
-                required
-              />
-            </div>
-
-            <div className="pt-2 flex gap-2 justify-end">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setIsOpen(false)}>
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                disabled={triggerPanicMutation.isPending}
-                className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
-              >
-                {triggerPanicMutation.isPending ? 'Mengirim...' : 'KIRIM ALARM SEKARANG'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
+          <div className="pt-2 flex gap-2 justify-end">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={triggerPanicMutation.isPending}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
+            >
+              {triggerPanicMutation.isPending ? 'Mengirim...' : 'KIRIM ALARM SEKARANG'}
+            </Button>
+          </div>
+        </form>
       </Dialog>
     </div>
   );

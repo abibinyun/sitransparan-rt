@@ -85,11 +85,21 @@ Setiap RT memiliki skema terisolasi dengan 27+ tabel operasional:
 - `poll_votes`: Suara warga (unique constraint 1 warga 1 suara).
 - `reactions`: Reaksi interaktif warga terhadap konten kabar.
 
+### I. Ruang Warga & Lapak UMKM (Migration 000054)
+- `community_posts`: Postingan warga (tipe `discussion`, `marketplace`, `question`), nomor kontak WA, harga, status solved.
+- `community_comments`: Komentar dan balasan diskusi warga berjenjang (`parent_comment_id`).
+- `community_reactions`: Reaksi emoji warga (`pray`, `applause`, `like`) per postingan.
+
+### J. Pusat Keamanan & Notifikasi (Migration 000052, 000053)
+- `in_app_notifications`: Kotak masuk notifikasi terpadu per user / publik, status `is_read`, kategori darurat/iuran/kabar.
+- `emergency_alerts`: Alarm tombol darurat (panic button) siskamling (`medical`, `fire`, `crime`, `other`) status `active`/`resolved`.
+- `house_vacancies`: Laporan rumah mudik/kosong rahasia warga (`confidential`) untuk prioritas patroli lingkungan.
+
 ---
 
 ## 3. Hubungan Lintas Dokumen
 
 - [[01-architecture/multi-tenancy|Arsitektur Isolasi Skema]]
-- [[03-database/migrations-history|Histori Migrasi Database (000001–000050)]]
+- [[03-database/migrations-history|Histori Migrasi Database (000001–000054)]]
 - [[03-database/data-integrity-rules|Aturan Integritas Data]]
 - [[00-MOC|Kembali ke MOC]]

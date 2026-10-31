@@ -48,13 +48,15 @@ type CommunityRepository interface {
 	CreatePost(ctx context.Context, p *CommunityPost) error
 	GetPostByID(ctx context.Context, id uuid.UUID) (*CommunityPost, error)
 	ListPosts(ctx context.Context, postType, category string, limit, offset int) ([]*CommunityPost, int64, error)
+	UpdatePost(ctx context.Context, p *CommunityPost) error
 	MarkPostSolved(ctx context.Context, postID, helperUserID uuid.UUID) error
-	DeletePost(ctx context.Context, id, userID uuid.UUID) error
+	DeletePost(ctx context.Context, id uuid.UUID) error
 
 	// Comments
 	CreateComment(ctx context.Context, c *CommunityComment) error
+	GetCommentByID(ctx context.Context, id uuid.UUID) (*CommunityComment, error)
 	ListCommentsByPost(ctx context.Context, postID uuid.UUID) ([]*CommunityComment, error)
-	DeleteComment(ctx context.Context, id, userID uuid.UUID) error
+	DeleteComment(ctx context.Context, id uuid.UUID) error
 
 	// Reactions
 	ToggleReaction(ctx context.Context, postID, userID uuid.UUID, reactionType string) error

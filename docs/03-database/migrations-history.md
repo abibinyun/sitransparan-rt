@@ -67,6 +67,9 @@ Berikut adalah rekam jejak lengkap 50 migrasi hingga status terkini:
 | `000049` | `create_waste_attendance` | Manajemen presensi piket pemilah/pengangkut sampah (`waste_attendance`, `waste_attendance_members`) dan alokasi uang lelah/honor per giat. |
 | `000050` | `add_payment_date_to_dues_payments` | Penambahan kolom `payment_date TIMESTAMPTZ DEFAULT NOW()` pada `tenant_<slug>.dues_payments` untuk mendukung input tanggal bayar historis/fleksibel dari UI. |
 | `000051` | `create_refresh_tokens` | Pembuatan tabel `public.refresh_tokens` untuk autentikasi jangka panjang dengan rotasi token atomik dan pencabutan sesi server-side (revocation). |
+| `000052` | `create_notifications` | Pembuatan tabel `tenant_<slug>.in_app_notifications` untuk kotak masuk pemberitahuan warga terpadu. |
+| `000053` | `create_safety_center` | Pembuatan tabel `tenant_<slug>.emergency_alerts` (Panic Button) dan `tenant_<slug>.house_vacancies` (laporan rumah mudik/kosong rahasia). |
+| `000054` | `create_community_posts_comments_reactions` | Pembuatan tabel `tenant_<slug>.community_posts`, `community_comments`, dan `community_reactions` untuk forum warga dan etalase UMKM. |
 
 ---
 
