@@ -147,12 +147,13 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: transparansi_cloudflared_prod
     restart: unless-stopped
-    entrypoint: ["/bin/sh", "-c"]
-    command: ["if [ -z \"$$TUNNEL_TOKEN\" ]; then echo 'No CLOUDFLARE_TUNNEL_TOKEN provided. Cloudflared idle.'; sleep infinity; else exec cloudflared tunnel --no-autoupdate run; fi"]
+    command: tunnel --no-autoupdate run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-}
     networks:
       - infrastructure_default
+    profiles:
+      - tunnel
     depends_on:
       - traefik_prod
 
