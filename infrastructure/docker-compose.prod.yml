@@ -136,7 +136,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.tier=prod"
-      - 'traefik.http.routers.frontend_prod.rule=Host(`iscube.web.id`) || Host(`app.iscube.web.id`) || (HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`) && !HostRegexp(`^[a-z0-9-]+-(dev|staging)\.iscube\.web\.id$`) && !Host(`staging.iscube.web.id`) && !Host(`dev.iscube.web.id`) && !Host(`app-staging.iscube.web.id`) && !Host(`app-dev.iscube.web.id`) && !Host(`api-staging.iscube.web.id`) && !Host(`api-dev.iscube.web.id`) && !Host(`uptime.iscube.web.id`) && !Host(`traefik.iscube.web.id`) && !Host(`s3.iscube.web.id`) && !Host(`minio.iscube.web.id`) && !Host(`propertyhub.iscube.web.id`) && !Host(`propertyhub-api.iscube.web.id`))'
+      - 'traefik.http.routers.frontend_prod.rule=Host(`iscube.web.id`) || Host(`app.iscube.web.id`) || (HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`) && !HostRegexp(`^[a-z0-9-]+-(dev|staging)\.iscube\.web\.id$`) && !Host(`staging.iscube.web.id`) && !Host(`dev.iscube.web.id`) && !Host(`app-staging.iscube.web.id`) && !Host(`app-dev.iscube.web.id`) && !Host(`api-staging.iscube.web.id`) && !Host(`api-dev.iscube.web.id`))'
       - "traefik.http.routers.frontend_prod.entrypoints=web"
       - "traefik.http.services.frontend_prod.loadbalancer.server.port=80"
     networks:
