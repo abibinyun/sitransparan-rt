@@ -20,8 +20,8 @@ services:
       - "--providers.file.directory=/etc/traefik/dynamic"
       - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
@@ -110,7 +110,7 @@ services:
       - "traefik.tier=prod"
       - 'traefik.http.routers.backend_prod.rule=Host(`api.iscube.web.id`) || (HostRegexp(`^api\.[a-z0-9-]+\.iscube\.web\.id$`) && !HostRegexp(`^api\.[a-z0-9-]+-(dev|staging)\.iscube\.web\.id$`) && !Host(`api-staging.iscube.web.id`) && !Host(`api-dev.iscube.web.id`))'
       - "traefik.http.routers.backend_prod.entrypoints=web"
-      - "traefik.http.routers.backend_prod.middlewares=backend_prod_ratelimit"
+      - "traefik.http.routers.backend_prod.middlewares=sec-headers-prod@file,backend_prod_ratelimit"
       - "traefik.http.middlewares.backend_prod_ratelimit.ratelimit.average=100"
       - "traefik.http.middlewares.backend_prod_ratelimit.ratelimit.burst=50"
       - "traefik.http.middlewares.backend_prod_ratelimit.ratelimit.period=1s"
@@ -138,6 +138,7 @@ services:
       - "traefik.tier=prod"
       - 'traefik.http.routers.frontend_prod.rule=Host(`iscube.web.id`) || Host(`app.iscube.web.id`) || (HostRegexp(`^[a-z0-9-]+\.iscube\.web\.id$`) && !HostRegexp(`^[a-z0-9-]+-(dev|staging)\.iscube\.web\.id$`) && !Host(`staging.iscube.web.id`) && !Host(`dev.iscube.web.id`) && !Host(`app-staging.iscube.web.id`) && !Host(`app-dev.iscube.web.id`) && !Host(`api-staging.iscube.web.id`) && !Host(`api-dev.iscube.web.id`))'
       - "traefik.http.routers.frontend_prod.entrypoints=web"
+      - "traefik.http.routers.frontend_prod.middlewares=sec-headers-prod@file"
       - "traefik.http.services.frontend_prod.loadbalancer.server.port=80"
     networks:
       - infrastructure_default

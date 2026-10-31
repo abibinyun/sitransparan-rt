@@ -1,0 +1,14 @@
+http:
+  middlewares:
+    sec-headers-prod:
+      headers:
+        frameDeny: false
+        customFrameOptionsValue: "SAMEORIGIN"
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        permissionsPolicy: "geolocation=(), microphone=(), camera=()"
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+
