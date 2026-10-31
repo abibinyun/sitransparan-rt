@@ -91,7 +91,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.tier=dev"
-      - 'traefik.http.routers.backend_dev.rule=Host(`api-dev.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+-dev\.iscube\.web\.id$`) || HostRegexp(`^api-[a-z0-9-]+\.dev\.iscube\.web\.id$`)'
+      - 'traefik.http.routers.backend_dev.rule=Host(`api-dev.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+-dev\.iscube\.web\.id$$`) || HostRegexp(`^api-[a-z0-9-]+\.dev\.iscube\.web\.id$$`)'
       - "traefik.http.routers.backend_dev.entrypoints=web"
       - "traefik.http.routers.backend_dev.middlewares=backend_dev_ratelimit"
       - "traefik.http.middlewares.backend_dev_ratelimit.ratelimit.average=100"
@@ -102,6 +102,7 @@ services:
       infrastructure_default:
         aliases:
           - backend-dev
+      gateway:
 
   frontend:
     <<: *default-logging
@@ -123,13 +124,14 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.tier=dev"
-      - 'traefik.http.routers.frontend_dev.rule=Host(`dev.iscube.web.id`) || Host(`app-dev.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+-dev\.iscube\.web\.id$`) || HostRegexp(`^[a-z0-9-]+\.dev\.iscube\.web\.id$`)'
+      - 'traefik.http.routers.frontend_dev.rule=Host(`dev.iscube.web.id`) || Host(`app-dev.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+-dev\.iscube\.web\.id$$`) || HostRegexp(`^[a-z0-9-]+\.dev\.iscube\.web\.id$$`)'
       - "traefik.http.routers.frontend_dev.entrypoints=web"
       - "traefik.http.services.frontend_dev.loadbalancer.server.port=3000"
     networks:
       infrastructure_default:
         aliases:
           - frontend-dev
+      gateway:
 
 volumes:
   postgres_dev_data:
@@ -138,4 +140,6 @@ volumes:
 
 networks:
   infrastructure_default:
+    external: true
+  gateway:
     external: true
