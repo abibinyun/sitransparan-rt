@@ -20,9 +20,12 @@ func NewAnnouncementDocUsecase(repo domain.AnnouncementDocRepository) domain.Ann
 	return &announcementDocUsecase{repo: repo}
 }
 
+const maxAnnouncementMediaURLs = 30
+const maxAnnouncementFileURLs = 30
+
 func validateMediaURLs(urls []string) error {
-	if len(urls) > 10 {
-		return errors.New("media_urls exceeds 10 items")
+	if len(urls) > maxAnnouncementMediaURLs {
+		return errors.New("media_urls exceeds 30 items")
 	}
 	for _, s := range urls {
 		if strings.HasPrefix(s, "/api/v1/files/") || strings.HasPrefix(s, "/uploads/") {
@@ -37,8 +40,8 @@ func validateMediaURLs(urls []string) error {
 }
 
 func validateFileURLs(urls []string) error {
-	if len(urls) > 10 {
-		return errors.New("file_urls exceeds 10 items")
+	if len(urls) > maxAnnouncementFileURLs {
+		return errors.New("file_urls exceeds 30 items")
 	}
 	for _, s := range urls {
 		if strings.HasPrefix(s, "/api/v1/files/") || strings.HasPrefix(s, "/uploads/") {

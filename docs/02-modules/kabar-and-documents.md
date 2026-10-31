@@ -36,7 +36,7 @@ Modul ini adalah pusat komunikasi satu arah dan dua arah antara pengurus RT deng
 ## 2. Fitur & Logika Bisnis Utama
 
 ### A. Pengumuman Multimedia & Multi-Attachment
-- Mendukung array `media_urls` (hingga 10 foto) dan `file_urls` (lampiran PDF/dokumen).
+- Mendukung array `media_urls` (hingga 30 foto) dan `file_urls` (lampiran PDF/dokumen).
 - URL media divalidasi dengan regex skema `http/https`.
 - Kategori pengumuman: `pengumuman`, `kegiatan`, `santai`, `info`.
 

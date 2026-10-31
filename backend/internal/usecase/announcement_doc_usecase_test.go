@@ -207,14 +207,14 @@ func TestAnnouncementDocUsecase(t *testing.T) {
 			t.Fatalf("expected valid file URLs to pass, got %v", err)
 		}
 
-		// Exceed 10 items
-		tooMany := make([]string, 11)
+		// Exceed 30 items
+		tooMany := make([]string, 31)
 		for i := range tooMany {
 			tooMany[i] = "/uploads/doc.pdf"
 		}
 		a.FileURLs = tooMany
 		if err := uc.CreateAnnouncement(ctx, tenantID, a); err == nil {
-			t.Fatal("expected error on >10 file_urls, got nil")
+			t.Fatal("expected error on >30 file_urls, got nil")
 		}
 	})
 

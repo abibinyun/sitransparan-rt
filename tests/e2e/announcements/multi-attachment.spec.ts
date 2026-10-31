@@ -66,14 +66,14 @@ test.describe('Announcement multi-image and multi-file attachments', () => {
     await expect(modal).toBeHidden();
   });
 
-  test('rejects announcement with more than 10 file_urls (edge case boundary)', async ({ request }) => {
+  test('rejects announcement with more than 30 file_urls (edge case boundary)', async ({ request }) => {
     const loginRes = await request.post(`${API}/api/v1/auth/login`, {
       data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
     });
     const { token } = await loginRes.json();
     const headers = { Authorization: `Bearer ${token}` };
 
-    const tooManyFiles = Array.from({ length: 11 }, (_, i) => `https://example.com/file-${i}.pdf`);
+    const tooManyFiles = Array.from({ length: 31 }, (_, i) => `https://example.com/file-${i}.pdf`);
     const res = await request.post(`${API}/api/v1/announcements`, {
       headers,
       data: {
@@ -84,6 +84,6 @@ test.describe('Announcement multi-image and multi-file attachments', () => {
     });
     expect(res.status()).toBe(400);
     const body = await res.json();
-    expect(body.error).toContain('file_urls exceeds 10 items');
+    expect(body.error).toContain('file_urls exceeds 30 items');
   });
 });

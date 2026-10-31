@@ -228,7 +228,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
             <Label className="flex items-center gap-1.5 font-semibold text-slate-800">
               <ImageIcon className="w-4 h-4 text-emerald-600" /> Galeri Foto &amp; Banner
             </Label>
-            <span className="text-[11px] text-slate-500">Bisa upload banyak foto</span>
+            <span className="text-[11px] text-slate-500">Maksimal 30 foto</span>
           </div>
 
           {/* Banner Utama */}
