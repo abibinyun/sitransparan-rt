@@ -73,11 +73,11 @@ services:
       MINIO_USE_SSL: "false"
       PORT: 8080
       JWT_SECRET: ${JWT_SECRET_DEV:-dev-super-secret-jwt-platform-rt-key}
-      TENANT_BASE_DOMAIN: iscube.web.id
+      TENANT_BASE_DOMAIN: openrt.local
       TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-192.168.64.0/20,127.0.0.1}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
-      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@iscube.web.id}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@openrt.local}
     volumes:
       - ../backend:/app
       - go_pkg_mod_dev:/go/pkg/mod
@@ -91,7 +91,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.tier=dev"
-      - 'traefik.http.routers.backend_dev.rule=Host(`api-dev.iscube.web.id`) || HostRegexp(`^api\.[a-z0-9-]+-dev\.iscube\.web\.id$$`) || HostRegexp(`^api-[a-z0-9-]+\.dev\.iscube\.web\.id$$`)'
+      - 'traefik.http.routers.backend_dev.rule=Host(`api.openrt.local`) || Host(`api-rt-003.openrt.local`)'
       - "traefik.http.routers.backend_dev.entrypoints=web"
       - "traefik.http.routers.backend_dev.middlewares=backend_dev_ratelimit"
       - "traefik.http.middlewares.backend_dev_ratelimit.ratelimit.average=100"
@@ -112,7 +112,7 @@ services:
     container_name: transparansi_frontend_dev
     restart: always
     environment:
-      - VITE_TENANT_BASE_DOMAIN=iscube.web.id
+      - VITE_TENANT_BASE_DOMAIN=openrt.local
       - VITE_BACKEND_PROXY_URL=http://backend-dev:8080
     volumes:
       - ../frontend:/app
@@ -124,7 +124,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.tier=dev"
-      - 'traefik.http.routers.frontend_dev.rule=Host(`dev.iscube.web.id`) || Host(`app-dev.iscube.web.id`) || HostRegexp(`^[a-z0-9-]+-dev\.iscube\.web\.id$$`) || HostRegexp(`^[a-z0-9-]+\.dev\.iscube\.web\.id$$`)'
+      - 'traefik.http.routers.frontend_dev.rule=Host(`openrt.local`) || Host(`rt-003.openrt.local`) || Host(`rt-004.openrt.local`) || Host(`app.openrt.local`) || Host(`localhost`) || Host(`127.0.0.1`)'
       - "traefik.http.routers.frontend_dev.entrypoints=web"
       - "traefik.http.services.frontend_dev.loadbalancer.server.port=3000"
     networks:
