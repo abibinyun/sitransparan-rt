@@ -54,9 +54,16 @@ Tersedia file konfigurasi per lingkungan di direktori `infrastructure/`:
     - "traefik.http.middlewares.backend_dev_ratelimit.ratelimit.period=1s"
   ```
 
+## 5. Topologi Produksi Multi-Node & Cloudflare Zero Trust (Updated Nov 2026)
+
+Produksi Platform-RT dipindahkan dan diisolasi ke **InstaBox-2 Cloud VM** (`machine-2`, `ssh.instabox.sh:2222`) di bawah direktori persistent `/data/projects/sitransparan-rt/`:
+- **Isolasi Port Host**: Port `80:80` host VM ditutup (`0.0.0.0` closed). Seluruh lalu lintas internet masuk murni via **Cloudflare Zero Trust Tunnel** (`cloudflared`) ke service alias `http://traefik:80`.
+- **Security Headers Middleware**: Injeksi otomatis middleware `sec-headers-prod@file` di Traefik (`X-Content-Type-Options: nosniff`, `SAMEORIGIN`, `strict-origin-when-cross-origin`, `Permissions-Policy`).
+- **Autonomous Disaster Recovery Backup**: Unit `systemd timer` (`cloud-backup.timer`) di dalam VM InstaBox-2 mengeksekusi dump database PostgreSQL setiap hari pukul 03:00 WIB dan langsung mengirimkan file snapshot terkompresi `.sql.gz` ke Telegram owner secara mandiri.
+
 ---
 
-## 4. Hubungan Lintas Dokumen
+## 6. Hubungan Lintas Dokumen
 
 - [[01-architecture/subdomain-and-routing|Arsitektur Subdomain]]
 - [[05-operations-devops/sdlc-and-promotion-workflow|Alur Promosi Lingkungan]]
